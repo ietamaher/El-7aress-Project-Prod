@@ -111,6 +111,12 @@ private:
     bool m_previousMenuDownState = false;
     bool m_previousMenuValState = false;
 
+    // Button debouncing timestamps (milliseconds since epoch)
+    qint64 m_lastMenuUpPressTime = 0;
+    qint64 m_lastMenuDownPressTime = 0;
+    qint64 m_lastMenuValPressTime = 0;
+    static constexpr int BUTTON_DEBOUNCE_MS = 250;  // 250ms debounce window
+
     // Dependencies (injected by SystemController)
     MainMenuController* m_mainMenuController;
     ReticleMenuController* m_reticleMenuController;
