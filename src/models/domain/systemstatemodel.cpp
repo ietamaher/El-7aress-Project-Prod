@@ -130,7 +130,22 @@ void SystemStateModel::setDownTrack(bool pressed) { if(m_currentStateData.downTr
 void SystemStateModel::setDownSw(bool pressed) { if(m_currentStateData.menuDown != pressed) { m_currentStateData.menuDown = pressed; emit dataChanged(m_currentStateData); } }
 void SystemStateModel::setUpTrack(bool pressed) { if(m_currentStateData.upTrack != pressed) { m_currentStateData.upTrack = pressed; emit dataChanged(m_currentStateData); } }
 void SystemStateModel::setUpSw(bool pressed) { if(m_currentStateData.menuUp != pressed) { m_currentStateData.menuUp = pressed; emit dataChanged(m_currentStateData); } }
-void SystemStateModel::setActiveCameraIsDay(bool pressed) { if(m_currentStateData.activeCameraIsDay != pressed) { m_currentStateData.activeCameraIsDay = pressed; emit dataChanged(m_currentStateData); } }
+
+void SystemStateModel::setActiveCameraIsDay(bool isDay) {
+    // ========================================================================
+    // UC5: Camera Switch During Tracking
+    // ========================================================================
+    // When switching between day/night cameras, FOV changes (different optics)
+    // Reticle pixel position must recalculate for new camera's FOV
+    // ========================================================================
+    if(m_currentStateData.activeCameraIsDay != isDay) {
+        m_currentStateData.activeCameraIsDay = isDay;
+        qDebug() << "✓ [FIX UC5] Active camera switched to" << (isDay ? "DAY" : "NIGHT")
+                 << "- Recalculating reticle for new camera FOV";
+        recalculateDerivedAimpointData();  // ← FIX: Trigger reticle recalc on camera switch
+        emit dataChanged(m_currentStateData);
+    }
+}
 
 void SystemStateModel::setDetectionEnabled(bool enabled)
 {
@@ -549,6 +564,19 @@ void SystemStateModel::onServoElDataChanged(const ServoDriverData &elData) {
 
 void SystemStateModel::onDayCameraDataChanged(const DayCameraData &dayData)
 {
+    // ========================================================================
+    // UC1: Zoom During Zeroed Operation
+    // UC4: Zoom During Active Tracking
+    // ========================================================================
+    // When day camera FOV changes (zoom in/out), reticle pixel position must
+    // be recalculated to maintain correct angular offset on screen.
+    // ========================================================================
+
+    bool fovChanged = !qFuzzyCompare(
+        static_cast<float>(m_currentStateData.dayCurrentHFOV),
+        static_cast<float>(dayData.currentHFOV)
+    );
+
     SystemStateData newData = m_currentStateData;
 
     newData.dayZoomPosition = dayData.zoomPosition;
@@ -556,10 +584,22 @@ void SystemStateModel::onDayCameraDataChanged(const DayCameraData &dayData)
     newData.dayCameraConnected = dayData.isConnected;
     newData.dayCameraError = dayData.errorState;
     newData.dayCameraStatus = dayData.cameraStatus;
-    newData.dayAutofocusEnabled = dayData.autofocusEnabled;    
+    newData.dayAutofocusEnabled = dayData.autofocusEnabled;
     newData.dayFocusPosition = dayData.focusPosition;
-    updateData(newData);
 
+    // ⭐ CRITICAL FIX: Recalculate reticle position when FOV changes
+    // This ensures Pixels-Per-Degree (PPD) scaling is correct for new zoom level
+    if (fovChanged && m_currentStateData.activeCameraIsDay) {
+        qDebug() << "✓ [FIX UC1/UC4] Day camera FOV changed from"
+                 << m_currentStateData.dayCurrentHFOV << "to" << dayData.currentHFOV
+                 << "- Recalculating reticle aimpoint";
+
+        m_currentStateData = newData;  // Update state first so recalc uses new FOV
+        recalculateDerivedAimpointData();  // ← FIX: Trigger reticle recalculation
+        emit dataChanged(m_currentStateData);
+    } else {
+        updateData(newData);
+    }
 }
 
 // Mode setting slots
@@ -701,6 +741,20 @@ void SystemStateModel::onLrfDataChanged(const LrfData &lrfData)
 
 void SystemStateModel::onNightCameraDataChanged(const NightCameraData &nightData)
 {
+    // ========================================================================
+    // UC1: Zoom During Zeroed Operation
+    // UC4: Zoom During Active Tracking
+    // UC5: Camera Switch During Tracking
+    // ========================================================================
+    // When night camera FOV changes (digital zoom), reticle pixel position
+    // must be recalculated to maintain correct angular offset on screen.
+    // ========================================================================
+
+    bool fovChanged = !qFuzzyCompare(
+        static_cast<float>(m_currentStateData.nightCurrentHFOV),
+        static_cast<float>(nightData.currentHFOV)
+    );
+
     SystemStateData newData = m_currentStateData;
 
     newData.nightZoomPosition = nightData.digitalZoomLevel;
@@ -712,8 +766,20 @@ void SystemStateModel::onNightCameraDataChanged(const NightCameraData &nightData
     newData.nightFfcInProgress = nightData.ffcInProgress;
     newData.nightVideoMode = nightData.videoMode;
     newData.nightFpaTemperature = nightData.fpaTemperature;
-    updateData(newData);
 
+    // ⭐ CRITICAL FIX: Recalculate reticle position when FOV changes
+    // This ensures Pixels-Per-Degree (PPD) scaling is correct for new zoom level
+    if (fovChanged && !m_currentStateData.activeCameraIsDay) {
+        qDebug() << "✓ [FIX UC1/UC4/UC5] Night camera FOV changed from"
+                 << m_currentStateData.nightCurrentHFOV << "to" << nightData.currentHFOV
+                 << "- Recalculating reticle aimpoint";
+
+        m_currentStateData = newData;  // Update state first so recalc uses new FOV
+        recalculateDerivedAimpointData();  // ← FIX: Trigger reticle recalculation
+        emit dataChanged(m_currentStateData);
+    } else {
+        updateData(newData);
+    }
 }
 
 void SystemStateModel::onPlc21DataChanged(const Plc21PanelData &pData)
@@ -1676,28 +1742,50 @@ void SystemStateModel::updateTrackingResult(
 
 
 void SystemStateModel::startTrackingAcquisition() {
+    // ========================================================================
+    // UC2: Initiate Tracking on Moving Target
+    // UC3: Track Target with Lead Angle Active
+    // ========================================================================
+    // CRITICAL ARCHITECTURAL PRINCIPLE:
+    // • Visual tracking (acquisition box) operates in IMAGE COORDINATES
+    // • Ballistic compensation (reticle position) operates in ANGULAR COORDINATES
+    // • These TWO COORDINATE SYSTEMS must remain SEPARATE
+    //
+    // The acquisition box marks WHERE THE TARGET APPEARS VISUALLY
+    // The reticle marks WHERE TO AIM TO HIT (with ballistic corrections)
+    // ========================================================================
+
     SystemStateData& data = m_currentStateData;
     if (data.currentTrackingPhase == TrackingPhase::Off) {
         data.currentTrackingPhase = TrackingPhase::Acquisition;
-        // Get the current calculated reticle position from our own state data
-        float reticleCenterX = data.reticleAimpointImageX_px;
-        float reticleCenterY = data.reticleAimpointImageY_px;
 
-        qDebug() << "[MODEL] Starting Acquisition. Centering initial box on reticle at:"
-                 << reticleCenterX << "," << reticleCenterY;
+        // ⭐ CRITICAL FIX: Use SCREEN CENTER, NOT reticle position
+        // Reticle position includes zeroing/lead offsets for BALLISTICS
+        // Acquisition box is for VISUAL target selection (no ballistic offset)
+        float screenCenterX = static_cast<float>(data.currentImageWidthPx) / 2.0f;
+        float screenCenterY = static_cast<float>(data.currentImageHeightPx) / 2.0f;
 
-        // Initialize acquisition box centered on the reticle's current position
-        // You might want default sizes stored as constants.
+        qDebug() << "✓ [FIX UC2/UC3] Starting Acquisition. Centering box on SCREEN CENTER at:"
+                 << screenCenterX << "," << screenCenterY
+                 << "(NOT reticle position which has ballistic offsets)";
+
+        // Initialize acquisition box centered on SCREEN, not reticle
         float defaultBoxW = 100.0f;
         float defaultBoxH = 100.0f;
         data.acquisitionBoxW_px = defaultBoxW;
         data.acquisitionBoxH_px = defaultBoxH;
-        data.acquisitionBoxX_px = reticleCenterX - (defaultBoxW / 2.0f);
-        data.acquisitionBoxY_px = reticleCenterY - (defaultBoxH / 2.0f);
+        data.acquisitionBoxX_px = screenCenterX - (defaultBoxW / 2.0f);
+        data.acquisitionBoxY_px = screenCenterY - (defaultBoxH / 2.0f);
 
-        // Clamp the box to ensure it's within screen bounds, in case the reticle is near an edge
-        data.acquisitionBoxX_px = qBound(0.0f, data.acquisitionBoxX_px, static_cast<float>(data.currentImageWidthPx) - data.acquisitionBoxW_px);
-        data.acquisitionBoxY_px = qBound(0.0f, data.acquisitionBoxY_px, static_cast<float>(data.currentImageHeightPx) - data.acquisitionBoxH_px);
+        // Safety: Clamp to screen bounds (should already be centered, but ensure safety)
+        data.acquisitionBoxX_px = qBound(0.0f, data.acquisitionBoxX_px,
+                                         static_cast<float>(data.currentImageWidthPx) - data.acquisitionBoxW_px);
+        data.acquisitionBoxY_px = qBound(0.0f, data.acquisitionBoxY_px,
+                                         static_cast<float>(data.currentImageHeightPx) - data.acquisitionBoxH_px);
+
+        qDebug() << "   Acquisition box initialized: ["
+                 << data.acquisitionBoxX_px << "," << data.acquisitionBoxY_px << "] "
+                 << data.acquisitionBoxW_px << "x" << data.acquisitionBoxH_px;
 
         // We are still in Surveillance and Manual motion
         data.opMode = OperationalMode::Surveillance;
@@ -1755,16 +1843,38 @@ void SystemStateModel::stopTracking() {
 }
 */
 void SystemStateModel::adjustAcquisitionBoxSize(float dW, float dH) {
+    // ========================================================================
+    // SAFETY: Acquisition Box Boundary Validation
+    // ========================================================================
+    // Ensures acquisition box stays within valid bounds during user adjustment
+    // Maintains minimum size for VPI tracker initialization requirements
+    // Prevents box from exceeding screen dimensions
+    // ========================================================================
+
     SystemStateData& data = m_currentStateData;
     if (data.currentTrackingPhase == TrackingPhase::Acquisition) {
-        data.acquisitionBoxW_px += dW;
-        data.acquisitionBoxH_px += dH;
-        // Clamp to min/max sizes
-        data.acquisitionBoxW_px = qBound(20.0f, data.acquisitionBoxW_px, static_cast<float>(data.currentImageWidthPx * 0.8f));
-        data.acquisitionBoxH_px = qBound(20.0f, data.acquisitionBoxH_px, static_cast<float>(data.currentImageHeightPx * 0.8f));
-        // Recenter box after resizing
+        // Apply size adjustment
+        float newWidth = data.acquisitionBoxW_px + dW;
+        float newHeight = data.acquisitionBoxH_px + dH;
+
+        // Define safety constraints
+        const float MIN_BOX_SIZE = 20.0f;   // VPI tracker minimum patch size requirement
+        const float MAX_BOX_RATIO = 0.8f;   // Maximum 80% of screen dimension
+
+        // Clamp to valid range
+        data.acquisitionBoxW_px = qBound(MIN_BOX_SIZE, newWidth,
+                                         static_cast<float>(data.currentImageWidthPx * MAX_BOX_RATIO));
+        data.acquisitionBoxH_px = qBound(MIN_BOX_SIZE, newHeight,
+                                         static_cast<float>(data.currentImageHeightPx * MAX_BOX_RATIO));
+
+        // Recenter box after resizing (maintains screen-centered position)
         data.acquisitionBoxX_px = (data.currentImageWidthPx / 2.0f) - (data.acquisitionBoxW_px / 2.0f);
         data.acquisitionBoxY_px = (data.currentImageHeightPx / 2.0f) - (data.acquisitionBoxH_px / 2.0f);
+
+        qDebug() << "   Acquisition box resized to"
+                 << data.acquisitionBoxW_px << "x" << data.acquisitionBoxH_px
+                 << "at [" << data.acquisitionBoxX_px << "," << data.acquisitionBoxY_px << "]";
+
         emit dataChanged(m_currentStateData);
     }
 }
