@@ -594,21 +594,21 @@ void ApplicationController::onSystemStateChanged(const SystemStateData& newState
 {
     // Rising edge detection for menuUp button (false → true = button press)
     if (newState.menuUp && !m_previousMenuUpState) {
-        qDebug() << "ApplicationController: Hardware UP button pressed";
+        qDebug() << "ApplicationController: Hardware UP button pressed (State:" << static_cast<int>(m_currentMenuState) << ")";
         onUpButtonPressed();
     }
     m_previousMenuUpState = newState.menuUp;
 
     // Rising edge detection for menuDown button (false → true = button press)
     if (newState.menuDown && !m_previousMenuDownState) {
-        qDebug() << "ApplicationController: Hardware DOWN button pressed";
+        qDebug() << "ApplicationController: Hardware DOWN button pressed (State:" << static_cast<int>(m_currentMenuState) << ")";
         onDownButtonPressed();
     }
     m_previousMenuDownState = newState.menuDown;
 
     // Rising edge detection for menuVal button (false → true = button press)
     if (newState.menuVal && !m_previousMenuValState) {
-        qDebug() << "ApplicationController: Hardware MENU/VAL button pressed";
+        qDebug() << "ApplicationController: Hardware MENU/VAL button pressed (State:" << static_cast<int>(m_currentMenuState) << ")";
         onMenuValButtonPressed();
     }
     m_previousMenuValState = newState.menuVal;
