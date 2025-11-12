@@ -21,11 +21,12 @@ void ReticleMenuController::initialize()
             this, &ReticleMenuController::handleMenuOptionSelected);
 
     // Connect to currentIndexChanged to update preview as user navigates
+    // Use Qt::QueuedConnection to prevent re-entrant calls during hardware button processing
     connect(m_viewModel, &MenuViewModel::currentIndexChanged,
             this, [this]() {
                 int currentIndex = m_viewModel->currentIndex();
                 handleCurrentItemChanged(currentIndex);
-            });
+            }, Qt::QueuedConnection);
 
     // Connect to color changes
     connect(m_stateModel, &SystemStateModel::colorStyleChanged,

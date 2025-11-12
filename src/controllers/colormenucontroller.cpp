@@ -31,11 +31,12 @@ void ColorMenuController::initialize()
             this, &ColorMenuController::handleMenuOptionSelected);
 
     // Connect to currentIndexChanged to update preview as user navigates
+    // Use Qt::QueuedConnection to prevent re-entrant calls during hardware button processing
     connect(m_viewModel, &MenuViewModel::currentIndexChanged,
             this, [this]() {
                 int currentIndex = m_viewModel->currentIndex();
                 handleCurrentItemChanged(currentIndex);
-            });
+            }, Qt::QueuedConnection);
 
     connect(m_stateModel, &SystemStateModel::colorStyleChanged,
             this, &ColorMenuController::onColorStyleChanged);
