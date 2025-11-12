@@ -66,17 +66,20 @@ ReticleType ReticleMenuController::stringToReticleType(const QString& str) const
 
 void ReticleMenuController::show()
 {
-    // Save current reticle type
-    // m_originalReticleType = m_osdViewModel->getCurrentReticleType();
+    // Save current reticle type from system state
+    const auto& data = m_stateModel->data();
+    m_originalReticleType = data.reticleType;
 
     QStringList options = buildReticleOptions();
     m_viewModel->showMenu("Personalize Reticle", "Select Reticle Style", options);
 
-    // Set current selection to match current reticle
-    // int currentIndex = static_cast<int>(m_originalReticleType);
-    // if (currentIndex >= 0 && currentIndex < options.size()) {
-    //     m_viewModel->setCurrentIndex(currentIndex);
-    // }
+    // ✅ FIX: Set current selection to match current reticle
+    int currentIndex = static_cast<int>(m_originalReticleType);
+    if (currentIndex >= 0 && currentIndex < options.size()) {
+        m_viewModel->setCurrentIndex(currentIndex);
+        // ✅ FIX: Apply initial preview to match the selected option
+        handleCurrentItemChanged(currentIndex);
+    }
 }
 
 void ReticleMenuController::hide()

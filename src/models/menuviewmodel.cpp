@@ -65,13 +65,7 @@ void MenuViewModel::moveSelectionUp()
 {
     if (!m_visible) return;
 
-    int previousIndex = m_currentIndex;
-    int nextIndex = findNextSelectable(m_currentIndex, -1);
-
-    qDebug() << "MenuViewModel::moveSelectionUp() - Current:" << previousIndex
-             << "Next:" << nextIndex
-             << "Options count:" << m_optionsModel.rowCount();
-
+    int nextIndex = findNextSelectableNoWrap(m_currentIndex, -1);
     if (nextIndex != -1 && nextIndex != m_currentIndex) {
         m_currentIndex = nextIndex;
         qDebug() << "MenuViewModel::moveSelectionUp() - Changed to:" << m_currentIndex;
@@ -83,13 +77,7 @@ void MenuViewModel::moveSelectionDown()
 {
     if (!m_visible) return;
 
-    int previousIndex = m_currentIndex;
-    int nextIndex = findNextSelectable(m_currentIndex, 1);
-
-    qDebug() << "MenuViewModel::moveSelectionDown() - Current:" << previousIndex
-             << "Next:" << nextIndex
-             << "Options count:" << m_optionsModel.rowCount();
-
+    int nextIndex = findNextSelectableNoWrap(m_currentIndex, 1);
     if (nextIndex != -1 && nextIndex != m_currentIndex) {
         m_currentIndex = nextIndex;
         qDebug() << "MenuViewModel::moveSelectionDown() - Changed to:" << m_currentIndex;
@@ -119,6 +107,29 @@ int MenuViewModel::findNextSelectable(int start, int direction)
         // Wrap around
         if (current >= count) current = 0;
         if (current < 0) current = count - 1;
+
+        if (isSelectable(current)) {
+            return current;
+        }
+    }
+
+    return -1;
+}
+
+int MenuViewModel::findNextSelectableNoWrap(int start, int direction)
+{
+    if (m_optionsModel.rowCount() == 0) return -1;
+
+    int current = start;
+    int count = m_optionsModel.rowCount();
+
+    for (int i = 0; i < count; ++i) {
+        current += direction;
+
+        // Stop at boundaries - don't wrap around
+        if (current >= count || current < 0) {
+            return -1;  // Return -1 to indicate we've hit the boundary
+        }
 
         if (isSelectable(current)) {
             return current;

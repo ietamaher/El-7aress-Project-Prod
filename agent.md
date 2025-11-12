@@ -223,11 +223,6 @@ The project has been reorganized into the following directory structure:
         │   ├── zonedefinitionviewmodel.h
         │   ├── zonemapviewmodel.cpp
         │   └── zonemapviewmodel.h
-        ├── services
-        │   ├── servicemanager.cpp
-        │   ├── servicemanager.h
-        │   ├── zonegeometryservice.cpp
-        │   └── zonegeometryservice.h
         ├── utils
         │   ├── TimestampLogger.h
         │   ├── ballisticsprocessor.cpp
@@ -310,7 +305,7 @@ All hardware devices have been refactored to follow **MIL-STD** (Military Standa
 
 | Device | Status | Transport | Protocol |
 |--------|--------|-----------|----------|
-| IMU (SST810) | ✅ Complete | ModbusTransport | Modbus RTU (32-bit floats) |
+| IMU  | ✅ Complete | SerialPortTransport | IMU  |
 | PLC21 | ✅ Complete | ModbusTransport | Modbus RTU |
 | PLC42 | ✅ Complete | ModbusTransport | Modbus RTU |
 | Day Camera (Sony) | ✅ Complete | SerialPortTransport | Pelco-D |

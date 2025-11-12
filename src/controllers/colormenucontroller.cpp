@@ -108,6 +108,8 @@ void ColorMenuController::show()
     int currentIndex = static_cast<int>(m_originalColorStyle);
     if (currentIndex >= 0 && currentIndex < options.size()) {
         m_viewModel->setCurrentIndex(currentIndex);
+        // ✅ FIX: Apply initial preview to match the selected option
+        handleCurrentItemChanged(currentIndex);
     }
 }
 

@@ -189,17 +189,6 @@ The device layer follows **MIL-STD** (Military Standard) architecture patterns w
 - Temperature monitoring (motors/drivers)
 - Connection status for all devices
 
-### 6. **Telemetry API System (NEW)**
-- **RESTful API**: Complete HTTP API for telemetry data access
-- **JWT Authentication**: Secure token-based authentication with role-based access control
-- **Real-time Data**: Access current system state via API endpoints
-- **Historical Queries**: Query time-series data for all system parameters
-- **Data Categories**: Device status, gimbal motion, IMU, tracking, weapon, camera, sensors, ballistics
-- **Export Functions**: CSV export for data analysis
-- **User Management**: Multi-user support with Admin/Operator/Viewer roles
-- **Audit Logging**: Complete audit trail of all API access
-- **Security**: Optional TLS/SSL encryption, IP whitelisting, rate limiting
-
 ---
 
 ## 🛠️ Build Instructions
@@ -468,437 +457,6 @@ rcws_app --log-level=debug
 
 ---
 
-## 📡 Telemetry API
-
-### Overview
-
-The RCWS system includes a comprehensive **Qt-native telemetry API** for remote monitoring, data analysis, and integration with external systems. The API provides secure access to real-time and historical telemetry data.
-
-### API Server Details
-
-**REST API:**
-- **Base URL**: `http://<device-ip>:8443/api`
-- **Authentication**: JWT (JSON Web Token)
-- **Data Format**: JSON
-- **TLS/SSL**: Optional (configure in production)
-
-**WebSocket Server (Real-Time Streaming):**
-- **URL**: `ws://<device-ip>:8444/telemetry`
-- **Authentication**: JWT (JSON Web Token)
-- **Update Rate**: 10 Hz (configurable)
-- **Protocol**: JSON messages
-- **Max Connections**: 50
-
-**Legacy API:** Port 8080 (deprecated, will be removed)
-
-### Quick Start
-
-1. **Start the system** - API server starts automatically
-2. **Get authentication token**:
-```bash
-curl -X POST http://localhost:8443/api/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"username":"admin","password":"admin123"}'
-```
-
-Response:
-```json
-{
-  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-  "expiresAt": "2025-01-08T15:30:00Z",
-  "role": 2
-}
-```
-
-3. **Query current telemetry**:
-```bash
-curl -X GET http://localhost:8443/api/telemetry/current \
-  -H "Authorization: Bearer <your-token>"
-```
-
-### API Endpoints
-
-#### Authentication
-```
-POST   /api/auth/login      - Login and get JWT token
-POST   /api/auth/refresh    - Refresh token
-POST   /api/auth/logout     - Logout (revoke token)
-```
-
-#### Current State
-```
-GET    /api/telemetry/current  - All current telemetry data
-GET    /api/status             - System status summary (legacy)
-```
-
-#### Historical Data
-Query parameters: `?from=<ISO8601>&to=<ISO8601>`
-```
-GET    /api/telemetry/history/gimbal     - Gimbal position history
-GET    /api/telemetry/history/imu        - IMU sensor history
-GET    /api/telemetry/history/tracking   - Tracking system history
-GET    /api/telemetry/history/weapon     - Weapon status history
-GET    /api/telemetry/history/camera     - Camera system history
-GET    /api/telemetry/history/sensor     - LRF/radar history
-GET    /api/telemetry/history/ballistic  - Ballistics data history
-GET    /api/telemetry/history/device     - Device health history
-```
-
-Example:
-```bash
-curl "http://localhost:8443/api/telemetry/history/gimbal?from=2025-01-08T10:00:00Z&to=2025-01-08T11:00:00Z" \
-  -H "Authorization: Bearer <token>"
-```
-
-#### Statistics
-```
-GET    /api/telemetry/stats/memory      - Memory usage by category
-GET    /api/telemetry/stats/samples     - Sample counts per category
-GET    /api/telemetry/stats/timerange   - Available data time ranges
-```
-
-#### Export
-```
-GET    /api/telemetry/export/csv?category=gimbal&from=<ISO8601>&to=<ISO8601>
-```
-
-#### System
-```
-GET    /api/health     - Health check (no auth required)
-GET    /api/version    - API version information
-```
-
-#### User Management (Admin only)
-```
-GET    /api/users                      - List all users
-POST   /api/users                      - Create new user
-DELETE /api/users/:username            - Delete user
-PUT    /api/users/:username/password   - Change password
-```
-
-### User Roles and Permissions
-
-| Role | Permissions |
-|------|-------------|
-| **Viewer** | Read telemetry, read history, read system health |
-| **Operator** | All Viewer permissions + export data |
-| **Admin** | All Operator permissions + user management, config modification |
-
-### Security Configuration
-
-**Default Credentials** (CHANGE IMMEDIATELY):
-- Username: `admin`
-- Password: `admin123`
-
-**Change Password via API**:
-```bash
-curl -X PUT http://localhost:8443/api/users/admin/password \
-  -H "Authorization: Bearer <admin-token>" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "oldPassword": "admin123",
-    "newPassword": "YourSecurePassword2025!"
-  }'
-```
-
-**Enable TLS/SSL** (Production):
-1. Generate SSL certificate and private key
-2. Edit `systemcontroller.cpp` → `createTelemetryServices()`:
-```cpp
-telemetryConfig.tls.enabled = true;
-telemetryConfig.tls.certificatePath = "/etc/rcws/ssl/cert.pem";
-telemetryConfig.tls.privateKeyPath = "/etc/rcws/ssl/key.pem";
-```
-3. Rebuild and restart
-4. API URL becomes: `https://localhost:8443/api`
-
-**IP Whitelisting**:
-```cpp
-authConfig.enableIpWhitelist = true;
-authConfig.allowedIpAddresses = {"192.168.1.0/24", "10.0.0.5"};
-```
-
-### Data Categories
-
-The telemetry system organizes data into **9 categories**:
-
-1. **Device Status** (1 Hz) - Temperatures, connections, health
-2. **Gimbal Motion** (60 Hz) - Position, speed, direction
-3. **IMU Data** (100 Hz) - Roll, pitch, yaw, gyro, accelerometer
-4. **Tracking Data** (30 Hz) - Tracking phase, target position, lock status
-5. **Weapon Status** (1 Hz) - Armed state, ammo, fire mode, zones
-6. **Camera Status** (1 Hz) - Zoom, FOV, active camera
-7. **Sensor Data** (10 Hz) - LRF distance, radar plots
-8. **Ballistic Data** (1 Hz) - Zeroing, windage, lead angle
-9. **User Input** (10 Hz) - Joystick, buttons
-
-### WebSocket Real-Time Streaming
-
-The WebSocket server provides real-time telemetry streaming at 10 Hz (configurable up to 100 Hz) for live dashboards and monitoring applications.
-
-#### WebSocket Connection Flow
-
-1. **Connect** to `ws://localhost:8444/telemetry`
-2. **Authenticate** with JWT token
-3. **Subscribe** to data categories
-4. **Receive** telemetry updates automatically
-
-#### WebSocket Client Example (JavaScript)
-
-```javascript
-const WebSocket = require('ws');
-
-// Get JWT token first (from REST API)
-const token = "YOUR_JWT_TOKEN_HERE";
-
-// Connect to WebSocket server
-const ws = new WebSocket('ws://localhost:8444/telemetry');
-
-ws.on('open', function() {
-  console.log('Connected to RCWS Telemetry Server');
-
-  // Step 1: Authenticate
-  ws.send(JSON.stringify({
-    type: 'auth',
-    token: token
-  }));
-});
-
-ws.on('message', function(data) {
-  const message = JSON.parse(data);
-
-  if (message.type === 'auth_success') {
-    console.log('Authenticated successfully');
-
-    // Step 2: Subscribe to categories
-    ws.send(JSON.stringify({
-      type: 'subscribe',
-      categories: ['gimbal', 'imu', 'tracking', 'weapon']
-      // Or use ['all'] for all categories
-    }));
-  }
-
-  if (message.type === 'subscribe_success') {
-    console.log('Subscribed to:', message.categories);
-  }
-
-  if (message.type === 'telemetry') {
-    // Step 3: Process telemetry data (received at 10 Hz)
-    console.log('Gimbal Az:', message.data.gimbal.azimuth);
-    console.log('Gimbal El:', message.data.gimbal.elevation);
-    console.log('IMU Roll:', message.data.imu.roll);
-    console.log('Tracking Active:', message.data.tracking.active);
-  }
-
-  if (message.type === 'error') {
-    console.error('Error:', message.message);
-  }
-});
-
-ws.on('close', function() {
-  console.log('Disconnected from server');
-});
-
-ws.on('error', function(error) {
-  console.error('WebSocket error:', error);
-});
-
-// Keep-alive ping (optional, recommended)
-setInterval(() => {
-  if (ws.readyState === WebSocket.OPEN) {
-    ws.send(JSON.stringify({ type: 'ping' }));
-  }
-}, 15000);  // Ping every 15 seconds
-```
-
-#### WebSocket Message Types
-
-**Client → Server:**
-```json
-// Authentication
-{
-  "type": "auth",
-  "token": "JWT_TOKEN"
-}
-
-// Subscribe to categories
-{
-  "type": "subscribe",
-  "categories": ["gimbal", "imu", "tracking"]
-}
-
-// Unsubscribe
-{
-  "type": "unsubscribe",
-  "categories": ["tracking"]
-}
-
-// Keep-alive ping
-{
-  "type": "ping"
-}
-```
-
-**Server → Client:**
-```json
-// Welcome message
-{
-  "type": "welcome",
-  "message": "RCWS Telemetry Server",
-  "version": "1.0.0",
-  "requiresAuth": true
-}
-
-// Authentication success
-{
-  "type": "auth_success",
-  "username": "admin",
-  "role": 2
-}
-
-// Telemetry update (sent at 10 Hz)
-{
-  "type": "telemetry",
-  "timestamp": "2025-01-08T14:30:15Z",
-  "data": {
-    "gimbal": {
-      "azimuth": 45.3,
-      "elevation": -12.5,
-      "azimuthSpeed": 0.5,
-      "elevationSpeed": -0.2
-    },
-    "imu": {
-      "roll": 0.1,
-      "pitch": -0.3,
-      "yaw": 180.2
-    },
-    "tracking": {
-      "active": true,
-      "phase": 3,
-      "hasTarget": true
-    }
-  }
-}
-
-// Pong response
-{
-  "type": "pong",
-  "timestamp": "2025-01-08T14:30:15Z"
-}
-
-// Error
-{
-  "type": "error",
-  "message": "Authentication required"
-}
-```
-
-#### Available Data Categories
-
-Subscribe to specific categories or use `"all"` for everything:
-
-- **`all`** - All telemetry data (highest bandwidth)
-- **`gimbal`** - Gimbal position, speed, direction, modes
-- **`imu`** - Roll, pitch, yaw, gyro, accelerometer
-- **`tracking`** - Tracking phase, target position, lock status
-- **`weapon`** - Armed state, ready status, ammo, fire mode
-- **`camera`** - Active camera, zoom, field of view
-- **`sensor`** - LRF distance, radar plots
-- **`ballistic`** - Zeroing, windage, lead angle
-- **`device`** - Motor temperatures, driver temps, system health
-
-#### Performance Considerations
-
-- **Default update rate**: 10 Hz (one message every 100ms)
-- **Bandwidth**: ~500-2000 bytes per message (depends on subscriptions)
-- **Recommended**: Subscribe only to needed categories to reduce bandwidth
-- **Max update rate**: 100 Hz (for high-frequency monitoring)
-- **Heartbeat**: Send ping every 15-30 seconds to keep connection alive
-- **Auto-disconnect**: Clients inactive for 90 seconds are disconnected
-
-### Integration Examples
-
-#### Python Client (REST API)
-```python
-import requests
-import json
-
-# Login
-response = requests.post('http://localhost:8443/api/auth/login',
-    json={'username': 'admin', 'password': 'admin123'})
-token = response.json()['token']
-
-# Get current telemetry
-headers = {'Authorization': f'Bearer {token}'}
-telemetry = requests.get('http://localhost:8443/api/telemetry/current',
-    headers=headers).json()
-
-print(f"Gimbal Az: {telemetry['gimbalAz']}°")
-print(f"Gimbal El: {telemetry['gimbalEl']}°")
-print(f"Tracking: {telemetry['trackingActive']}")
-```
-
-#### JavaScript/Node.js
-```javascript
-const axios = require('axios');
-
-const API_URL = 'http://localhost:8443/api';
-
-async function getTelemetry() {
-  // Login
-  const loginResp = await axios.post(`${API_URL}/auth/login`, {
-    username: 'admin',
-    password: 'admin123'
-  });
-
-  const token = loginResp.data.token;
-
-  // Get current state
-  const telemetryResp = await axios.get(`${API_URL}/telemetry/current`, {
-    headers: { 'Authorization': `Bearer ${token}` }
-  });
-
-  console.log(telemetryResp.data);
-}
-```
-
-### Audit Logging
-
-All API access is logged to `./logs/telemetry_audit.log`:
-```
-2025-01-08T14:30:15Z | admin | LOGIN_SUCCESS | 192.168.1.100 | /api/auth/login | SUCCESS | Role: 2
-2025-01-08T14:30:20Z | admin | ACCESS | 192.168.1.100 | /api/telemetry/current | SUCCESS |
-2025-01-08T14:31:05Z | operator | ACCESS | 192.168.1.101 | /api/telemetry/history/gimbal | SUCCESS |
-```
-
-### Performance
-
-- **Ring Buffer Storage**: In-memory circular buffers per category
-- **Configurable Buffer Sizes**: Default 10 minutes of high-frequency data
-- **Low Overhead**: ~10-50 MB RAM typical usage
-- **Optional SQLite**: Long-term persistence to database
-- **Rate Limiting**: 120 requests/minute per IP (configurable)
-
-### Configuration Files
-
-**User Database**: `./config/telemetry_users.json`
-```json
-{
-  "users": [
-    {
-      "username": "operator",
-      "role": 1,
-      "enabled": true,
-      "description": "Operator account"
-    }
-  ]
-}
-```
-
-**Telemetry Config**: Edit `systemcontroller.cpp` or create JSON config (future)
-
----
-
 ## 🐛 Troubleshooting
 
 ### Common Issues
@@ -985,15 +543,71 @@ sudo usermod -aG dialout $USER
 ```
 DIRECTORY STRUCTURE:
 ----------------------------------------
-└── QT6-gstreamer-example
+└── El-7aress-Project-Prod
+    ├── .dockerignore
     ├── CCIP.md
-    ├── QT6-gstreamer-example.pro
+    ├── DIAGNOSTIC_REPORT.md
+    ├── DOCKER_DEPLOYMENT.md
+    ├── Dockerfile.dev
+    ├── Dockerfile.prod
+    ├── El-7aress-Project-Prod.pro
+    ├── LICENSE
+    ├── LICENSE.txt
+    ├── MIGRATION_3DM-GX3-25.md
     ├── agent.md
+    ├── check_servo_ports.sh
     ├── config
-    │   └── devices.json
-    ├── data
+    │   ├── devices.json
+    │   └── zones.json
+    ├── docker-compose.dev.yml
+    ├── docker-compose.prod.yml
     ├── documentation
-    │   └── DATALOGGER_DOCUMENTATION.md
+    │   ├── APPENDIX_A_WEAPON_CLEARING.md
+    │   ├── APPENDIX_B_ZONE_FILE_FORMAT.md
+    │   ├── APPENDIX_C_BUTTON_MAPPING_QUICK_REFERENCE.md
+    │   ├── APPENDIX_D_RETICLE_TYPES_VISUAL_GUIDE.md
+    │   ├── APPENDIX_E_COMMUNICATION_PORT_CONFIGURATION.md
+    │   ├── APPENDIX_F_SYSTEM_SPECIFICATIONS.md
+    │   ├── APPENDIX_G_ACRONYMS_GLOSSARY.md
+    │   ├── APPENDIX_H_HAND_RECEIPT_EQUIPMENT_LIST.md
+    │   ├── APPENDIX_I_OPERATOR_MAINTENANCE_LOG.md
+    │   ├── DATALOGGER_DOCUMENTATION.md
+    │   ├── EL_HARRESS_RCWS_OPERATOR_MANUAL_EN.md
+    │   ├── HARDWARE_ARCHITECTURE.md
+    │   ├── LESSON_04_MENU_FUNCTIONS.md
+    │   ├── LESSON_05_ENGAGEMENT_PROCESS.md
+    │   ├── LESSON_06_MOTION_MODES.md
+    │   ├── LESSON_07_ZONE_MANAGEMENT.md
+    │   ├── LESSON_08_ADVANCED_JOYSTICK.md
+    │   ├── LESSON_09_LEAD_ANGLE_COMPENSATION.md
+    │   ├── LESSON_10_BORESIGHT_ZEROING.md
+    │   ├── LESSON_11_WINDAGE_COMPENSATION.md
+    │   ├── LESSON_12_SYSTEM_STATUS.md
+    │   ├── LESSON_13_EMERGENCY_PROCEDURES.md
+    │   ├── LESSON_14_BIS_TROUBLESHOOTING.md
+    │   ├── LESSON_14_OPERATOR_MAINTENANCE.md
+    │   ├── LESSON_15_HANDS_ON_TRAINING.md
+    │   ├── LESSON_16_PERFORMANCE_EVALUATION.md
+    │   ├── LESSON_17_WRITTEN_EXAMINATION.md
+    │   └── LESSON_18_LIVE_FIRE_RANGE_OPERATIONS.md
+    ├── fix_servo_symlinks.sh
+    ├── hardware_tests
+    │   ├── README.md
+    │   ├── actuator_tester.py
+    │   ├── baud_rate_scanner.py
+    │   ├── day_camera_tester.py
+    │   ├── errors.txt
+    │   ├── imu_tester.py
+    │   ├── lrf_tester.py
+    │   ├── night_camera_tester.py
+    │   ├── night_prov.py
+    │   ├── plc21_tester.py
+    │   ├── plc42_tester.py
+    │   ├── radar_tester.py
+    │   ├── requirements.txt
+    │   ├── servo_azimuth_tester.py
+    │   ├── servo_elevation_tester.py
+    │   └── tau2_tester.py
     ├── joystick_manual_md.md
     ├── post_git.md
     ├── preview.webp
@@ -1022,163 +636,205 @@ DIRECTORY STRUCTURE:
     ├── readme.md
     ├── resources
     │   └── resources.qrc
-    ├── scripts
-    │   ├── cleanup_virtual_ports.sh
-    │   ├── run_full_test.sh
-    │   ├── setup_virtual_ports.sh
-    │   ├── sim_plc21.sh
-    │   ├── sim_plc42.sh
-    │   ├── sim_servo_az.sh
-    │   ├── sim_servo_el.sh
-    │   ├── start_modbus_simulators.sh
-    │   └── verify_setup.sh
-    └── src
-        ├── controllers
-        │   ├── aboutcontroller.cpp
-        │   ├── aboutcontroller.h
-        │   ├── applicationcontroller.cpp
-        │   ├── applicationcontroller.h
-        │   ├── cameracontroller.cpp
-        │   ├── cameracontroller.h
-        │   ├── colormenucontroller.cpp
-        │   ├── colormenucontroller.h
-        │   ├── deviceconfiguration.cpp
-        │   ├── deviceconfiguration.h
-        │   ├── gimbalcontroller.cpp
-        │   ├── gimbalcontroller.h
-        │   ├── joystickcontroller.cpp
-        │   ├── joystickcontroller.h
-        │   ├── mainmenucontroller.cpp
-        │   ├── mainmenucontroller.h
-        │   ├── motion_modes
-        │   │   ├── autosectorscanmotionmode.cpp
-        │   │   ├── autosectorscanmotionmode.h
-        │   │   ├── gimbalmotionmodebase.cpp
-        │   │   ├── gimbalmotionmodebase.h
-        │   │   ├── manualmotionmode.cpp
-        │   │   ├── manualmotionmode.h
-        │   │   ├── pidcontroller.h
-        │   │   ├── radarslewmotionmode.cpp
-        │   │   ├── radarslewmotionmode.h
-        │   │   ├── trackingmotionmode.cpp
-        │   │   ├── trackingmotionmode.h
-        │   │   ├── trpscanmotionmode.cpp
-        │   │   └── trpscanmotionmode.h
-        │   ├── osdcontroller.cpp
-        │   ├── osdcontroller.h
-        │   ├── reticlemenucontroller.cpp
-        │   ├── reticlemenucontroller.h
-        │   ├── systemcontroller.cpp
-        │   ├── systemcontroller.h
-        │   ├── systemstatuscontroller.cpp
-        │   ├── systemstatuscontroller.h
-        │   ├── weaponcontroller.cpp
-        │   ├── weaponcontroller.h
-        │   ├── windagecontroller.cpp
-        │   ├── windagecontroller.h
-        │   ├── zeroingcontroller.cpp
-        │   ├── zeroingcontroller.h
-        │   ├── zonedefinitioncontroller.cpp
-        │   └── zonedefinitioncontroller.h
-        ├── hardware
-        │   └── devices
-        │       ├── baseserialdevice.cpp
-        │       ├── baseserialdevice.h
-        │       ├── cameravideostreamdevice.cpp
-        │       ├── cameravideostreamdevice.h
-        │       ├── daycameracontroldevice.cpp
-        │       ├── daycameracontroldevice.h
-        │       ├── imudevice.cpp
-        │       ├── imudevice.h
-        │       ├── joystickdevice.cpp
-        │       ├── joystickdevice.h
-        │       ├── lensdevice.cpp
-        │       ├── lensdevice.h
-        │       ├── lrfdevice.cpp
-        │       ├── lrfdevice.h
-        │       ├── modbusdevicebase.cpp
-        │       ├── modbusdevicebase.h
-        │       ├── nightcameracontroldevice.cpp
-        │       ├── nightcameracontroldevice.h
-        │       ├── plc21device.cpp
-        │       ├── plc21device.h
-        │       ├── plc42device.cpp
-        │       ├── plc42device.h
-        │       ├── radardevice.cpp
-        │       ├── radardevice.h
-        │       ├── servoactuatordevice.cpp
-        │       ├── servoactuatordevice.h
-        │       ├── servodriverdevice.cpp
-        │       ├── servodriverdevice.h
-        │       └── vpi_helpers.h
-        ├── logger
-        │   ├── systemdatalogger.cpp
-        │   └── systemdatalogger.h
-        ├── main.cpp
-        ├── models
-        │   ├── aboutviewmodel.cpp
-        │   ├── aboutviewmodel.h
-        │   ├── areazoneparameterviewmodel.cpp
-        │   ├── areazoneparameterviewmodel.h
-        │   ├── domain
-        │   │   ├── daycameradatamodel.h
-        │   │   ├── gyrodatamodel.h
-        │   │   ├── joystickdatamodel.cpp
-        │   │   ├── joystickdatamodel.h
-        │   │   ├── lensdatamodel.h
-        │   │   ├── lrfdatamodel.h
-        │   │   ├── nightcameradatamodel.h
-        │   │   ├── plc21datamodel.h
-        │   │   ├── plc42datamodel.h
-        │   │   ├── radardatamodel.h
-        │   │   ├── servoactuatordatamodel.h
-        │   │   ├── servodriverdatamodel.h
-        │   │   ├── systemstatedata.h
-        │   │   ├── systemstatemodel.cpp
-        │   │   └── systemstatemodel.h
-        │   ├── historyviewmodel.cpp
-        │   ├── historyviewmodel.h
-        │   ├── menuviewmodel.cpp
-        │   ├── menuviewmodel.h
-        │   ├── osdviewmodel.cpp
-        │   ├── osdviewmodel.h
-        │   ├── sectorscanparameterviewmodel.cpp
-        │   ├── sectorscanparameterviewmodel.h
-        │   ├── systemstatusviewmodel.cpp
-        │   ├── systemstatusviewmodel.h
-        │   ├── trpparameterviewmodel.cpp
-        │   ├── trpparameterviewmodel.h
-        │   ├── viewmodels
-        │   ├── windageviewmodel.cpp
-        │   ├── windageviewmodel.h
-        │   ├── zeroingviewmodel.cpp
-        │   ├── zeroingviewmodel.h
-        │   ├── zonedefinitionviewmodel.cpp
-        │   ├── zonedefinitionviewmodel.h
-        │   ├── zonemapviewmodel.cpp
-        │   └── zonemapviewmodel.h
-        ├── services
-        │   ├── servicemanager.cpp
-        │   ├── servicemanager.h
-        │   ├── zonegeometryservice.cpp
-        │   └── zonegeometryservice.h
-        ├── utils
-        │   ├── TimestampLogger.h
-        │   ├── ballisticsprocessor.cpp
-        │   ├── ballisticsprocessor.h
-        │   ├── colorutils.cpp
-        │   ├── colorutils.h
-        │   ├── inference.cpp
-        │   ├── inference.h
-        │   ├── millenious.h
-        │   ├── reticleaimpointcalculator.cpp
-        │   ├── reticleaimpointcalculator.h
-        │   └── targetstate.h
-        └── video
-            ├── gstvideosource.cpp
-            ├── gstvideosource.h
-            ├── videoimageprovider.cpp
-            └── videoimageprovider.h
+    ├── src
+    │   ├── config
+    │   │   ├── AppConstants.h
+    │   │   ├── ConfigurationValidator.cpp
+    │   │   └── ConfigurationValidator.h
+    │   ├── controllers
+    │   │   ├── aboutcontroller.cpp
+    │   │   ├── aboutcontroller.h
+    │   │   ├── applicationcontroller.cpp
+    │   │   ├── applicationcontroller.h
+    │   │   ├── cameracontroller.cpp
+    │   │   ├── cameracontroller.h
+    │   │   ├── colormenucontroller.cpp
+    │   │   ├── colormenucontroller.h
+    │   │   ├── deviceconfiguration.cpp
+    │   │   ├── deviceconfiguration.h
+    │   │   ├── gimbalcontroller.cpp
+    │   │   ├── gimbalcontroller.h
+    │   │   ├── joystickcontroller.cpp
+    │   │   ├── joystickcontroller.h
+    │   │   ├── ledcontroller.cpp
+    │   │   ├── ledcontroller.h
+    │   │   ├── mainmenucontroller.cpp
+    │   │   ├── mainmenucontroller.h
+    │   │   ├── motion_modes
+    │   │   │   ├── autosectorscanmotionmode.cpp
+    │   │   │   ├── autosectorscanmotionmode.h
+    │   │   │   ├── gimbalmotionmodebase.cpp
+    │   │   │   ├── gimbalmotionmodebase.h
+    │   │   │   ├── manualmotionmode.cpp
+    │   │   │   ├── manualmotionmode.h
+    │   │   │   ├── pidcontroller.h
+    │   │   │   ├── radarslewmotionmode.cpp
+    │   │   │   ├── radarslewmotionmode.h
+    │   │   │   ├── trackingmotionmode.cpp
+    │   │   │   ├── trackingmotionmode.h
+    │   │   │   ├── trpscanmotionmode.cpp
+    │   │   │   └── trpscanmotionmode.h
+    │   │   ├── osdcontroller.cpp
+    │   │   ├── osdcontroller.h
+    │   │   ├── reticlemenucontroller.cpp
+    │   │   ├── reticlemenucontroller.h
+    │   │   ├── systemcontroller.cpp
+    │   │   ├── systemcontroller.h
+    │   │   ├── systemcontroller_old.cpp
+    │   │   ├── systemcontroller_old.h
+    │   │   ├── systemstatuscontroller.cpp
+    │   │   ├── systemstatuscontroller.h
+    │   │   ├── weaponcontroller.cpp
+    │   │   ├── weaponcontroller.h
+    │   │   ├── windagecontroller.cpp
+    │   │   ├── windagecontroller.h
+    │   │   ├── zeroingcontroller.cpp
+    │   │   ├── zeroingcontroller.h
+    │   │   ├── zonedefinitioncontroller.cpp
+    │   │   └── zonedefinitioncontroller.h
+    │   ├── hardware
+    │   │   ├── communication
+    │   │   │   ├── modbustransport.cpp
+    │   │   │   ├── modbustransport.h
+    │   │   │   ├── serialporttransport.cpp
+    │   │   │   └── serialporttransport.h
+    │   │   ├── data
+    │   │   │   └── DataTypes.h
+    │   │   ├── devices
+    │   │   │   ├── TemplatedDevice.h
+    │   │   │   ├── cameravideostreamdevice.cpp
+    │   │   │   ├── cameravideostreamdevice.h
+    │   │   │   ├── daycameracontroldevice.cpp
+    │   │   │   ├── daycameracontroldevice.h
+    │   │   │   ├── imudevice.cpp
+    │   │   │   ├── imudevice.h
+    │   │   │   ├── joystickdevice.cpp
+    │   │   │   ├── joystickdevice.h
+    │   │   │   ├── lrfdevice.cpp
+    │   │   │   ├── lrfdevice.h
+    │   │   │   ├── nightcameracontroldevice.cpp
+    │   │   │   ├── nightcameracontroldevice.h
+    │   │   │   ├── plc21device.cpp
+    │   │   │   ├── plc21device.h
+    │   │   │   ├── plc42device.cpp
+    │   │   │   ├── plc42device.h
+    │   │   │   ├── radardevice.cpp
+    │   │   │   ├── radardevice.h
+    │   │   │   ├── servoactuatordevice.cpp
+    │   │   │   ├── servoactuatordevice.h
+    │   │   │   ├── servodriverdevice.cpp
+    │   │   │   ├── servodriverdevice.h
+    │   │   │   └── vpi_helpers.h
+    │   │   ├── interfaces
+    │   │   │   ├── IDevice.h
+    │   │   │   ├── Message.h
+    │   │   │   ├── ProtocolParser.h
+    │   │   │   └── Transport.h
+    │   │   ├── messages
+    │   │   │   ├── DayCameraMessage.h
+    │   │   │   ├── ImuMessage.h
+    │   │   │   ├── JoystickMessage.h
+    │   │   │   ├── LrfMessage.h
+    │   │   │   ├── NightCameraMessage.h
+    │   │   │   ├── Plc21Message.h
+    │   │   │   ├── Plc42Message.h
+    │   │   │   ├── RadarMessage.h
+    │   │   │   ├── ServoActuatorMessage.h
+    │   │   │   └── ServoDriverMessage.h
+    │   │   └── protocols
+    │   │       ├── DayCameraProtocolParser.cpp
+    │   │       ├── DayCameraProtocolParser.h
+    │   │       ├── Imu3DMGX3ProtocolParser.cpp
+    │   │       ├── Imu3DMGX3ProtocolParser.h
+    │   │       ├── ImuProtocolParser.cpp
+    │   │       ├── ImuProtocolParser.h
+    │   │       ├── JoystickProtocolParser.cpp
+    │   │       ├── JoystickProtocolParser.h
+    │   │       ├── LrfMessage.h
+    │   │       ├── LrfProtocolParser.cpp
+    │   │       ├── LrfProtocolParser.h
+    │   │       ├── MicroStrainProtocolParser.cpp
+    │   │       ├── MicroStrainProtocolParser.h
+    │   │       ├── NightCameraProtocolParser.cpp
+    │   │       ├── NightCameraProtocolParser.h
+    │   │       ├── Plc21ProtocolParser.cpp
+    │   │       ├── Plc21ProtocolParser.h
+    │   │       ├── Plc42ProtocolParser.cpp
+    │   │       ├── Plc42ProtocolParser.h
+    │   │       ├── RadarProtocolParser.cpp
+    │   │       ├── RadarProtocolParser.h
+    │   │       ├── ServoActuatorProtocolParser.cpp
+    │   │       ├── ServoActuatorProtocolParser.h
+    │   │       ├── ServoDriverProtocolParser.cpp
+    │   │       └── ServoDriverProtocolParser.h
+    │   ├── logger
+    │   │   ├── systemdatalogger.cpp
+    │   │   └── systemdatalogger.h
+    │   ├── main.cpp
+    │   ├── managers
+    │   │   ├── ControllerRegistry.cpp
+    │   │   ├── ControllerRegistry.h
+    │   │   ├── HardwareManager.cpp
+    │   │   ├── HardwareManager.h
+    │   │   ├── ViewModelRegistry.cpp
+    │   │   └── ViewModelRegistry.h
+    │   ├── models
+    │   │   ├── aboutviewmodel.cpp
+    │   │   ├── aboutviewmodel.h
+    │   │   ├── areazoneparameterviewmodel.cpp
+    │   │   ├── areazoneparameterviewmodel.h
+    │   │   ├── domain
+    │   │   │   ├── daycameradatamodel.h
+    │   │   │   ├── gyrodatamodel.h
+    │   │   │   ├── joystickdatamodel.cpp
+    │   │   │   ├── joystickdatamodel.h
+    │   │   │   ├── lrfdatamodel.h
+    │   │   │   ├── nightcameradatamodel.h
+    │   │   │   ├── plc21datamodel.h
+    │   │   │   ├── plc42datamodel.h
+    │   │   │   ├── radardatamodel.h
+    │   │   │   ├── servoactuatordatamodel.h
+    │   │   │   ├── servodriverdatamodel.h
+    │   │   │   ├── systemstatedata.h
+    │   │   │   ├── systemstatemodel.cpp
+    │   │   │   └── systemstatemodel.h
+    │   │   ├── historyviewmodel.cpp
+    │   │   ├── historyviewmodel.h
+    │   │   ├── menuviewmodel.cpp
+    │   │   ├── menuviewmodel.h
+    │   │   ├── osdviewmodel.cpp
+    │   │   ├── osdviewmodel.h
+    │   │   ├── sectorscanparameterviewmodel.cpp
+    │   │   ├── sectorscanparameterviewmodel.h
+    │   │   ├── systemstatusviewmodel.cpp
+    │   │   ├── systemstatusviewmodel.h
+    │   │   ├── trpparameterviewmodel.cpp
+    │   │   ├── trpparameterviewmodel.h
+    │   │   ├── windageviewmodel.cpp
+    │   │   ├── windageviewmodel.h
+    │   │   ├── zeroingviewmodel.cpp
+    │   │   ├── zeroingviewmodel.h
+    │   │   ├── zonedefinitionviewmodel.cpp
+    │   │   ├── zonedefinitionviewmodel.h
+    │   │   ├── zonemapviewmodel.cpp
+    │   │   └── zonemapviewmodel.h
+    │   ├── utils
+    │   │   ├── TimestampLogger.h
+    │   │   ├── ballisticsprocessor.cpp
+    │   │   ├── ballisticsprocessor.h
+    │   │   ├── colorutils.cpp
+    │   │   ├── colorutils.h
+    │   │   ├── inference.cpp
+    │   │   ├── inference.h
+    │   │   ├── millenious.h
+    │   │   ├── reticleaimpointcalculator.cpp
+    │   │   ├── reticleaimpointcalculator.h
+    │   │   └── targetstate.h
+    │   └── video
+    │       ├── gstvideosource.cpp
+    │       ├── gstvideosource.h
+    │       ├── videoimageprovider.cpp
+    │       └── videoimageprovider.h
 
 ```
 

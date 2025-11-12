@@ -84,7 +84,6 @@ SOURCES += \
     src/models/zeroingviewmodel.cpp \
     src/models/zonedefinitionviewmodel.cpp \
     src/models/zonemapviewmodel.cpp \
-    src/services/zonegeometryservice.cpp \
     src/utils/ballisticsprocessor.cpp \
     src/utils/colorutils.cpp \
     src/utils/inference.cpp \
@@ -188,7 +187,6 @@ HEADERS += \
     src/models/zeroingviewmodel.h \
     src/models/zonedefinitionviewmodel.h \
     src/models/zonemapviewmodel.h \
-    src/services/zonegeometryservice.h \
     src/utils/TimestampLogger.h \
     src/utils/ballisticsprocessor.h \
     src/utils/colorutils.h \
