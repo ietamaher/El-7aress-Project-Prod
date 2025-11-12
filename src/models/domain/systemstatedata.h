@@ -319,9 +319,11 @@ struct SystemStateData {
     QColor colorStyle = QColor(70, 226, 165);              ///< Current UI color theme
     int currentImageWidthPx = 1024;                         ///< Current image width in pixels
     int currentImageHeightPx = 768;                         ///< Current image height in pixels
-    float reticleAimpointImageX_px = currentImageWidthPx / 2.0f;  ///< Reticle X position in image coordinates
-    float reticleAimpointImageY_px = currentImageHeightPx / 2.0f; ///< Reticle Y position in image coordinates
-    
+    float reticleAimpointImageX_px = currentImageWidthPx / 2.0f;  ///< Reticle X position with ZEROING ONLY (gun boresight)
+    float reticleAimpointImageY_px = currentImageHeightPx / 2.0f; ///< Reticle Y position with ZEROING ONLY (gun boresight)
+    float ccipImpactImageX_px = currentImageWidthPx / 2.0f;      ///< CCIP pipper X position with ZEROING + LEAD (impact prediction)
+    float ccipImpactImageY_px = currentImageHeightPx / 2.0f;     ///< CCIP pipper Y position with ZEROING + LEAD (impact prediction)
+
     // =================================
     // ZONE MANAGEMENT
     // =================================
@@ -632,7 +634,9 @@ struct SystemStateData {
                currentImageHeightPx == other.currentImageHeightPx &&
                qFuzzyCompare(reticleAimpointImageX_px, other.reticleAimpointImageX_px) &&
                qFuzzyCompare(reticleAimpointImageY_px, other.reticleAimpointImageY_px) &&
-               
+               qFuzzyCompare(ccipImpactImageX_px, other.ccipImpactImageX_px) &&
+               qFuzzyCompare(ccipImpactImageY_px, other.ccipImpactImageY_px) &&
+
                // Zone Management
                areaZones == other.areaZones &&
                sectorScanZones == other.sectorScanZones &&

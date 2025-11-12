@@ -1028,27 +1028,58 @@ void SystemStateModel::setLeadAngleCompensationActive(bool active) {
 }
 
 void SystemStateModel::recalculateDerivedAimpointData() {
-    SystemStateData& data = m_currentStateData; // Work on the member directly
+    // ========================================================================
+    // ARCHITECTURAL PRINCIPLE: Two Separate Coordinate Systems
+    // ========================================================================
+    // 1. RETICLE: Gun boresight with ZEROING ONLY (shows where gun points)
+    // 2. CCIP:    Impact prediction with ZEROING + LEAD (shows where bullets hit)
+    // ========================================================================
+
+    SystemStateData& data = m_currentStateData;
 
     // Determine active camera's HFOV
-    // You need a way to know which camera is active. Let's assume SystemStateData has it.
-    // Add this to SystemStateData if it's not there:
-    // bool activeCameraIsDay = true;
     float activeHfov = data.activeCameraIsDay ? static_cast<float>(data.dayCurrentHFOV) : static_cast<float>(data.nightCurrentHFOV);
 
+    // ========================================================================
+    // CALCULATION 1: RETICLE Position (Zeroing ONLY)
+    // ========================================================================
+    // Main reticle shows gun boresight with zeroing correction
+    // NO lead angle applied - this is pure gun pointing direction
+    // ========================================================================
     QPointF newReticlePosPx = ReticleAimpointCalculator::calculateReticleImagePositionPx(
-        data.zeroingAzimuthOffset,        // float
-        data.zeroingElevationOffset,      // float
-        data.zeroingAppliedToBallistics,  // bool
-        data.leadAngleOffsetAz,           // float
-        data.leadAngleOffsetEl,           // float
-        data.leadAngleCompensationActive, // bool
-        data.currentLeadAngleStatus,      // LeadAngleStatus
-        activeHfov,                       // float
-        data.currentImageWidthPx,         // int
-        data.currentImageHeightPx         // int
+        data.zeroingAzimuthOffset,        // Zeroing correction
+        data.zeroingElevationOffset,      // Zeroing correction
+        data.zeroingAppliedToBallistics,  // Apply zeroing?
+        0.0f,                             // ← NO LEAD ANGLE for reticle!
+        0.0f,                             // ← NO LEAD ANGLE for reticle!
+        false,                            // ← LAC not applied to reticle
+        LeadAngleStatus::Off,             // ← Status irrelevant for reticle
+        activeHfov,
+        data.currentImageWidthPx,
+        data.currentImageHeightPx
     );
 
+    // ========================================================================
+    // CALCULATION 2: CCIP Position (Zeroing + Lead)
+    // ========================================================================
+    // CCIP pipper shows bullet impact point with full ballistic compensation
+    // Includes BOTH zeroing AND lead angle
+    // Only visible when LAC is active
+    // ========================================================================
+    QPointF newCcipPosPx = ReticleAimpointCalculator::calculateReticleImagePositionPx(
+        data.zeroingAzimuthOffset,        // Zeroing correction
+        data.zeroingElevationOffset,      // Zeroing correction
+        data.zeroingAppliedToBallistics,  // Apply zeroing?
+        data.leadAngleOffsetAz,           // ← WITH lead angle!
+        data.leadAngleOffsetEl,           // ← WITH lead angle!
+        data.leadAngleCompensationActive, // ← LAC applied to CCIP
+        data.currentLeadAngleStatus,      // ← Status matters for CCIP
+        activeHfov,
+        data.currentImageWidthPx,
+        data.currentImageHeightPx
+    );
+
+    // Update reticle position
     bool reticlePosChanged = false;
     if (!qFuzzyCompare(data.reticleAimpointImageX_px, static_cast<float>(newReticlePosPx.x()))) {
         data.reticleAimpointImageX_px = static_cast<float>(newReticlePosPx.x());
@@ -1057,6 +1088,17 @@ void SystemStateModel::recalculateDerivedAimpointData() {
     if (!qFuzzyCompare(data.reticleAimpointImageY_px, static_cast<float>(newReticlePosPx.y()))) {
         data.reticleAimpointImageY_px = static_cast<float>(newReticlePosPx.y());
         reticlePosChanged = true;
+    }
+
+    // Update CCIP position
+    bool ccipPosChanged = false;
+    if (!qFuzzyCompare(data.ccipImpactImageX_px, static_cast<float>(newCcipPosPx.x()))) {
+        data.ccipImpactImageX_px = static_cast<float>(newCcipPosPx.x());
+        ccipPosChanged = true;
+    }
+    if (!qFuzzyCompare(data.ccipImpactImageY_px, static_cast<float>(newCcipPosPx.y()))) {
+        data.ccipImpactImageY_px = static_cast<float>(newCcipPosPx.y());
+        ccipPosChanged = true;
     }
 
     // Update status texts
@@ -1080,9 +1122,10 @@ void SystemStateModel::recalculateDerivedAimpointData() {
 
     bool statusTextChanged = (oldLeadStatusText != data.leadStatusText) || (oldZeroingStatusText != data.zeroingStatusText);
 
-    if (reticlePosChanged || statusTextChanged) {
-        qDebug() << "SystemStateModel: Recalculated Reticle. PosPx X:" << data.reticleAimpointImageX_px
-                 << "Y:" << data.reticleAimpointImageY_px
+    if (reticlePosChanged || ccipPosChanged || statusTextChanged) {
+        qDebug() << "SystemStateModel: Recalculated Aimpoints."
+                 << "Reticle(zeroing only):" << data.reticleAimpointImageX_px << "," << data.reticleAimpointImageY_px
+                 << "CCIP(zeroing+lead):" << data.ccipImpactImageX_px << "," << data.ccipImpactImageY_px
                  << "LeadTxt:" << data.leadStatusText << "ZeroTxt:" << data.zeroingStatusText;
         emit dataChanged(m_currentStateData); // Emit if anything derived changed
     }
