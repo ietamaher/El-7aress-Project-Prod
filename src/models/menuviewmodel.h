@@ -50,7 +50,6 @@ private:
     QStringListModel m_optionsModel;
 
     int findNextSelectable(int start, int direction);
-    int findNextSelectableNoWrap(int start, int direction);
     bool isSelectable(int index) const;
     QColor m_accentColor = QColor(70, 226, 165); // Default green
 };
