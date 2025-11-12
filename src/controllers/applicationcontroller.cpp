@@ -9,6 +9,7 @@
 #include "controllers/aboutcontroller.h"
 #include "models/domain/systemstatemodel.h"
 #include <QDebug>
+#include <QDateTime>
 #include <QCoreApplication>
 #include <QProcess>
 
@@ -592,24 +593,44 @@ void ApplicationController::handleReturnToMainMenu()
 
 void ApplicationController::onSystemStateChanged(const SystemStateData& newState)
 {
-    // Rising edge detection for menuUp button (false → true = button press)
+    qint64 currentTime = QDateTime::currentMSecsSinceEpoch();
+
+    // Rising edge detection for menuUp button with debouncing
     if (newState.menuUp && !m_previousMenuUpState) {
-        qDebug() << "ApplicationController: Hardware UP button pressed (State:" << static_cast<int>(m_currentMenuState) << ")";
-        onUpButtonPressed();
+        qint64 timeSinceLastPress = currentTime - m_lastMenuUpPressTime;
+        if (timeSinceLastPress >= BUTTON_DEBOUNCE_MS) {
+            qDebug() << "ApplicationController: Hardware UP button ACCEPTED (State:" << static_cast<int>(m_currentMenuState) << ")";
+            onUpButtonPressed();
+            m_lastMenuUpPressTime = currentTime;
+        } else {
+            qDebug() << "ApplicationController: UP button DEBOUNCED - ignored (only" << timeSinceLastPress << "ms since last press)";
+        }
     }
     m_previousMenuUpState = newState.menuUp;
 
-    // Rising edge detection for menuDown button (false → true = button press)
+    // Rising edge detection for menuDown button with debouncing
     if (newState.menuDown && !m_previousMenuDownState) {
-        qDebug() << "ApplicationController: Hardware DOWN button pressed (State:" << static_cast<int>(m_currentMenuState) << ")";
-        onDownButtonPressed();
+        qint64 timeSinceLastPress = currentTime - m_lastMenuDownPressTime;
+        if (timeSinceLastPress >= BUTTON_DEBOUNCE_MS) {
+            qDebug() << "ApplicationController: Hardware DOWN button ACCEPTED (State:" << static_cast<int>(m_currentMenuState) << ")";
+            onDownButtonPressed();
+            m_lastMenuDownPressTime = currentTime;
+        } else {
+            qDebug() << "ApplicationController: DOWN button DEBOUNCED - ignored (only" << timeSinceLastPress << "ms since last press)";
+        }
     }
     m_previousMenuDownState = newState.menuDown;
 
-    // Rising edge detection for menuVal button (false → true = button press)
+    // Rising edge detection for menuVal button with debouncing
     if (newState.menuVal && !m_previousMenuValState) {
-        qDebug() << "ApplicationController: Hardware MENU/VAL button pressed (State:" << static_cast<int>(m_currentMenuState) << ")";
-        onMenuValButtonPressed();
+        qint64 timeSinceLastPress = currentTime - m_lastMenuValPressTime;
+        if (timeSinceLastPress >= BUTTON_DEBOUNCE_MS) {
+            qDebug() << "ApplicationController: Hardware MENU/VAL button ACCEPTED (State:" << static_cast<int>(m_currentMenuState) << ")";
+            onMenuValButtonPressed();
+            m_lastMenuValPressTime = currentTime;
+        } else {
+            qDebug() << "ApplicationController: MENU/VAL button DEBOUNCED - ignored (only" << timeSinceLastPress << "ms since last press)";
+        }
     }
     m_previousMenuValState = newState.menuVal;
 }
