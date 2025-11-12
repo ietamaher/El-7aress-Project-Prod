@@ -5,6 +5,7 @@
 
 class MenuViewModel;
 class SystemStateModel;
+struct SystemStateData;
 
 class MainMenuController : public QObject
 {
@@ -45,9 +46,16 @@ signals:
 private slots:
     void handleMenuOptionSelected(const QString& option);
     void onColorStyleChanged(const QColor& color);
+    void onSystemStateChanged(const SystemStateData& newData);
+
 private:
     MenuViewModel* m_viewModel;
-    SystemStateModel* m_stateModel;  
+    SystemStateModel* m_stateModel;
+
+    // Track previous state to detect changes
+    bool m_previousCameraIsDay = true;
+    bool m_previousDetectionEnabled = false;
+
     // Helper to build menu options
     QStringList buildMainMenuOptions() const;
 };
