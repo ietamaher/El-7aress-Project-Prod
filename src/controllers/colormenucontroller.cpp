@@ -30,6 +30,13 @@ void ColorMenuController::initialize()
     connect(m_viewModel, &MenuViewModel::optionSelected,
             this, &ColorMenuController::handleMenuOptionSelected);
 
+    // Connect to currentIndexChanged to update preview as user navigates
+    connect(m_viewModel, &MenuViewModel::currentIndexChanged,
+            this, [this]() {
+                int currentIndex = m_viewModel->currentIndex();
+                handleCurrentItemChanged(currentIndex);
+            });
+
     connect(m_stateModel, &SystemStateModel::colorStyleChanged,
             this, &ColorMenuController::onColorStyleChanged);
 
@@ -121,21 +128,11 @@ void ColorMenuController::hide()
 void ColorMenuController::onUpButtonPressed()
 {
     m_viewModel->moveSelectionUp();
-
-    int currentIndex = m_viewModel->currentIndex();
-    qDebug() << "ColorMenuController::onUpButtonPressed() - Index:" << currentIndex;  // ✅ ADD
-
-    handleCurrentItemChanged(currentIndex);
 }
 
 void ColorMenuController::onDownButtonPressed()
 {
     m_viewModel->moveSelectionDown();
-
-    int currentIndex = m_viewModel->currentIndex();
-    qDebug() << "ColorMenuController::onDownButtonPressed() - Index:" << currentIndex;  // ✅ ADD
-
-    handleCurrentItemChanged(currentIndex);
 }
 
 void ColorMenuController::onSelectButtonPressed()

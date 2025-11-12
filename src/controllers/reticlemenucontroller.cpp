@@ -20,6 +20,13 @@ void ReticleMenuController::initialize()
     connect(m_viewModel, &MenuViewModel::optionSelected,
             this, &ReticleMenuController::handleMenuOptionSelected);
 
+    // Connect to currentIndexChanged to update preview as user navigates
+    connect(m_viewModel, &MenuViewModel::currentIndexChanged,
+            this, [this]() {
+                int currentIndex = m_viewModel->currentIndex();
+                handleCurrentItemChanged(currentIndex);
+            });
+
     // Connect to color changes
     connect(m_stateModel, &SystemStateModel::colorStyleChanged,
             this, &ReticleMenuController::onColorStyleChanged);
@@ -90,19 +97,11 @@ void ReticleMenuController::hide()
 void ReticleMenuController::onUpButtonPressed()
 {
     m_viewModel->moveSelectionUp();
-
-    // Preview the reticle as user navigates
-    int currentIndex = m_viewModel->currentIndex();
-    handleCurrentItemChanged(currentIndex);
 }
 
 void ReticleMenuController::onDownButtonPressed()
 {
     m_viewModel->moveSelectionDown();
-
-    // Preview the reticle as user navigates
-    int currentIndex = m_viewModel->currentIndex();
-    handleCurrentItemChanged(currentIndex);
 }
 
 void ReticleMenuController::onSelectButtonPressed()
