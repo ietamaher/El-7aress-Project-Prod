@@ -30,6 +30,14 @@ void ColorMenuController::initialize()
     connect(m_viewModel, &MenuViewModel::optionSelected,
             this, &ColorMenuController::handleMenuOptionSelected);
 
+    // Connect to currentIndexChanged to update preview as user navigates
+    // Use Qt::QueuedConnection to prevent re-entrant calls during hardware button processing
+    connect(m_viewModel, &MenuViewModel::currentIndexChanged,
+            this, [this]() {
+                int currentIndex = m_viewModel->currentIndex();
+                handleCurrentItemChanged(currentIndex);
+            }, Qt::QueuedConnection);
+
     connect(m_stateModel, &SystemStateModel::colorStyleChanged,
             this, &ColorMenuController::onColorStyleChanged);
 
@@ -108,6 +116,8 @@ void ColorMenuController::show()
     int currentIndex = static_cast<int>(m_originalColorStyle);
     if (currentIndex >= 0 && currentIndex < options.size()) {
         m_viewModel->setCurrentIndex(currentIndex);
+        // ✅ FIX: Apply initial preview to match the selected option
+        handleCurrentItemChanged(currentIndex);
     }
 }
 
@@ -119,21 +129,11 @@ void ColorMenuController::hide()
 void ColorMenuController::onUpButtonPressed()
 {
     m_viewModel->moveSelectionUp();
-
-    int currentIndex = m_viewModel->currentIndex();
-    qDebug() << "ColorMenuController::onUpButtonPressed() - Index:" << currentIndex;  // ✅ ADD
-
-    handleCurrentItemChanged(currentIndex);
 }
 
 void ColorMenuController::onDownButtonPressed()
 {
     m_viewModel->moveSelectionDown();
-
-    int currentIndex = m_viewModel->currentIndex();
-    qDebug() << "ColorMenuController::onDownButtonPressed() - Index:" << currentIndex;  // ✅ ADD
-
-    handleCurrentItemChanged(currentIndex);
 }
 
 void ColorMenuController::onSelectButtonPressed()
