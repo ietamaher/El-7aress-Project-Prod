@@ -1,4 +1,5 @@
 #include "menuviewmodel.h"
+#include <QDebug>
 
 MenuViewModel::MenuViewModel(QObject *parent)
     : QObject(parent)
@@ -67,6 +68,7 @@ void MenuViewModel::moveSelectionUp()
     int nextIndex = findNextSelectableNoWrap(m_currentIndex, -1);
     if (nextIndex != -1 && nextIndex != m_currentIndex) {
         m_currentIndex = nextIndex;
+        qDebug() << "MenuViewModel::moveSelectionUp() - Changed to:" << m_currentIndex;
         emit currentIndexChanged();
     }
 }
@@ -78,6 +80,7 @@ void MenuViewModel::moveSelectionDown()
     int nextIndex = findNextSelectableNoWrap(m_currentIndex, 1);
     if (nextIndex != -1 && nextIndex != m_currentIndex) {
         m_currentIndex = nextIndex;
+        qDebug() << "MenuViewModel::moveSelectionDown() - Changed to:" << m_currentIndex;
         emit currentIndexChanged();
     }
 }
