@@ -23,7 +23,11 @@ void MainMenuController::initialize()
     if (m_stateModel) {
         connect(m_stateModel, &SystemStateModel::colorStyleChanged,
                 this, &MainMenuController::onColorStyleChanged);
-        
+
+        // Listen for camera changes to update menu options dynamically
+        connect(m_stateModel, &SystemStateModel::dataChanged,
+                this, &MainMenuController::onSystemStateChanged);
+
         // Set initial color
         const auto& data = m_stateModel->data();
         m_viewModel->setAccentColor(data.colorStyle);
@@ -69,6 +73,11 @@ QStringList MainMenuController::buildMainMenuOptions() const
 
 void MainMenuController::show()
 {
+    // Save initial state for change detection
+    const auto& data = m_stateModel->data();
+    m_previousCameraIsDay = data.activeCameraIsDay;
+    m_previousDetectionEnabled = data.detectionEnabled;
+
     QStringList menuOptions = buildMainMenuOptions();
     m_viewModel->showMenu("Main Menu", "Navigate with UP/DOWN, Select with MENU/VAL", menuOptions);
 }
@@ -167,6 +176,47 @@ void MainMenuController::onColorStyleChanged(const QColor& color)
 {
     qDebug() << "MainMenuController: Color changed to" << color;
     m_viewModel->setAccentColor(color);
+}
+
+void MainMenuController::onSystemStateChanged(const SystemStateData& newData)
+{
+    // Only update if menu is visible and camera changed
+    if (!m_viewModel->visible()) return;
+
+    // Check if camera type changed
+    if (newData.activeCameraIsDay != m_previousCameraIsDay) {
+        qDebug() << "MainMenuController: Camera changed while menu open - rebuilding options";
+        m_previousCameraIsDay = newData.activeCameraIsDay;
+
+        // Save current selection
+        int currentIndex = m_viewModel->currentIndex();
+
+        // Rebuild menu with updated options
+        QStringList menuOptions = buildMainMenuOptions();
+        m_viewModel->optionsModel()->setStringList(menuOptions);
+
+        // Restore selection if still valid
+        if (currentIndex >= 0 && currentIndex < menuOptions.count()) {
+            m_viewModel->setCurrentIndex(currentIndex);
+        }
+    }
+
+    // Also update if detection state changes while day camera is active
+    if (newData.activeCameraIsDay && newData.detectionEnabled != m_previousDetectionEnabled) {
+        m_previousDetectionEnabled = newData.detectionEnabled;
+
+        // Save current selection
+        int currentIndex = m_viewModel->currentIndex();
+
+        // Rebuild menu with updated detection option
+        QStringList menuOptions = buildMainMenuOptions();
+        m_viewModel->optionsModel()->setStringList(menuOptions);
+
+        // Restore selection
+        if (currentIndex >= 0 && currentIndex < menuOptions.count()) {
+            m_viewModel->setCurrentIndex(currentIndex);
+        }
+    }
 }
 
 void MainMenuController::setViewModel(MenuViewModel* viewModel)
