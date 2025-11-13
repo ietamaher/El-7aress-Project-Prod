@@ -475,7 +475,7 @@ Item {
         x: (viewModel ? viewModel.ccipX : (parent.width / 2)) - (width / 2)
         y: (viewModel ? viewModel.ccipY : (parent.height / 2)) - (height / 2)
 
-        visible: viewModel ? viewModel.ccipVisible : false
+        pipperEnabled: viewModel ? viewModel.ccipVisible : false
         status: viewModel ? viewModel.ccipStatus : "Off"
         accentColor: osdRoot.accentColor
 

@@ -23,8 +23,8 @@ Item {
     // PUBLIC PROPERTIES
     // ========================================================================
 
-    property bool visible: false
-    property string status: "Off"  // "Off", "On", "Lag", "ZoomOut"
+    property bool pipperEnabled: false  // External control: set from parent
+    property string status: "Off"       // "Off", "On", "Lag", "ZoomOut"
     property color accentColor: "#46E2A5"
 
     // ========================================================================
@@ -53,7 +53,8 @@ Item {
     width: pipperSize * 2
     height: pipperSize * 2
 
-    visible: root.visible && (status === "On" || status === "Lag" || status === "ZoomOut")
+    // Visibility: enabled from parent AND has valid status
+    visible: root.pipperEnabled && (status === "On" || status === "Lag" || status === "ZoomOut")
 
     // ========================================================================
     // CCIP PIPPER VISUAL (Diamond Shape)
@@ -68,7 +69,7 @@ Item {
             var ctx = getContext("2d");
             ctx.clearRect(0, 0, width, height);
 
-            if (!root.visible) return;
+            if (!visible) return;
 
             ctx.strokeStyle = root.currentColor;
             ctx.lineWidth = root.pipperLineWidth;
@@ -105,7 +106,7 @@ Item {
         radius: root.centerDotSize / 2
         color: root.currentColor
         anchors.centerIn: parent
-        visible: root.visible
+        // No explicit visible binding needed - inherits from parent
     }
 
     // ========================================================================
@@ -131,7 +132,7 @@ Item {
         font.family: "Monospace"
         font.pixelSize: 11
         font.bold: true
-        visible: root.visible
+        // No explicit visible binding needed - inherits from parent
 
         // Black outline for readability
         style: Text.Outline
@@ -143,7 +144,7 @@ Item {
     // ========================================================================
 
     SequentialAnimation {
-        running: root.visible && (root.status === "Lag" || root.status === "ZoomOut")
+        running: root.pipperEnabled && (root.status === "Lag" || root.status === "ZoomOut")
         loops: Animation.Infinite
 
         NumberAnimation {
