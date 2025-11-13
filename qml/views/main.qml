@@ -50,7 +50,7 @@ Window {
     // ========================================================================
     OsdOverlay {
         id: osdOverlay
-        anchors.fill: parent
+        //anchors.fill: parent
         z: 10 // Above video
     }
 

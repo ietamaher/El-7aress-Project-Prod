@@ -12,7 +12,7 @@ int main(int argc, char *argv[])
     gst_init(&argc, &argv);
     
     // Check for command-line arguments
-    bool fullscreen = true;  // Default to fullscreen for deployment
+    bool fullscreen = false;  // Default to fullscreen for deployment
     QStringList args = app.arguments();
     if (args.contains("--windowed") || args.contains("-w")) {
         fullscreen = false;
