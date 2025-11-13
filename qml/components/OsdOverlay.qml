@@ -6,354 +6,457 @@ Item {
     anchors.fill: parent
 
     property var viewModel: osdViewModel // Context property from C++
-    property color accentColor: viewModel ? viewModel.accentColor : "#46E2A5"
-
-    // Constants
-    readonly property real azIndicatorRadius: 50
-    readonly property real elScaleHeight: 120
 
     // ========================================================================
-    // TEXT OVERLAYS (Top-Left Corner)
+    // COLOR THEME
     // ========================================================================
-    Column {
-        anchors.left: parent.left
-        anchors.top: parent.top
-        anchors.margins: 10
-        spacing: 5
+    readonly property color accentColor: viewModel ? viewModel.accentColor : "#46E2A5"
+    readonly property color warningColor: "#C81428"  // Red for critical warnings
+    readonly property color cautionColor: "#FFA500"  // Orange for cautions
 
-        // Mode
-        Text {
-            text: viewModel ? viewModel.modeText : "MODE: IDLE"
-            font.pixelSize: 16
-            font.bold: true
-            font.family: "Segoe UI"
-            color: osdRoot.accentColor
-            style: Text.Outline
-            styleColor: "black"
-        }
+    // ========================================================================
+    // FONT SETTINGS
+    // ========================================================================
+    readonly property string primaryFont: "Archivo Narrow"
+    readonly property string fallbackFont: "Segoe UI"
 
-        // Motion Mode
-        Text {
-            text: viewModel ? viewModel.motionText : "MOTION: MAN"
-            font.pixelSize: 16
-            font.family: "Segoe UI"
-            color: osdRoot.accentColor
-            style: Text.Outline
-            styleColor: "black"
-        }
-
-        // System Status
-        Text {
-            text: viewModel ? viewModel.statusText : "SYS: --- SAF NRD"
-            font.pixelSize: 16
-            font.family: "Segoe UI"
-            color: osdRoot.accentColor
-            style: Text.Outline
-            styleColor: "black"
-        }
-
-        // Rate
-        Text {
-            text: viewModel ? viewModel.rateText : "RATE: SINGLE SHOT"
-            font.pixelSize: 16
-            font.family: "Segoe UI"
-            color: osdRoot.accentColor
-            style: Text.Outline
-            styleColor: "black"
-        }
-
-        // LRF Distance
-        Text {
-            text: viewModel ? viewModel.lrfText : "LRF: --- m"
-            font.pixelSize: 16
-            font.family: "Segoe UI"
-            color: osdRoot.accentColor
-            style: Text.Outline
-            styleColor: "black"
-        }
-
-        // SPEED
-        Text {
-            text: viewModel ? viewModel.speedText : "SPD: 0.0%"
-            font.pixelSize: 16
-            font.family: "Segoe UI"
-            color: osdRoot.accentColor
-            style: Text.Outline
-            styleColor: "black"
-        }
-        // Zeroing Status
-        Text {
-            visible: viewModel ? viewModel.zeroingVisible : false
-            text: viewModel ? viewModel.zeroingText : ""
-            font.pixelSize: 16
-            font.family: "Segoe UI"
-            color: osdRoot.accentColor
-            style: Text.Outline
-            styleColor: "black"
-        }
-
-        // Windage Status
-        Text {
-            visible: viewModel ? viewModel.windageVisible : false
-            text: viewModel ? viewModel.windageText : ""
-            font.pixelSize: 16
-            font.family: "Segoe UI"
-            color: osdRoot.accentColor
-            style: Text.Outline
-            styleColor: "black"
-        }
-
-        // Detection Status
-        Text {
-            visible: viewModel ? viewModel.detectionVisible : false
-            text: viewModel ? viewModel.detectionText : ""
-            font.pixelSize: 16
-            font.bold: true
-            font.family: "Segoe UI"
-            color: "#00FF00"  // Green color for active detection
-            style: Text.Outline
-            styleColor: "black"
-        }
-
-        // Lead Angle Status
-        Text {
-            visible: viewModel ? viewModel.leadAngleVisible : false
-            text: viewModel ? viewModel.leadAngleText : ""
-            font.pixelSize: 16
-            font.family: "Segoe UI"
-            color: viewModel && viewModel.leadAngleText.includes("LAG") ? "yellow" :
-                   (viewModel && viewModel.leadAngleText.includes("ZOOM") ? "#C81428" : osdRoot.accentColor)
-            style: Text.Outline
-            styleColor: "black"
-        }
-
-        // Scan Name
-        Text {
-            visible: viewModel ? viewModel.scanNameVisible : false
-            text: viewModel ? viewModel.scanNameText : ""
-            font.pixelSize: 16
-            font.family: "Segoe UI"
-            color: osdRoot.accentColor
-            style: Text.Outline
-            styleColor: "black"
-        }
+    // ========================================================================
+    // CALCULATED PROPERTIES
+    // ========================================================================
+    readonly property real trueBearing: {
+        if (!viewModel || !viewModel.imuConnected) return viewModel ? viewModel.azimuth : 0.0;
+        var bearing = viewModel.azimuth + viewModel.vehicleHeading;
+        while (bearing >= 360.0) bearing -= 360.0;
+        while (bearing < 0.0) bearing += 360.0;
+        return bearing;
     }
 
     // ========================================================================
-    // TOP-RIGHT CORNER (Speed)
+    // TOP LEFT - STATUS BLOCK (Organized Info in Columns)
     // ========================================================================
+    Rectangle {
+        id: statusBlock
+        x: 10
+        y: 10
+        width: 380
+        height: 95
+        color: "#CC000000"
+        border.color: accentColor
+        border.width: 1
 
+        Row {
+            x: 8
+            y: 8
+            spacing: 20  // Space between left and right columns
 
-    // ========================================================================
-    // BOTTOM-LEFT CORNER (Stab, Camera, FOV)
-    // ========================================================================
-    Row {
-        anchors.left: parent.left
-        anchors.bottom: parent.bottom
-        anchors.margins: 10
-        spacing: 50
+            // === LEFT COLUMN ===
+            Column {
+                spacing: 4
 
-        Text {
-            text: viewModel ? viewModel.stabText : "STAB: OFF"
-            font.pixelSize: 16
-            font.family: "Segoe UI"
-            color: osdRoot.accentColor
-            style: Text.Outline
-            styleColor: "black"
-        }
-
-        Text {
-            text: viewModel ? viewModel.cameraText : "CAM: DAY"
-            font.pixelSize: 16
-            font.family: "Segoe UI"
-            color: osdRoot.accentColor
-            style: Text.Outline
-            styleColor: "black"
-        }
-
-        Text {
-            text: viewModel ? viewModel.fovText : "FOV: 45.0°"
-            font.pixelSize: 16
-            font.family: "Segoe UI"
-            color: osdRoot.accentColor
-            style: Text.Outline
-            styleColor: "black"
-        }
-    }
-
-    // ========================================================================
-    // CENTER WARNING (Zone Warnings)
-    // ========================================================================
-    Text {
-        anchors.centerIn: parent
-        anchors.verticalCenterOffset: 50
-        visible: viewModel ? viewModel.zoneWarningVisible : false
-        text: viewModel ? viewModel.zoneWarningText : ""
-        font.pixelSize: 24
-        font.bold: true
-        font.family: "Segoe UI"
-        color: "#C81428" // Red for warnings
-        style: Text.Outline
-        styleColor: "black"
-
-        // Background for better visibility
-        Rectangle {
-            anchors.fill: parent
-            anchors.margins: -5
-            color: "black"
-            opacity: 0.7
-            radius: 3
-            z: -1
-        }
-    }
-
-    // ========================================================================
-    // STARTUP SEQUENCE MESSAGE (Center, Above Mid-Height)
-    // ========================================================================
-    Item {
-        anchors.centerIn: parent
-        anchors.verticalCenterOffset: -80  // Above center
-        visible: viewModel ? viewModel.startupMessageVisible : false
-        width: startupMessageText.width + 40
-        height: startupMessageText.height + 20
-
-        // Military-grade dark background panel
-        Rectangle {
-            anchors.fill: parent
-            color: "#000000"
-            opacity: 0.85
-            radius: 2
-            border.color: osdRoot.accentColor
-            border.width: 2
-        }
-
-        // Message text
-        Text {
-            id: startupMessageText
-            anchors.centerIn: parent
-            text: viewModel ? viewModel.startupMessageText : ""
-            font.pixelSize: 20
-            font.bold: true
-            font.family: "Segoe UI"
-            font.letterSpacing: 1.5
-            color: osdRoot.accentColor
-            style: Text.Normal
-
-            // Blinking animation for professional appearance
-            SequentialAnimation on opacity {
-                running: parent.parent.visible
-                loops: Animation.Infinite
-
-                NumberAnimation {
-                    from: 1.0
-                    to: 0.7
-                    duration: 800
-                    easing.type: Easing.InOutQuad
+                // MODE
+                Text {
+                    text: viewModel ? viewModel.modeText : "MODE: IDLE"
+                    font.pixelSize: 15
+                    font.bold: true
+                    font.family: primaryFont
+                    color: accentColor
                 }
-                NumberAnimation {
-                    from: 0.7
-                    to: 1.0
-                    duration: 800
-                    easing.type: Easing.InOutQuad
+
+                // RATE
+                Text {
+                    text: viewModel ? viewModel.rateText : "RATE: SINGLE SHOT"
+                    font.pixelSize: 13
+                    font.family: primaryFont
+                    color: accentColor
+                }
+
+                // Procedures row (only visible when active)
+                Row {
+                    spacing: 15
+                    visible: (viewModel && viewModel.zeroingVisible) ||
+                             (viewModel && viewModel.windageVisible) ||
+                             (viewModel && viewModel.lacActive)
+
+                    Text {
+                        visible: viewModel ? viewModel.zeroingVisible : false
+                        text: viewModel ? ("[" + viewModel.zeroingText + "]") : "[Z]"
+                        font.pixelSize: 12
+                        font.family: primaryFont
+                        color: accentColor
+                    }
+
+                    Text {
+                        visible: viewModel ? viewModel.windageVisible : false
+                        text: viewModel ? ("[" + viewModel.windageText + "]") : "[W]"
+                        font.pixelSize: 12
+                        font.family: primaryFont
+                        color: accentColor
+                    }
+
+                    Text {
+                        visible: viewModel ? viewModel.lacActive : false
+                        text: "LAC: ON"
+                        font.pixelSize: 12
+                        font.family: primaryFont
+                        color: "yellow"
+                    }
+                }
+
+                // DETECTION
+                Text {
+                    visible: viewModel ? viewModel.detectionVisible : false
+                    text: viewModel ? viewModel.detectionText : "DETECTION: ON"
+                    font.pixelSize: 12
+                    font.family: primaryFont
+                    color: accentColor
+                }
+            }
+
+            // === RIGHT COLUMN ===
+            Column {
+                spacing: 4
+
+                // MOTION
+                Text {
+                    text: viewModel ? viewModel.motionText : "MOTION: MAN"
+                    font.pixelSize: 13
+                    font.family: primaryFont
+                    font.bold: true
+                    color: accentColor
+                }
+
+                // SCAN INFO (directly under MOTION)
+                Text {
+                    visible: viewModel ? viewModel.scanNameVisible : false
+                    text: viewModel ? ("[SCAN: " + viewModel.scanNameText + "]") : "[SCAN]"
+                    font.pixelSize: 12
+                    font.family: primaryFont
+                    color: "cyan"
+                }
+
+                // LEAD ANGLE STATUS
+                Text {
+                    visible: viewModel ? viewModel.leadAngleVisible : false
+                    text: viewModel ? viewModel.leadAngleText : ""
+                    font.pixelSize: 12
+                    font.family: primaryFont
+                    color: viewModel && viewModel.leadAngleText.includes("LAG") ? "yellow" :
+                           (viewModel && viewModel.leadAngleText.includes("ZOOM") ? warningColor : accentColor)
+                }
+
+                // SPEED
+                Text {
+                    text: viewModel ? viewModel.speedText : "SPD: 0.0%"
+                    font.pixelSize: 13
+                    font.family: primaryFont
+                    color: accentColor
                 }
             }
         }
+    }
 
-        // Corner decorations for military style
-        Rectangle {
-            x: 0
-            y: 0
-            width: 10
-            height: 2
-            color: osdRoot.accentColor
-        }
-        Rectangle {
-            x: 0
-            y: 0
-            width: 2
-            height: 10
-            color: osdRoot.accentColor
-        }
-        Rectangle {
-            x: parent.width - 10
-            y: 0
-            width: 10
-            height: 2
-            color: osdRoot.accentColor
-        }
-        Rectangle {
-            x: parent.width - 2
-            y: 0
-            width: 2
-            height: 10
-            color: osdRoot.accentColor
-        }
-        Rectangle {
-            x: 0
-            y: parent.height - 2
-            width: 10
-            height: 2
-            color: osdRoot.accentColor
-        }
-        Rectangle {
-            x: 0
-            y: parent.height - 10
-            width: 2
-            height: 10
-            color: osdRoot.accentColor
-        }
-        Rectangle {
-            x: parent.width - 10
-            y: parent.height - 2
-            width: 10
-            height: 2
-            color: osdRoot.accentColor
-        }
-        Rectangle {
-            x: parent.width - 2
-            y: parent.height - 10
-            width: 2
-            height: 10
-            color: osdRoot.accentColor
+    // ========================================================================
+    // TOP RIGHT - AZIMUTH DISPLAY WITH CARDINAL DIRECTIONS
+    // ========================================================================
+    Rectangle {
+        id: azimuthBox
+        x: parent.width - 150
+        y: 10
+        width: 140
+        height: 85
+        color: "#99000000"
+        border.color: accentColor
+        border.width: 1
+
+        Column {
+            anchors.centerIn: parent
+            spacing: 3
+
+            Text {
+                text: trueBearing.toFixed(1) + "°"
+                font.pixelSize: 24
+                font.bold: true
+                font.family: primaryFont
+                color: accentColor
+                anchors.horizontalCenter: parent.horizontalCenter
+            }
+
+            Text {
+                visible: viewModel ? viewModel.imuConnected : false
+                text: viewModel ? ("(" + viewModel.azimuth.toFixed(1) + " REL)") : "(0.0 REL)"
+                font.pixelSize: 11
+                font.family: primaryFont
+                color: "yellow"
+                anchors.horizontalCenter: parent.horizontalCenter
+            }
+
+            Text {
+                text: getCardinalDirection(trueBearing)
+                font.pixelSize: 16
+                font.bold: true
+                font.family: primaryFont
+                color: accentColor
+                anchors.horizontalCenter: parent.horizontalCenter
+            }
+
+            Text {
+                visible: viewModel ? !viewModel.imuConnected : true
+                text: "NO IMU"
+                font.pixelSize: 10
+                font.bold: true
+                font.family: primaryFont
+                color: warningColor
+                anchors.horizontalCenter: parent.horizontalCenter
+            }
         }
     }
 
     // ========================================================================
-    // AZIMUTH INDICATOR (Top-Right)
+    // TOP RIGHT - GUN ARM STATUS BOX (Below Azimuth)
     // ========================================================================
-    AzimuthIndicator {
-        anchors.right: parent.right
-        anchors.top: parent.top
-        anchors.rightMargin: 30
-        anchors.topMargin: 50
-        width: azIndicatorRadius * 2
-        height: azIndicatorRadius * 2
+    Rectangle {
+        id: gunStatusBox
+        x: parent.width - 150
+        y: 105
+        width: 140
+        height: 45
+        color: getGunArmedStatus() ? warningColor : "#555555"
+        border.color: "white"
+        border.width: 3
 
-        // === PROPERTIES ===
-        azimuth: viewModel ? viewModel.azimuth : 0              // Gimbal azimuth (relative)
-        vehicleHeading: viewModel ? viewModel.vehicleHeading : 0 // ⭐ IMU yaw (vehicle heading)
-        imuConnected: viewModel ? viewModel.imuConnected : false // ⭐ IMU connection status
+        Text {
+            anchors.centerIn: parent
+            text: getGunArmedStatus() ? "ARMED" : "SAFE"
+            font.pixelSize: 18
+            font.bold: true
+            font.family: primaryFont
+            color: "white"
+        }
 
-        color: osdRoot.accentColor
-        relativeColor: "yellow"  // Color for vehicle reference line
+        SequentialAnimation on opacity {
+            running: getGunArmedStatus()
+            loops: Animation.Infinite
+            NumberAnimation { from: 1.0; to: 0.6; duration: 700 }
+            NumberAnimation { from: 0.6; to: 1.0; duration: 700 }
+        }
     }
 
     // ========================================================================
-    // ELEVATION SCALE (Right Side)
+    // RIGHT SIDE - SYSTEM HEALTH WARNINGS (Only when faults detected)
     // ========================================================================
-    ElevationScale {
-        anchors.right: parent.right
-        anchors.top: parent.top
-        anchors.rightMargin: 20
-        anchors.topMargin: 250
-        height: elScaleHeight
+    // TODO: Add device health properties to OsdViewModel:
+    //   - dayCameraConnected, nightCameraConnected
+    //   - azServoFault, elServoFault
+    //   - lrfFault, lrfOverTemp
+    //   - actuatorFault
+    //   - plc21Connected, plc42Connected
+    //
+    // These are available in SystemStateData but not currently exposed
+    // through OsdViewModel. Uncomment the Column below once added.
 
-        elevation: viewModel ? viewModel.elevation : 0
-        color: osdRoot.accentColor
+    /* UNCOMMENT WHEN VIEWMODEL PROPERTIES ARE AVAILABLE
+    Column {
+        x: parent.width - 150
+        y: parent.height - 300
+        spacing: 5
+        visible: hasDeviceFaults()
+
+        // Camera warning
+        Rectangle {
+            visible: viewModel && (!viewModel.dayCameraConnected || !viewModel.nightCameraConnected)
+            width: 140
+            height: 28
+            color: cautionColor
+            border.color: "black"
+            border.width: 2
+            radius: 2
+
+            Text {
+                anchors.centerIn: parent
+                text: "⚠ CAM FAULT"
+                font.pixelSize: 12
+                font.bold: true
+                font.family: primaryFont
+                color: "black"
+            }
+        }
+
+        // Servo warning
+        Rectangle {
+            visible: viewModel && (viewModel.azServoFault || viewModel.elServoFault)
+            width: 140
+            height: 28
+            color: cautionColor
+            border.color: "black"
+            border.width: 2
+            radius: 2
+
+            Text {
+                anchors.centerIn: parent
+                text: "⚠ SERVO FAULT"
+                font.pixelSize: 12
+                font.bold: true
+                font.family: primaryFont
+                color: "black"
+            }
+        }
+
+        // LRF warning
+        Rectangle {
+            visible: viewModel && (viewModel.lrfFault || viewModel.lrfOverTemp)
+            width: 140
+            height: 28
+            color: cautionColor
+            border.color: "black"
+            border.width: 2
+            radius: 2
+
+            Text {
+                anchors.centerIn: parent
+                text: "⚠ LRF FAULT"
+                font.pixelSize: 12
+                font.bold: true
+                font.family: primaryFont
+                color: "black"
+            }
+        }
+
+        // Actuator warning
+        Rectangle {
+            visible: viewModel && viewModel.actuatorFault
+            width: 140
+            height: 28
+            color: cautionColor
+            border.color: "black"
+            border.width: 2
+            radius: 2
+
+            Text {
+                anchors.centerIn: parent
+                text: "⚠ ACTUATOR FAULT"
+                font.pixelSize: 12
+                font.bold: true
+                font.family: primaryFont
+                color: "black"
+            }
+        }
+
+        // PLC warning
+        Rectangle {
+            visible: viewModel && (!viewModel.plc21Connected || !viewModel.plc42Connected)
+            width: 140
+            height: 28
+            color: cautionColor
+            border.color: "black"
+            border.width: 2
+            radius: 2
+
+            Text {
+                anchors.centerIn: parent
+                text: "⚠ PLC FAULT"
+                font.pixelSize: 12
+                font.bold: true
+                font.family: primaryFont
+                color: "black"
+            }
+        }
+    }
+    */
+
+    // ========================================================================
+    // RIGHT SIDE - ELEVATION DISPLAY
+    // ========================================================================
+    Rectangle {
+        id: elevationBox
+        x: parent.width - 90
+        y: parent.height/2 - 45
+        width: 80
+        height: 90
+        color: "#99000000"
+        border.color: accentColor
+        border.width: 1
+
+        Column {
+            anchors.centerIn: parent
+            spacing: 8
+
+            Text {
+                text: viewModel ? (viewModel.elevation.toFixed(1) + "°") : "0.0°"
+                font.pixelSize: 20
+                font.bold: true
+                font.family: primaryFont
+                color: accentColor
+                anchors.horizontalCenter: parent.horizontalCenter
+            }
+
+            Text {
+                text: "ELEV"
+                font.pixelSize: 11
+                font.family: primaryFont
+                color: accentColor
+                anchors.horizontalCenter: parent.horizontalCenter
+            }
+        }
     }
 
     // ========================================================================
-    // TRACKING BOX
+    // CENTER - RETICLE (Existing ReticleRenderer Component)
+    // ========================================================================
+    ReticleRenderer {
+        id: reticle
+        anchors.centerIn: parent
+        anchors.horizontalCenterOffset: viewModel ? viewModel.reticleOffsetX : 0
+        anchors.verticalCenterOffset: viewModel ? viewModel.reticleOffsetY : 0
+
+        reticleType: viewModel ? viewModel.reticleType : 1
+        color: accentColor
+        currentFov: viewModel ? viewModel.currentFov : 45.0
+
+        lacActive: viewModel ? viewModel.lacActive : false
+        rangeMeters: viewModel ? viewModel.rangeMeters : 0
+        confidenceLevel: viewModel ? viewModel.confidenceLevel : 1.0
+    }
+
+    // ========================================================================
+    // CENTER - FIXED LOB MARKER (Screen Center - Always visible)
+    // ========================================================================
+    Item {
+        anchors.centerIn: parent
+        width: 10
+        height: 10
+
+        // Simple cross marker
+        Rectangle {
+            width: 10
+            height: 2
+            anchors.centerIn: parent
+            color: accentColor
+        }
+        Rectangle {
+            width: 2
+            height: 10
+            anchors.centerIn: parent
+            color: accentColor
+        }
+    }
+
+    // ========================================================================
+    // CENTER - CCIP PIPPER (Impact Prediction with Lead Angle)
+    // ========================================================================
+    CcipPipper {
+        id: ccipPipper
+
+        // Position using absolute screen coordinates from viewModel
+        x: (viewModel ? viewModel.ccipX : (parent.width / 2)) - (width / 2)
+        y: (viewModel ? viewModel.ccipY : (parent.height / 2)) - (height / 2)
+
+        pipperEnabled: viewModel ? viewModel.ccipVisible : false
+        status: viewModel ? viewModel.ccipStatus : "Off"
+        accentColor: osdRoot.accentColor
+    }
+
+    // ========================================================================
+    // TRACKING BOX (Existing Component)
     // ========================================================================
     TrackingBox {
         visible: viewModel ? viewModel.trackingBoxVisible : false
@@ -367,7 +470,7 @@ Item {
     }
 
     // ========================================================================
-    // ACQUISITION BOX
+    // ACQUISITION BOX (For Tracking Phase)
     // ========================================================================
     Rectangle {
         visible: viewModel ? viewModel.acquisitionBoxVisible : false
@@ -423,7 +526,7 @@ Item {
                     text: modelData.className + " " + (modelData.confidence * 100).toFixed(0) + "%"
                     font.pixelSize: 14
                     font.bold: true
-                    font.family: "Segoe UI"
+                    font.family: primaryFont
                     color: "white"
                     style: Text.Outline
                     styleColor: "black"
@@ -433,84 +536,102 @@ Item {
     }
 
     // ========================================================================
-    // RETICLE (Center with offset)
+    // BOTTOM LEFT - NO FIRE ZONE WARNING
     // ========================================================================
-    ReticleRenderer {
-        /*id: reticle
-        anchors.centerIn: parent
-        x: parent.width / 2 + (viewModel ? viewModel.reticleOffsetX : 0)
-        y: parent.height / 2 + (viewModel ? viewModel.reticleOffsetY : 0)
+    Rectangle {
+        id: noFireWarning
+        x: 10
+        y: parent.height - 115
+        width: 480
+        height: 65
+        color: warningColor
+        opacity: 0.95
+        border.color: "white"
+        border.width: 4
+        radius: 4
+        visible: viewModel ? viewModel.zoneWarningVisible && viewModel.zoneWarningText.includes("NO FIRE") : false
+        z: 200
 
-        reticleType: viewModel ? viewModel.reticleType : 1
-        color: osdRoot.accentColor
-        currentFov: viewModel ? viewModel.currentFov : 45.0
-
-        // CCIP-specific properties
-        lacActive: viewModel ? viewModel.lacActive : false
-        rangeMeters: viewModel ? viewModel.rangeMeters : 0
-        confidenceLevel: viewModel ? viewModel.confidenceLevel : 1.0*/
-
-        id: reticle
-        anchors.centerIn: parent
-        anchors.horizontalCenterOffset: viewModel ? viewModel.reticleOffsetX : 0
-        anchors.verticalCenterOffset: viewModel ? viewModel.reticleOffsetY : 0
-
-        reticleType: viewModel ? viewModel.reticleType : 1
-        color: osdRoot.accentColor
-        currentFov: viewModel ? viewModel.currentFov : 45.0
-
-
-        lacActive: viewModel ? viewModel.lacActive : false
-        rangeMeters: viewModel ? viewModel.rangeMeters : 0
-        confidenceLevel: viewModel ? viewModel.confidenceLevel : 1.0
-    }
-
-    // ========================================================================
-    // CCIP PIPPER (Impact Prediction with Lead Angle)
-    // ========================================================================
-    CcipPipper {
-        id: ccipPipper
-
-        // Position using absolute screen coordinates from viewModel
-        x: (viewModel ? viewModel.ccipX : (parent.width / 2)) - (width / 2)
-        y: (viewModel ? viewModel.ccipY : (parent.height / 2)) - (height / 2)
-
-        pipperEnabled: viewModel ? viewModel.ccipVisible : false
-        status: viewModel ? viewModel.ccipStatus : "Off"
-        accentColor: osdRoot.accentColor
-
-        // CCIP is only visible when LAC is active and provides a valid solution
-        // It shows where bullets will impact accounting for:
-        // • Gun zeroing offsets
-        // • Target lead angle (moving target compensation)
-        // • Ballistic trajectory
-    }
-
-    // ========================================================================
-    // FIXED LOB MARKER (Screen Center - Always visible)
-    // ========================================================================
-    Item {
-        anchors.centerIn: parent
-        width: 10
-        height: 10
-
-        // Simple cross marker
-        Rectangle {
-            width: 10
-            height: 2
+        Text {
             anchors.centerIn: parent
-            color: osdRoot.accentColor
+            text: "⚠ NO FIRE ZONE ⚠\nWEAPON INHIBITED"
+            font.pixelSize: 20
+            font.bold: true
+            font.family: primaryFont
+            color: "white"
+            horizontalAlignment: Text.AlignHCenter
         }
-        Rectangle {
-            width: 2
-            height: 10
-            anchors.centerIn: parent
-            color: osdRoot.accentColor
+
+        SequentialAnimation on opacity {
+            running: noFireWarning.visible
+            loops: Animation.Infinite
+            NumberAnimation { from: 0.95; to: 0.5; duration: 500 }
+            NumberAnimation { from: 0.5; to: 0.95; duration: 500 }
         }
     }
 
     // ========================================================================
-    // ERROR MESSAGE DISPLAY (Bottom-Right Corner)
+    // BOTTOM RIGHT - NO TRAVERSE WARNING
+    // ========================================================================
+    Rectangle {
+        id: noTraverseWarning
+        x: parent.width - 300
+        y: parent.height - 100
+        width: 290
+        height: 50
+        color: cautionColor
+        opacity: 0.9
+        border.color: "black"
+        border.width: 3
+        radius: 4
+        visible: viewModel ? viewModel.zoneWarningVisible && viewModel.zoneWarningText.includes("NO TRAVERSE") : false
+        z: 199
+
+        Text {
+            anchors.centerIn: parent
+            text: "⚠ NO TRAVERSE ZONE"
+            font.pixelSize: 18
+            font.bold: true
+            font.family: primaryFont
+            color: "black"
+        }
+    }
+
+    // ========================================================================
+    // CENTER - STARTUP MESSAGE
+    // ========================================================================
+    Rectangle {
+        id: startupBox
+        x: parent.width/2 - width/2
+        y: parent.height/2 - 100
+        width: 420
+        height: 50
+        color: "#CC000000"
+        border.color: accentColor
+        border.width: 2
+        radius: 3
+        visible: viewModel ? viewModel.startupMessageVisible : false
+        z: 100
+
+        Text {
+            anchors.centerIn: parent
+            text: viewModel ? viewModel.startupMessageText : "SYSTEM INITIALIZATION..."
+            font.pixelSize: 16
+            font.family: primaryFont
+            color: accentColor
+
+            // Blinking animation
+            SequentialAnimation on opacity {
+                running: parent.parent.visible
+                loops: Animation.Infinite
+                NumberAnimation { from: 1.0; to: 0.7; duration: 800 }
+                NumberAnimation { from: 0.7; to: 1.0; duration: 800 }
+            }
+        }
+    }
+
+    // ========================================================================
+    // BOTTOM RIGHT - ERROR MESSAGE DISPLAY
     // ========================================================================
     Rectangle {
         anchors.right: parent.right
@@ -525,7 +646,7 @@ Item {
         color: "#000000"
         opacity: 0.9
         radius: 3
-        border.color: "#C81428"  // Red border for errors
+        border.color: warningColor
         border.width: 2
 
         Column {
@@ -542,7 +663,7 @@ Item {
                     text: "⚠"
                     font.pixelSize: 18
                     font.bold: true
-                    color: "#C81428"  // Red
+                    color: warningColor
                     anchors.verticalCenter: parent.verticalCenter
                 }
 
@@ -550,9 +671,9 @@ Item {
                     text: "SYSTEM ERROR"
                     font.pixelSize: 14
                     font.bold: true
-                    font.family: "Segoe UI"
+                    font.family: primaryFont
                     font.letterSpacing: 1.2
-                    color: "#C81428"  // Red for error header
+                    color: warningColor
                     anchors.verticalCenter: parent.verticalCenter
                 }
             }
@@ -561,7 +682,7 @@ Item {
             Text {
                 text: viewModel ? viewModel.errorMessageText : ""
                 font.pixelSize: 12
-                font.family: "Segoe UI"
+                font.family: primaryFont
                 color: "#FFFFFF"
                 wrapMode: Text.WordWrap
                 width: 280
@@ -573,41 +694,222 @@ Item {
                 text: "► CONTACT MANUFACTURER"
                 font.pixelSize: 11
                 font.bold: true
-                font.family: "Segoe UI"
-                color: "#FFA500"  // Orange for action
+                font.family: primaryFont
+                color: cautionColor
 
                 // Blinking animation
                 SequentialAnimation on opacity {
                     running: parent.parent.parent.visible
                     loops: Animation.Infinite
-
-                    NumberAnimation {
-                        from: 1.0
-                        to: 0.4
-                        duration: 600
-                        easing.type: Easing.InOutQuad
-                    }
-                    NumberAnimation {
-                        from: 0.4
-                        to: 1.0
-                        duration: 600
-                        easing.type: Easing.InOutQuad
-                    }
+                    NumberAnimation { from: 1.0; to: 0.4; duration: 600 }
+                    NumberAnimation { from: 0.4; to: 1.0; duration: 600 }
                 }
             }
         }
+    }
 
-        // Diagonal stripes for warning appearance
-        Repeater {
-            model: 3
-            Rectangle {
-                x: index * 15 + 5
-                y: 0
-                width: 1
-                height: parent.height
-                color: "#C81428"
-                opacity: 0.2
+    // ========================================================================
+    // BOTTOM - ENHANCED STATUS BAR
+    // ========================================================================
+    Rectangle {
+        id: bottomBar
+        x: 10
+        y: parent.height - 40
+        width: parent.width - 20
+        height: 30
+        color: "#B3000000"
+        border.color: accentColor
+        border.width: 1
+
+        Row {
+            anchors.centerIn: parent
+            spacing: 20
+
+            // STAB
+            Text {
+                text: viewModel ? viewModel.stabText : "STAB: OFF"
+                font.pixelSize: 13
+                font.family: primaryFont
+                color: accentColor
+                anchors.verticalCenter: parent.verticalCenter
+            }
+
+            Rectangle { width: 2; height: 20; color: accentColor }
+
+            // CAM
+            Text {
+                text: viewModel ? viewModel.cameraText : "CAM: DAY"
+                font.pixelSize: 13
+                font.family: primaryFont
+                color: accentColor
+                anchors.verticalCenter: parent.verticalCenter
+            }
+
+            Rectangle { width: 2; height: 20; color: accentColor }
+
+            // ========================================================================
+            // FOV SLIDER WIDGET
+            // ========================================================================
+            Row {
+                spacing: 5
+                anchors.verticalCenter: parent.verticalCenter
+
+                Text {
+                    text: viewModel ? viewModel.fovText : "FOV: 45.0°"
+                    font.pixelSize: 13
+                    font.family: primaryFont
+                    color: accentColor
+                    anchors.verticalCenter: parent.verticalCenter
+                }
+
+                Text {
+                    text: "NFOV"
+                    font.pixelSize: 10
+                    font.family: primaryFont
+                    color: accentColor
+                    anchors.verticalCenter: parent.verticalCenter
+                }
+
+                Item {
+                    width: 60
+                    height: 20
+                    anchors.verticalCenter: parent.verticalCenter
+
+                    Rectangle {
+                        width: parent.width
+                        height: 2
+                        color: accentColor
+                        anchors.verticalCenter: parent.verticalCenter
+                        opacity: 0.5
+                    }
+
+                    Rectangle {
+                        width: 2
+                        height: 6
+                        color: accentColor
+                        x: 0
+                        anchors.verticalCenter: parent.verticalCenter
+                    }
+
+                    Rectangle {
+                        width: 2
+                        height: 6
+                        color: accentColor
+                        x: parent.width - width
+                        anchors.verticalCenter: parent.verticalCenter
+                    }
+
+                    Rectangle {
+                        width: 8
+                        height: 8
+                        radius: 4
+                        color: accentColor
+                        border.width: 2
+                        x: {
+                            var currentFov = viewModel ? viewModel.currentFov : 45.0;
+                            var minFov = 2.8;
+                            var maxFov = 68.0;
+                            var normalized = (currentFov - minFov) / (maxFov - minFov);
+                            return normalized * (parent.width - width);
+                        }
+                        anchors.verticalCenter: parent.verticalCenter
+                    }
+                }
+
+                Text {
+                    text: "WFOV"
+                    font.pixelSize: 10
+                    font.family: primaryFont
+                    color: accentColor
+                    anchors.verticalCenter: parent.verticalCenter
+                }
+            }
+
+            Rectangle { width: 2; height: 20; color: accentColor }
+
+            // LRF RANGE
+            Text {
+                text: viewModel ? viewModel.lrfText : "LRF: --- m"
+                font.pixelSize: 13
+                font.family: primaryFont
+                color: accentColor
+                anchors.verticalCenter: parent.verticalCenter
+            }
+
+            Rectangle { width: 2; height: 20; color: accentColor }
+
+            // SYSTEM STATUS
+            Text {
+                text: viewModel ? viewModel.statusText : "SYS: --- SAF NRD"
+                font.pixelSize: 13
+                font.family: primaryFont
+                color: accentColor
+                anchors.verticalCenter: parent.verticalCenter
             }
         }
     }
+
+    // ========================================================================
+    // AZIMUTH INDICATOR (Top-Right, Circular Compass)
+    // ========================================================================
+    AzimuthIndicator {
+        anchors.right: parent.right
+        anchors.top: parent.top
+        anchors.rightMargin: 30
+        anchors.topMargin: 200
+        width: 100
+        height: 100
+
+        azimuth: viewModel ? viewModel.azimuth : 0
+        vehicleHeading: viewModel ? viewModel.vehicleHeading : 0
+        imuConnected: viewModel ? viewModel.imuConnected : false
+
+        color: accentColor
+        relativeColor: "yellow"
+    }
+
+    // ========================================================================
+    // ELEVATION SCALE (Right Side, Vertical Scale)
+    // ========================================================================
+    ElevationScale {
+        anchors.right: parent.right
+        anchors.top: parent.top
+        anchors.rightMargin: 20
+        anchors.topMargin: 320
+        height: 120
+
+        elevation: viewModel ? viewModel.elevation : 0
+        color: accentColor
+    }
+
+    // ========================================================================
+    // HELPER FUNCTIONS
+    // ========================================================================
+    function getCardinalDirection(bearing) {
+        var directions = ["N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE",
+                         "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW"];
+        var index = Math.round(bearing / 22.5) % 16;
+        return directions[index];
+    }
+
+    function getGunArmedStatus() {
+        // Extract "ARM" or "SAF" from statusText
+        if (!viewModel) return false;
+        return viewModel.statusText.includes("ARM");
+    }
+
+    /* UNCOMMENT WHEN DEVICE HEALTH PROPERTIES ARE ADDED TO VIEWMODEL
+    function hasDeviceFaults() {
+        if (!viewModel) return false;
+        return !viewModel.dayCameraConnected ||
+               !viewModel.nightCameraConnected ||
+               viewModel.azServoFault ||
+               viewModel.elServoFault ||
+               viewModel.lrfFault ||
+               viewModel.lrfOverTemp ||
+               viewModel.actuatorFault ||
+               !viewModel.plc21Connected ||
+               !viewModel.plc42Connected;
+    }
+    */
 }
