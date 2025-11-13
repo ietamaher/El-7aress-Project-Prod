@@ -13,6 +13,7 @@ class TRPParameterViewModel;
 class MenuViewModel;
 class ZeroingViewModel;
 class WindageViewModel;
+class EnvironmentalViewModel;
 class SystemStatusViewModel;
 class AboutViewModel;
 
@@ -73,6 +74,7 @@ public:
     // Ballistics ViewModels
     ZeroingViewModel* zeroingViewModel() const { return m_zeroingViewModel; }
     WindageViewModel* windageViewModel() const { return m_windageViewModel; }
+    EnvironmentalViewModel* environmentalViewModel() const { return m_environmentalViewModel; }
 
     // System Info ViewModels
     SystemStatusViewModel* systemStatusViewModel() const { return m_systemStatusViewModel; }
@@ -105,6 +107,7 @@ private:
     // Ballistics
     ZeroingViewModel* m_zeroingViewModel = nullptr;
     WindageViewModel* m_windageViewModel = nullptr;
+    EnvironmentalViewModel* m_environmentalViewModel = nullptr;
 
     // System Info
     SystemStatusViewModel* m_systemStatusViewModel = nullptr;

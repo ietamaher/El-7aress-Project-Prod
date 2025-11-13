@@ -995,6 +995,66 @@ void SystemStateModel::clearWindage() {
     emit windageStateChanged(false, 0.0f, 0.0f);
 }
 
+// =================================
+// ENVIRONMENTAL CONDITIONS
+// =================================
+
+void SystemStateModel::startEnvironmentalProcedure() {
+    if (!m_currentStateData.environmentalModeActive) {
+        m_currentStateData.environmentalModeActive = true;
+        qDebug() << "Environmental procedure started.";
+        emit dataChanged(m_currentStateData);
+    }
+}
+
+void SystemStateModel::setEnvironmentalTemperature(float celsius) {
+    if (m_currentStateData.environmentalModeActive) {
+        m_currentStateData.environmentalTemperatureCelsius = celsius;
+        qDebug() << "Environmental temperature set to:" << m_currentStateData.environmentalTemperatureCelsius << "°C";
+        emit dataChanged(m_currentStateData);
+    }
+}
+
+void SystemStateModel::setEnvironmentalAltitude(float meters) {
+    if (m_currentStateData.environmentalModeActive) {
+        m_currentStateData.environmentalAltitudeMeters = meters;
+        qDebug() << "Environmental altitude set to:" << m_currentStateData.environmentalAltitudeMeters << "m";
+        emit dataChanged(m_currentStateData);
+    }
+}
+
+void SystemStateModel::setEnvironmentalCrosswind(float metersPerSecond) {
+    if (m_currentStateData.environmentalModeActive) {
+        m_currentStateData.environmentalCrosswindMS = metersPerSecond;
+        qDebug() << "Environmental crosswind set to:" << m_currentStateData.environmentalCrosswindMS << "m/s";
+        emit dataChanged(m_currentStateData);
+    }
+}
+
+void SystemStateModel::finalizeEnvironmental() {
+    if (m_currentStateData.environmentalModeActive) {
+        m_currentStateData.environmentalModeActive = false;
+        m_currentStateData.environmentalAppliedToBallistics = true;
+        qDebug() << "Environmental procedure finalized."
+                 << "Temp:" << m_currentStateData.environmentalTemperatureCelsius << "°C"
+                 << "Altitude:" << m_currentStateData.environmentalAltitudeMeters << "m"
+                 << "Crosswind:" << m_currentStateData.environmentalCrosswindMS << "m/s"
+                 << "Applied:" << m_currentStateData.environmentalAppliedToBallistics;
+        emit dataChanged(m_currentStateData);
+    }
+}
+
+void SystemStateModel::clearEnvironmental() {
+    // Reset to ISA standard atmosphere
+    m_currentStateData.environmentalModeActive = false;
+    m_currentStateData.environmentalTemperatureCelsius = 15.0f;   // ISA standard: 15°C at sea level
+    m_currentStateData.environmentalAltitudeMeters = 0.0f;        // Sea level
+    m_currentStateData.environmentalCrosswindMS = 0.0f;           // No wind
+    m_currentStateData.environmentalAppliedToBallistics = false;
+    qDebug() << "Environmental settings cleared (ISA standard atmosphere).";
+    emit dataChanged(m_currentStateData);
+}
+
 void SystemStateModel::setLeadAngleCompensationActive(bool active) {
     if (m_currentStateData.leadAngleCompensationActive != active) {
         m_currentStateData.leadAngleCompensationActive = active;

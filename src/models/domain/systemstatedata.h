@@ -554,7 +554,14 @@ struct SystemStateData {
     float windageSpeedKnots = 0.0f;         ///< Wind speed for windage calculation in knots
     float windageDirectionDegrees = 0.0f;   ///< Wind direction for windage calculation in degrees
     bool windageAppliedToBallistics = false; ///< Whether windage is applied to ballistic calculations
-    bool windageDirectionCaptured = false;    
+    bool windageDirectionCaptured = false;
+
+    // Environmental Conditions (for Ballistic LUT)
+    bool environmentalModeActive = false;   ///< Environmental settings mode active status
+    float environmentalTemperatureCelsius = 15.0f; ///< Air temperature in degrees Celsius (ISO standard: 15°C)
+    float environmentalAltitudeMeters = 0.0f;      ///< Altitude above sea level in meters
+    float environmentalCrosswindMS = 0.0f;         ///< Crosswind speed in meters per second
+    bool environmentalAppliedToBallistics = false; ///< Whether environmental settings are applied    
     // Lead Angle Compensation
     bool leadAngleCompensationActive = false;           ///< Lead angle compensation active status
     LeadAngleStatus currentLeadAngleStatus = LeadAngleStatus::Off; ///< Current lead angle system status
@@ -824,6 +831,11 @@ struct SystemStateData {
                qFuzzyCompare(windageDirectionDegrees, other.windageDirectionDegrees) &&
                windageAppliedToBallistics == other.windageAppliedToBallistics &&
                windageDirectionCaptured == other.windageDirectionCaptured &&
+               environmentalModeActive == other.environmentalModeActive &&
+               qFuzzyCompare(environmentalTemperatureCelsius, other.environmentalTemperatureCelsius) &&
+               qFuzzyCompare(environmentalAltitudeMeters, other.environmentalAltitudeMeters) &&
+               qFuzzyCompare(environmentalCrosswindMS, other.environmentalCrosswindMS) &&
+               environmentalAppliedToBallistics == other.environmentalAppliedToBallistics &&
                leadAngleCompensationActive == other.leadAngleCompensationActive &&
                currentLeadAngleStatus == other.currentLeadAngleStatus &&
                qFuzzyCompare(leadAngleOffsetAz, other.leadAngleOffsetAz) &&

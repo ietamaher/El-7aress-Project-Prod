@@ -111,6 +111,16 @@ Window {
         z: 100
     }
 
+    // === ENVIRONMENTAL OVERLAY ===
+    EnvironmentalOverlay {
+        id: environmentalOverlay
+        anchors.top: parent.top
+        anchors.left: parent.left
+        anchors.topMargin: 150
+        anchors.leftMargin: 10
+        z: 100
+    }
+
     ZoneDefinitionOverlay {
         id: zoneDefinitionOverlay
         anchors.fill: parent

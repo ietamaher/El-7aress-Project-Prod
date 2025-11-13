@@ -34,6 +34,8 @@ signals:
     void clearZeroRequested();
     void windageRequested();
     void clearWindageRequested();
+    void environmentalRequested();
+    void clearEnvironmentalRequested();
     void zoneDefinitionsRequested();
     void systemStatusRequested();
     void toggleDetectionRequested();

@@ -10,6 +10,7 @@ class ReticleMenuController;
 class ColorMenuController;
 class ZeroingController;
 class WindageController;
+class EnvironmentalController;
 class ZoneDefinitionController;
 class SystemStatusController;
 class AboutController;
@@ -34,6 +35,7 @@ public:
     void setColorMenuController(ColorMenuController* controller);
     void setZeroingController(ZeroingController* controller);
     void setWindageController(WindageController* controller);
+    void setEnvironmentalController(EnvironmentalController* controller);
     void setZoneDefinitionController(ZoneDefinitionController* controller);
     void setSystemStatusController(SystemStatusController* controller);
     void setAboutController(AboutController* controller);
@@ -50,6 +52,7 @@ public:
         ColorMenu,
         ZeroingProcedure,
         WindageProcedure,
+        EnvironmentalProcedure,
         ZoneDefinition,
         SystemStatus,
         RadarTargets,
@@ -71,6 +74,8 @@ private slots:
     void handleClearZero();
     void handleWindage();
     void handleClearWindage();
+    void handleEnvironmental();
+    void handleClearEnvironmental();
     void handleZoneDefinitions();
     void handleSystemStatus();
     void handleToggleDetection();
@@ -84,6 +89,7 @@ private slots:
     void handleColorMenuFinished();
     void handleZeroingFinished();
     void handleWindageFinished();
+    void handleEnvironmentalFinished();
     void handleZoneDefinitionFinished();
     void handleSystemStatusFinished();
     void handleAboutFinished();
@@ -117,6 +123,7 @@ private:
     ColorMenuController* m_colorMenuController;
     ZeroingController* m_zeroingController;
     WindageController* m_windageController;
+    EnvironmentalController* m_environmentalController;
     ZoneDefinitionController* m_zoneDefinitionController;
     SystemStatusController* m_systemStatusController;
     AboutController* m_aboutController;

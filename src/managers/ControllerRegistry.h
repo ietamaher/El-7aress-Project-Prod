@@ -18,6 +18,7 @@ class ReticleMenuController;
 class ColorMenuController;
 class ZeroingController;
 class WindageController;
+class EnvironmentalController;
 class SystemStatusController;
 class AboutController;
 class ApplicationController;
@@ -106,6 +107,7 @@ public:
     ColorMenuController* colorMenuController() const { return m_colorMenuController; }
     ZeroingController* zeroingController() const { return m_zeroingController; }
     WindageController* windageController() const { return m_windageController; }
+    EnvironmentalController* environmentalController() const { return m_environmentalController; }
     SystemStatusController* systemStatusController() const { return m_systemStatusController; }
     AboutController* aboutController() const { return m_aboutController; }
     ApplicationController* applicationController() const { return m_appController; }
@@ -135,6 +137,7 @@ private:
     ColorMenuController* m_colorMenuController = nullptr;
     ZeroingController* m_zeroingController = nullptr;
     WindageController* m_windageController = nullptr;
+    EnvironmentalController* m_environmentalController = nullptr;
     SystemStatusController* m_systemStatusController = nullptr;
     AboutController* m_aboutController = nullptr;
     ApplicationController* m_appController = nullptr;

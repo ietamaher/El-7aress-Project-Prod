@@ -445,6 +445,43 @@ public:
     void clearWindage();
 
     // =================================
+    // ENVIRONMENTAL CONDITIONS (for Ballistic LUT)
+    // =================================
+
+    /**
+     * @brief Starts the environmental settings procedure for ballistic corrections.
+     */
+    void startEnvironmentalProcedure();
+
+    /**
+     * @brief Sets the air temperature for ballistic calculations.
+     * @param celsius Air temperature in degrees Celsius.
+     */
+    void setEnvironmentalTemperature(float celsius);
+
+    /**
+     * @brief Sets the altitude above sea level for ballistic calculations.
+     * @param meters Altitude in meters above sea level.
+     */
+    void setEnvironmentalAltitude(float meters);
+
+    /**
+     * @brief Sets the crosswind speed for ballistic calculations.
+     * @param metersPerSecond Crosswind speed in meters per second.
+     */
+    void setEnvironmentalCrosswind(float metersPerSecond);
+
+    /**
+     * @brief Finalizes the environmental procedure and applies settings to ballistics.
+     */
+    void finalizeEnvironmental();
+
+    /**
+     * @brief Clears all environmental settings and resets to default values (ISA standard atmosphere).
+     */
+    void clearEnvironmental();
+
+    // =================================
     // TRACKING SYSTEM CONTROL
     // =================================
     
