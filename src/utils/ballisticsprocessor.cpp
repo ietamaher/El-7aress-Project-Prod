@@ -98,12 +98,28 @@ LeadCalculationResult BallisticsProcessor::calculateLeadAngle(
     result.leadElevationDegrees *= altitude_correction;
 
     // 3. WIND CORRECTION (crosswind deflection)
-    // Wind pushes bullet sideways during time of flight
+    // ========================================================================
+    // CONVENTION (Right-Hand Rule from shooter's perspective):
+    //   crosswind_ms > 0: Wind from LEFT  → Bullet drifts RIGHT → Aim LEFT  (negative correction)
+    //   crosswind_ms < 0: Wind from RIGHT → Bullet drifts LEFT  → Aim RIGHT (positive correction)
+    //
+    // Example: crosswind_ms = +5.0 m/s (wind from left)
+    //   - Bullet deflects RIGHT by (5 × TOF) meters
+    //   - To hit target, aim LEFT by angle = atan(deflection/range)
+    //   - Apply NEGATIVE correction to azimuth
+    // ========================================================================
     if (m_crosswind_ms != 0.0f && targetRangeMeters > 0.1f) {
-        float wind_deflection_m = m_crosswind_ms * tofS;  // Lateral displacement
+        float wind_deflection_m = m_crosswind_ms * tofS;  // Lateral displacement (+ = right, - = left)
         float wind_correction_rad = std::atan(wind_deflection_m / targetRangeMeters);
         float wind_correction_deg = wind_correction_rad * (180.0f / M_PI);
-        result.leadAzimuthDegrees += wind_correction_deg;  // Add to azimuth
+
+        // CRITICAL: SUBTRACT wind correction to compensate for drift
+        // Wind from left (+) pushes bullet right, so aim left (-)
+        result.leadAzimuthDegrees -= wind_correction_deg;
+
+        qDebug() << "[Ballistics] Wind correction: crosswind=" << m_crosswind_ms << "m/s"
+                 << "deflection=" << wind_deflection_m << "m"
+                 << "correction=" << wind_correction_deg << "deg (applied as" << -wind_correction_deg << ")";
     }
 
     // --- Apply Limits and Status ---

@@ -79,6 +79,35 @@ void WeaponController::onSystemStateChanged(const SystemStateData &newData)
         m_systemArmed = false;
     }
 
+    // ========================================================================
+    // ENVIRONMENTAL PARAMETERS CHANGE DETECTION
+    // ========================================================================
+    // If environmental parameters changed and LAC is active, immediately
+    // update ballistics processor with new conditions.
+    // This ensures user doesn't have to toggle LAC to apply new values.
+    // ========================================================================
+    bool environmentalParamsChanged = false;
+
+    if (!qFuzzyCompare(m_oldState.environmentalTemperatureCelsius, newData.environmentalTemperatureCelsius) ||
+        !qFuzzyCompare(m_oldState.environmentalAltitudeMeters, newData.environmentalAltitudeMeters) ||
+        !qFuzzyCompare(m_oldState.environmentalCrosswindMS, newData.environmentalCrosswindMS) ||
+        m_oldState.environmentalAppliedToBallistics != newData.environmentalAppliedToBallistics)
+    {
+        environmentalParamsChanged = true;
+
+        qDebug() << "[WeaponController] Environmental parameters changed:"
+                 << "Temp:" << m_oldState.environmentalTemperatureCelsius << "→" << newData.environmentalTemperatureCelsius
+                 << "Alt:" << m_oldState.environmentalAltitudeMeters << "→" << newData.environmentalAltitudeMeters
+                 << "Wind:" << m_oldState.environmentalCrosswindMS << "→" << newData.environmentalCrosswindMS
+                 << "Applied:" << m_oldState.environmentalAppliedToBallistics << "→" << newData.environmentalAppliedToBallistics;
+    }
+
+    // If LAC is active and environmental params changed, recalculate immediately
+    if (environmentalParamsChanged && newData.leadAngleCompensationActive) {
+        qDebug() << "[WeaponController] Triggering ballistics recalculation due to environmental change";
+        updateFireControlSolution();
+    }
+
     m_oldState = newData;
 }
 
