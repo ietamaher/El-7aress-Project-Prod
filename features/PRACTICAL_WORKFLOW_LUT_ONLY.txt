@@ -1,0 +1,654 @@
+================================================================================
+PRACTICAL WORKFLOW: Lookup Table Generation for RCWS (Tables Only)
+================================================================================
+
+This guide shows how to generate ballistic lookup tables that you can integrate
+into your existing El 7arress RCWS fire control code.
+
+================================================================================
+STEP 1: AMMUNITION SPECIFICATION
+================================================================================
+
+Before generating tables, you need accurate ammunition data:
+
+Required Measurements:
+----------------------
+
+1. BULLET MASS
+   - Weigh 20 rounds individually
+   - Remove any outliers (±5%)
+   - Calculate average
+   - Convert to kg: mass_kg = (grains / 15432.36)
+
+2. MUZZLE VELOCITY  
+   - Use chronograph at YOUR M2HB muzzle
+   - Fire 10-round string
+   - Record all velocities
+   - Calculate average MV
+   - Convert to m/s: MV_ms = (fps / 3.28084)
+
+3. BALLISTIC COEFFICIENT
+   - Start with manufacturer data or standard value
+   - Will be refined after live fire testing (see Step 4)
+   
+   Common .50 BMG values:
+   - M2 Ball (FMJ):    BC = 0.620
+   - M33 Ball (newer): BC = 0.670
+   - M8 API:           BC = 0.650
+
+Example Real Data:
+------------------
+
+Ammunition: Tunisian M2 Ball Lot #TN-2024-050
+  - Measured weight: 709 grains (45.96g)
+  - Measured MV: 2910 fps (887 m/s) from 45" barrel
+  - Manufacturer BC: 0.62 (G1)
+  - Bullet diameter: 0.510 inches (12.954mm)
+
+Edit in generate_lut.py:
+
+    'tn_m2_2024': AmmunitionData(
+        name="TN M2 Ball Lot 2024-050",
+        diameter_m=0.012954,
+        mass_kg=0.04596,
+        ballistic_coefficient_g1=0.62,
+        muzzle_velocity_ms=887.0
+    ),
+
+================================================================================
+STEP 2: GENERATE LOOKUP TABLES
+================================================================================
+
+Basic Generation:
+-----------------
+
+# Default: 100-2000m range, 50m steps
+python3 generate_lut.py --ammo m2ball --format all
+
+# Custom range for El 7arress (100-1500m, 25m steps for precision)
+python3 generate_lut.py \
+    --ammo m2ball \
+    --range-start 100 \
+    --range-end 1500 \
+    --range-step 25 \
+    --format all \
+    --output ./tables/
+
+Output Files Generated:
+-----------------------
+
+1. m2_ball.csv (Human-readable, for validation)
+2. m2_ball.json (Structured data, easy to parse)
+3. m2_ball.h (C++ array, for embedded systems)
+4. m2_ball.blut (Binary, smallest size)
+
+Table Size Examples:
+--------------------
+
+Range Config          | Entries | CSV Size | JSON Size | Binary Size
+----------------------|---------|----------|-----------|-------------
+100-2000m, 100m step  |   20    |   2 KB   |   4 KB    |   0.3 KB
+100-2000m, 50m step   |   39    |   4 KB   |   7 KB    |   0.6 KB
+100-1500m, 25m step   |   57    |   6 KB   |  10 KB    |   0.9 KB
+50-2000m, 10m step    |  196    |  20 KB   |  35 KB    |   3.1 KB
+
+Recommendation for RCWS: 50m steps (good balance of accuracy vs. size)
+
+================================================================================
+STEP 3: TABLE FORMAT REFERENCE
+================================================================================
+
+FORMAT 1: CSV (Easiest to read/validate)
+-----------------------------------------
+
+File: m2_ball.csv
+
+# Ballistic Lookup Table
+# Ammunition: M2 Ball
+# BC(G1): 0.62
+# Muzzle Velocity: 887 m/s
+#
+Range(m),Elevation(deg),Elevation(mils),TOF(s),ImpactVel(m/s)
+100,0.000000,0.0000,0.150000,821.90
+150,0.020844,0.3704,0.190000,796.34
+200,0.044444,0.7901,0.240000,786.50
+250,0.072500,1.2877,0.290000,769.12
+...
+
+Usage in your code:
+  - Parse with simple string splitting
+  - No external dependencies needed
+  - Easy to debug/inspect
+
+Python parsing example:
+
+ranges = []
+elevations = []
+tofs = []
+
+with open('m2_ball.csv', 'r') as f:
+    for line in f:
+        if line.startswith('#') or 'Range' in line:
+            continue
+        parts = line.strip().split(',')
+        ranges.append(int(parts[0]))
+        elevations.append(float(parts[2]))  # mils
+        tofs.append(float(parts[3]))
+
+# Now interpolate...
+
+
+FORMAT 2: JSON (Best for Qt/C++ integration)
+---------------------------------------------
+
+File: m2_ball.json
+
+{
+  "ammunition": {
+    "name": "M2 Ball",
+    "diameter_mm": 12.954,
+    "mass_grams": 45.96,
+    "bc_g1": 0.62,
+    "muzzle_velocity_ms": 887.0
+  },
+  "generation_parameters": {
+    "range_start_m": 100,
+    "range_end_m": 2000,
+    "range_step_m": 50
+  },
+  "lookup_table": [
+    {
+      "range_m": 100,
+      "elevation_deg": 0.0,
+      "elevation_mils": 0.0,
+      "tof_s": 0.15,
+      "impact_velocity_ms": 821.9
+    },
+    {
+      "range_m": 150,
+      "elevation_deg": 0.020844,
+      "elevation_mils": 0.3704,
+      "tof_s": 0.19,
+      "impact_velocity_ms": 796.34
+    },
+    ...
+  ]
+}
+
+Usage in Qt6/QML:
+
+QFile file(":/tables/m2_ball.json");
+file.open(QIODevice::ReadOnly);
+QJsonDocument doc = QJsonDocument::fromJson(file.readAll());
+QJsonArray table = doc["lookup_table"].toArray();
+
+for (const auto& entry : table) {
+    int range = entry["range_m"].toInt();
+    float elev = entry["elevation_mils"].toDouble();
+    float tof = entry["tof_s"].toDouble();
+    // Store in your data structure...
+}
+
+
+FORMAT 3: C++ Header (For embedded/no filesystem)
+--------------------------------------------------
+
+File: m2_ball.h
+
+// Auto-generated ballistic lookup table
+#ifndef BALLISTIC_LUT_H
+#define BALLISTIC_LUT_H
+
+#include <cstdint>
+
+struct BallisticEntry {
+    uint16_t range_m;
+    float elevation_mils;
+    float tof_s;
+    float impact_velocity_ms;
+};
+
+constexpr uint32_t LUT_M2_BALL_SIZE = 39;
+
+constexpr BallisticEntry LUT_M2_BALL[LUT_M2_BALL_SIZE] = {
+    { 100,   0.0000f,  0.150000f,  821.90f},
+    { 150,   0.3704f,  0.190000f,  796.34f},
+    { 200,   0.7901f,  0.240000f,  786.50f},
+    ...
+};
+
+#endif
+
+Usage in C++:
+
+#include "m2_ball.h"
+
+// Direct array access - zero load time, embedded in binary
+for (int i = 0; i < LUT_M2_BALL_SIZE; i++) {
+    if (LUT_M2_BALL[i].range_m >= target_range) {
+        // Found bracket, interpolate...
+    }
+}
+
+
+FORMAT 4: Binary (Smallest, fastest loading)
+---------------------------------------------
+
+File: m2_ball.blut (Binary Lookup Table)
+
+Structure:
+  [0-3]   Magic: "BLUT" (4 bytes)
+  [4-7]   Version: 1 (uint32)
+  [8-11]  Entry count (uint32)
+  [12-43] Ammo name (32 bytes, null-padded)
+  [44-47] BC (float)
+  [48-51] MV (float)
+  [52+]   Entry data (each 14 bytes):
+            - range_m (uint16)
+            - elevation_mils (float)
+            - tof_s (float)
+            - impact_velocity_ms (float)
+
+Total size: 52 + (14 × num_entries) bytes
+
+Example: 39 entries = 52 + (14 × 39) = 598 bytes
+
+Usage (pseudo-code):
+
+struct BinaryHeader {
+    char magic[4];
+    uint32_t version;
+    uint32_t entry_count;
+    char ammo_name[32];
+    float bc;
+    float mv;
+};
+
+FILE* f = fopen("m2_ball.blut", "rb");
+BinaryHeader header;
+fread(&header, sizeof(BinaryHeader), 1, f);
+
+BallisticEntry* table = malloc(header.entry_count * sizeof(BallisticEntry));
+fread(table, sizeof(BallisticEntry), header.entry_count, f);
+fclose(f);
+
+// Now use table...
+
+================================================================================
+STEP 4: TABLE INTERPOLATION (Your Implementation)
+================================================================================
+
+You'll implement this in your fire control code. Here's the algorithm:
+
+Linear Interpolation Method:
+-----------------------------
+
+Given: Target range = 1234 meters
+
+1. FIND BRACKET:
+   Search table for entries where:
+   range[i] <= 1234 < range[i+1]
+   
+   Example: Find range[24] = 1200m and range[25] = 1250m
+
+2. CALCULATE INTERPOLATION FACTOR:
+   t = (target - range_low) / (range_high - range_low)
+   t = (1234 - 1200) / (1250 - 1200)
+   t = 34 / 50 = 0.68
+
+3. INTERPOLATE ALL VALUES:
+   elevation = elev[i] + t × (elev[i+1] - elev[i])
+   tof = tof[i] + t × (tof[i+1] - tof[i])
+   velocity = vel[i] + t × (vel[i+1] - vel[i])
+
+Example Calculation:
+   At 1200m: elevation = 13.53 mils, TOF = 2.06s
+   At 1250m: elevation = 14.32 mils, TOF = 2.17s
+   
+   At 1234m:
+   elevation = 13.53 + 0.68 × (14.32 - 13.53)
+             = 13.53 + 0.68 × 0.79
+             = 13.53 + 0.54
+             = 14.07 mils
+   
+   tof = 2.06 + 0.68 × (2.17 - 2.06)
+       = 2.06 + 0.075
+       = 2.135 seconds
+
+Optimized Search (Binary Search):
+----------------------------------
+
+For fast lookup in sorted table:
+
+int find_bracket(int target_range, Entry* table, int size) {
+    int left = 0;
+    int right = size - 1;
+    
+    // Handle edge cases
+    if (target_range <= table[0].range) return 0;
+    if (target_range >= table[size-1].range) return size - 2;
+    
+    // Binary search
+    while (right - left > 1) {
+        int mid = (left + right) / 2;
+        if (table[mid].range < target_range)
+            left = mid;
+        else
+            right = mid;
+    }
+    
+    return left;  // Returns index where table[left] <= target < table[left+1]
+}
+
+Performance: O(log n) - very fast even for large tables
+
+================================================================================
+STEP 5: LIVE FIRE VALIDATION & BC ADJUSTMENT
+================================================================================
+
+After generating initial tables, validate with actual shooting:
+
+Test Protocol:
+--------------
+
+1. Setup known distances: 500m, 1000m, 1500m
+2. Use table elevation values
+3. Fire 5-round groups at each distance
+4. Measure actual impact points
+
+Adjustment Procedure:
+---------------------
+
+If shots land HIGH:
+  → BC is too LOW (bullet losing speed too fast in model)
+  → INCREASE BC by 0.01-0.02
+  → Regenerate table
+  → Test again
+
+If shots land LOW:
+  → BC is too HIGH (bullet keeping speed too well in model)
+  → DECREASE BC by 0.01-0.02
+  → Regenerate table
+  → Test again
+
+Example Iteration:
+
+Initial BC: 0.62
+Test 1000m: Impacts 2.5 mils high
+Adjustment: BC 0.62 → 0.605 (decreased)
+Retest: Impacts 0.5 mils high (acceptable)
+Final BC: 0.605 for this ammunition lot
+
+⚠️  IMPORTANT: BC varies by:
+   - Ammunition lot
+   - Barrel wear
+   - Temperature
+   - Altitude
+   
+   Generate separate tables for different conditions if needed!
+
+================================================================================
+STEP 6: ENVIRONMENTAL CORRECTIONS (Real-Time)
+================================================================================
+
+Base table is for standard conditions (15°C, sea level, no wind).
+Apply real-time corrections in your fire control code:
+
+Temperature Correction:
+-----------------------
+
+Air density changes with temperature:
+ρ_correction = (288.15 / (T_celsius + 273.15))^0.5
+
+Corrected elevation = table_elevation × ρ_correction
+
+Example:
+  Standard (15°C): ρ_correction = 1.00
+  Hot day (35°C):  ρ_correction = 0.966 (multiply elevation by 0.966)
+  Cold day (-10°C): ρ_correction = 1.048 (multiply elevation by 1.048)
+
+Altitude Correction:
+--------------------
+
+Air density decreases with altitude:
+ρ_altitude = exp(-altitude_m / 8500)
+
+Corrected elevation = table_elevation × (1.0 / ρ_altitude)
+
+Example at 1000m altitude:
+  ρ_altitude = exp(-1000/8500) = 0.890
+  Multiply elevation by 1.123
+
+Wind Correction:
+----------------
+
+Crosswind causes deflection:
+deflection_m = crosswind_ms × TOF_s
+
+Lead angle (mils) = (deflection / range) × 1000
+
+Example at 1000m with 5 m/s crosswind:
+  TOF = 1.59s (from table)
+  deflection = 5 × 1.59 = 7.95m
+  lead = (7.95 / 1000) × 1000 = 7.95 mils
+
+Apply to AZIMUTH, not elevation.
+
+Complete Correction Example:
+-----------------------------
+
+Target: 1000m
+Conditions: 30°C, 500m altitude, 5 m/s crosswind
+
+1. Get base solution from table:
+   elevation_base = 10.01 mils
+   tof = 1.59s
+
+2. Apply temperature correction:
+   temp_corr = sqrt(288.15 / 303.15) = 0.975
+   elevation = 10.01 × 0.975 = 9.76 mils
+
+3. Apply altitude correction:
+   alt_corr = 1 / exp(-500/8500) = 1.061
+   elevation = 9.76 × 1.061 = 10.36 mils
+
+4. Apply wind correction:
+   wind_lead = (5 × 1.59 / 1000) × 1000 = 7.95 mils
+
+Final command:
+   Elevation: 10.36 mils
+   Azimuth: target_azimuth + 7.95 mils
+
+================================================================================
+STEP 7: MULTIPLE AMMUNITION TABLES
+================================================================================
+
+Generate separate tables for each ammunition type:
+
+python3 generate_lut.py --ammo m2ball --format json --output tables/
+python3 generate_lut.py --ammo m33ball --format json --output tables/
+python3 generate_lut.py --ammo m8api --format json --output tables/
+
+In your fire control system:
+
+tables/ 
+  ├── m2_ball.json       # 709gr FMJ
+  ├── m33_ball.json      # 661gr FMJ (lighter, faster)
+  ├── m8_api.json        # 669gr API
+  └── ...
+
+Load appropriate table based on:
+  - Ammunition selector switch
+  - RFID tag on ammo box
+  - Manual operator selection
+
+Code structure:
+
+struct AmmoType {
+    const char* name;
+    BallisticEntry* table;
+    int table_size;
+};
+
+AmmoType ammo_types[] = {
+    {"M2 Ball", LUT_M2_BALL, LUT_M2_BALL_SIZE},
+    {"M33 Ball", LUT_M33_BALL, LUT_M33_BALL_SIZE},
+    {"M8 API", LUT_M8_API, LUT_M8_API_SIZE}
+};
+
+int current_ammo_index = 0;  // Selected by operator
+
+// Use current table
+BallisticEntry* current_table = ammo_types[current_ammo_index].table;
+
+================================================================================
+STEP 8: TABLE STORAGE IN EMBEDDED SYSTEM
+================================================================================
+
+Options for Jetson Orin AGX:
+
+OPTION 1: JSON files in filesystem
+  - Location: /opt/elharress/tables/
+  - Load at startup
+  - Easy to update/swap
+  - ~10KB per table
+  - Recommended for development
+
+OPTION 2: Embedded in binary (C++ header)
+  - Compiled into executable
+  - Zero load time
+  - Cannot update without recompile
+  - ~1KB per table in binary
+  - Recommended for production
+
+OPTION 3: Binary files (.blut)
+  - Smallest size
+  - Fastest loading
+  - Can be updated
+  - Memory-mapped for instant access
+  - Recommended for production
+
+Memory Usage:
+-------------
+
+For 3 ammunition types, 50m steps (39 entries each):
+
+Storage          | JSON  | C++ Header | Binary
+-----------------|-------|------------|--------
+Per table        | 10 KB |   1 KB     |  0.6 KB
+3 tables total   | 30 KB |   3 KB     |  1.8 KB
+Runtime memory   | ~15 KB|   3 KB     |  1.8 KB
+
+On Jetson Orin AGX (32GB RAM): All options are trivial memory-wise
+
+Recommendation: Use JSON for flexibility during development,
+                switch to binary (.blut) for production deployment
+
+================================================================================
+STEP 9: QUALITY ASSURANCE CHECKLIST
+================================================================================
+
+Before deploying to El 7arress RCWS:
+
+□ Ammunition specifications verified by measurement
+  □ Mass weighed (20 rounds averaged)
+  □ MV chronographed (10 rounds averaged)
+  □ BC from manufacturer or standard reference
+
+□ Tables generated successfully
+  □ No errors during generation
+  □ CSV file inspected visually
+  □ Plots show smooth curves
+  □ Values compared against JBM/reference
+
+□ Table validation completed
+  □ Loaded successfully in fire control code
+  □ Interpolation tested at various ranges
+  □ Edge cases handled (min/max range)
+
+□ Live fire validation performed
+  □ Test shots at 3+ distances
+  □ BC adjusted if needed
+  □ Final table regenerated
+
+□ Environmental corrections implemented
+  □ Temperature correction tested
+  □ Altitude correction tested
+  □ Wind correction tested
+
+□ Safety checks
+  □ Maximum elevation limit enforced
+  □ Minimum range enforced
+  □ Out-of-range handling verified
+
+================================================================================
+STEP 10: DEPLOYMENT CHECKLIST
+================================================================================
+
+For El 7arress RCWS production deployment:
+
+Files to Deploy:
+----------------
+
+/opt/elharress/
+  └── ballistic/
+      ├── tables/
+      │   ├── m2_ball.blut           # Primary ammunition
+      │   ├── m33_ball.blut          # Secondary ammunition
+      │   └── m8_api.blut            # Armor piercing
+      ├── validation/
+      │   ├── livefire_data.csv      # Actual test results
+      │   └── bc_corrections.txt     # Adjustment history
+      └── docs/
+          ├── table_generation.txt   # Generation parameters used
+          └── ammo_specs.txt         # Measured ammunition data
+
+Integration Points:
+-------------------
+
+1. Ballistic computer module
+2. Fire control HMI (ammunition selection)
+3. Environmental sensor interface
+4. Gimbal controller (elevation/azimuth commands)
+
+Verification Tests:
+-------------------
+
+1. Cold start: Load tables, query 10 ranges, verify < 1ms response
+2. Accuracy: Compare with offline calculations
+3. Environmental: Test corrections with simulated temp/wind
+4. Ammunition switch: Verify correct table loads
+5. Edge cases: Out-of-range, invalid inputs
+
+================================================================================
+SUMMARY: QUICK REFERENCE
+================================================================================
+
+GENERATION COMMAND:
+  python3 generate_lut.py --ammo m2ball --format all
+
+OUTPUT FILES:
+  CSV:    Human-readable, validation
+  JSON:   Best for Qt/C++, recommended
+  Header: Embedded in binary
+  Binary: Smallest, fastest
+
+INTERPOLATION:
+  1. Find bracket (binary search)
+  2. Calculate t factor
+  3. Linear interpolate
+
+CORRECTIONS:
+  Temp:  elevation × sqrt(288.15 / (T+273.15))
+  Alt:   elevation × (1 / exp(-h/8500))
+  Wind:  azimuth + (wind × TOF / range × 1000)
+
+VALIDATION:
+  Generate → Inspect → Live Fire → Adjust BC → Regenerate
+
+DEPLOYMENT:
+  Store tables in /opt/elharress/ballistic/tables/
+  Load at startup or compile into binary
+  Apply real-time environmental corrections
+
+================================================================================
