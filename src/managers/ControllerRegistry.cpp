@@ -16,6 +16,7 @@
 #include "controllers/colormenucontroller.h"
 #include "controllers/zeroingcontroller.h"
 #include "controllers/windagecontroller.h"
+#include "controllers/environmentalcontroller.h"
 #include "controllers/osdcontroller.h"
 #include "controllers/zonedefinitioncontroller.h"
 #include "controllers/systemstatuscontroller.h"
@@ -181,6 +182,11 @@ bool ControllerRegistry::createQmlControllers()
         m_windageController->setViewModel(m_viewModelRegistry->windageViewModel());
         m_windageController->setStateModel(m_systemStateModel);
 
+        // Environmental Controller
+        m_environmentalController = new EnvironmentalController(this);
+        m_environmentalController->setViewModel(m_viewModelRegistry->environmentalViewModel());
+        m_environmentalController->setStateModel(m_systemStateModel);
+
         // Zone Definition Controller
         m_zoneDefinitionController = new ZoneDefinitionController(this);
         m_zoneDefinitionController->setViewModel(m_viewModelRegistry->zoneDefinitionViewModel());
@@ -240,6 +246,7 @@ bool ControllerRegistry::initializeControllers()
         m_colorMenuController->initialize();
         m_zeroingController->initialize();
         m_windageController->initialize();
+        m_environmentalController->initialize();
         m_zoneDefinitionController->initialize();
         m_systemStatusController->initialize();
         m_aboutController->initialize();

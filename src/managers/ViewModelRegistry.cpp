@@ -10,6 +10,7 @@
 #include "models/trpparameterviewmodel.h"
 #include "models/zeroingviewmodel.h"
 #include "models/windageviewmodel.h"
+#include "models/environmentalviewmodel.h"
 #include "models/systemstatusviewmodel.h"
 #include "models/aboutviewmodel.h"
 
@@ -49,6 +50,7 @@ bool ViewModelRegistry::createViewModels()
         // Ballistics ViewModels
         m_zeroingViewModel = new ZeroingViewModel(this);
         m_windageViewModel = new WindageViewModel(this);
+        m_environmentalViewModel = new EnvironmentalViewModel(this);
 
         // System Info ViewModels
         m_systemStatusViewModel = new SystemStatusViewModel(this);
@@ -91,6 +93,7 @@ bool ViewModelRegistry::registerWithQml(QQmlContext* context)
     // Ballistics
     context->setContextProperty("zeroingViewModel", m_zeroingViewModel);
     context->setContextProperty("windageViewModel", m_windageViewModel);
+    context->setContextProperty("environmentalViewModel", m_environmentalViewModel);
 
     // System Info
     context->setContextProperty("systemStatusViewModel", m_systemStatusViewModel);
