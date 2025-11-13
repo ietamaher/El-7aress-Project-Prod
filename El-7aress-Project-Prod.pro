@@ -36,6 +36,7 @@ SOURCES += \
     src/controllers/cameracontroller.cpp \
     src/controllers/colormenucontroller.cpp \
     src/controllers/deviceconfiguration.cpp \
+    src/controllers/environmentalcontroller.cpp \
     src/controllers/gimbalcontroller.cpp \
     src/controllers/joystickcontroller.cpp \
     src/controllers/ledcontroller.cpp \
@@ -74,6 +75,7 @@ SOURCES += \
     src/models/areazoneparameterviewmodel.cpp \
     src/models/domain/joystickdatamodel.cpp \
     src/models/domain/systemstatemodel.cpp \
+    src/models/environmentalviewmodel.cpp \
     src/models/historyviewmodel.cpp \
     src/models/menuviewmodel.cpp \
     src/models/osdviewmodel.cpp \
@@ -129,6 +131,7 @@ HEADERS += \
     src/controllers/cameracontroller.h \
     src/controllers/colormenucontroller.h \
     src/controllers/deviceconfiguration.h \
+    src/controllers/environmentalcontroller.h \
     src/controllers/gimbalcontroller.h \
     src/controllers/joystickcontroller.h \
     src/controllers/ledcontroller.h \
@@ -179,6 +182,7 @@ HEADERS += \
     src/models/domain/servodriverdatamodel.h \
     src/models/domain/systemstatedata.h \
     src/models/domain/systemstatemodel.h \
+    src/models/environmentalviewmodel.h \
     src/models/historyviewmodel.h \
     src/models/menuviewmodel.h \
     src/models/osdviewmodel.h \
