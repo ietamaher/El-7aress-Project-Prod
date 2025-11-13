@@ -7,7 +7,7 @@ ReticleMenuController::ReticleMenuController(QObject *parent)
     : QObject(parent)
     , m_viewModel(nullptr)
     , m_osdViewModel(nullptr)
-    , m_originalReticleType(ReticleType::CircleDotReticle)
+    , m_originalReticleType(ReticleType::BoxCrosshair)
 {
 }
 
@@ -53,23 +53,23 @@ QStringList ReticleMenuController::buildReticleOptions() const
 QString ReticleMenuController::reticleTypeToString(ReticleType type) const
 {
     switch(type) {
-    case ReticleType::CircleDotReticle: return "Circle-Dot Reticle";
     case ReticleType::BoxCrosshair: return "Box Crosshair";
-    case ReticleType::TacticalCrosshair: return "Tactical Crosshair";
-    case ReticleType::CCIPFireControl: return "CCIP Fire Control";
-    case ReticleType::MilDot: return "Mil-Dot Ranging";
+    case ReticleType::BracketsReticle: return "Brackets Reticle";
+    case ReticleType::DuplexCrosshair: return "Duplex Crosshair";
+    case ReticleType::FineCrosshair: return "Fine Crosshair";
+    case ReticleType::ChevronReticle: return "Chevron Reticle";
     default: return "Unknown";
     }
 }
 
 ReticleType ReticleMenuController::stringToReticleType(const QString& str) const
 {
-    if (str == "Circle-Dot Reticle") return ReticleType::CircleDotReticle;
     if (str == "Box Crosshair") return ReticleType::BoxCrosshair;
-    if (str == "Tactical Crosshair") return ReticleType::TacticalCrosshair;
-    if (str == "CCIP Fire Control") return ReticleType::CCIPFireControl;
-    if (str == "Mil-Dot Ranging") return ReticleType::MilDot;
-    return ReticleType::CircleDotReticle;
+    if (str == "Brackets Reticle") return ReticleType::BracketsReticle;
+    if (str == "Duplex Crosshair") return ReticleType::DuplexCrosshair;
+    if (str == "Fine Crosshair") return ReticleType::FineCrosshair;
+    if (str == "Chevron Reticle") return ReticleType::ChevronReticle;
+    return ReticleType::BoxCrosshair;
 }
 
 void ReticleMenuController::show()
