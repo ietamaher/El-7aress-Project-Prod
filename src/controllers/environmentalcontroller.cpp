@@ -92,12 +92,23 @@ void EnvironmentalController::updateUI()
         m_viewModel->setTitle("Environment (3/3): Crosswind");
         m_viewModel->setInstruction(
             "Set crosswind speed.\n"
+            "Negative = wind from RIGHT | Positive = wind from LEFT\n"
             "Use UP/DOWN to adjust. Press SELECT to confirm."
         );
         m_viewModel->setCrosswind(m_currentCrosswindEdit);
         m_viewModel->setShowParameters(true);
+
+        QString windDirection;
+        if (m_currentCrosswindEdit > 0.1f) {
+            windDirection = " (← from LEFT)";
+        } else if (m_currentCrosswindEdit < -0.1f) {
+            windDirection = " (from RIGHT →)";
+        } else {
+            windDirection = " (no wind)";
+        }
+
         m_viewModel->setParameterLabel(
-            QString("Crosswind: %1 m/s").arg(m_currentCrosswindEdit, 0, 'f', 1)
+            QString("Crosswind: %1 m/s%2").arg(m_currentCrosswindEdit, 0, 'f', 1).arg(windDirection)
         );
         break;
 
@@ -201,7 +212,7 @@ void EnvironmentalController::onUpButtonPressed()
 
     case EnvironmentalState::Set_Crosswind:
         m_currentCrosswindEdit += 0.5f;
-        if (m_currentCrosswindEdit > 25.0f) m_currentCrosswindEdit = 25.0f;
+        if (m_currentCrosswindEdit > 20.0f) m_currentCrosswindEdit = 20.0f;
         updateUI();
         break;
 
@@ -227,7 +238,7 @@ void EnvironmentalController::onDownButtonPressed()
 
     case EnvironmentalState::Set_Crosswind:
         m_currentCrosswindEdit -= 0.5f;
-        if (m_currentCrosswindEdit < 0.0f) m_currentCrosswindEdit = 0.0f;
+        if (m_currentCrosswindEdit < -20.0f) m_currentCrosswindEdit = -20.0f;
         updateUI();
         break;
 
