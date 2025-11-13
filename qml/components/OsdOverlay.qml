@@ -39,14 +39,17 @@ Item {
         x: 10
         y: 10
         width: 380
-        height: 95
+        // Dynamic height based on content
+        height: statusRow.height + 16  // Content height + padding (8px top + 8px bottom)
         color: "#CC000000"
         border.color: accentColor
         border.width: 1
 
         Row {
-            x: 8
-            y: 8
+            id: statusRow
+            anchors.left: parent.left
+            anchors.top: parent.top
+            anchors.margins: 8
             spacing: 20  // Space between left and right columns
 
             // === LEFT COLUMN ===
