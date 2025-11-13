@@ -59,7 +59,7 @@ Canvas {
 
     // TYPE 0: BOX CROSSHAIR (General purpose - NATO standard)
     function drawBoxCrosshair(ctx, cx, cy) {
-        var fovScale = currentFov / 45.0; // Scale based on FOV (45° baseline)
+        var fovScale = 45.0 / currentFov; // Inverse scale: larger when zoomed in, smaller when zoomed out
         var lineLen = 80 * fovScale;
         var boxSize = 50 * fovScale;
         var halfBox = boxSize / 2;
@@ -90,7 +90,7 @@ Canvas {
 
     // TYPE 1: BRACKETS RETICLE (Corner brackets style - Enhanced visibility)
     function drawBracketsReticle(ctx, cx, cy) {
-        var fovScale = currentFov / 45.0; // Scale based on FOV (45° baseline)
+        var fovScale = 45.0 / currentFov; // Inverse scale: larger when zoomed in, smaller when zoomed out
         var crosshairLen = 30 * fovScale;
         var bracketSize = 25 * fovScale;
         var bracketLength = 12 * fovScale;
@@ -152,7 +152,7 @@ Canvas {
 
     // TYPE 2: DUPLEX CROSSHAIR (Thick outer, thin inner - Sniper style)
     function drawDuplexCrosshair(ctx, cx, cy) {
-        var fovScale = currentFov / 45.0; // Scale based on FOV (45° baseline)
+        var fovScale = 45.0 / currentFov; // Inverse scale: larger when zoomed in, smaller when zoomed out
         var outerLen = 80 * fovScale;
         var innerLen = 15 * fovScale;
         var gap = 8 * fovScale;
@@ -233,7 +233,7 @@ Canvas {
 
     // TYPE 3: FINE CROSSHAIR (Thin precision crosshair - Long range)
     function drawFineCrosshair(ctx, cx, cy) {
-        var fovScale = currentFov / 45.0; // Scale based on FOV (45° baseline)
+        var fovScale = 45.0 / currentFov; // Inverse scale: larger when zoomed in, smaller when zoomed out
         var lineLen = 90 * fovScale;
         var gap = 6 * fovScale;
         var lineWidth = 1.5;
@@ -298,7 +298,7 @@ Canvas {
 
     // TYPE 4: CHEVRON RETICLE (Downward pointing chevron - CQB style)
     function drawChevronReticle(ctx, cx, cy) {
-        var fovScale = currentFov / 45.0; // Scale based on FOV (45° baseline)
+        var fovScale = 45.0 / currentFov; // Inverse scale: larger when zoomed in, smaller when zoomed out
         var chevronHeight = 25 * fovScale;
         var chevronWidth = 18 * fovScale;
         var lineLen = 60 * fovScale;
