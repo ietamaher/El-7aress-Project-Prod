@@ -1,0 +1,289 @@
+{
+  "ammunition": {
+    "name": "M2 Ball",
+    "diameter_mm": 12.954,
+    "mass_grams": 45.96,
+    "bc_g1": 0.62,
+    "muzzle_velocity_ms": 887.0
+  },
+  "generation_parameters": {
+    "range_start_m": 100,
+    "range_end_m": 2000,
+    "range_step_m": 50
+  },
+  "lookup_table": [
+    {
+      "range_m": 100,
+      "elevation_deg": 3.9968028886505635e-14,
+      "elevation_mils": 7.105427357601002e-13,
+      "tof_s": 0.15,
+      "impact_velocity_ms": 821.9215012392368
+    },
+    {
+      "range_m": 150,
+      "elevation_deg": 0.014966743693389795,
+      "elevation_mils": 0.2660754434380408,
+      "tof_s": 0.17,
+      "impact_velocity_ms": 813.8337704237846
+    },
+    {
+      "range_m": 200,
+      "elevation_deg": 0.044544366168071114,
+      "elevation_mils": 0.7918998429879309,
+      "tof_s": 0.24000000000000007,
+      "impact_velocity_ms": 786.5063735406029
+    },
+    {
+      "range_m": 250,
+      "elevation_deg": 0.07428945872087755,
+      "elevation_mils": 1.3207014883711565,
+      "tof_s": 0.3000000000000001,
+      "impact_velocity_ms": 764.2192941245171
+    },
+    {
+      "range_m": 300,
+      "elevation_deg": 0.10182280386526354,
+      "elevation_mils": 1.8101831798269075,
+      "tof_s": 0.38000000000000017,
+      "impact_velocity_ms": 736.0089974684925
+    },
+    {
+      "range_m": 350,
+      "elevation_deg": 0.12458012216108205,
+      "elevation_mils": 2.2147577273081254,
+      "tof_s": 0.4300000000000002,
+      "impact_velocity_ms": 719.1931530988952
+    },
+    {
+      "range_m": 400,
+      "elevation_deg": 0.15433696276218267,
+      "elevation_mils": 2.7437682268832475,
+      "tof_s": 0.5100000000000002,
+      "impact_velocity_ms": 693.5013241656666
+    },
+    {
+      "range_m": 450,
+      "elevation_deg": 0.18012694697782994,
+      "elevation_mils": 3.202256835161421,
+      "tof_s": 0.5900000000000003,
+      "impact_velocity_ms": 669.2006302914145
+    },
+    {
+      "range_m": 500,
+      "elevation_deg": 0.20585434153873816,
+      "elevation_mils": 3.659632738466456,
+      "tof_s": 0.6500000000000004,
+      "impact_velocity_ms": 651.8286693168062
+    },
+    {
+      "range_m": 550,
+      "elevation_deg": 0.23530202389211663,
+      "elevation_mils": 4.183147091415407,
+      "tof_s": 0.7400000000000004,
+      "impact_velocity_ms": 627.0645196906752
+    },
+    {
+      "range_m": 600,
+      "elevation_deg": 0.2648835362272317,
+      "elevation_mils": 4.709040644039675,
+      "tof_s": 0.8200000000000005,
+      "impact_velocity_ms": 606.2816374367585
+    },
+    {
+      "range_m": 650,
+      "elevation_deg": 0.2983952023972014,
+      "elevation_mils": 5.3048035981724695,
+      "tof_s": 0.9000000000000006,
+      "impact_velocity_ms": 586.582562919449
+    },
+    {
+      "range_m": 700,
+      "elevation_deg": 0.32843335614747726,
+      "elevation_mils": 5.838815220399596,
+      "tof_s": 0.9800000000000006,
+      "impact_velocity_ms": 567.9084043468919
+    },
+    {
+      "range_m": 750,
+      "elevation_deg": 0.3625431046037031,
+      "elevation_mils": 6.445210748510277,
+      "tof_s": 1.0800000000000007,
+      "impact_velocity_ms": 545.9205169212296
+    },
+    {
+      "range_m": 800,
+      "elevation_deg": 0.40086953635877887,
+      "elevation_mils": 7.12656953526718,
+      "tof_s": 1.1700000000000008,
+      "impact_velocity_ms": 527.3482616380211
+    },
+    {
+      "range_m": 850,
+      "elevation_deg": 0.43577131212674036,
+      "elevation_mils": 7.747045548919829,
+      "tof_s": 1.270000000000001,
+      "impact_velocity_ms": 507.98569664180974
+    },
+    {
+      "range_m": 900,
+      "elevation_deg": 0.47502643339063066,
+      "elevation_mils": 8.44491437138899,
+      "tof_s": 1.370000000000001,
+      "impact_velocity_ms": 489.88669409625305
+    },
+    {
+      "range_m": 950,
+      "elevation_deg": 0.518808150451675,
+      "elevation_mils": 9.223256008029779,
+      "tof_s": 1.470000000000001,
+      "impact_velocity_ms": 472.9780948500188
+    },
+    {
+      "range_m": 1000,
+      "elevation_deg": 0.5632425154375431,
+      "elevation_mils": 10.01320027444521,
+      "tof_s": 1.5900000000000012,
+      "impact_velocity_ms": 454.1660512815841
+    },
+    {
+      "range_m": 1050,
+      "elevation_deg": 0.6083515417693208,
+      "elevation_mils": 10.815138520343481,
+      "tof_s": 1.7000000000000013,
+      "impact_velocity_ms": 438.25439421613976
+    },
+    {
+      "range_m": 1100,
+      "elevation_deg": 0.654156498648768,
+      "elevation_mils": 11.629448864866987,
+      "tof_s": 1.8100000000000014,
+      "impact_velocity_ms": 423.5418231141373
+    },
+    {
+      "range_m": 1150,
+      "elevation_deg": 0.7049443592277926,
+      "elevation_mils": 12.532344164049647,
+      "tof_s": 1.9300000000000015,
+      "impact_velocity_ms": 408.7831717692493
+    },
+    {
+      "range_m": 1200,
+      "elevation_deg": 0.7609611965087693,
+      "elevation_mils": 13.528199049044787,
+      "tof_s": 2.06,
+      "impact_velocity_ms": 394.2281447023328
+    },
+    {
+      "range_m": 1250,
+      "elevation_deg": 0.8180518162370243,
+      "elevation_mils": 14.54314339976932,
+      "tof_s": 2.1799999999999975,
+      "impact_velocity_ms": 382.02514387850175
+    },
+    {
+      "range_m": 1300,
+      "elevation_deg": 0.8762555182682474,
+      "elevation_mils": 15.577875880324399,
+      "tof_s": 2.3099999999999947,
+      "impact_velocity_ms": 370.073353687483
+    },
+    {
+      "range_m": 1350,
+      "elevation_deg": 0.9402302547685748,
+      "elevation_mils": 16.715204529219108,
+      "tof_s": 2.4499999999999917,
+      "impact_velocity_ms": 358.58389854377947
+    },
+    {
+      "range_m": 1400,
+      "elevation_deg": 1.0055994533207313,
+      "elevation_mils": 17.87732361459078,
+      "tof_s": 2.5999999999999885,
+      "impact_velocity_ms": 347.7359375897755
+    },
+    {
+      "range_m": 1450,
+      "elevation_deg": 1.07666015625,
+      "elevation_mils": 19.140625,
+      "tof_s": 2.7399999999999856,
+      "impact_velocity_ms": 338.8359274066496
+    },
+    {
+      "range_m": 1500,
+      "elevation_deg": 1.1456489348049592,
+      "elevation_mils": 20.367092174310386,
+      "tof_s": 2.8799999999999826,
+      "impact_velocity_ms": 330.96332639613047
+    },
+    {
+      "range_m": 1550,
+      "elevation_deg": 1.225684176836137,
+      "elevation_mils": 21.789940921531326,
+      "tof_s": 3.049999999999979,
+      "impact_velocity_ms": 322.5636124796758
+    },
+    {
+      "range_m": 1600,
+      "elevation_deg": 1.302528770961433,
+      "elevation_mils": 23.156067039314365,
+      "tof_s": 3.1999999999999758,
+      "impact_velocity_ms": 316.01954696158515
+    },
+    {
+      "range_m": 1650,
+      "elevation_deg": 1.3864229938570682,
+      "elevation_mils": 24.647519890792324,
+      "tof_s": 3.3499999999999726,
+      "impact_velocity_ms": 310.13702584815496
+    },
+    {
+      "range_m": 1700,
+      "elevation_deg": 1.477712836749352,
+      "elevation_mils": 26.27045043109959,
+      "tof_s": 3.5299999999999687,
+      "impact_velocity_ms": 303.7860237408879
+    },
+    {
+      "range_m": 1750,
+      "elevation_deg": 1.5656188718603792,
+      "elevation_mils": 27.833224388628963,
+      "tof_s": 3.6899999999999653,
+      "impact_velocity_ms": 298.66625507323823
+    },
+    {
+      "range_m": 1800,
+      "elevation_deg": 1.6610767509051216,
+      "elevation_mils": 29.530253349424385,
+      "tof_s": 3.849999999999962,
+      "impact_velocity_ms": 293.9564276241576
+    },
+    {
+      "range_m": 1850,
+      "elevation_deg": 1.7585933261991782,
+      "elevation_mils": 31.263881354652057,
+      "tof_s": 4.0299999999999585,
+      "impact_velocity_ms": 289.0622912564398
+    },
+    {
+      "range_m": 1900,
+      "elevation_deg": 1.8640185189729364,
+      "elevation_mils": 33.13810700396331,
+      "tof_s": 4.209999999999955,
+      "impact_velocity_ms": 284.5279621042834
+    },
+    {
+      "range_m": 1950,
+      "elevation_deg": 1.9716006729177282,
+      "elevation_mils": 35.0506786296485,
+      "tof_s": 4.379999999999951,
+      "impact_velocity_ms": 280.52658783899875
+    },
+    {
+      "range_m": 2000,
+      "elevation_deg": 2.0812637704378956,
+      "elevation_mils": 37.00024480778481,
+      "tof_s": 4.559999999999947,
+      "impact_velocity_ms": 276.5453234844244
+    }
+  ]
+}
