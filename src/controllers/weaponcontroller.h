@@ -9,7 +9,7 @@ class ServoActuatorDevice;
 class SystemStateModel;
 
 #include "models/domain/systemstatemodel.h"
-#include "../utils/ballisticsprocessor.h"
+#include "../utils/ballisticsprocessorlut.h"
 
 enum class AmmoState {
     Idle,
@@ -57,7 +57,7 @@ private:
     Plc42Device* m_plc42 = nullptr;
     ServoActuatorDevice* m_servoActuator = nullptr;
     SystemStateData m_oldState;
-    BallisticsProcessor* m_ballisticsProcessor = nullptr;
+    BallisticsProcessorLUT* m_ballisticsProcessor = nullptr;
     
 
     bool m_weaponArmed = false;

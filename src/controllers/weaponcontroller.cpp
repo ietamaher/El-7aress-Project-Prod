@@ -19,7 +19,21 @@ WeaponController::WeaponController(SystemStateModel* m_stateModel,
                 this, &WeaponController::onSystemStateChanged);
     }
 
-    m_ballisticsProcessor = new BallisticsProcessor();
+    // ========================================================================
+    // BALLISTICS: Professional LUT System (Kongsberg/Rafael approach)
+    // ========================================================================
+    m_ballisticsProcessor = new BallisticsProcessorLUT();
+
+    // Load ammunition table from Qt resources
+    bool lutLoaded = m_ballisticsProcessor->loadAmmunitionTable(":/ballistic/tables/m2_ball.json");
+
+    if (lutLoaded) {
+        qInfo() << "[WeaponController] Ballistic LUT loaded successfully:"
+                << m_ballisticsProcessor->getAmmunitionName();
+    } else {
+        qCritical() << "[WeaponController] CRITICAL: Failed to load ballistic table!"
+                    << "Fire control accuracy will be degraded!";
+    }
 }
 
 void WeaponController::onSystemStateChanged(const SystemStateData &newData)
