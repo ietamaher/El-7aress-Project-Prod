@@ -195,11 +195,33 @@ void WeaponController::updateFireControlSolution() {
     float currentFOV = sData.dayCurrentHFOV; // Horizontal FOV for day camera !!! TODO
     float tofGuess = (targetRange > 0 && sData.muzzleVelocityMPS > 0) ? (targetRange / sData.muzzleVelocityMPS) : 0.0f; // Ensure muzzleVelocity is in SystemStateData
 
-        if (!m_ballisticsProcessor) { // If m_ballisticsProcessor is a pointer
+    if (!m_ballisticsProcessor) { // If m_ballisticsProcessor is a pointer
         qCritical() << "BallisticsComputer pointer is NULL!";
         return; // Or handle error
     }
-    
+
+    // ========================================================================
+    // UPDATE ENVIRONMENTAL CONDITIONS (if enabled)
+    // ========================================================================
+    // Apply real-time environmental data from sensors/user input
+    // ========================================================================
+    if (sData.environmentalAppliedToBallistics) {
+        // Update ballistics processor with current environmental conditions
+        m_ballisticsProcessor->setEnvironmentalConditions(
+            sData.environmentalTemperatureCelsius,
+            sData.environmentalAltitudeMeters,
+            sData.environmentalCrosswindMS
+        );
+
+        qDebug() << "[WeaponController] Environmental corrections ACTIVE:"
+                 << "Temp:" << sData.environmentalTemperatureCelsius << "°C"
+                 << "Alt:" << sData.environmentalAltitudeMeters << "m"
+                 << "Wind:" << sData.environmentalCrosswindMS << "m/s";
+    } else {
+        // Set to standard conditions when environmental corrections are disabled
+        m_ballisticsProcessor->setEnvironmentalConditions(15.0f, 0.0f, 0.0f);
+    }
+
     LeadCalculationResult lead = m_ballisticsProcessor->calculateLeadAngle(
         targetRange, targetAngRateAz, targetAngRateEl,
         sData.muzzleVelocityMPS, // Pass actual muzzle velocity
