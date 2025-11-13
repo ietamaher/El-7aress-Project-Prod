@@ -4,6 +4,7 @@
 #include "controllers/colormenucontroller.h"
 #include "controllers/zeroingcontroller.h"
 #include "controllers/windagecontroller.h"
+#include "controllers/environmentalcontroller.h"
 #include "controllers/zonedefinitioncontroller.h"
 #include "controllers/systemstatuscontroller.h"
 #include "controllers/aboutcontroller.h"
@@ -20,6 +21,7 @@ ApplicationController::ApplicationController(QObject *parent)
     , m_colorMenuController(nullptr)
     , m_zeroingController(nullptr)
     , m_windageController(nullptr)
+    , m_environmentalController(nullptr)
     , m_zoneDefinitionController(nullptr)
     , m_systemStateModel(nullptr)
     , m_aboutController(nullptr)
@@ -53,6 +55,11 @@ void ApplicationController::setZeroingController(ZeroingController* controller)
 void ApplicationController::setWindageController(WindageController* controller)
 {
     m_windageController = controller;
+}
+
+void ApplicationController::setEnvironmentalController(EnvironmentalController* controller)
+{
+    m_environmentalController = controller;
 }
 
 void ApplicationController::setZoneDefinitionController(ZoneDefinitionController* controller)
@@ -89,6 +96,7 @@ void ApplicationController::initialize()
     Q_ASSERT(m_colorMenuController);
     Q_ASSERT(m_zeroingController);
     Q_ASSERT(m_windageController);
+    Q_ASSERT(m_environmentalController);
     Q_ASSERT(m_zoneDefinitionController);
     Q_ASSERT(m_systemStatusController);
     Q_ASSERT(m_aboutController);
@@ -109,6 +117,10 @@ void ApplicationController::initialize()
             this, &ApplicationController::handleWindage);
     connect(m_mainMenuController, &MainMenuController::clearWindageRequested,
             this, &ApplicationController::handleClearWindage);
+    connect(m_mainMenuController, &MainMenuController::environmentalRequested,
+            this, &ApplicationController::handleEnvironmental);
+    connect(m_mainMenuController, &MainMenuController::clearEnvironmentalRequested,
+            this, &ApplicationController::handleClearEnvironmental);
     connect(m_mainMenuController, &MainMenuController::zoneDefinitionsRequested,
             this, &ApplicationController::handleZoneDefinitions);
     connect(m_mainMenuController, &MainMenuController::systemStatusRequested,
@@ -155,6 +167,14 @@ void ApplicationController::initialize()
             this, &ApplicationController::handleReturnToMainMenu);
     connect(m_windageController, &WindageController::windageFinished,
             this, &ApplicationController::handleWindageFinished);
+
+    // =========================================================================
+    // ENVIRONMENTAL CONNECTIONS
+    // =========================================================================
+    connect(m_environmentalController, &EnvironmentalController::returnToMainMenu,
+            this, &ApplicationController::handleReturnToMainMenu);
+    connect(m_environmentalController, &EnvironmentalController::environmentalFinished,
+            this, &ApplicationController::handleEnvironmentalFinished);
 
     // =========================================================================
     // ZONE DEFINITION CONNECTIONS
@@ -221,6 +241,7 @@ void ApplicationController::hideAllMenus()
     m_colorMenuController->hide();
     m_zeroingController->hide();
     m_windageController->hide();
+    m_environmentalController->hide();
     m_zoneDefinitionController->hide();
     m_systemStatusController->hide();
     m_aboutController->hide();
@@ -311,6 +332,9 @@ void ApplicationController::handleMenuValInProcedure()
     case MenuState::WindageProcedure:
         m_windageController->onSelectButtonPressed();
         break;
+    case MenuState::EnvironmentalProcedure:
+        m_environmentalController->onSelectButtonPressed();
+        break;
     case MenuState::ZoneDefinition:
         m_zoneDefinitionController->onMenuValButtonPressed();
         break;
@@ -344,6 +368,9 @@ void ApplicationController::onUpButtonPressed()
         break;
     case MenuState::WindageProcedure:
         m_windageController->onUpButtonPressed();
+        break;
+    case MenuState::EnvironmentalProcedure:
+        m_environmentalController->onUpButtonPressed();
         break;
     case MenuState::ZoneDefinition:
         m_zoneDefinitionController->onUpButtonPressed();
@@ -380,6 +407,9 @@ void ApplicationController::onDownButtonPressed()
         break;
     case MenuState::WindageProcedure:
         m_windageController->onDownButtonPressed();
+        break;
+    case MenuState::EnvironmentalProcedure:
+        m_environmentalController->onDownButtonPressed();
         break;
     case MenuState::ZoneDefinition:
         m_zoneDefinitionController->onDownButtonPressed();
@@ -446,6 +476,23 @@ void ApplicationController::handleClearWindage()
     qDebug() << "ApplicationController: Clear Windage requested";
     if (m_systemStateModel) {
         m_systemStateModel->clearWindage();
+    }
+    showMainMenu();
+}
+
+void ApplicationController::handleEnvironmental()
+{
+    qDebug() << "ApplicationController: Environmental settings requested";
+    hideAllMenus();
+    m_environmentalController->show();
+    setMenuState(MenuState::EnvironmentalProcedure);
+}
+
+void ApplicationController::handleClearEnvironmental()
+{
+    qDebug() << "ApplicationController: Clear Environmental settings requested";
+    if (m_systemStateModel) {
+        m_systemStateModel->clearEnvironmental();
     }
     showMainMenu();
 }
@@ -558,6 +605,11 @@ void ApplicationController::handleZeroingFinished()
 void ApplicationController::handleWindageFinished()
 {
     qDebug() << "ApplicationController: Windage procedure finished";
+}
+
+void ApplicationController::handleEnvironmentalFinished()
+{
+    qDebug() << "ApplicationController: Environmental procedure finished";
 }
 
 void ApplicationController::handleZoneDefinitionFinished()

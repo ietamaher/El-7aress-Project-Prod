@@ -57,6 +57,8 @@ QStringList MainMenuController::buildMainMenuOptions() const
             << "Clear Active Zero"
             << "Windage"
             << "Clear Active Windage"
+            << "Environmental Settings"
+            << "Clear Environmental Settings"
             << "--- SYSTEM ---"
             << "Zone Definitions"
             << "System Status"
@@ -132,6 +134,14 @@ void MainMenuController::handleMenuOptionSelected(const QString& option)
     }
     else if (option == "Clear Active Windage") {
         emit clearWindageRequested();
+        emit menuFinished();
+    }
+    else if (option == "Environmental Settings") {
+        emit environmentalRequested();
+        // ❌ DON'T emit menuFinished() - environmental is a procedure
+    }
+    else if (option == "Clear Environmental Settings") {
+        emit clearEnvironmentalRequested();
         emit menuFinished();
     }
     else if (option == "Zone Definitions") {

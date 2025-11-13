@@ -215,6 +215,7 @@ bool ControllerRegistry::createQmlControllers()
         m_appController->setColorMenuController(m_colorMenuController);
         m_appController->setZeroingController(m_zeroingController);
         m_appController->setWindageController(m_windageController);
+        m_appController->setEnvironmentalController(m_environmentalController);
         m_appController->setZoneDefinitionController(m_zoneDefinitionController);
         m_appController->setSystemStatusController(m_systemStatusController);
         m_appController->setAboutController(m_aboutController);

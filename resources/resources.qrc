@@ -4,6 +4,7 @@
         <file>../qml/views/MainMenu.qml</file>
         <file>../qml/components/OsdOverlay.qml</file>
         <file>../qml/components/WindageOverlay.qml</file>
+        <file>../qml/components/EnvironmentalOverlay.qml</file>
         <file>../qml/components/ZeroingOverlay.qml</file>
 	<file>../qml/components/AreaZoneParameterPanel.qml</file>
 	<file>../qml/components/SectorScanParameterPanel.qml</file>
