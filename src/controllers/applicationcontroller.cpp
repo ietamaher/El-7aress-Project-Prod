@@ -259,8 +259,9 @@ void ApplicationController::onMenuValButtonPressed()
     // Handle procedures first (they have priority)
     if (m_currentMenuState == MenuState::ZeroingProcedure ||
         m_currentMenuState == MenuState::WindageProcedure ||
+        m_currentMenuState == MenuState::EnvironmentalProcedure ||
         m_currentMenuState == MenuState::ZoneDefinition     ||
-        m_currentMenuState == MenuState::HelpAbout ||   
+        m_currentMenuState == MenuState::HelpAbout ||
         m_currentMenuState == MenuState::SystemStatus  ) {
         handleMenuValInProcedure();
         return;
