@@ -186,7 +186,7 @@ bool ConfigurationValidator::validateUI()
     valid &= validateRange(cfg.fontSize, Osd::MIN_FONT_SIZE, Osd::MAX_FONT_SIZE, "Font size");
 
     // Validate reticle type
-    QStringList validReticles = {"Basic", "BoxCrosshair", "Standard", "Precision", "MilDot"};
+    QStringList validReticles = {"BoxCrosshair", "BracketsReticle", "DuplexCrosshair", "FineCrosshair", "ChevronReticle"};
     if (!validReticles.contains(cfg.defaultReticle)) {
         addWarning(QString("Invalid default reticle '%1', will use 'BoxCrosshair'").arg(cfg.defaultReticle));
     }

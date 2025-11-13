@@ -3,13 +3,14 @@ import QtQuick
 Canvas {
     id: canvas
 
-    property int reticleType: 1 // 0=CircleDot, 1=BoxCrosshair, 2=TacticalCrosshair, 3=CCIP, 4=MilDot
+    // Reticle types: 0=BoxCrosshair, 1=BracketsReticle, 2=DuplexCrosshair, 3=FineCrosshair, 4=ChevronReticle
+    property int reticleType: 0
     property color color: "#46E2A5"
     property color outlineColor: "#000000"
     property real outlineWidth: 2
     property real currentFov: 45.0
 
-    // CCIP-specific properties
+    // LAC-specific properties
     property bool lacActive: false
     property real rangeMeters: 0
     property real confidenceLevel: 1.0 // 0.0 to 1.0
@@ -32,11 +33,11 @@ Canvas {
         var centerY = height / 2;
 
         switch (reticleType) {
-            case 0: drawCircleDotReticle(ctx, centerX, centerY); break;
-            case 1: drawBoxCrosshair(ctx, centerX, centerY); break;
-            case 2: drawTacticalCrosshair(ctx, centerX, centerY); break;
-            case 3: drawCCIPReticle(ctx, centerX, centerY); break;
-            case 4: drawMilDotReticle(ctx, centerX, centerY); break;
+            case 0: drawBoxCrosshair(ctx, centerX, centerY); break;
+            case 1: drawBracketsReticle(ctx, centerX, centerY); break;
+            case 2: drawDuplexCrosshair(ctx, centerX, centerY); break;
+            case 3: drawFineCrosshair(ctx, centerX, centerY); break;
+            case 4: drawChevronReticle(ctx, centerX, centerY); break;
             default: drawBoxCrosshair(ctx, centerX, centerY); break;
         }
     }
@@ -56,31 +57,7 @@ Canvas {
         drawFunc(ctx);
     }
 
-    // TYPE 0: CIRCLE-DOT RETICLE (Close range, rapid acquisition)
-    function drawCircleDotReticle(ctx, cx, cy) {
-        var circleRadius = 25; // ~2 MOA at typical distances
-        var dotRadius = 2;
-
-        drawWithOutline(ctx, function(c) {
-            // Outer circle
-            c.beginPath();
-            c.arc(cx, cy, circleRadius, 0, 2 * Math.PI);
-            c.stroke();
-        });
-
-        // Center dot with outline
-        ctx.fillStyle = canvas.outlineColor;
-        ctx.beginPath();
-        ctx.arc(cx, cy, dotRadius + outlineWidth/2, 0, 2 * Math.PI);
-        ctx.fill();
-
-        ctx.fillStyle = canvas.color;
-        ctx.beginPath();
-        ctx.arc(cx, cy, dotRadius, 0, 2 * Math.PI);
-        ctx.fill();
-    }
-
-    // TYPE 1: BOX CROSSHAIR (General purpose - NATO standard)
+    // TYPE 0: BOX CROSSHAIR (General purpose - NATO standard)
     function drawBoxCrosshair(ctx, cx, cy) {
         var lineLen = 80;
         var boxSize = 50;
@@ -105,251 +82,264 @@ Canvas {
             // Box
             c.strokeRect(cx - halfBox, cy - halfBox, boxSize, boxSize);
         });
-    }
-
-    // TYPE 2: TACTICAL CROSSHAIR (Precision with wind/elevation marks)
-    function drawTacticalCrosshair(ctx, cx, cy) {
-        var size = 80;
-        var gap = 8;
-        var hashLength = 4;
-        var hashSpacing = 10; // Represents ~2 mils each
-
-        drawWithOutline(ctx, function(c) {
-            c.beginPath();
-            // Main horizontal crosshair
-            c.moveTo(cx - size, cy);
-            c.lineTo(cx - gap, cy);
-            c.moveTo(cx + gap, cy);
-            c.lineTo(cx + size, cy);
-
-            // Main vertical crosshair
-            c.moveTo(cx, cy - size);
-            c.lineTo(cx, cy - gap);
-            c.moveTo(cx, cy + gap);
-            c.lineTo(cx, cy + size);
-
-            // Windage hash marks (horizontal axis)
-            for (var i = 1; i <= 6; i++) {
-                var dist = i * hashSpacing;
-                if (dist < size - gap) {
-                    // Left side
-                    c.moveTo(cx - dist, cy - hashLength);
-                    c.lineTo(cx - dist, cy + hashLength);
-                    // Right side
-                    c.moveTo(cx + dist, cy - hashLength);
-                    c.lineTo(cx + dist, cy + hashLength);
-                }
-            }
-
-            // Elevation holdover marks (vertical axis - below center)
-            for (var j = 1; j <= 6; j++) {
-                var vDist = j * hashSpacing;
-                if (vDist < size - gap) {
-                    // Below center only (for bullet drop)
-                    c.moveTo(cx - hashLength, cy + vDist);
-                    c.lineTo(cx + hashLength, cy + vDist);
-                }
-            }
-
-            // Stadia lines (longer marks every 3 intervals = ~5 mils)
-            var stadiaLength = 8;
-            for (var k = 3; k <= 6; k += 3) {
-                var sDist = k * hashSpacing;
-                if (sDist < size - gap) {
-                    // Horizontal stadia
-                    c.moveTo(cx - sDist, cy - stadiaLength);
-                    c.lineTo(cx - sDist, cy + stadiaLength);
-                    c.moveTo(cx + sDist, cy - stadiaLength);
-                    c.lineTo(cx + sDist, cy + stadiaLength);
-
-                    // Vertical stadia (below only)
-                    c.moveTo(cx - stadiaLength, cy + sDist);
-                    c.lineTo(cx + stadiaLength, cy + sDist);
-                }
-            }
-
-            c.stroke();
-        });
 
         // Center dot
-        ctx.fillStyle = canvas.outlineColor;
-        ctx.beginPath();
-        ctx.arc(cx, cy, 2 + outlineWidth/2, 0, 2 * Math.PI);
-        ctx.fill();
+        drawCenterDot(ctx, cx, cy, 2);
+    }
 
+    // TYPE 1: BRACKETS RETICLE (Corner brackets style - Enhanced visibility)
+    function drawBracketsReticle(ctx, cx, cy) {
+        var crosshairLen = 30;
+        var bracketSize = 25;
+        var bracketLength = 12;
+        var bracketThickness = 2;
+
+        drawWithOutline(ctx, function(c) {
+            // Horizontal crosshair
+            c.beginPath();
+            c.moveTo(cx - crosshairLen, cy);
+            c.lineTo(cx + crosshairLen, cy);
+            c.stroke();
+
+            // Vertical crosshair
+            c.beginPath();
+            c.moveTo(cx, cy - crosshairLen);
+            c.lineTo(cx, cy + crosshairLen);
+            c.stroke();
+        });
+
+        // Draw corner brackets using outlined rectangles
+        var brackets = [
+            // Top-left corner
+            {x: cx - bracketSize, y: cy - bracketSize, w: bracketLength, h: bracketThickness},      // Horizontal
+            {x: cx - bracketSize, y: cy - bracketSize, w: bracketThickness, h: bracketLength},      // Vertical
+
+            // Top-right corner
+            {x: cx + bracketSize - bracketLength, y: cy - bracketSize, w: bracketLength, h: bracketThickness},
+            {x: cx + bracketSize - bracketThickness, y: cy - bracketSize, w: bracketThickness, h: bracketLength},
+
+            // Bottom-left corner
+            {x: cx - bracketSize, y: cy + bracketSize - bracketThickness, w: bracketLength, h: bracketThickness},
+            {x: cx - bracketSize, y: cy + bracketSize - bracketLength, w: bracketThickness, h: bracketLength},
+
+            // Bottom-right corner
+            {x: cx + bracketSize - bracketLength, y: cy + bracketSize - bracketThickness, w: bracketLength, h: bracketThickness},
+            {x: cx + bracketSize - bracketThickness, y: cy + bracketSize - bracketLength, w: bracketThickness, h: bracketLength}
+        ];
+
+        // Draw bracket outlines
+        ctx.fillStyle = canvas.outlineColor;
+        for (var i = 0; i < brackets.length; i++) {
+            ctx.fillRect(
+                brackets[i].x - outlineWidth/2,
+                brackets[i].y - outlineWidth/2,
+                brackets[i].w + outlineWidth,
+                brackets[i].h + outlineWidth
+            );
+        }
+
+        // Draw bracket main
         ctx.fillStyle = canvas.color;
+        for (var j = 0; j < brackets.length; j++) {
+            ctx.fillRect(brackets[j].x, brackets[j].y, brackets[j].w, brackets[j].h);
+        }
+
+        // Center dot
+        drawCenterDot(ctx, cx, cy, 2);
+    }
+
+    // TYPE 2: DUPLEX CROSSHAIR (Thick outer, thin inner - Sniper style)
+    function drawDuplexCrosshair(ctx, cx, cy) {
+        var outerLen = 80;
+        var innerLen = 15;
+        var gap = 8;
+        var thickWidth = 4;
+        var thinWidth = 1.5;
+
+        // Thick outer segments
+        drawWithOutline(ctx, function(c) {
+            c.lineWidth = thickWidth;
+            c.beginPath();
+            // Horizontal - left thick
+            c.moveTo(cx - outerLen, cy);
+            c.lineTo(cx - gap - innerLen, cy);
+            // Horizontal - right thick
+            c.moveTo(cx + gap + innerLen, cy);
+            c.lineTo(cx + outerLen, cy);
+            // Vertical - top thick
+            c.moveTo(cx, cy - outerLen);
+            c.lineTo(cx, cy - gap - innerLen);
+            // Vertical - bottom thick
+            c.moveTo(cx, cy + gap + innerLen);
+            c.lineTo(cx, cy + outerLen);
+            c.stroke();
+        });
+
+        // Thin inner segments
+        ctx.strokeStyle = canvas.outlineColor;
+        ctx.lineWidth = thinWidth + outlineWidth;
         ctx.beginPath();
-        ctx.arc(cx, cy, 2, 0, 2 * Math.PI);
-        ctx.fill();
+        // Horizontal inner
+        ctx.moveTo(cx - gap - innerLen, cy);
+        ctx.lineTo(cx - gap, cy);
+        ctx.moveTo(cx + gap, cy);
+        ctx.lineTo(cx + gap + innerLen, cy);
+        // Vertical inner
+        ctx.moveTo(cx, cy - gap - innerLen);
+        ctx.lineTo(cx, cy - gap);
+        ctx.moveTo(cx, cy + gap);
+        ctx.lineTo(cx, cy + gap + innerLen);
+        ctx.stroke();
+
+        ctx.strokeStyle = canvas.color;
+        ctx.lineWidth = thinWidth;
+        ctx.beginPath();
+        // Horizontal inner
+        ctx.moveTo(cx - gap - innerLen, cy);
+        ctx.lineTo(cx - gap, cy);
+        ctx.moveTo(cx + gap, cy);
+        ctx.lineTo(cx + gap + innerLen, cy);
+        // Vertical inner
+        ctx.moveTo(cx, cy - gap - innerLen);
+        ctx.lineTo(cx, cy - gap);
+        ctx.moveTo(cx, cy + gap);
+        ctx.lineTo(cx, cy + gap + innerLen);
+        ctx.stroke();
+
+        // Center dot
+        drawCenterDot(ctx, cx, cy, 1.5);
     }
 
-    // TYPE 3: CCIP FIRE CONTROL RETICLE (Dynamic fire control)
-    function drawCCIPReticle(ctx, cx, cy) {
-        var pipperRadius = 12;
-        var fpvWingSpan = 20;
-        var fpvWingHeight = 6;
+    // TYPE 3: FINE CROSSHAIR (Thin precision crosshair - Long range)
+    function drawFineCrosshair(ctx, cx, cy) {
+        var lineLen = 90;
+        var gap = 6;
+        var lineWidth = 1.5;
+        var tickLength = 4;
+        var tickSpacing = 15; // Spacing for range ticks
 
-        // Center pipper (impact point indicator)
-        drawWithOutline(ctx, function(c) {
-            c.beginPath();
-            c.arc(cx, cy, pipperRadius, 0, 2 * Math.PI);
-            c.stroke();
+        // Main crosshair lines
+        ctx.strokeStyle = canvas.outlineColor;
+        ctx.lineWidth = lineWidth + outlineWidth;
+        ctx.lineCap = "round";
+        ctx.beginPath();
+        // Horizontal
+        ctx.moveTo(cx - lineLen, cy);
+        ctx.lineTo(cx - gap, cy);
+        ctx.moveTo(cx + gap, cy);
+        ctx.lineTo(cx + lineLen, cy);
+        // Vertical
+        ctx.moveTo(cx, cy - lineLen);
+        ctx.lineTo(cx, cy - gap);
+        ctx.moveTo(cx, cy + gap);
+        ctx.lineTo(cx, cy + lineLen);
+        ctx.stroke();
 
-            // Center dot
-            c.beginPath();
-            c.arc(cx, cy, 2, 0, 2 * Math.PI);
-            c.fill();
-        });
+        ctx.strokeStyle = canvas.color;
+        ctx.lineWidth = lineWidth;
+        ctx.beginPath();
+        // Horizontal
+        ctx.moveTo(cx - lineLen, cy);
+        ctx.lineTo(cx - gap, cy);
+        ctx.moveTo(cx + gap, cy);
+        ctx.lineTo(cx + lineLen, cy);
+        // Vertical
+        ctx.moveTo(cx, cy - lineLen);
+        ctx.lineTo(cx, cy - gap);
+        ctx.moveTo(cx, cy + gap);
+        ctx.lineTo(cx, cy + lineLen);
+        ctx.stroke();
 
-        // Flight path vector (FPV) symbol - small aircraft symbol
-        drawWithOutline(ctx, function(c) {
-            c.beginPath();
-            // Wings
-            c.moveTo(cx - fpvWingSpan, cy);
-            c.lineTo(cx - 6, cy);
-            c.moveTo(cx + 6, cy);
-            c.lineTo(cx + fpvWingSpan, cy);
-            // Wing tips up
-            c.moveTo(cx - fpvWingSpan, cy);
-            c.lineTo(cx - fpvWingSpan, cy - fpvWingHeight);
-            c.moveTo(cx + fpvWingSpan, cy);
-            c.lineTo(cx + fpvWingSpan, cy - fpvWingHeight);
-            c.stroke();
-        });
+        // Range estimation ticks (every 15 pixels on vertical axis below center)
+        for (var i = 1; i <= 4; i++) {
+            var tickY = cy + gap + (i * tickSpacing);
+            if (tickY < cy + lineLen) {
+                ctx.strokeStyle = canvas.outlineColor;
+                ctx.lineWidth = lineWidth + outlineWidth;
+                ctx.beginPath();
+                ctx.moveTo(cx - tickLength, tickY);
+                ctx.lineTo(cx + tickLength, tickY);
+                ctx.stroke();
 
-        // LAC indicator (when active) - L-shaped bracket
-        if (lacActive) {
-            var bracketSize = 25;
-            var bracketThick = 3;
-
-            drawWithOutline(ctx, function(c) {
-                c.beginPath();
-                // Upper-right L bracket
-                c.moveTo(cx + pipperRadius + 8, cy - bracketSize);
-                c.lineTo(cx + pipperRadius + 8 + bracketSize, cy - bracketSize);
-                c.lineTo(cx + pipperRadius + 8 + bracketSize, cy - bracketSize + bracketSize);
-                c.stroke();
-
-                // "LAC" text would go here - handled by separate text item in QML
-            });
-        }
-
-        // Range scale (right side)
-        var scaleX = cx + 50;
-        var scaleHeight = 60;
-        var ranges = [2000, 1500, 1000, 500];
-
-        ctx.font = "bold 10px 'Archivo Narrow'";
-        ctx.textAlign = "left";
-        ctx.textBaseline = "middle";
-
-        for (var i = 0; i < ranges.length; i++) {
-            var rangeY = cy - scaleHeight/2 + (i * scaleHeight / (ranges.length - 1));
-            var isCurrentRange = (rangeMeters >= ranges[i] - 250 && rangeMeters <= ranges[i] + 250);
-
-            // Scale tick
-            drawWithOutline(ctx, function(c) {
-                c.beginPath();
-                c.moveTo(scaleX, rangeY);
-                c.lineTo(scaleX + (isCurrentRange ? 12 : 8), rangeY);
-                c.stroke();
-            });
-
-            // Range text with outline
-            ctx.fillStyle = canvas.outlineColor;
-            for (var ox = -1; ox <= 1; ox++) {
-                for (var oy = -1; oy <= 1; oy++) {
-                    ctx.fillText(ranges[i] + "m", scaleX + 15 + ox, rangeY + oy);
-                }
-            }
-            ctx.fillStyle = isCurrentRange ? canvas.color : Qt.darker(canvas.color, 1.5);
-            ctx.fillText(ranges[i] + "m", scaleX + 15, rangeY);
-        }
-
-        // Confidence bars (bottom)
-        var barWidth = 40;
-        var barHeight = 4;
-        var barY = cy + pipperRadius + 25;
-
-        // Background bar
-        ctx.fillStyle = canvas.outlineColor;
-        ctx.fillRect(cx - barWidth/2 - 1, barY - 1, barWidth + 2, barHeight + 2);
-
-        // Confidence level bar
-        ctx.fillStyle = confidenceLevel > 0.7 ? canvas.color :
-                        confidenceLevel > 0.4 ? Qt.rgba(1, 1, 0, 1) :
-                        Qt.rgba(1, 0, 0, 1);
-        ctx.fillRect(cx - barWidth/2, barY, barWidth * confidenceLevel, barHeight);
-    }
-
-    // TYPE 4: MIL-DOT RANGING RETICLE (LRF verification, precision)
-    function drawMilDotReticle(ctx, cx, cy) {
-        var lineSize = 100;
-        var dotRadius = 1.8; // 0.2 mil standard
-        var numDots = 5;
-
-        var pixelsPerMil = calculatePixelsPerMil(currentFov, width);
-        var dotSpacing = pixelsPerMil;
-
-        // Main crosshair (fine, 1px)
-        drawWithOutline(ctx, function(c) {
-            c.lineWidth = 1;
-            c.beginPath();
-            c.moveTo(cx - lineSize, cy);
-            c.lineTo(cx + lineSize, cy);
-            c.moveTo(cx, cy - lineSize);
-            c.lineTo(cx, cy + lineSize);
-            c.stroke();
-        });
-
-        // Mil-dots with outline
-        for (var i = 1; i <= numDots; i++) {
-            var dist = i * dotSpacing;
-            if (dist > lineSize) break;
-
-            // Horizontal dots
-            drawDotWithOutline(ctx, cx - dist, cy, dotRadius);
-            drawDotWithOutline(ctx, cx + dist, cy, dotRadius);
-
-            // Vertical dots
-            drawDotWithOutline(ctx, cx, cy - dist, dotRadius);
-            drawDotWithOutline(ctx, cx, cy + dist, dotRadius);
-
-            // Half-mil subtensions (smaller dots) for precision
-            if (i < numDots) {
-                var halfDist = dist + dotSpacing / 2;
-                if (halfDist <= lineSize) {
-                    var smallRadius = dotRadius * 0.6;
-                    drawDotWithOutline(ctx, cx - halfDist, cy, smallRadius);
-                    drawDotWithOutline(ctx, cx + halfDist, cy, smallRadius);
-                    drawDotWithOutline(ctx, cx, cy - halfDist, smallRadius);
-                    drawDotWithOutline(ctx, cx, cy + halfDist, smallRadius);
-                }
+                ctx.strokeStyle = canvas.color;
+                ctx.lineWidth = lineWidth;
+                ctx.beginPath();
+                ctx.moveTo(cx - tickLength, tickY);
+                ctx.lineTo(cx + tickLength, tickY);
+                ctx.stroke();
             }
         }
 
-        // Mil numbers at 5-mil intervals
-        ctx.font = "bold 9px 'Archivo Narrow'";
-        ctx.textAlign = "center";
-        ctx.textBaseline = "middle";
-
-        for (var j = 5; j <= numDots; j += 5) {
-            var numDist = j * dotSpacing;
-            if (numDist <= lineSize) {
-                // Text with outline
-                ctx.fillStyle = canvas.outlineColor;
-                for (var ox = -1; ox <= 1; ox++) {
-                    for (var oy = -1; oy <= 1; oy++) {
-                        ctx.fillText(j.toString(), cx, cy - numDist - 8 + oy);
-                    }
-                }
-                ctx.fillStyle = canvas.color;
-                ctx.fillText(j.toString(), cx, cy - numDist - 8);
-            }
-        }
+        // Center dot
+        drawCenterDot(ctx, cx, cy, 1.5);
     }
 
-    function drawDotWithOutline(ctx, x, y, radius) {
+    // TYPE 4: CHEVRON RETICLE (Downward pointing chevron - CQB style)
+    function drawChevronReticle(ctx, cx, cy) {
+        var chevronHeight = 25;
+        var chevronWidth = 18;
+        var lineLen = 60;
+        var gap = 5;
+
+        // Chevron pointing down
+        drawWithOutline(ctx, function(c) {
+            c.beginPath();
+            // Left side of chevron
+            c.moveTo(cx - chevronWidth, cy - chevronHeight);
+            c.lineTo(cx, cy);
+            // Right side of chevron
+            c.lineTo(cx + chevronWidth, cy - chevronHeight);
+            c.stroke();
+        });
+
+        // Horizontal reference lines
+        drawWithOutline(ctx, function(c) {
+            c.beginPath();
+            // Left horizontal
+            c.moveTo(cx - lineLen, cy);
+            c.lineTo(cx - chevronWidth - gap, cy);
+            // Right horizontal
+            c.moveTo(cx + chevronWidth + gap, cy);
+            c.lineTo(cx + lineLen, cy);
+            c.stroke();
+        });
+
+        // Vertical drop line (for holdover reference)
+        drawWithOutline(ctx, function(c) {
+            c.beginPath();
+            c.moveTo(cx, cy + gap);
+            c.lineTo(cx, cy + lineLen);
+            c.stroke();
+        });
+
+        // Range tick marks on vertical line (below chevron)
+        var tickLength = 3;
+        var tickSpacing = 12;
+        for (var i = 1; i <= 4; i++) {
+            var tickY = cy + gap + (i * tickSpacing);
+            if (tickY < cy + lineLen) {
+                ctx.strokeStyle = canvas.outlineColor;
+                ctx.lineWidth = 2 + outlineWidth;
+                ctx.beginPath();
+                ctx.moveTo(cx - tickLength, tickY);
+                ctx.lineTo(cx + tickLength, tickY);
+                ctx.stroke();
+
+                ctx.strokeStyle = canvas.color;
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(cx - tickLength, tickY);
+                ctx.lineTo(cx + tickLength, tickY);
+                ctx.stroke();
+            }
+        }
+
+        // Tip dot at chevron point
+        drawCenterDot(ctx, cx, cy, 2);
+    }
+
+    // Helper function to draw center dot with outline
+    function drawCenterDot(ctx, x, y, radius) {
         // Outline
         ctx.fillStyle = canvas.outlineColor;
         ctx.beginPath();
@@ -361,13 +351,5 @@ Canvas {
         ctx.beginPath();
         ctx.arc(x, y, radius, 0, 2 * Math.PI);
         ctx.fill();
-    }
-
-    function calculatePixelsPerMil(hfovDegrees, screenWidth) {
-        if (hfovDegrees <= 0 || screenWidth <= 0) return 0;
-        var hfovRadians = hfovDegrees * Math.PI / 180.0;
-        var visibleWidthAt1000 = 2.0 * 1000.0 * Math.tan(hfovRadians / 2.0);
-        var milsAcrossScreen = visibleWidthAt1000;
-        return screenWidth / milsAcrossScreen;
     }
 }

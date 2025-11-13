@@ -70,12 +70,12 @@ const QColor COLOR_TRACKING_FIRING = QColor(255, 255, 0); ///< Firing mode activ
  * @brief Available reticle types for weapon aiming system
  */
 enum class ReticleType {
-    CircleDotReticle,              ///< Simple crosshair reticle
-    BoxCrosshair,       ///< Box-style crosshair with corner markers
-    TacticalCrosshair,  ///< Standard military crosshair
-    CCIPFireControl, ///< High-precision crosshair with fine markings
-    MilDot,            ///< Military dot reticle for range estimation
-    COUNT              ///< Total number of reticle types (for iteration)
+    BoxCrosshair,       ///< Box-style crosshair with center box (General purpose - NATO standard)
+    BracketsReticle,    ///< Corner brackets style with crosshair (Enhanced visibility)
+    DuplexCrosshair,    ///< Thick outer, thin inner crosshair (Sniper/precision style)
+    FineCrosshair,      ///< Thin precision crosshair with range ticks (Long range)
+    ChevronReticle,     ///< Downward pointing chevron with holdover marks (CQB style)
+    COUNT               ///< Total number of reticle types (for iteration)
 };
 
 /**
