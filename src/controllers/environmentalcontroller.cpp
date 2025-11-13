@@ -89,6 +89,7 @@ void EnvironmentalController::updateUI()
         break;
 
     case EnvironmentalState::Set_Crosswind:
+    {
         m_viewModel->setTitle("Environment (3/3): Crosswind");
         m_viewModel->setInstruction(
             "Set crosswind speed.\n"
@@ -110,6 +111,7 @@ void EnvironmentalController::updateUI()
         m_viewModel->setParameterLabel(
             QString("Crosswind: %1 m/s%2").arg(m_currentCrosswindEdit, 0, 'f', 1).arg(windDirection)
         );
+    }
         break;
 
     case EnvironmentalState::Completed:
