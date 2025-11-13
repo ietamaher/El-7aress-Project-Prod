@@ -101,9 +101,9 @@ void EnvironmentalController::updateUI()
 
         QString windDirection;
         if (m_currentCrosswindEdit > 0.1f) {
-            windDirection = " (← from LEFT)";
+            windDirection = " (from LEFT →)";
         } else if (m_currentCrosswindEdit < -0.1f) {
-            windDirection = " (from RIGHT →)";
+            windDirection = " (← from RIGHT)";
         } else {
             windDirection = " (no wind)";
         }
