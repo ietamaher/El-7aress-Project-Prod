@@ -59,10 +59,11 @@ Canvas {
 
     // TYPE 0: BOX CROSSHAIR (General purpose - NATO standard)
     function drawBoxCrosshair(ctx, cx, cy) {
-        var lineLen = 80;
-        var boxSize = 50;
+        var fovScale = currentFov / 45.0; // Scale based on FOV (45° baseline)
+        var lineLen = 80 * fovScale;
+        var boxSize = 50 * fovScale;
         var halfBox = boxSize / 2;
-        var gap = 2;
+        var gap = 2 * fovScale;
 
         drawWithOutline(ctx, function(c) {
             c.beginPath();
@@ -89,10 +90,11 @@ Canvas {
 
     // TYPE 1: BRACKETS RETICLE (Corner brackets style - Enhanced visibility)
     function drawBracketsReticle(ctx, cx, cy) {
-        var crosshairLen = 30;
-        var bracketSize = 25;
-        var bracketLength = 12;
-        var bracketThickness = 2;
+        var fovScale = currentFov / 45.0; // Scale based on FOV (45° baseline)
+        var crosshairLen = 30 * fovScale;
+        var bracketSize = 25 * fovScale;
+        var bracketLength = 12 * fovScale;
+        var bracketThickness = 2 * fovScale;
 
         drawWithOutline(ctx, function(c) {
             // Horizontal crosshair
@@ -150,30 +152,49 @@ Canvas {
 
     // TYPE 2: DUPLEX CROSSHAIR (Thick outer, thin inner - Sniper style)
     function drawDuplexCrosshair(ctx, cx, cy) {
-        var outerLen = 80;
-        var innerLen = 15;
-        var gap = 8;
+        var fovScale = currentFov / 45.0; // Scale based on FOV (45° baseline)
+        var outerLen = 80 * fovScale;
+        var innerLen = 15 * fovScale;
+        var gap = 8 * fovScale;
         var thickWidth = 4;
         var thinWidth = 1.5;
 
-        // Thick outer segments
-        drawWithOutline(ctx, function(c) {
-            c.lineWidth = thickWidth;
-            c.beginPath();
-            // Horizontal - left thick
-            c.moveTo(cx - outerLen, cy);
-            c.lineTo(cx - gap - innerLen, cy);
-            // Horizontal - right thick
-            c.moveTo(cx + gap + innerLen, cy);
-            c.lineTo(cx + outerLen, cy);
-            // Vertical - top thick
-            c.moveTo(cx, cy - outerLen);
-            c.lineTo(cx, cy - gap - innerLen);
-            // Vertical - bottom thick
-            c.moveTo(cx, cy + gap + innerLen);
-            c.lineTo(cx, cy + outerLen);
-            c.stroke();
-        });
+        // Thick outer segments with explicit outline (matching thin segments pattern)
+        ctx.strokeStyle = canvas.outlineColor;
+        ctx.lineWidth = thickWidth + outlineWidth;
+        ctx.lineCap = "round";
+        ctx.lineJoin = "round";
+        ctx.beginPath();
+        // Horizontal - left thick
+        ctx.moveTo(cx - outerLen, cy);
+        ctx.lineTo(cx - gap - innerLen, cy);
+        // Horizontal - right thick
+        ctx.moveTo(cx + gap + innerLen, cy);
+        ctx.lineTo(cx + outerLen, cy);
+        // Vertical - top thick
+        ctx.moveTo(cx, cy - outerLen);
+        ctx.lineTo(cx, cy - gap - innerLen);
+        // Vertical - bottom thick
+        ctx.moveTo(cx, cy + gap + innerLen);
+        ctx.lineTo(cx, cy + outerLen);
+        ctx.stroke();
+
+        ctx.strokeStyle = canvas.color;
+        ctx.lineWidth = thickWidth;
+        ctx.beginPath();
+        // Horizontal - left thick
+        ctx.moveTo(cx - outerLen, cy);
+        ctx.lineTo(cx - gap - innerLen, cy);
+        // Horizontal - right thick
+        ctx.moveTo(cx + gap + innerLen, cy);
+        ctx.lineTo(cx + outerLen, cy);
+        // Vertical - top thick
+        ctx.moveTo(cx, cy - outerLen);
+        ctx.lineTo(cx, cy - gap - innerLen);
+        // Vertical - bottom thick
+        ctx.moveTo(cx, cy + gap + innerLen);
+        ctx.lineTo(cx, cy + outerLen);
+        ctx.stroke();
 
         // Thin inner segments
         ctx.strokeStyle = canvas.outlineColor;
@@ -212,11 +233,12 @@ Canvas {
 
     // TYPE 3: FINE CROSSHAIR (Thin precision crosshair - Long range)
     function drawFineCrosshair(ctx, cx, cy) {
-        var lineLen = 90;
-        var gap = 6;
+        var fovScale = currentFov / 45.0; // Scale based on FOV (45° baseline)
+        var lineLen = 90 * fovScale;
+        var gap = 6 * fovScale;
         var lineWidth = 1.5;
-        var tickLength = 4;
-        var tickSpacing = 15; // Spacing for range ticks
+        var tickLength = 4 * fovScale;
+        var tickSpacing = 15 * fovScale; // Spacing for range ticks
 
         // Main crosshair lines
         ctx.strokeStyle = canvas.outlineColor;
@@ -276,10 +298,11 @@ Canvas {
 
     // TYPE 4: CHEVRON RETICLE (Downward pointing chevron - CQB style)
     function drawChevronReticle(ctx, cx, cy) {
-        var chevronHeight = 25;
-        var chevronWidth = 18;
-        var lineLen = 60;
-        var gap = 5;
+        var fovScale = currentFov / 45.0; // Scale based on FOV (45° baseline)
+        var chevronHeight = 25 * fovScale;
+        var chevronWidth = 18 * fovScale;
+        var lineLen = 60 * fovScale;
+        var gap = 5 * fovScale;
 
         // Chevron pointing down
         drawWithOutline(ctx, function(c) {
@@ -313,8 +336,8 @@ Canvas {
         });
 
         // Range tick marks on vertical line (below chevron)
-        var tickLength = 3;
-        var tickSpacing = 12;
+        var tickLength = 3 * fovScale;
+        var tickSpacing = 12 * fovScale;
         for (var i = 1; i <= 4; i++) {
             var tickY = cy + gap + (i * tickSpacing);
             if (tickY < cy + lineLen) {
