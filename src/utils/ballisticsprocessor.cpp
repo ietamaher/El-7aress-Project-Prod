@@ -8,6 +8,18 @@ const float GRAVITY_MPS2 = 9.80665f; // Standard gravity
 
 BallisticsProcessor::BallisticsProcessor() {}
 
+void BallisticsProcessor::setEnvironmentalConditions(float temp_celsius, float altitude_m, float crosswind_ms)
+{
+    m_temperature_celsius = temp_celsius;
+    m_altitude_m = altitude_m;
+    m_crosswind_ms = crosswind_ms;
+
+    qDebug() << "[BallisticsProcessor] Environmental conditions updated:"
+             << "Temp:" << temp_celsius << "°C"
+             << "Alt:" << altitude_m << "m"
+             << "Wind:" << crosswind_ms << "m/s";
+}
+
 LeadCalculationResult BallisticsProcessor::calculateLeadAngle(
     float targetRangeMeters,
     float targetAngularRateAzDegS,
@@ -62,9 +74,37 @@ LeadCalculationResult BallisticsProcessor::calculateLeadAngle(
     // Drop compensation always means aiming higher.
     float totalLeadElRad = motionLeadElRad + dropCompensationElRad;
 
-
+    // --- Convert to degrees ---
     result.leadAzimuthDegrees = static_cast<float>(totalLeadAzRad * (180.0 / M_PI));
     result.leadElevationDegrees = static_cast<float>(totalLeadElRad * (180.0 / M_PI));
+
+    // ========================================================================
+    // ENVIRONMENTAL CORRECTIONS
+    // ========================================================================
+    // Apply real-time corrections for temperature, altitude, and wind
+    // ========================================================================
+
+    // 1. TEMPERATURE CORRECTION (affects air density, thus drag)
+    // Hot air = less dense → less drag → aim lower
+    // Cold air = more dense → more drag → aim higher
+    float temp_kelvin = m_temperature_celsius + 273.15f;
+    float temp_correction = std::sqrt(288.15f / temp_kelvin);  // Standard: 15°C = 288.15K
+    result.leadElevationDegrees *= temp_correction;
+
+    // 2. ALTITUDE CORRECTION (affects air density)
+    // Higher altitude = less dense → less drag → aim lower
+    float rho_altitude = std::exp(-m_altitude_m / 8500.0f);  // Scale height: 8500m
+    float altitude_correction = 1.0f / rho_altitude;
+    result.leadElevationDegrees *= altitude_correction;
+
+    // 3. WIND CORRECTION (crosswind deflection)
+    // Wind pushes bullet sideways during time of flight
+    if (m_crosswind_ms != 0.0f && targetRangeMeters > 0.1f) {
+        float wind_deflection_m = m_crosswind_ms * tofS;  // Lateral displacement
+        float wind_correction_rad = std::atan(wind_deflection_m / targetRangeMeters);
+        float wind_correction_deg = wind_correction_rad * (180.0f / M_PI);
+        result.leadAzimuthDegrees += wind_correction_deg;  // Add to azimuth
+    }
 
     // --- Apply Limits and Status ---
     bool lag = false;

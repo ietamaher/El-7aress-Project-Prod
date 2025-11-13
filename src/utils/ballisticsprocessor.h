@@ -30,9 +30,23 @@ public:
         float currentCameraFovHorizontalDegrees // Needed for ZOOM_OUT check
     );
 
+    /**
+     * @brief Set environmental conditions for ballistic corrections
+     *
+     * @param temp_celsius Air temperature in Celsius (standard: 15°C)
+     * @param altitude_m Altitude above sea level in meters (standard: 0m)
+     * @param crosswind_ms Crosswind speed in m/s (standard: 0)
+     */
+    void setEnvironmentalConditions(float temp_celsius, float altitude_m, float crosswind_ms);
+
 private:
     // Constants for calculation (simplified)
     const float MAX_LEAD_ANGLE_DEGREES = 10.0f; // Example maximum lead allowed
+
+    // Environmental conditions (for corrections)
+    float m_temperature_celsius = 15.0f;   ///< Air temperature
+    float m_altitude_m = 0.0f;             ///< Altitude above sea level
+    float m_crosswind_ms = 0.0f;           ///< Crosswind speed
 
     // Helper methods for more complex ballistics if needed
     // float calculateTOF(float range, float muzzleVelocity, float projectileDragCoeff);

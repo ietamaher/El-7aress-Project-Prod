@@ -242,14 +242,23 @@ void OsdController::onFrameDataReady(const FrameData& frmdata)
         }
     }
 
-    // CCIP position = reticle position WITH lead angle applied
-    // (This is the OLD reticleAimpointImageX/Y which had lead angle)
-    // Now we need to use finalReticleX + lead offsets...
-    // Actually, we should get CCIP position from SystemStateData!
-    // For now, use the FrameData's reticle position which includes lead
+    // ========================================================================
+    // CCIP PIPPER POSITION - CRITICAL FIX
+    // ========================================================================
+    // BUG FIX: Was using reticleAimpointImageX/Y_px (zeroing only, NO lead!)
+    //          Now using ccipImpactImageX/Y_px (zeroing + lead angle)
+    //
+    // The SystemStateModel separates these coordinates:
+    //   - reticleAimpointImageX/Y_px: Gun boresight with zeroing ONLY
+    //   - ccipImpactImageX/Y_px: Bullet impact with zeroing + LEAD ANGLE
+    //
+    // This is why CCIP was stuck at center - it wasn't using lead angle!
+    // ========================================================================
+
+    const SystemStateData& currentState = m_stateModel->data();
     m_viewModel->updateCcipPipper(
-        frmdata.reticleAimpointImageX_px,
-        frmdata.reticleAimpointImageY_px,
+        currentState.ccipImpactImageX_px,    // ← FIXED: Uses CCIP position with lead
+        currentState.ccipImpactImageY_px,    // ← FIXED: Uses CCIP position with lead
         ccipVisible,
         ccipStatus
     );
