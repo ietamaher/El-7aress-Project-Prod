@@ -85,6 +85,8 @@ SOURCES += \
     src/models/zonedefinitionviewmodel.cpp \
     src/models/zonemapviewmodel.cpp \
     src/utils/ballisticsprocessor.cpp \
+    src/utils/ballisticslut.cpp \
+    src/utils/ballisticsprocessorlut.cpp \
     src/utils/colorutils.cpp \
     src/utils/inference.cpp \
     src/utils/reticleaimpointcalculator.cpp \
@@ -189,6 +191,8 @@ HEADERS += \
     src/models/zonemapviewmodel.h \
     src/utils/TimestampLogger.h \
     src/utils/ballisticsprocessor.h \
+    src/utils/ballisticslut.h \
+    src/utils/ballisticsprocessorlut.h \
     src/utils/colorutils.h \
     src/utils/inference.h \
     src/utils/millenious.h \
