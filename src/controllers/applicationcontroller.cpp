@@ -594,19 +594,25 @@ void ApplicationController::onSystemStateChanged(const SystemStateData& newState
 {
     // Rising edge detection for menuUp button (false → true = button press)
     if (newState.menuUp && !m_previousMenuUpState) {
+        m_previousMenuUpState = true; // Update BEFORE calling handler to prevent re-entrancy
         onUpButtonPressed();
+    } else {
+        m_previousMenuUpState = newState.menuUp;
     }
-    m_previousMenuUpState = newState.menuUp;
 
     // Rising edge detection for menuDown button (false → true = button press)
     if (newState.menuDown && !m_previousMenuDownState) {
+        m_previousMenuDownState = true; // Update BEFORE calling handler to prevent re-entrancy
         onDownButtonPressed();
+    } else {
+        m_previousMenuDownState = newState.menuDown;
     }
-    m_previousMenuDownState = newState.menuDown;
 
     // Rising edge detection for menuVal button (false → true = button press)
     if (newState.menuVal && !m_previousMenuValState) {
+        m_previousMenuValState = true; // Update BEFORE calling handler to prevent re-entrancy
         onMenuValButtonPressed();
+    } else {
+        m_previousMenuValState = newState.menuVal;
     }
-    m_previousMenuValState = newState.menuVal;
 }
