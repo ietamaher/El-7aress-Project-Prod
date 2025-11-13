@@ -466,6 +466,27 @@ Item {
     }
 
     // ========================================================================
+    // CCIP PIPPER (Impact Prediction with Lead Angle)
+    // ========================================================================
+    CcipPipper {
+        id: ccipPipper
+
+        // Position using absolute screen coordinates from viewModel
+        x: (viewModel ? viewModel.ccipX : (parent.width / 2)) - (width / 2)
+        y: (viewModel ? viewModel.ccipY : (parent.height / 2)) - (height / 2)
+
+        visible: viewModel ? viewModel.ccipVisible : false
+        status: viewModel ? viewModel.ccipStatus : "Off"
+        accentColor: osdRoot.accentColor
+
+        // CCIP is only visible when LAC is active and provides a valid solution
+        // It shows where bullets will impact accounting for:
+        // • Gun zeroing offsets
+        // • Target lead angle (moving target compensation)
+        // • Ballistic trajectory
+    }
+
+    // ========================================================================
     // FIXED LOB MARKER (Screen Center - Always visible)
     // ========================================================================
     Item {

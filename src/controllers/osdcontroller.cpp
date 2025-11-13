@@ -213,9 +213,50 @@ void OsdController::onFrameDataReady(const FrameData& frmdata)
     m_viewModel->updateReticleOffset(finalReticleX, finalReticleY);
 
     // ========================================================================
-    // === LAC VISUAL INDICATORS (for CCIP display elements) ===
+    // === CCIP PIPPER UPDATE (Ballistic Impact Prediction) ===
     // ========================================================================
-    // These are for visual feedback, not for reticle positioning
+    // CCIP shows where bullets will hit with lead angle compensation
+    // Visible only when LAC is active
+    // Position comes from reticleAimpointImageX/Y which includes lead offsets
+    // ========================================================================
+
+    // Determine CCIP status string
+    QString ccipStatus = "Off";
+    bool ccipVisible = false;
+
+    if (frmdata.leadAngleActive) {
+        ccipVisible = true;
+        switch (frmdata.leadAngleStatus) {
+            case LeadAngleStatus::On:
+                ccipStatus = "On";
+                break;
+            case LeadAngleStatus::Lag:
+                ccipStatus = "Lag";
+                break;
+            case LeadAngleStatus::ZoomOut:
+                ccipStatus = "ZoomOut";
+                break;
+            default:
+                ccipStatus = "Off";
+                ccipVisible = false;
+        }
+    }
+
+    // CCIP position = reticle position WITH lead angle applied
+    // (This is the OLD reticleAimpointImageX/Y which had lead angle)
+    // Now we need to use finalReticleX + lead offsets...
+    // Actually, we should get CCIP position from SystemStateData!
+    // For now, use the FrameData's reticle position which includes lead
+    m_viewModel->updateCcipPipper(
+        frmdata.reticleAimpointImageX_px,
+        frmdata.reticleAimpointImageY_px,
+        ccipVisible,
+        ccipStatus
+    );
+
+    // ========================================================================
+    // === LAC VISUAL INDICATORS (for display elements) ===
+    // ========================================================================
 
     // Determine if LAC is "effectively active" (On or Lag, not ZoomOut)
     bool lacEffectivelyActive = frmdata.leadAngleActive &&
@@ -334,6 +375,33 @@ void OsdController::onFrameDataReady(const FrameData& frmdata)
         data.reticleAimpointImageX_px,
         data.reticleAimpointImageY_px
         );
+
+    // CCIP Pipper
+    QString ccipStatus = "Off";
+    bool ccipVisible = false;
+    if (data.leadAngleCompensationActive) {
+        ccipVisible = true;
+        switch (data.currentLeadAngleStatus) {
+            case LeadAngleStatus::On:
+                ccipStatus = "On";
+                break;
+            case LeadAngleStatus::Lag:
+                ccipStatus = "Lag";
+                break;
+            case LeadAngleStatus::ZoomOut:
+                ccipStatus = "ZoomOut";
+                break;
+            default:
+                ccipStatus = "Off";
+                ccipVisible = false;
+        }
+    }
+    m_viewModel->updateCcipPipper(
+        data.ccipImpactImageX_px,
+        data.ccipImpactImageY_px,
+        ccipVisible,
+        ccipStatus
+    );
 
     // Zeroing
     m_viewModel->updateZeroingDisplay(

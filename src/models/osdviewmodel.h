@@ -55,12 +55,20 @@ class OsdViewModel : public QObject
     Q_PROPERTY(bool acquisitionBoxVisible READ acquisitionBoxVisible NOTIFY acquisitionBoxVisibleChanged)
 
     // ========================================================================
-    // RETICLE
+    // RETICLE (Main aiming reticle - with zeroing only)
     // ========================================================================
     Q_PROPERTY(int reticleType READ reticleType NOTIFY reticleTypeChanged)
     Q_PROPERTY(float reticleOffsetX READ reticleOffsetX NOTIFY reticleOffsetChanged)
     Q_PROPERTY(float reticleOffsetY READ reticleOffsetY NOTIFY reticleOffsetChanged)
     Q_PROPERTY(float currentFov READ currentFov NOTIFY currentFovChanged)
+
+    // ========================================================================
+    // CCIP PIPPER (Impact prediction with lead angle)
+    // ========================================================================
+    Q_PROPERTY(float ccipX READ ccipX NOTIFY ccipPositionChanged)
+    Q_PROPERTY(float ccipY READ ccipY NOTIFY ccipPositionChanged)
+    Q_PROPERTY(bool ccipVisible READ ccipVisible NOTIFY ccipVisibleChanged)
+    Q_PROPERTY(QString ccipStatus READ ccipStatus NOTIFY ccipStatusChanged)
 
     // ========================================================================
     // PROCEDURES (Zeroing, Windage)
@@ -142,6 +150,11 @@ public:
     float reticleOffsetY() const { return m_reticleOffsetY; }
     float currentFov() const { return m_currentFov; }
 
+    float ccipX() const { return m_ccipX; }
+    float ccipY() const { return m_ccipY; }
+    bool ccipVisible() const { return m_ccipVisible; }
+    QString ccipStatus() const { return m_ccipStatus; }
+
     QString zeroingText() const { return m_zeroingText; }
     bool zeroingVisible() const { return m_zeroingVisible; }
 
@@ -198,6 +211,8 @@ public slots:
     void updateReticleType(ReticleType type);
     void updateReticleOffset(float x_px, float y_px);
 
+    void updateCcipPipper(float x_px, float y_px, bool visible, const QString& status);
+
     void updateZeroingDisplay(bool modeActive, bool applied, float azOffset, float elOffset);
     void updateWindageDisplay(bool modeActive, bool applied, float speedKnots);
     void updateDetectionDisplay(bool enabled);
@@ -250,6 +265,10 @@ signals:
     void reticleTypeChanged();
     void reticleOffsetChanged();
     void currentFovChanged();
+
+    void ccipPositionChanged();
+    void ccipVisibleChanged();
+    void ccipStatusChanged();
 
     void zeroingTextChanged();
     void zeroingVisibleChanged();
@@ -318,6 +337,11 @@ private:
     float m_reticleOffsetX;
     float m_reticleOffsetY;
     float m_currentFov;
+
+    float m_ccipX;
+    float m_ccipY;
+    bool m_ccipVisible;
+    QString m_ccipStatus;
 
     QString m_zeroingText;
     bool m_zeroingVisible;

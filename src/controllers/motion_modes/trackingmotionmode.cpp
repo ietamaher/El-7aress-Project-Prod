@@ -130,7 +130,7 @@ void TrackingMotionMode::update(GimbalController* controller)
         return;
     }
     qint64 ms_elapsed = m_velocityTimer.restart(); // restart() returns elapsed and resets
-    double dt_s = ms_elapsed / 1000.0;    
+    double dt_s = ms_elapsed / 1000.0;
     SystemStateData data = controller->systemStateModel()->data();
 
     // 1. Smooth the Target Position (for PID feedback)
@@ -141,9 +141,37 @@ void TrackingMotionMode::update(GimbalController* controller)
     m_smoothedAzVel_dps = (VELOCITY_SMOOTHING_ALPHA * m_targetAzVel_dps) + (1.0 - VELOCITY_SMOOTHING_ALPHA) * m_smoothedAzVel_dps;
     m_smoothedElVel_dps = (VELOCITY_SMOOTHING_ALPHA * m_targetElVel_dps) + (1.0 - VELOCITY_SMOOTHING_ALPHA) * m_smoothedElVel_dps;
 
-    // 3. Calculate Position Error
-    double errAz = m_smoothedTargetAz - data.gimbalAz;  
-    double errEl = m_smoothedTargetEl - data.gimbalEl;  
+    // ========================================================================
+    // CRITICAL FIX: Apply Lead Angle to Gimbal Aim Point
+    // ========================================================================
+    // The tracker provides VISUAL target position (where target IS).
+    // For moving targets, we must aim AHEAD (where target WILL BE).
+    // Lead angle compensates for:
+    //   - Bullet time-of-flight
+    //   - Target motion during flight
+    //   - Gravity drop
+    //
+    // This is the ONLY correct approach for mechanically coupled camera/gun:
+    // The gimbal physically aims at the IMPACT POINT, not the visual target.
+    // ========================================================================
+
+    double aimPointAz = m_smoothedTargetAz;
+    double aimPointEl = m_smoothedTargetEl;
+
+    if (data.leadAngleCompensationActive && data.currentLeadAngleStatus == LeadAngleStatus::On) {
+        // Add lead angle offsets to aim AHEAD of visual target
+        aimPointAz += static_cast<double>(data.leadAngleOffsetAz);
+        aimPointEl += static_cast<double>(data.leadAngleOffsetEl);
+
+        /*qDebug() << "[TrackingMotionMode] AUTO-LEAD: Visual Target("
+                 << m_smoothedTargetAz << "," << m_smoothedTargetEl
+                 << ") + Lead(" << data.leadAngleOffsetAz << "," << data.leadAngleOffsetEl
+                 << ") = Aim Point(" << aimPointAz << "," << aimPointEl << ")";*/
+    }
+
+    // 3. Calculate Position Error (using aim point, NOT visual target)
+    double errAz = aimPointAz - data.gimbalAz;
+    double errEl = aimPointEl - data.gimbalEl;  
     
     // Normalize azimuth error to [-180, 180] range
     while (errAz > 180.0) errAz -= 360.0;
@@ -152,8 +180,9 @@ void TrackingMotionMode::update(GimbalController* controller)
     // 4. Calculate PID output (Feedback)
     bool useDerivativeOnMeasurement = true;
     // CRITICAL FIX: Use the measured dt_s, not the constant UPDATE_INTERVAL_S
-    double pidAzVelocity = pidCompute(m_azPid, errAz, m_smoothedTargetAz, data.gimbalAz, useDerivativeOnMeasurement, dt_s);
-    double pidElVelocity = pidCompute(m_elPid, errEl, m_smoothedTargetEl, data.gimbalEl, useDerivativeOnMeasurement, dt_s); // Use imuPitchDeg for derivative measurement
+    // CRITICAL FIX: Use aimPoint (with lead) for setpoint, NOT smoothedTarget (without lead)
+    double pidAzVelocity = pidCompute(m_azPid, errAz, aimPointAz, data.gimbalAz, useDerivativeOnMeasurement, dt_s);
+    double pidElVelocity = pidCompute(m_elPid, errEl, aimPointEl, data.gimbalEl, useDerivativeOnMeasurement, dt_s);
 
     // 5. Add Feed-forward term (scaled down to prevent aggressive response)
     const double FEEDFORWARD_GAIN = 0.5; // Scale down the feed-forward contribution
@@ -178,9 +207,10 @@ void TrackingMotionMode::update(GimbalController* controller)
 
     // 10. Convert target to world-frame for AHRS-based stabilization
     if (data.imuConnected) {
-        // Convert current target position from platform frame to world frame
+        // CRITICAL FIX: Convert AIM POINT (with lead) to world frame, NOT visual target
+        // This ensures stabilization maintains the ballistic solution, not just visual lock
         double worldAz, worldEl;
-        convertGimbalToWorldFrame(m_smoothedTargetAz, m_smoothedTargetEl,
+        convertGimbalToWorldFrame(aimPointAz, aimPointEl,
                                   data.imuRollDeg, data.imuPitchDeg, data.imuYawDeg,
                                   worldAz, worldEl);
 
