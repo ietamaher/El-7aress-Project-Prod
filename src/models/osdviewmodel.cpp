@@ -9,7 +9,7 @@ OsdViewModel::OsdViewModel(QObject *parent)
     , m_motionText("MOTION: MAN")
     , m_stabText("STAB: OFF")
     , m_cameraText("CAM: DAY")
-    , m_speedText("SPD: 0.0%")
+    , m_speedText("100.0%")
     , m_azimuth(0.0f)
     , m_elevation(0.0f)
     , m_statusText("SYS: --- SAF NRD")
@@ -122,7 +122,7 @@ void OsdViewModel::updateCameraType(const QString& type)
 
 void OsdViewModel::updateSpeed(double speed)
 {
-    QString newText = QString("SPD: %1%").arg(speed, 0, 'f', 1);
+    QString newText = QString("%1%").arg(speed, 0, 'f', 1);
     if (m_speedText != newText) {
         m_speedText = newText;
         emit speedTextChanged();

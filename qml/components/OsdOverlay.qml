@@ -52,6 +52,7 @@ Item {
             // === LEFT COLUMN ===
             Column {
                 spacing: 4
+                width: 186
 
                 // MODE
                 Text {
@@ -94,7 +95,7 @@ Item {
                     }
 
                     Text {
-                        visible: viewModel ? viewModel.lacActive : false
+                        visible: viewModel ? viewModel.lacActive : "LAC: OFF"
                         text: "LAC: ON"
                         font.pixelSize: 12
                         font.family: primaryFont
@@ -104,7 +105,7 @@ Item {
 
                 // DETECTION
                 Text {
-                    visible: viewModel ? viewModel.detectionVisible : false
+                    visible: viewModel ? viewModel.detectionVisible : "DETECTION: OFF"
                     text: viewModel ? viewModel.detectionText : "DETECTION: ON"
                     font.pixelSize: 12
                     font.family: primaryFont
@@ -144,13 +145,7 @@ Item {
                            (viewModel && viewModel.leadAngleText.includes("ZOOM") ? warningColor : accentColor)
                 }
 
-                // SPEED
-                Text {
-                    text: viewModel ? viewModel.speedText : "SPD: 0.0%"
-                    font.pixelSize: 13
-                    font.family: primaryFont
-                    color: accentColor
-                }
+
             }
         }
     }
@@ -364,13 +359,49 @@ Item {
     */
 
     // ========================================================================
+    // RIGHT SIDE - SPEED DISPLAY
+    // ========================================================================
+    Rectangle {
+        id: speedBox
+        x: parent.width - 90
+        y: parent.height/2 - 140
+        width: 85
+        height: 90
+        color: "#99000000"
+        border.color: accentColor
+        border.width: 1
+
+        Column {
+            anchors.centerIn: parent
+            spacing: 8
+
+            Text {
+                text:  viewModel ? viewModel.speedText : "0.0%"
+                font.pixelSize: 20
+                font.bold: true
+                font.family: primaryFont
+                color: accentColor
+                anchors.horizontalCenter: parent.horizontalCenter
+            }
+
+            Text {
+                text: "SPEED"
+                font.pixelSize: 11
+                font.family: primaryFont
+                color: accentColor
+                anchors.horizontalCenter: parent.horizontalCenter
+            }
+        }
+    }
+
+    // ========================================================================
     // RIGHT SIDE - ELEVATION DISPLAY
     // ========================================================================
     Rectangle {
         id: elevationBox
         x: parent.width - 90
         y: parent.height/2 - 45
-        width: 80
+        width: 85
         height: 90
         color: "#99000000"
         border.color: accentColor
@@ -852,7 +883,7 @@ Item {
     // ========================================================================
     // AZIMUTH INDICATOR (Top-Right, Circular Compass)
     // ========================================================================
-    AzimuthIndicator {
+    /*AzimuthIndicator {
         anchors.right: parent.right
         anchors.top: parent.top
         anchors.rightMargin: 30
@@ -866,12 +897,12 @@ Item {
 
         color: accentColor
         relativeColor: "yellow"
-    }
+    }*/
 
     // ========================================================================
     // ELEVATION SCALE (Right Side, Vertical Scale)
     // ========================================================================
-    ElevationScale {
+    /*ElevationScale {
         anchors.right: parent.right
         anchors.top: parent.top
         anchors.rightMargin: 20
@@ -880,7 +911,7 @@ Item {
 
         elevation: viewModel ? viewModel.elevation : 0
         color: accentColor
-    }
+    }*/
 
     // ========================================================================
     // HELPER FUNCTIONS

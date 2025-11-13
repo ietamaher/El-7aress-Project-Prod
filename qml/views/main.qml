@@ -187,7 +187,7 @@ Window {
     Row {
         anchors.bottom: parent.bottom
         anchors.horizontalCenter: parent.horizontalCenter
-        anchors.bottomMargin: 20
+        anchors.bottomMargin: 100
         spacing: 15
         z: 200
 
