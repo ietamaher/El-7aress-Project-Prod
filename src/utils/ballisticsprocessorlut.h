@@ -2,6 +2,7 @@
 #define BALLISTICSPROCESSORLUT_H
 
 #include "ballisticslut.h"
+#include "ballisticsprocessor.h"  // For LeadCalculationResult and LeadAngleStatus
 #include "models/domain/systemstatemodel.h"
 
 /**
