@@ -107,12 +107,19 @@ void OsdController::onSystemStateChanged(const SystemStateData& data)
     if (m_viewModel) {
         m_viewModel->updateDeviceHealth(
             data.dayCameraConnected,
+            data.dayCameraError,
             data.nightCameraConnected,
+            data.nightCameraError,
+            data.azServoConnected,
             data.azFault,
+            data.elServoConnected,
             data.elFault,
+            data.lrfConnected,
             data.lrfFault,
             data.lrfOverTemp,
+            data.actuatorConnected,
             data.actuatorFault,
+            data.imuConnected,
             data.plc21Connected,
             data.plc42Connected
         );

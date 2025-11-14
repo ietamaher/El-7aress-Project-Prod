@@ -244,13 +244,13 @@ Item {
     // ========================================================================
     function hasDeviceFaults() {
         if (!viewModel) return false;
-        return !viewModel.dayCameraConnected ||
-               !viewModel.nightCameraConnected ||
-               viewModel.azFault ||
-               viewModel.elFault ||
-               viewModel.lrfFault ||
-               viewModel.lrfOverTemp ||
-               viewModel.actuatorFault ||
+        return !viewModel.dayCameraConnected || viewModel.dayCameraError ||
+               !viewModel.nightCameraConnected || viewModel.nightCameraError ||
+               !viewModel.azServoConnected || viewModel.azFault ||
+               !viewModel.elServoConnected || viewModel.elFault ||
+               !viewModel.lrfConnected || viewModel.lrfFault || viewModel.lrfOverTemp ||
+               !viewModel.actuatorConnected || viewModel.actuatorFault ||
+               !viewModel.imuConnected ||
                !viewModel.plc21Connected ||
                !viewModel.plc42Connected;
     }
@@ -261,9 +261,65 @@ Item {
         spacing: 5
         visible: hasDeviceFaults()
 
-        // Camera warning
+        // Day Camera warnings
         Rectangle {
-            visible: viewModel && (!viewModel.dayCameraConnected || !viewModel.nightCameraConnected)
+            visible: viewModel && !viewModel.dayCameraConnected
+            width: 140
+            height: 28
+            color: warningColor  // Red for disconnection
+            border.color: "black"
+            border.width: 2
+            radius: 2
+
+            Text {
+                anchors.centerIn: parent
+                text: "⚠ DAY CAM DISC"
+                font.pixelSize: 11
+                font.bold: true
+                font.family: primaryFont
+                color: "white"
+            }
+        }
+        Rectangle {
+            visible: viewModel && viewModel.dayCameraConnected && viewModel.dayCameraError
+            width: 140
+            height: 28
+            color: cautionColor  // Orange for fault
+            border.color: "black"
+            border.width: 2
+            radius: 2
+
+            Text {
+                anchors.centerIn: parent
+                text: "⚠ DAY CAM FAULT"
+                font.pixelSize: 11
+                font.bold: true
+                font.family: primaryFont
+                color: "black"
+            }
+        }
+
+        // Night Camera warnings
+        Rectangle {
+            visible: viewModel && !viewModel.nightCameraConnected
+            width: 140
+            height: 28
+            color: warningColor
+            border.color: "black"
+            border.width: 2
+            radius: 2
+
+            Text {
+                anchors.centerIn: parent
+                text: "⚠ IR CAM DISC"
+                font.pixelSize: 11
+                font.bold: true
+                font.family: primaryFont
+                color: "white"
+            }
+        }
+        Rectangle {
+            visible: viewModel && viewModel.nightCameraConnected && viewModel.nightCameraError
             width: 140
             height: 28
             color: cautionColor
@@ -273,17 +329,35 @@ Item {
 
             Text {
                 anchors.centerIn: parent
-                text: "⚠ CAM FAULT"
-                font.pixelSize: 12
+                text: "⚠ IR CAM FAULT"
+                font.pixelSize: 11
                 font.bold: true
                 font.family: primaryFont
                 color: "black"
             }
         }
 
-        // Servo warning
+        // Azimuth Servo warnings
         Rectangle {
-            visible: viewModel && (viewModel.azFault || viewModel.elFault)
+            visible: viewModel && !viewModel.azServoConnected
+            width: 140
+            height: 28
+            color: warningColor
+            border.color: "black"
+            border.width: 2
+            radius: 2
+
+            Text {
+                anchors.centerIn: parent
+                text: "⚠ AZ SERVO DISC"
+                font.pixelSize: 11
+                font.bold: true
+                font.family: primaryFont
+                color: "white"
+            }
+        }
+        Rectangle {
+            visible: viewModel && viewModel.azServoConnected && viewModel.azFault
             width: 140
             height: 28
             color: cautionColor
@@ -293,17 +367,73 @@ Item {
 
             Text {
                 anchors.centerIn: parent
-                text: "⚠ SERVO FAULT"
-                font.pixelSize: 12
+                text: "⚠ AZ SERVO FAULT"
+                font.pixelSize: 11
                 font.bold: true
                 font.family: primaryFont
                 color: "black"
             }
         }
 
-        // LRF warning
+        // Elevation Servo warnings
         Rectangle {
-            visible: viewModel && (viewModel.lrfFault || viewModel.lrfOverTemp)
+            visible: viewModel && !viewModel.elServoConnected
+            width: 140
+            height: 28
+            color: warningColor
+            border.color: "black"
+            border.width: 2
+            radius: 2
+
+            Text {
+                anchors.centerIn: parent
+                text: "⚠ EL SERVO DISC"
+                font.pixelSize: 11
+                font.bold: true
+                font.family: primaryFont
+                color: "white"
+            }
+        }
+        Rectangle {
+            visible: viewModel && viewModel.elServoConnected && viewModel.elFault
+            width: 140
+            height: 28
+            color: cautionColor
+            border.color: "black"
+            border.width: 2
+            radius: 2
+
+            Text {
+                anchors.centerIn: parent
+                text: "⚠ EL SERVO FAULT"
+                font.pixelSize: 11
+                font.bold: true
+                font.family: primaryFont
+                color: "black"
+            }
+        }
+
+        // LRF warnings
+        Rectangle {
+            visible: viewModel && !viewModel.lrfConnected
+            width: 140
+            height: 28
+            color: warningColor
+            border.color: "black"
+            border.width: 2
+            radius: 2
+
+            Text {
+                anchors.centerIn: parent
+                text: "⚠ LRF DISC"
+                font.pixelSize: 11
+                font.bold: true
+                font.family: primaryFont
+                color: "white"
+            }
+        }
+        Rectangle {
+            visible: viewModel && viewModel.lrfConnected && viewModel.lrfFault
             width: 140
             height: 28
             color: cautionColor
@@ -314,16 +444,52 @@ Item {
             Text {
                 anchors.centerIn: parent
                 text: "⚠ LRF FAULT"
-                font.pixelSize: 12
+                font.pixelSize: 11
+                font.bold: true
+                font.family: primaryFont
+                color: "black"
+            }
+        }
+        Rectangle {
+            visible: viewModel && viewModel.lrfOverTemp
+            width: 140
+            height: 28
+            color: cautionColor
+            border.color: "black"
+            border.width: 2
+            radius: 2
+
+            Text {
+                anchors.centerIn: parent
+                text: "⚠ LRF OVERTEMP"
+                font.pixelSize: 11
                 font.bold: true
                 font.family: primaryFont
                 color: "black"
             }
         }
 
-        // Actuator warning
+        // Actuator warnings
         Rectangle {
-            visible: viewModel && viewModel.actuatorFault
+            visible: viewModel && !viewModel.actuatorConnected
+            width: 140
+            height: 28
+            color: warningColor
+            border.color: "black"
+            border.width: 2
+            radius: 2
+
+            Text {
+                anchors.centerIn: parent
+                text: "⚠ ACTUATOR DISC"
+                font.pixelSize: 11
+                font.bold: true
+                font.family: primaryFont
+                color: "white"
+            }
+        }
+        Rectangle {
+            visible: viewModel && viewModel.actuatorConnected && viewModel.actuatorFault
             width: 140
             height: 28
             color: cautionColor
@@ -334,30 +500,70 @@ Item {
             Text {
                 anchors.centerIn: parent
                 text: "⚠ ACTUATOR FAULT"
-                font.pixelSize: 12
+                font.pixelSize: 11
                 font.bold: true
                 font.family: primaryFont
                 color: "black"
             }
         }
 
-        // PLC warning
+        // IMU warning
         Rectangle {
-            visible: viewModel && (!viewModel.plc21Connected || !viewModel.plc42Connected)
+            visible: viewModel && !viewModel.imuConnected
             width: 140
             height: 28
-            color: cautionColor
+            color: warningColor
             border.color: "black"
             border.width: 2
             radius: 2
 
             Text {
                 anchors.centerIn: parent
-                text: "⚠ PLC FAULT"
-                font.pixelSize: 12
+                text: "⚠ IMU DISC"
+                font.pixelSize: 11
                 font.bold: true
                 font.family: primaryFont
-                color: "black"
+                color: "white"
+            }
+        }
+
+        // PLC21 warning
+        Rectangle {
+            visible: viewModel && !viewModel.plc21Connected
+            width: 140
+            height: 28
+            color: warningColor
+            border.color: "black"
+            border.width: 2
+            radius: 2
+
+            Text {
+                anchors.centerIn: parent
+                text: "⚠ PLC21 DISC"
+                font.pixelSize: 11
+                font.bold: true
+                font.family: primaryFont
+                color: "white"
+            }
+        }
+
+        // PLC42 warning
+        Rectangle {
+            visible: viewModel && !viewModel.plc42Connected
+            width: 140
+            height: 28
+            color: warningColor
+            border.color: "black"
+            border.width: 2
+            radius: 2
+
+            Text {
+                anchors.centerIn: parent
+                text: "⚠ PLC42 DISC"
+                font.pixelSize: 11
+                font.bold: true
+                font.family: primaryFont
+                color: "white"
             }
         }
     }
