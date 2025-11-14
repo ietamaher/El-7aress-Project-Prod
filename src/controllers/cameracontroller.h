@@ -11,6 +11,7 @@ class DayCameraControlDevice;
 class NightCameraControlDevice;
 class CameraVideoStreamDevice; // Replaces pipeline devices
 class SystemStateModel;
+class LRFDevice;
  
 
 class CameraController : public QObject
@@ -19,10 +20,11 @@ class CameraController : public QObject
 
 public:
     explicit CameraController(DayCameraControlDevice* dayControl,
-                              CameraVideoStreamDevice* dayProcessor,         
+                              CameraVideoStreamDevice* dayProcessor,
                               NightCameraControlDevice* nightControl,
-                              CameraVideoStreamDevice* nightProcessor,       
+                              CameraVideoStreamDevice* nightProcessor,
                               SystemStateModel* stateModel,
+                              LRFDevice* lrfDevice,
                               QObject* parent = nullptr);
     ~CameraController() override;
 
@@ -45,6 +47,11 @@ public:
     Q_INVOKABLE bool startTracking(); // Request tracking on active camera
     Q_INVOKABLE void stopTracking();  // Request tracking stop on active camera
 
+    // --- LRF Control (Laser Range Finder) ---
+    Q_INVOKABLE void triggerLRF();           // Single shot ranging (Button 1)
+    Q_INVOKABLE void startContinuousLRF();   // Continuous ranging (5Hz)
+    Q_INVOKABLE void stopContinuousLRF();    // Stop continuous ranging
+
     // --- Getters ---
     CameraVideoStreamDevice* getDayCameraProcessor() const;   // Changed name/type
     CameraVideoStreamDevice* getNightCameraProcessor() const; // Changed name/type
@@ -62,16 +69,21 @@ public slots:
     // React to changes in the central state model
     void onSystemStateChanged(const SystemStateData &newData);
 
+private slots:
+    // LRF data handler - updates SystemStateModel with range measurements
+    void onLrfDataChanged(const LrfData &newData);
+
 private:
     void updateStatus(const QString& message);
     void setActiveCamera(bool isDay); // Internal helper to manage state on change
 
     // --- Dependencies ---
     QPointer<DayCameraControlDevice>    m_dayControl;
-    QPointer<CameraVideoStreamDevice>            m_dayProcessor; // Changed
+    QPointer<CameraVideoStreamDevice>   m_dayProcessor; // Changed
     QPointer<NightCameraControlDevice>  m_nightControl;
-    QPointer<CameraVideoStreamDevice>            m_nightProcessor; // Changed
+    QPointer<CameraVideoStreamDevice>   m_nightProcessor; // Changed
     QPointer<SystemStateModel>          m_stateModel;
+    QPointer<LRFDevice>                 m_lrfDevice;     // Laser Range Finder
 
     // --- Internal State ---
     QMutex m_mutex; // For thread safety if needed, although most action is on state model signals
