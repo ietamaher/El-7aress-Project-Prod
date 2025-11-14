@@ -5,6 +5,10 @@
 #include <QtMath>
 #include "models/domain/systemstatedata.h" // Include for SystemStateData
 
+// Eigen for 3D transformations (rotation matrices)
+#include <Eigen/Dense>
+#include <Eigen/Geometry>
+
 // Forward declare GimbalController
 class GimbalController;
 
@@ -78,7 +82,7 @@ public:
     void updateGyroBias(const SystemStateData& systemState);
 
     /**
-     * @brief Converts gimbal angles from platform frame to world frame.
+     * @brief Converts gimbal angles from platform frame to world frame (old scalar version).
      * @param gimbalAz_platform Current gimbal azimuth in platform frame (degrees)
      * @param gimbalEl_platform Current gimbal elevation in platform frame (degrees)
      * @param platform_roll Platform roll angle from AHRS (degrees)
@@ -90,6 +94,23 @@ public:
     void convertGimbalToWorldFrame(double gimbalAz_platform, double gimbalEl_platform,
                                     double platform_roll, double platform_pitch, double platform_yaw,
                                     double& worldAz, double& worldEl);
+
+    /**
+     * @brief Converts gimbal velocity vectors from gimbal frame to world frame using rotation matrices.
+     * @param linVel_gimbal_mps Linear velocity in gimbal frame (m/s)
+     * @param angVel_gimbal_dps Angular velocity in gimbal frame (deg/s)
+     * @param azDeg Gimbal azimuth angle (degrees)
+     * @param elDeg Gimbal elevation angle (degrees)
+     * @param linVel_world_mps Output linear velocity in world frame (m/s)
+     * @param angVel_world_dps Output angular velocity in world frame (deg/s)
+     */
+    void convertGimbalToWorldFrame(
+        const Eigen::Vector3d& linVel_gimbal_mps,
+        const Eigen::Vector3d& angVel_gimbal_dps,
+        double azDeg,
+        double elDeg,
+        Eigen::Vector3d& linVel_world_mps,
+        Eigen::Vector3d& angVel_world_dps);
 
 protected:
 
@@ -182,9 +203,17 @@ protected:
     static constexpr double UPDATE_INTERVAL_S = 0.05;      // 50ms update interval
 
 private:
-    // Helper for angle conversions
+    // Helper for angle conversions (scalar)
     static inline double degToRad(double deg) { return deg * (M_PI / 180.0); }
     static inline double radToDeg(double rad) { return rad * (180.0 / M_PI); }
+
+    // Helper for angle conversions (Eigen vectors - element-wise)
+    static inline Eigen::Vector3d degToRad(const Eigen::Vector3d& deg) {
+        return deg * (M_PI / 180.0);
+    }
+    static inline Eigen::Vector3d radToDeg(const Eigen::Vector3d& rad) {
+        return rad * (180.0 / M_PI);
+    }
 
     // Gyro filters for stabilization
     GyroLowPassFilter m_gyroXFilter;

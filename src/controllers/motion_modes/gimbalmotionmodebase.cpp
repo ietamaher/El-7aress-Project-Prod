@@ -465,116 +465,116 @@ void GimbalMotionModeBase::calculateHybridStabilizationCorrection(
     double& azCorrection_dps,
     double& elCorrection_dps)
 {
-    // ========================================
-    // LAYER 1: POSITION CONTROL (AHRS-based)
-    // Outputs velocity to reduce position error
-    // ========================================
+    // -------------------------
+    // Units convention (explicit)
+    // - state.GyroX/Y/Z : IMU gyro output in deg/s
+    // - p_dps, q_dps, r_dps : body rates in deg/s (consistent)
+    // - currentAzRad/currentElRad : angles in radians (for trig)
+    // - trig outputs: dimensionless
+    // - All corrections (position and velocity) are in deg/s
+    // -------------------------
+
+    // LAYER 1: Position (AHRS-based) -> produces corrections in deg/s
     double positionCorrectionAz_dps = 0.0;
     double positionCorrectionEl_dps = 0.0;
 
     if (state.useWorldFrameTarget && state.imuConnected) {
-        // Calculate where gimbal SHOULD be (in platform frame) to point at world target
-        double required_az, required_el;
+        double required_az_deg = 0.0;
+        double required_el_deg = 0.0;
         calculateRequiredGimbalAngles(
             state.imuRollDeg,
             state.imuPitchDeg,
             state.imuYawDeg,
             state.targetAzimuth_world,
             state.targetElevation_world,
-            required_az,
-            required_el
+            required_az_deg,
+            required_el_deg
         );
 
-        // Calculate position error
-        double az_error = required_az - state.gimbalAz;
-        double el_error = required_el - state.gimbalEl;
+        double az_error_deg = required_az_deg - state.gimbalAz;
+        double el_error_deg = required_el_deg - state.gimbalEl;
 
-        // Normalize azimuth error to [-180, 180]
-        while (az_error > 180.0) az_error -= 360.0;
-        while (az_error < -180.0) az_error += 360.0;
+        // Normalize az error to [-180, 180]
+        while (az_error_deg > 180.0) az_error_deg -= 360.0;
+        while (az_error_deg < -180.0) az_error_deg += 360.0;
 
-        // Proportional control: velocity = Kp × error
-        const double Kp_position = 2.0;  // Tuning parameter
-        positionCorrectionAz_dps = Kp_position * az_error;
-        positionCorrectionEl_dps = Kp_position * el_error;
+        const double Kp_position = 2.0; // deg/s per degree
+        positionCorrectionAz_dps = Kp_position * az_error_deg;
+        positionCorrectionEl_dps = Kp_position * el_error_deg;
 
-        // Limit position correction velocity
-        const double MAX_POSITION_VEL = 10.0;  // deg/s
+        const double MAX_POSITION_VEL = 10.0; // deg/s
         positionCorrectionAz_dps = qBound(-MAX_POSITION_VEL, positionCorrectionAz_dps, MAX_POSITION_VEL);
         positionCorrectionEl_dps = qBound(-MAX_POSITION_VEL, positionCorrectionEl_dps, MAX_POSITION_VEL);
     }
 
-    // ========================================
-    // LAYER 2: VELOCITY FEEDFORWARD (Gyro-based)
-    // Compensates for platform rotation
-    // ========================================
+    // LAYER 2: Velocity feedforward (gyro-based)
     double velocityCorrectionAz_dps = 0.0;
     double velocityCorrectionEl_dps = 0.0;
 
     if (state.imuConnected) {
-        // Validate gyro inputs
         if (std::isnan(state.GyroX) || std::isnan(state.GyroY) || std::isnan(state.GyroZ)) {
             velocityCorrectionAz_dps = 0.0;
             velocityCorrectionEl_dps = 0.0;
         } else {
-            // Apply bias correction
-            double gyroX_corrected = state.GyroX - m_gyroBiasX;
-            double gyroY_corrected = state.GyroY - m_gyroBiasY;
-            double gyroZ_corrected = state.GyroZ - m_gyroBiasZ;
+            // Bias correction (deg/s)
+            double gyroX_corr_dps = state.GyroX - m_gyroBiasX;
+            double gyroY_corr_dps = state.GyroY - m_gyroBiasY;
+            double gyroZ_corr_dps = state.GyroZ - m_gyroBiasZ;
 
-            // Filter gyro rates
-            double gyroX_filtered = m_gyroXFilter.update(gyroX_corrected);
-            double gyroY_filtered = m_gyroYFilter.update(gyroY_corrected);
-            double gyroZ_filtered = m_gyroZFilter.update(gyroZ_corrected);
+            // Filtering (filter expects deg/s)
+            double gyroX_filt_dps = m_gyroXFilter.update(gyroX_corr_dps);
+            double gyroY_filt_dps = m_gyroYFilter.update(gyroY_corr_dps);
+            double gyroZ_filt_dps = m_gyroZFilter.update(gyroZ_corr_dps);
 
-            // Map to platform axes
             // ✅ VERIFIED IMU ORIENTATION (2025-11-14):
-            // IMU Frame (Forward-Right-Down):
-            //   X_imu → Forward (toward camera/barrel)
-            //   Y_imu → Right (starboard)
-            //   Z_imu → Down (gravity direction)
-            // Gyro rates are in deg/s from IMU
-            const double p_imu = gyroX_filtered; // Roll rate (rotation around X_imu forward axis)
-            const double q_imu = gyroY_filtered; // Pitch rate (rotation around Y_imu right axis)
-            const double r_imu = -gyroZ_filtered; // Yaw rate (rotation around Z_imu down axis) - INVERTED because Z points DOWN
+            // IMU Frame: X forward, Y right, Z down (Forward-Right-Down)
+            // Map IMU -> body rates (deg/s)
+            const double p_dps = gyroX_filt_dps;    // roll rate (deg/s)
+            const double q_dps = gyroY_filt_dps;    // pitch rate (deg/s)
+            const double r_dps = -gyroZ_filt_dps;   // yaw rate (deg/s) -- NEGATED because Z is DOWN
 
-            // Kinematic transformation
+            // Angles for trig (radians)
             const double currentAzRad = degToRad(state.gimbalAz);
             const double currentElRad = degToRad(state.gimbalEl);
 
-            double platformEffectOnEl = (q_imu * cos(currentAzRad)) - (p_imu * sin(currentAzRad));
+            // platformEffectOnEl (deg/s) = q * cos(az) - p * sin(az)
+            double platformEffectOnEl_dps = (q_dps * cos(currentAzRad)) - (p_dps * sin(currentAzRad));
 
-            double tanEl = tan(currentElRad);
-            double platformEffectOnAz;
-            if (qAbs(cos(currentElRad)) < 1e-6) {
-                platformEffectOnAz = r_imu;
+            // platformEffectOnAz uses tan(el) * (some deg/s) + r_dps -> deg/s overall
+            double tanEl = 0.0;
+            const double COS_EPS = 1e-6;
+            const double MAX_TAN_EL = 10.0; // Conservative clamp for practical gimbal range (-20° to +60°)
+            if (qAbs(cos(currentElRad)) < COS_EPS) {
+                tanEl = (currentElRad >= 0.0) ? MAX_TAN_EL : -MAX_TAN_EL;
             } else {
-                platformEffectOnAz = r_imu + tanEl * (q_imu * sin(currentAzRad) + p_imu * cos(currentAzRad));
+                tanEl = tan(currentElRad);
+                if (qAbs(tanEl) > MAX_TAN_EL) tanEl = (tanEl > 0.0) ? MAX_TAN_EL : -MAX_TAN_EL;
             }
 
-            // Negate to get correction
-            velocityCorrectionAz_dps = -platformEffectOnAz;
-            velocityCorrectionEl_dps = -platformEffectOnEl;
+            double platformTerm_dps = (q_dps * sin(currentAzRad)) + (p_dps * cos(currentAzRad)); // deg/s
+            double platformEffectOnAz_dps = r_dps + tanEl * platformTerm_dps; // deg/s
 
-            // Limit velocity correction
-            const double MAX_VELOCITY_CORR = 5.0;  // deg/s
+            // Corrections are negatives of platform effects
+            velocityCorrectionAz_dps = -platformEffectOnAz_dps;
+            velocityCorrectionEl_dps = -platformEffectOnEl_dps;
+
+            // Limit corrections
+            const double MAX_VELOCITY_CORR = 5.0; // deg/s
             velocityCorrectionAz_dps = qBound(-MAX_VELOCITY_CORR, velocityCorrectionAz_dps, MAX_VELOCITY_CORR);
             velocityCorrectionEl_dps = qBound(-MAX_VELOCITY_CORR, velocityCorrectionEl_dps, MAX_VELOCITY_CORR);
         }
     }
 
-    // ========================================
-    // COMBINE BOTH LAYERS
-    // ========================================
+    // Combine (both layers in deg/s)
     azCorrection_dps = positionCorrectionAz_dps + velocityCorrectionAz_dps;
     elCorrection_dps = positionCorrectionEl_dps + velocityCorrectionEl_dps;
 
-    // Final safety limit
-    const double MAX_TOTAL_VEL = 12.0;  // deg/s
+    // Final cap
+    const double MAX_TOTAL_VEL = 12.0; // deg/s
     azCorrection_dps = qBound(-MAX_TOTAL_VEL, azCorrection_dps, MAX_TOTAL_VEL);
     elCorrection_dps = qBound(-MAX_TOTAL_VEL, elCorrection_dps, MAX_TOTAL_VEL);
 
-    // Diagnostic logging (every 50th call)
+    // Logging (same behavior as before)
     static int logCounter = 0;
     if ((logCounter++ % 50) == 0 && state.useWorldFrameTarget) {
         qDebug().noquote().nospace()
@@ -585,5 +585,54 @@ void GimbalMotionModeBase::calculateHybridStabilizationCorrection(
             << " | VelCorr: Az=" << QString::number(velocityCorrectionAz_dps, 'f', 2)
             << " El=" << QString::number(velocityCorrectionEl_dps, 'f', 2);
     }
+}
+
+// ============================================================================
+// GIMBAL TO WORLD FRAME CONVERSION (Eigen-based rotation matrices)
+// ============================================================================
+
+void GimbalMotionModeBase::convertGimbalToWorldFrame(
+    const Eigen::Vector3d& linVel_gimbal_mps,
+    const Eigen::Vector3d& angVel_gimbal_dps,
+    double azDeg,
+    double elDeg,
+    Eigen::Vector3d& linVel_world_mps,
+    Eigen::Vector3d& angVel_world_dps)
+{
+    // ======================================================
+    // 1. Convert angles to radians
+    // ======================================================
+    const double azRad = degToRad(azDeg);   // [rad]
+    const double elRad = degToRad(elDeg);   // [rad]
+
+    // ======================================================
+    // 2. Rotation matrix: Gimbal → World
+    //
+    // Azimuth-over-Elevation gimbal:
+    //   World = R_az(Z) * R_el(Y) * Gimbal
+    //
+    // Rotation order:
+    //   1. R_el: Rotate around Y-axis (elevation) - INNER gimbal
+    //   2. R_az: Rotate around Z-axis (azimuth) - OUTER gimbal
+    // ======================================================
+    const Eigen::Matrix3d R_az = Eigen::AngleAxisd(azRad, Eigen::Vector3d::UnitZ()).toRotationMatrix();
+    const Eigen::Matrix3d R_el = Eigen::AngleAxisd(elRad, Eigen::Vector3d::UnitY()).toRotationMatrix();
+    const Eigen::Matrix3d R_g2w = R_az * R_el;  // Gimbal-to-World rotation
+
+    // ======================================================
+    // 3. Linear Velocity Transform
+    // v_world = R_g2w * v_gimbal
+    // Units: m/s → m/s (unchanged)
+    // ======================================================
+    linVel_world_mps = R_g2w * linVel_gimbal_mps;
+
+    // ======================================================
+    // 4. Angular Velocity Transform
+    // ω_world = R_g2w * ω_gimbal
+    // Units: deg/s → rad/s → rotate → deg/s
+    // ======================================================
+    const Eigen::Vector3d angVel_gimbal_radps = degToRad(angVel_gimbal_dps);  // deg/s → rad/s
+    const Eigen::Vector3d angVel_world_radps = R_g2w * angVel_gimbal_radps;   // Rotate (rad/s)
+    angVel_world_dps = radToDeg(angVel_world_radps);                          // rad/s → deg/s
 }
 
