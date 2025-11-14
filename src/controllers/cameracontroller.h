@@ -69,10 +69,6 @@ public slots:
     // React to changes in the central state model
     void onSystemStateChanged(const SystemStateData &newData);
 
-private slots:
-    // LRF data handler - updates SystemStateModel with range measurements
-    void onLrfDataChanged(const LrfData &newData);
-
 private:
     void updateStatus(const QString& message);
     void setActiveCamera(bool isDay); // Internal helper to manage state on change

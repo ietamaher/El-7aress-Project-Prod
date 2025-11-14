@@ -725,17 +725,23 @@ void SystemStateModel::onJoystickHatChanged(int hat, int direction)
 
 void SystemStateModel::onLrfDataChanged(const LrfData &lrfData)
 {
-    SystemStateData newData = m_currentStateData;  
-    newData.lrfConnected = lrfData.isConnected;              
-    newData.lrfDistance = lrfData.lastDistance;            
-    newData.lrfTemp = lrfData.temperature;                  
-    newData.lrfLaserCount = lrfData.laserCount;              
-    newData.lrfSystemStatus = lrfData.rawStatusByte;         
-    newData.lrfFault = lrfData.isFault;                      
-    newData.lrfNoEcho = lrfData.noEcho;                      
-    newData.lrfLaserNotOut = lrfData.laserNotOut;            
-    newData.lrfOverTemp = lrfData.isOverTemperature;       
+    SystemStateData newData = m_currentStateData;
+    newData.lrfConnected = lrfData.isConnected;
+    newData.lrfDistance = lrfData.lastDistance;
+    newData.lrfTemp = lrfData.temperature;
+    newData.lrfLaserCount = lrfData.laserCount;
+    newData.lrfSystemStatus = lrfData.rawStatusByte;
+    newData.lrfFault = lrfData.isFault;
+    newData.lrfNoEcho = lrfData.noEcho;
+    newData.lrfLaserNotOut = lrfData.laserNotOut;
+    newData.lrfOverTemp = lrfData.isOverTemperature;
     newData.isOverTemperature = lrfData.isOverTemperature;
+
+    // Update ballistics target range when LRF measurement is valid
+    if (lrfData.isLastRangingValid && lrfData.lastDistance > 0) {
+        newData.currentTargetRange = static_cast<float>(lrfData.lastDistance);
+    }
+
     updateData(newData);
 }
 
