@@ -242,17 +242,19 @@ Item {
     // ========================================================================
     // RIGHT SIDE - SYSTEM HEALTH WARNINGS (Only when faults detected)
     // ========================================================================
-    // TODO: Add device health properties to OsdViewModel:
-    //   - dayCameraConnected, nightCameraConnected
-    //   - azServoFault, elServoFault
-    //   - lrfFault, lrfOverTemp
-    //   - actuatorFault
-    //   - plc21Connected, plc42Connected
-    //
-    // These are available in SystemStateData but not currently exposed
-    // through OsdViewModel. Uncomment the Column below once added.
+    function hasDeviceFaults() {
+        if (!viewModel) return false;
+        return !viewModel.dayCameraConnected ||
+               !viewModel.nightCameraConnected ||
+               viewModel.azFault ||
+               viewModel.elFault ||
+               viewModel.lrfFault ||
+               viewModel.lrfOverTemp ||
+               viewModel.actuatorFault ||
+               !viewModel.plc21Connected ||
+               !viewModel.plc42Connected;
+    }
 
-    /* UNCOMMENT WHEN VIEWMODEL PROPERTIES ARE AVAILABLE
     Column {
         x: parent.width - 150
         y: parent.height - 300
@@ -281,7 +283,7 @@ Item {
 
         // Servo warning
         Rectangle {
-            visible: viewModel && (viewModel.azServoFault || viewModel.elServoFault)
+            visible: viewModel && (viewModel.azFault || viewModel.elFault)
             width: 140
             height: 28
             color: cautionColor
@@ -359,7 +361,6 @@ Item {
             }
         }
     }
-    */
 
     // ========================================================================
     // RIGHT SIDE - SPEED DISPLAY

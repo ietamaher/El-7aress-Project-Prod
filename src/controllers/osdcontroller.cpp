@@ -102,6 +102,21 @@ void OsdController::onSystemStateChanged(const SystemStateData& data)
     if (m_startupState == StartupState::Complete) {
         checkForCriticalErrors(data);
     }
+
+    // Update device health status for warning displays
+    if (m_viewModel) {
+        m_viewModel->updateDeviceHealth(
+            data.dayCameraConnected,
+            data.nightCameraConnected,
+            data.azFault,
+            data.elFault,
+            data.lrfFault,
+            data.lrfOverTemp,
+            data.actuatorFault,
+            data.plc21Connected,
+            data.plc42Connected
+        );
+    }
 }
 
 void OsdController::checkForCriticalErrors(const SystemStateData& data)
