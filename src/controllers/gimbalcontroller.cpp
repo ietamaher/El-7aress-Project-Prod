@@ -67,12 +67,10 @@ GimbalController::GimbalController(ServoDriverDevice* azServo,
 
     connect(m_azServo, &ServoDriverDevice::alarmDetected, this, &GimbalController::onAzAlarmDetected);
     connect(m_azServo, &ServoDriverDevice::alarmCleared, this, &GimbalController::onAzAlarmCleared);
-    //connect(m_azServo, &ServoDriverDevice::alarmHistoryRead, this, &GimbalController::alarmHistoryRead);
-    //connect(m_azServo, &ServoDriverDevice::alarmHistoryCleared, this, &GimbalController::alarmHistoryCleared);
+    // ARCHIVE: docs/legacy-snippets.md#entry-2 (alarm history signals - may be useful for future diagnostics)
     connect(m_elServo, &ServoDriverDevice::alarmDetected, this, &GimbalController::onElAlarmDetected);
     connect(m_elServo, &ServoDriverDevice::alarmCleared, this, &GimbalController::onElAlarmCleared);
-    //connect(m_elServo, &ServoDriverDevice::alarmHistoryRead, this, &GimbalController::alarmHistoryRead);
-    //connect(m_elServo, &ServoDriverDevice::alarmHistoryCleared, this, &GimbalController::alarmHistoryCleared);
+    // ARCHIVE: docs/legacy-snippets.md#entry-2 (alarm history signals - may be useful for future diagnostics)
 
     // Initialize and start the update timer
     m_updateTimer = new QTimer(this);
@@ -152,17 +150,13 @@ void GimbalController::onSystemStateChanged(const SystemStateData &newData)
                 double targetAngularVelEl_dps = angularVelocity.y();
                 // Normalize targetGimbalAz if necessary (0-360)
 
-               /* qDebug() << "[GimbalCtrl] Tracking: Target Px(" << newData.trackedTargetCenterX_px << "," << newData.trackedTargetCenterY_px
-                         << ") Error Px(" << errorPxX << "," << errorPxY
-                         << ") Angular Offset (" << angularOffset.x() << "," << angularOffset.y()
-                         << ") Current Gimbal(" << newData.gimbalAz << "," << newData.gimbalEl
-                         << ") New Target Gimbal(" << targetGimbalAz << "," << targetGimbalEl << ")";*/
+                // ARCHIVE: docs/legacy-snippets.md#entry-3 (detailed tracking debug logging - useful for troubleshooting)
                 trackingMode->onTargetPositionUpdated(
-                    targetGimbalAz, targetGimbalEl, 
+                    targetGimbalAz, targetGimbalEl,
                     targetAngularVelAz_dps, targetAngularVelEl_dps, // Pass the calculated angular velocities
                     true
                 );
-                //trackingMode->onTargetPositionUpdated(targetGimbalAz, targetGimbalEl, 0, 0, true);
+                // ARCHIVE: docs/legacy-snippets.md#entry-3 (old API without angular velocity params)
             } else {
                 // Target is invalid or lost
                 trackingMode->onTargetPositionUpdated(0, 0, 0, 0, false); // Signal invalid target
@@ -298,12 +292,7 @@ void GimbalController::readAlarms()
 
 void GimbalController::clearAlarms()
 {
-    /*if (m_azServo) {
-        m_azServo->clearAlarm();
-    }
-    if (m_elServo) {
-        m_elServo->clearAlarm();
-    }*/
+    // ARCHIVE: docs/legacy-snippets.md#entry-4 (old alarm clearing logic - direct servo calls)
     m_plc42->setResetAlarm(0); // Reset PLC42 alarm state
     // Delay 1 second before sending the second command
     QTimer::singleShot(1000, this, [this]() {

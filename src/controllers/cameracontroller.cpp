@@ -257,16 +257,7 @@ void CameraController::stopTracking()
     updateStatus(QString("Tracking stop requested on %1 camera.").arg(m_isDayCameraActive ? "Day" : "Night"));
     // Don't emit stateChanged here, wait for the model's signal
 }
-/*
- *
- * /home/rapit/Desktop/tous_dossiers/docs/el7aress/controllers/cameracontroller.cpp:198: error: invalid operands of types ‘const char [29]’ and ‘const char*’ to binary ‘operator+’
-../../Desktop/tous_dossiers/docs/el7aress/controllers/cameracontroller.cpp: In member function ‘bool CameraController::startTracking()’:
-../../Desktop/tous_dossiers/docs/el7aress/controllers/cameracontroller.cpp:198:49: error: invalid operands of types ‘const char [29]’ and ‘const char*’ to binary ‘operator+’
-  198 |     updateStatus("Tracking start requested on " + (m_isDayCameraActive ? "Day" : "Night") + " camera.");
-      |                  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ ^ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-      |                  |                                                     |
-      |                  const char [29]                                       const char*
-      */
+// ARCHIVE: docs/legacy-snippets.md#entry-1 (old compiler error notes)
 
 // --- Camera Control Wrappers ---
 
