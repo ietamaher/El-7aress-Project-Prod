@@ -98,8 +98,9 @@ MessagePtr LrfProtocolParser::handleResponse(const QByteArray &response) {
         data.noEcho = (status0 & 0x08);
         data.laserNotOut = (status0 & 0x10);
         data.isOverTemperature = (status0 & 0x20);
-        data.lastDistance = (static_cast<quint8>(response.at(5)) << 8) | 
-                           static_cast<quint8>(response.at(6)) / 100;   // it is in centimeters convert to meeters 
+       quint16 lrfDistance    = (static_cast<quint8>(response.at(5)) << 8) | 
+                           static_cast<quint8>(response.at(6)) ;
+        data.lastDistance = lrfDistance / 100;   // it is in centimeters convert to meeters 
         data.isLastRangingValid = (data.lastDistance > 0 && !data.noEcho && !data.isFault);
         data.pulseCount = static_cast<quint8>(response.at(7));
         return std::make_unique<LrfDataMessage>(data);
