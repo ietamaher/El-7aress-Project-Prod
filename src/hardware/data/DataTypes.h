@@ -3,6 +3,7 @@
 
 #include <QtCore>
 #include <QStringList>
+#include <cmath>  // For std::abs in epsilon-based comparisons
 
 // ============================================================================
 // CAMERA DATA STRUCTURES
@@ -163,17 +164,24 @@ struct ImuData {
     double angRateZ_dps = 0.0;
 
     bool operator!=(const ImuData &other) const {
+        // Use epsilon-based comparison for floating-point values to avoid signal flooding
+        // due to insignificant precision differences
+        const double ANGLE_EPSILON = 0.01;      // 0.01° = 36 arcseconds (very precise)
+        const double TEMP_EPSILON = 0.1;        // 0.1°C
+        const double ACCEL_EPSILON = 0.001;     // 0.001g (very sensitive)
+        const double GYRO_EPSILON = 0.01;       // 0.01 deg/s
+
         return (isConnected != other.isConnected ||
-                rollDeg != other.rollDeg ||
-                pitchDeg != other.pitchDeg ||
-                yawDeg != other.yawDeg ||
-                temperature != other.temperature ||
-                accelX_g != other.accelX_g ||
-                accelY_g != other.accelY_g ||
-                accelZ_g != other.accelZ_g ||
-                angRateX_dps != other.angRateX_dps ||
-                angRateY_dps != other.angRateY_dps ||
-                angRateZ_dps != other.angRateZ_dps);
+                std::abs(rollDeg - other.rollDeg) > ANGLE_EPSILON ||
+                std::abs(pitchDeg - other.pitchDeg) > ANGLE_EPSILON ||
+                std::abs(yawDeg - other.yawDeg) > ANGLE_EPSILON ||
+                std::abs(temperature - other.temperature) > TEMP_EPSILON ||
+                std::abs(accelX_g - other.accelX_g) > ACCEL_EPSILON ||
+                std::abs(accelY_g - other.accelY_g) > ACCEL_EPSILON ||
+                std::abs(accelZ_g - other.accelZ_g) > ACCEL_EPSILON ||
+                std::abs(angRateX_dps - other.angRateX_dps) > GYRO_EPSILON ||
+                std::abs(angRateY_dps - other.angRateY_dps) > GYRO_EPSILON ||
+                std::abs(angRateZ_dps - other.angRateZ_dps) > GYRO_EPSILON);
     }
 };
 
@@ -195,12 +203,19 @@ struct ServoDriverData {
 
 
     bool operator!=(const ServoDriverData &other) const {
+        // Use epsilon-based comparison for floating-point values to avoid signal flooding
+        // due to insignificant precision differences
+        const float POSITION_EPSILON = 1.0f;    // 1 encoder count (≈0.0016°, very precise)
+        const float RPM_EPSILON = 1.0f;         // 1 RPM
+        const float TORQUE_EPSILON = 0.1f;      // 0.1% torque
+        const float TEMP_EPSILON = 0.1f;        // 0.1°C
+
         return (isConnected != other.isConnected ||
-                position != other.position ||
-                rpm != other.rpm ||
-                torque != other.torque ||
-                motorTemp != other.motorTemp ||
-                driverTemp != other.driverTemp ||
+                std::abs(position - other.position) > POSITION_EPSILON ||
+                std::abs(rpm - other.rpm) > RPM_EPSILON ||
+                std::abs(torque - other.torque) > TORQUE_EPSILON ||
+                std::abs(motorTemp - other.motorTemp) > TEMP_EPSILON ||
+                std::abs(driverTemp - other.driverTemp) > TEMP_EPSILON ||
                 fault != other.fault);
     }
 };
