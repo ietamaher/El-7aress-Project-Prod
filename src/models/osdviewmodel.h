@@ -111,6 +111,19 @@ class OsdViewModel : public QObject
     Q_PROPERTY(QString errorMessageText READ errorMessageText NOTIFY errorMessageTextChanged)
     Q_PROPERTY(bool errorMessageVisible READ errorMessageVisible NOTIFY errorMessageVisibleChanged)
 
+    // ========================================================================
+    // DEVICE HEALTH STATUS (for warning displays)
+    // ========================================================================
+    Q_PROPERTY(bool dayCameraConnected READ dayCameraConnected NOTIFY dayCameraConnectedChanged)
+    Q_PROPERTY(bool nightCameraConnected READ nightCameraConnected NOTIFY nightCameraConnectedChanged)
+    Q_PROPERTY(bool azFault READ azFault NOTIFY azFaultChanged)
+    Q_PROPERTY(bool elFault READ elFault NOTIFY elFaultChanged)
+    Q_PROPERTY(bool lrfFault READ lrfFault NOTIFY lrfFaultChanged)
+    Q_PROPERTY(bool lrfOverTemp READ lrfOverTemp NOTIFY lrfOverTempChanged)
+    Q_PROPERTY(bool actuatorFault READ actuatorFault NOTIFY actuatorFaultChanged)
+    Q_PROPERTY(bool plc21Connected READ plc21Connected NOTIFY plc21ConnectedChanged)
+    Q_PROPERTY(bool plc42Connected READ plc42Connected NOTIFY plc42ConnectedChanged)
+
 
 public:
     explicit OsdViewModel(QObject *parent = nullptr);
@@ -184,6 +197,16 @@ public:
     QString errorMessageText() const { return m_errorMessageText; }
     bool errorMessageVisible() const { return m_errorMessageVisible; }
 
+    bool dayCameraConnected() const { return m_dayCameraConnected; }
+    bool nightCameraConnected() const { return m_nightCameraConnected; }
+    bool azFault() const { return m_azFault; }
+    bool elFault() const { return m_elFault; }
+    bool lrfFault() const { return m_lrfFault; }
+    bool lrfOverTemp() const { return m_lrfOverTemp; }
+    bool actuatorFault() const { return m_actuatorFault; }
+    bool plc21Connected() const { return m_plc21Connected; }
+    bool plc42Connected() const { return m_plc42Connected; }
+
 public slots:
     // Setters
     void setAccentColor(const QColor& color);
@@ -228,6 +251,12 @@ public slots:
 
     void updateStartupMessage(const QString& message, bool visible);
     void updateErrorMessage(const QString& message, bool visible);
+
+    void updateDeviceHealth(bool dayCamConnected, bool nightCamConnected,
+                           bool azFault, bool elFault,
+                           bool lrfFault, bool lrfOverTemp,
+                           bool actuatorFault,
+                           bool plc21Connected, bool plc42Connected);
 
 
 
@@ -298,6 +327,16 @@ signals:
 
     void errorMessageTextChanged();
     void errorMessageVisibleChanged();
+
+    void dayCameraConnectedChanged();
+    void nightCameraConnectedChanged();
+    void azFaultChanged();
+    void elFaultChanged();
+    void lrfFaultChanged();
+    void lrfOverTempChanged();
+    void actuatorFaultChanged();
+    void plc21ConnectedChanged();
+    void plc42ConnectedChanged();
 
 
 
@@ -381,6 +420,16 @@ private:
 
     QString m_errorMessageText;
     bool m_errorMessageVisible;
+
+    bool m_dayCameraConnected;
+    bool m_nightCameraConnected;
+    bool m_azFault;
+    bool m_elFault;
+    bool m_lrfFault;
+    bool m_lrfOverTemp;
+    bool m_actuatorFault;
+    bool m_plc21Connected;
+    bool m_plc42Connected;
 
 
 };

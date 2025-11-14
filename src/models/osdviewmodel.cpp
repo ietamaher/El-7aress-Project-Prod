@@ -53,6 +53,15 @@ OsdViewModel::OsdViewModel(QObject *parent)
     , m_startupMessageVisible(false)
     , m_errorMessageText("")
     , m_errorMessageVisible(false)
+    , m_dayCameraConnected(false)
+    , m_nightCameraConnected(false)
+    , m_azFault(false)
+    , m_elFault(false)
+    , m_lrfFault(false)
+    , m_lrfOverTemp(false)
+    , m_actuatorFault(false)
+    , m_plc21Connected(false)
+    , m_plc42Connected(false)
 
 {
 }
@@ -667,6 +676,58 @@ void OsdViewModel::updateErrorMessage(const QString& message, bool visible)
         qDebug() << "[OsdViewModel] Error message updated:"
                  << "Visible=" << visible
                  << "Text=" << message;
+    }
+}
+
+void OsdViewModel::updateDeviceHealth(bool dayCamConnected, bool nightCamConnected,
+                                      bool azFault, bool elFault,
+                                      bool lrfFault, bool lrfOverTemp,
+                                      bool actuatorFault,
+                                      bool plc21Connected, bool plc42Connected)
+{
+    if (m_dayCameraConnected != dayCamConnected) {
+        m_dayCameraConnected = dayCamConnected;
+        emit dayCameraConnectedChanged();
+    }
+
+    if (m_nightCameraConnected != nightCamConnected) {
+        m_nightCameraConnected = nightCamConnected;
+        emit nightCameraConnectedChanged();
+    }
+
+    if (m_azFault != azFault) {
+        m_azFault = azFault;
+        emit azFaultChanged();
+    }
+
+    if (m_elFault != elFault) {
+        m_elFault = elFault;
+        emit elFaultChanged();
+    }
+
+    if (m_lrfFault != lrfFault) {
+        m_lrfFault = lrfFault;
+        emit lrfFaultChanged();
+    }
+
+    if (m_lrfOverTemp != lrfOverTemp) {
+        m_lrfOverTemp = lrfOverTemp;
+        emit lrfOverTempChanged();
+    }
+
+    if (m_actuatorFault != actuatorFault) {
+        m_actuatorFault = actuatorFault;
+        emit actuatorFaultChanged();
+    }
+
+    if (m_plc21Connected != plc21Connected) {
+        m_plc21Connected = plc21Connected;
+        emit plc21ConnectedChanged();
+    }
+
+    if (m_plc42Connected != plc42Connected) {
+        m_plc42Connected = plc42Connected;
+        emit plc42ConnectedChanged();
     }
 }
 
