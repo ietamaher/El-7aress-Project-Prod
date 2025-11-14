@@ -1,0 +1,209 @@
+file,status,recommendation,priority,notes
+src/controllers/systemcontroller_old.h,remove,Archive to archive/controllers/,HIGH,Obsolete file with _old suffix
+qml/components/osdoverlay_newtemplate.qml,move-doc,Move to docs/examples/,HIGH,Development template not used in production
+src/models/domain/systemstatemodel.cpp,refactor,Split into 5 smaller models,CRITICAL,2068 lines - God class anti-pattern
+src/controllers/zonedefinitioncontroller.cpp,refactor,Extract state handlers,HIGH,1561 lines - Complex state machine
+src/hardware/devices/cameravideostreamdevice.cpp,refactor,Extract initialization logic,HIGH,1083 lines - 141-line constructor
+src/controllers/joystickcontroller.cpp,refactor,Use command pattern for buttons,MEDIUM,274-line switch statement
+src/controllers/motion_modes/gimbalmotionmodebase.cpp,refactor,Add docs and verify IMU mapping,CRITICAL,Unverified TODO at line 531 (SAFETY)
+src/controllers/cameracontroller.cpp,keep,Remove commented debug notes,LOW,Lines 260-269
+src/controllers/gimbalcontroller.cpp,keep,Clean up 36 commented lines,MEDIUM,10.7% commented code
+src/controllers/weaponcontroller.cpp,keep,Remove old state machine code,MEDIUM,Lines 43-48 - Fix TODO line 238 (night FOV)
+src/controllers/zeroingcontroller.cpp,keep,Implement fine-tuning TODOs,LOW,Lines 155-160
+src/hardware/protocols/LrfMessage.h,remove,Duplicate of messages/LrfMessage.h,MEDIUM,Keep messages version
+src/main.cpp,keep,None,NONE,Clean entry point
+src/controllers/systemcontroller.cpp,keep,None,NONE,Well-refactored 3-phase init
+src/controllers/systemcontroller.h,keep,None,NONE,Clean architecture
+src/managers/HardwareManager.cpp,keep,None,NONE,Good MIL-STD separation
+src/managers/HardwareManager.h,keep,None,NONE,Good MIL-STD separation
+src/managers/ViewModelRegistry.cpp,keep,None,NONE,Clean MVVM pattern
+src/managers/ViewModelRegistry.h,keep,None,NONE,Clean MVVM pattern
+src/managers/ControllerRegistry.cpp,keep,None,NONE,Good registry pattern
+src/managers/ControllerRegistry.h,keep,None,NONE,Good registry pattern
+src/hardware/devices/cameravideostreamdevice.h,keep,None,NONE,Clean device header
+src/hardware/devices/daycameracontroldevice.cpp,keep,None,NONE,Clean implementation
+src/hardware/devices/daycameracontroldevice.h,keep,None,NONE,Clean header
+src/hardware/devices/imudevice.cpp,keep,None,NONE,Clean implementation
+src/hardware/devices/imudevice.h,keep,None,NONE,Clean header
+src/hardware/devices/joystickdevice.cpp,keep,None,NONE,Clean implementation
+src/hardware/devices/joystickdevice.h,keep,None,NONE,Clean header
+src/hardware/devices/lrfdevice.cpp,keep,None,NONE,Clean implementation
+src/hardware/devices/lrfdevice.h,keep,None,NONE,Clean header
+src/hardware/devices/nightcameracontroldevice.cpp,keep,None,NONE,Clean implementation
+src/hardware/devices/nightcameracontroldevice.h,keep,None,NONE,Clean header
+src/hardware/devices/plc21device.cpp,keep,None,NONE,Clean implementation
+src/hardware/devices/plc21device.h,keep,None,NONE,Clean header
+src/hardware/devices/plc42device.cpp,keep,None,NONE,Clean implementation
+src/hardware/devices/plc42device.h,keep,None,NONE,Clean header
+src/hardware/devices/radardevice.cpp,keep,None,NONE,Clean implementation
+src/hardware/devices/radardevice.h,keep,None,NONE,Clean header
+src/hardware/devices/servoactuatordevice.cpp,keep,None,NONE,Clean implementation
+src/hardware/devices/servoactuatordevice.h,keep,None,NONE,Clean header
+src/hardware/devices/servodriverdevice.cpp,keep,None,NONE,Clean implementation
+src/hardware/devices/servodriverdevice.h,keep,None,NONE,Clean header
+src/hardware/devices/TemplatedDevice.h,keep,None,NONE,Excellent thread-safe pattern
+src/hardware/devices/vpi_helpers.h,keep,None,NONE,Helper utilities
+src/hardware/communication/modbustransport.cpp,keep,None,NONE,Clean transport layer
+src/hardware/communication/modbustransport.h,keep,None,NONE,Clean transport layer
+src/hardware/communication/serialporttransport.cpp,keep,None,NONE,Clean transport layer
+src/hardware/communication/serialporttransport.h,keep,None,NONE,Clean transport layer
+src/hardware/interfaces/IDevice.h,keep,None,NONE,Good interface definition
+src/hardware/interfaces/Message.h,keep,None,NONE,Good interface definition
+src/hardware/interfaces/ProtocolParser.h,keep,None,NONE,Good interface definition
+src/hardware/interfaces/Transport.h,keep,None,NONE,Good interface definition
+src/hardware/messages/DayCameraMessage.h,keep,None,NONE,Message DTO
+src/hardware/messages/ImuMessage.h,keep,None,NONE,Message DTO
+src/hardware/messages/JoystickMessage.h,keep,None,NONE,Message DTO
+src/hardware/messages/LrfMessage.h,keep,None,NONE,Message DTO (canonical version)
+src/hardware/messages/NightCameraMessage.h,keep,None,NONE,Message DTO
+src/hardware/messages/Plc21Message.h,keep,None,NONE,Message DTO
+src/hardware/messages/Plc42Message.h,keep,None,NONE,Message DTO
+src/hardware/messages/RadarMessage.h,keep,None,NONE,Message DTO
+src/hardware/messages/ServoActuatorMessage.h,keep,None,NONE,Message DTO
+src/hardware/messages/ServoDriverMessage.h,keep,None,NONE,Message DTO
+src/hardware/protocols/DayCameraProtocolParser.cpp,keep,None,NONE,Clean parser
+src/hardware/protocols/DayCameraProtocolParser.h,keep,None,NONE,Clean parser
+src/hardware/protocols/Imu3DMGX3ProtocolParser.cpp,keep,None,NONE,Clean parser
+src/hardware/protocols/Imu3DMGX3ProtocolParser.h,keep,None,NONE,Clean parser
+src/hardware/protocols/ImuProtocolParser.cpp,keep,None,NONE,Clean parser
+src/hardware/protocols/ImuProtocolParser.h,keep,None,NONE,Clean parser
+src/hardware/protocols/JoystickProtocolParser.cpp,keep,None,NONE,Clean parser
+src/hardware/protocols/JoystickProtocolParser.h,keep,None,NONE,Clean parser
+src/hardware/protocols/LrfProtocolParser.cpp,keep,None,NONE,Clean parser
+src/hardware/protocols/LrfProtocolParser.h,keep,None,NONE,Clean parser
+src/hardware/protocols/MicroStrainProtocolParser.cpp,keep,None,NONE,Clean parser
+src/hardware/protocols/MicroStrainProtocolParser.h,keep,None,NONE,Clean parser
+src/hardware/protocols/NightCameraProtocolParser.cpp,keep,None,NONE,Clean parser
+src/hardware/protocols/NightCameraProtocolParser.h,keep,None,NONE,Clean parser
+src/hardware/protocols/Plc21ProtocolParser.cpp,keep,None,NONE,Clean parser
+src/hardware/protocols/Plc21ProtocolParser.h,keep,None,NONE,Clean parser
+src/hardware/protocols/Plc42ProtocolParser.cpp,keep,None,NONE,Clean parser
+src/hardware/protocols/Plc42ProtocolParser.h,keep,None,NONE,Clean parser
+src/hardware/protocols/RadarProtocolParser.cpp,keep,None,NONE,Clean parser
+src/hardware/protocols/RadarProtocolParser.h,keep,None,NONE,Clean parser
+src/hardware/protocols/ServoActuatorProtocolParser.cpp,keep,None,NONE,Clean parser
+src/hardware/protocols/ServoActuatorProtocolParser.h,keep,None,NONE,Clean parser
+src/hardware/protocols/ServoDriverProtocolParser.cpp,keep,None,NONE,Clean parser
+src/hardware/protocols/ServoDriverProtocolParser.h,keep,None,NONE,Clean parser
+src/hardware/data/DataTypes.h,keep,None,NONE,Shared data structures
+src/controllers/aboutcontroller.cpp,keep,None,NONE,Clean controller
+src/controllers/aboutcontroller.h,keep,None,NONE,Clean controller
+src/controllers/applicationcontroller.cpp,keep,None,NONE,Clean controller
+src/controllers/applicationcontroller.h,keep,None,NONE,Clean controller
+src/controllers/cameracontroller.h,keep,None,NONE,Clean controller
+src/controllers/colormenucontroller.cpp,keep,None,NONE,Clean controller
+src/controllers/colormenucontroller.h,keep,None,NONE,Clean controller
+src/controllers/deviceconfiguration.cpp,keep,None,NONE,Good config management
+src/controllers/deviceconfiguration.h,keep,None,NONE,Good config management
+src/controllers/environmentalcontroller.cpp,keep,None,NONE,Clean controller
+src/controllers/environmentalcontroller.h,keep,None,NONE,Clean controller
+src/controllers/gimbalcontroller.h,keep,None,NONE,Clean controller
+src/controllers/joystickcontroller.h,keep,None,NONE,Clean controller header
+src/controllers/ledcontroller.cpp,keep,None,NONE,Clean controller
+src/controllers/ledcontroller.h,keep,None,NONE,Clean controller
+src/controllers/mainmenucontroller.cpp,keep,None,NONE,Clean controller
+src/controllers/mainmenucontroller.h,keep,None,NONE,Clean controller
+src/controllers/osdcontroller.cpp,keep,None,NONE,Clean controller
+src/controllers/osdcontroller.h,keep,None,NONE,Clean controller
+src/controllers/reticlemenucontroller.cpp,keep,None,NONE,Clean controller
+src/controllers/reticlemenucontroller.h,keep,None,NONE,Clean controller
+src/controllers/systemstatuscontroller.cpp,keep,None,NONE,Clean controller
+src/controllers/systemstatuscontroller.h,keep,None,NONE,Clean controller
+src/controllers/weaponcontroller.h,keep,None,NONE,Clean controller
+src/controllers/windagecontroller.cpp,keep,None,NONE,Clean controller
+src/controllers/windagecontroller.h,keep,None,NONE,Clean controller
+src/controllers/zeroingcontroller.h,keep,None,NONE,Clean controller
+src/controllers/zonedefinitioncontroller.h,keep,None,NONE,Clean controller header
+src/controllers/motion_modes/gimbalmotionmodebase.h,keep,None,NONE,Clean header
+src/controllers/motion_modes/manualmotionmode.cpp,keep,None,NONE,Clean motion mode
+src/controllers/motion_modes/manualmotionmode.h,keep,None,NONE,Clean motion mode
+src/controllers/motion_modes/trackingmotionmode.cpp,keep,None,NONE,Clean motion mode
+src/controllers/motion_modes/trackingmotionmode.h,keep,None,NONE,Clean motion mode
+src/controllers/motion_modes/autosectorscanmotionmode.cpp,keep,None,NONE,Clean motion mode
+src/controllers/motion_modes/autosectorscanmotionmode.h,keep,None,NONE,Clean motion mode
+src/controllers/motion_modes/radarslewmotionmode.cpp,keep,None,NONE,Clean motion mode
+src/controllers/motion_modes/radarslewmotionmode.h,keep,None,NONE,Clean motion mode
+src/controllers/motion_modes/trpscanmotionmode.cpp,keep,None,NONE,Clean motion mode
+src/controllers/motion_modes/trpscanmotionmode.h,keep,None,NONE,Clean motion mode
+src/controllers/motion_modes/pidcontroller.h,keep,None,NONE,Header-only PID clean
+src/models/domain/systemstatemodel.h,keep,Needs refactor with .cpp,CRITICAL,Header is fine
+src/models/domain/systemstatedata.h,keep,None,NONE,Large but necessary (626 members)
+src/models/domain/daycameradatamodel.h,keep,None,NONE,Clean domain model
+src/models/domain/gyrodatamodel.h,keep,None,NONE,Clean domain model
+src/models/domain/joystickdatamodel.cpp,keep,None,NONE,Clean domain model
+src/models/domain/joystickdatamodel.h,keep,None,NONE,Clean domain model
+src/models/domain/lrfdatamodel.h,keep,None,NONE,Clean domain model
+src/models/domain/nightcameradatamodel.h,keep,None,NONE,Clean domain model
+src/models/domain/plc21datamodel.h,keep,None,NONE,Clean domain model
+src/models/domain/plc42datamodel.h,keep,None,NONE,Clean domain model
+src/models/domain/radardatamodel.h,keep,None,NONE,Clean domain model
+src/models/domain/servoactuatordatamodel.h,keep,None,NONE,Clean domain model
+src/models/domain/servodriverdatamodel.h,keep,None,NONE,Clean domain model
+src/models/aboutviewmodel.cpp,keep,None,NONE,Clean ViewModel
+src/models/aboutviewmodel.h,keep,None,NONE,Clean ViewModel
+src/models/areazoneparameterviewmodel.cpp,keep,None,NONE,Clean ViewModel
+src/models/areazoneparameterviewmodel.h,keep,None,NONE,Clean ViewModel
+src/models/environmentalviewmodel.cpp,keep,None,NONE,Clean ViewModel
+src/models/environmentalviewmodel.h,keep,None,NONE,Clean ViewModel
+src/models/historyviewmodel.cpp,keep,None,NONE,Clean ViewModel
+src/models/historyviewmodel.h,keep,None,NONE,Clean ViewModel
+src/models/menuviewmodel.cpp,keep,None,NONE,Clean ViewModel
+src/models/menuviewmodel.h,keep,None,NONE,Clean ViewModel
+src/models/osdviewmodel.cpp,keep,None,NONE,Clean ViewModel
+src/models/osdviewmodel.h,keep,None,NONE,Clean ViewModel
+src/models/sectorscanparameterviewmodel.cpp,keep,None,NONE,Clean ViewModel
+src/models/sectorscanparameterviewmodel.h,keep,None,NONE,Clean ViewModel
+src/models/systemstatusviewmodel.cpp,keep,None,NONE,Clean ViewModel
+src/models/systemstatusviewmodel.h,keep,None,NONE,Clean ViewModel
+src/models/trpparameterviewmodel.cpp,keep,None,NONE,Clean ViewModel
+src/models/trpparameterviewmodel.h,keep,None,NONE,Clean ViewModel
+src/models/windageviewmodel.cpp,keep,None,NONE,Clean ViewModel
+src/models/windageviewmodel.h,keep,None,NONE,Clean ViewModel
+src/models/zeroingviewmodel.cpp,keep,None,NONE,Clean ViewModel
+src/models/zeroingviewmodel.h,keep,None,NONE,Clean ViewModel
+src/models/zonedefinitionviewmodel.cpp,keep,None,NONE,Clean ViewModel
+src/models/zonedefinitionviewmodel.h,keep,None,NONE,Clean ViewModel
+src/models/zonemapviewmodel.cpp,keep,None,NONE,Clean ViewModel
+src/models/zonemapviewmodel.h,keep,None,NONE,Clean ViewModel
+src/utils/TimestampLogger.h,keep,None,NONE,Header-only utility
+src/utils/ballisticslut.cpp,keep,None,NONE,Ballistics lookup table
+src/utils/ballisticslut.h,keep,None,NONE,Ballistics lookup table
+src/utils/ballisticsprocessor.cpp,keep,None,NONE,Core ballistics
+src/utils/ballisticsprocessor.h,keep,None,NONE,Core ballistics
+src/utils/ballisticsprocessorlut.cpp,keep,None,NONE,LUT-based processor
+src/utils/ballisticsprocessorlut.h,keep,None,NONE,LUT-based processor
+src/utils/colorutils.cpp,keep,None,NONE,Color utilities
+src/utils/colorutils.h,keep,None,NONE,Color utilities
+src/utils/inference.cpp,keep,None,NONE,YOLO inference
+src/utils/inference.h,keep,None,NONE,YOLO inference
+src/utils/millenious.h,keep,None,NONE,Header-only utility
+src/utils/reticleaimpointcalculator.cpp,keep,None,NONE,Aim point math
+src/utils/reticleaimpointcalculator.h,keep,None,NONE,Aim point math
+src/utils/targetstate.h,keep,None,NONE,Header-only state
+src/video/gstvideosource.cpp,keep,None,NONE,GStreamer wrapper
+src/video/gstvideosource.h,keep,None,NONE,GStreamer wrapper
+src/video/videoimageprovider.cpp,keep,None,NONE,QML image provider
+src/video/videoimageprovider.h,keep,None,NONE,QML image provider
+src/config/AppConstants.h,keep,None,NONE,System constants
+src/config/ConfigurationValidator.cpp,keep,None,NONE,Config validation
+src/config/ConfigurationValidator.h,keep,None,NONE,Config validation
+qml/views/main.qml,keep,None,NONE,Main UI entry
+qml/views/MainMenu.qml,keep,None,NONE,Menu system
+qml/common/NavigableList.qml,keep,None,NONE,Reusable component
+qml/common/ParameterField.qml,keep,None,NONE,Reusable component
+qml/components/AboutDialog.qml,keep,None,NONE,Production UI
+qml/components/AreaZoneParameterPanel.qml,keep,None,NONE,Production UI
+qml/components/AzimuthIndicator.qml,keep,None,NONE,Production UI
+qml/components/CcipPipper.qml,keep,None,NONE,Production UI
+qml/components/ElevationScale.qml,keep,None,NONE,Production UI
+qml/components/EnvironmentalOverlay.qml,keep,None,NONE,Production UI
+qml/components/OsdOverlay.qml,keep,None,NONE,Production UI
+qml/components/ReticleRenderer.qml,keep,None,NONE,Production UI
+qml/components/SectorScanParameterPanel.qml,keep,None,NONE,Production UI
+qml/components/SystemStatusOverlay.qml,keep,None,NONE,Production UI
+qml/components/TRPParameterPanel.qml,keep,None,NONE,Production UI
+qml/components/TrackingBox.qml,keep,None,NONE,Production UI
+qml/components/WindageOverlay.qml,keep,None,NONE,Production UI
+qml/components/ZeroingOverlay.qml,keep,None,NONE,Production UI
+qml/components/ZoneDefinitionOverlay.qml,keep,None,NONE,Production UI
+qml/components/ZoneMapCanvas.qml,keep,None,NONE,Production UI

@@ -235,7 +235,10 @@ void WeaponController::updateFireControlSolution() {
     float targetRange = sData.currentTargetRange;
     float targetAngRateAz = sData.currentTargetAngularRateAz;
     float targetAngRateEl = sData.currentTargetAngularRateEl;
-    float currentFOV = sData.dayCurrentHFOV; // Horizontal FOV for day camera !!! TODO
+    // ✅ FIXED (2025-11-14): Use correct FOV based on active camera
+    // Day: Sony FCB-EV7520A (2.3° - 63.7° variable zoom)
+    // Night: FLIR TAU 2 60mm lens (10° × 8.3° fixed)
+    float currentFOV = sData.activeCameraIsDay ? sData.dayCurrentHFOV : sData.nightCurrentHFOV;
     float tofGuess = (targetRange > 0 && sData.muzzleVelocityMPS > 0) ? (targetRange / sData.muzzleVelocityMPS) : 0.0f; // Ensure muzzleVelocity is in SystemStateData
 
     if (!m_ballisticsProcessor) { // If m_ballisticsProcessor is a pointer
