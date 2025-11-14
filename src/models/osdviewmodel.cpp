@@ -54,11 +54,17 @@ OsdViewModel::OsdViewModel(QObject *parent)
     , m_errorMessageText("")
     , m_errorMessageVisible(false)
     , m_dayCameraConnected(false)
+    , m_dayCameraError(false)
     , m_nightCameraConnected(false)
+    , m_nightCameraError(false)
+    , m_azServoConnected(false)
     , m_azFault(false)
+    , m_elServoConnected(false)
     , m_elFault(false)
+    , m_lrfConnected(false)
     , m_lrfFault(false)
     , m_lrfOverTemp(false)
+    , m_actuatorConnected(false)
     , m_actuatorFault(false)
     , m_plc21Connected(false)
     , m_plc42Connected(false)
@@ -679,52 +685,90 @@ void OsdViewModel::updateErrorMessage(const QString& message, bool visible)
     }
 }
 
-void OsdViewModel::updateDeviceHealth(bool dayCamConnected, bool nightCamConnected,
-                                      bool azFault, bool elFault,
-                                      bool lrfFault, bool lrfOverTemp,
-                                      bool actuatorFault,
+void OsdViewModel::updateDeviceHealth(bool dayCamConnected, bool dayCamError,
+                                      bool nightCamConnected, bool nightCamError,
+                                      bool azServoConnected, bool azFault,
+                                      bool elServoConnected, bool elFault,
+                                      bool lrfConnected, bool lrfFault, bool lrfOverTemp,
+                                      bool actuatorConnected, bool actuatorFault,
+                                      bool imuConnected,
                                       bool plc21Connected, bool plc42Connected)
 {
+    // Day Camera
     if (m_dayCameraConnected != dayCamConnected) {
         m_dayCameraConnected = dayCamConnected;
         emit dayCameraConnectedChanged();
     }
+    if (m_dayCameraError != dayCamError) {
+        m_dayCameraError = dayCamError;
+        emit dayCameraErrorChanged();
+    }
 
+    // Night Camera
     if (m_nightCameraConnected != nightCamConnected) {
         m_nightCameraConnected = nightCamConnected;
         emit nightCameraConnectedChanged();
     }
+    if (m_nightCameraError != nightCamError) {
+        m_nightCameraError = nightCamError;
+        emit nightCameraErrorChanged();
+    }
 
+    // Azimuth Servo
+    if (m_azServoConnected != azServoConnected) {
+        m_azServoConnected = azServoConnected;
+        emit azServoConnectedChanged();
+    }
     if (m_azFault != azFault) {
         m_azFault = azFault;
         emit azFaultChanged();
     }
 
+    // Elevation Servo
+    if (m_elServoConnected != elServoConnected) {
+        m_elServoConnected = elServoConnected;
+        emit elServoConnectedChanged();
+    }
     if (m_elFault != elFault) {
         m_elFault = elFault;
         emit elFaultChanged();
     }
 
+    // LRF
+    if (m_lrfConnected != lrfConnected) {
+        m_lrfConnected = lrfConnected;
+        emit lrfConnectedChanged();
+    }
     if (m_lrfFault != lrfFault) {
         m_lrfFault = lrfFault;
         emit lrfFaultChanged();
     }
-
     if (m_lrfOverTemp != lrfOverTemp) {
         m_lrfOverTemp = lrfOverTemp;
         emit lrfOverTempChanged();
     }
 
+    // Actuator
+    if (m_actuatorConnected != actuatorConnected) {
+        m_actuatorConnected = actuatorConnected;
+        emit actuatorConnectedChanged();
+    }
     if (m_actuatorFault != actuatorFault) {
         m_actuatorFault = actuatorFault;
         emit actuatorFaultChanged();
     }
 
+    // IMU (already has imuConnected property)
+    if (m_imuConnected != imuConnected) {
+        m_imuConnected = imuConnected;
+        emit imuConnectedChanged();
+    }
+
+    // PLCs
     if (m_plc21Connected != plc21Connected) {
         m_plc21Connected = plc21Connected;
         emit plc21ConnectedChanged();
     }
-
     if (m_plc42Connected != plc42Connected) {
         m_plc42Connected = plc42Connected;
         emit plc42ConnectedChanged();

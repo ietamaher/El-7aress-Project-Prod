@@ -115,14 +115,26 @@ class OsdViewModel : public QObject
     // DEVICE HEALTH STATUS (for warning displays)
     // ========================================================================
     Q_PROPERTY(bool dayCameraConnected READ dayCameraConnected NOTIFY dayCameraConnectedChanged)
+    Q_PROPERTY(bool dayCameraError READ dayCameraError NOTIFY dayCameraErrorChanged)
     Q_PROPERTY(bool nightCameraConnected READ nightCameraConnected NOTIFY nightCameraConnectedChanged)
+    Q_PROPERTY(bool nightCameraError READ nightCameraError NOTIFY nightCameraErrorChanged)
+
+    Q_PROPERTY(bool azServoConnected READ azServoConnected NOTIFY azServoConnectedChanged)
     Q_PROPERTY(bool azFault READ azFault NOTIFY azFaultChanged)
+    Q_PROPERTY(bool elServoConnected READ elServoConnected NOTIFY elServoConnectedChanged)
     Q_PROPERTY(bool elFault READ elFault NOTIFY elFaultChanged)
+
+    Q_PROPERTY(bool lrfConnected READ lrfConnected NOTIFY lrfConnectedChanged)
     Q_PROPERTY(bool lrfFault READ lrfFault NOTIFY lrfFaultChanged)
     Q_PROPERTY(bool lrfOverTemp READ lrfOverTemp NOTIFY lrfOverTempChanged)
+
+    Q_PROPERTY(bool actuatorConnected READ actuatorConnected NOTIFY actuatorConnectedChanged)
     Q_PROPERTY(bool actuatorFault READ actuatorFault NOTIFY actuatorFaultChanged)
+
+    Q_PROPERTY(bool imuConnected READ imuConnected NOTIFY imuConnectedChanged)
     Q_PROPERTY(bool plc21Connected READ plc21Connected NOTIFY plc21ConnectedChanged)
     Q_PROPERTY(bool plc42Connected READ plc42Connected NOTIFY plc42ConnectedChanged)
+
 
 
 public:
@@ -198,12 +210,22 @@ public:
     bool errorMessageVisible() const { return m_errorMessageVisible; }
 
     bool dayCameraConnected() const { return m_dayCameraConnected; }
+    bool dayCameraError() const { return m_dayCameraError; }
     bool nightCameraConnected() const { return m_nightCameraConnected; }
+    bool nightCameraError() const { return m_nightCameraError; }
+
+    bool azServoConnected() const { return m_azServoConnected; }
     bool azFault() const { return m_azFault; }
+    bool elServoConnected() const { return m_elServoConnected; }
     bool elFault() const { return m_elFault; }
+
+    bool lrfConnected() const { return m_lrfConnected; }
     bool lrfFault() const { return m_lrfFault; }
     bool lrfOverTemp() const { return m_lrfOverTemp; }
+
+    bool actuatorConnected() const { return m_actuatorConnected; }
     bool actuatorFault() const { return m_actuatorFault; }
+
     bool plc21Connected() const { return m_plc21Connected; }
     bool plc42Connected() const { return m_plc42Connected; }
 
@@ -252,10 +274,13 @@ public slots:
     void updateStartupMessage(const QString& message, bool visible);
     void updateErrorMessage(const QString& message, bool visible);
 
-    void updateDeviceHealth(bool dayCamConnected, bool nightCamConnected,
-                           bool azFault, bool elFault,
-                           bool lrfFault, bool lrfOverTemp,
-                           bool actuatorFault,
+    void updateDeviceHealth(bool dayCamConnected, bool dayCamError,
+                           bool nightCamConnected, bool nightCamError,
+                           bool azServoConnected, bool azFault,
+                           bool elServoConnected, bool elFault,
+                           bool lrfConnected, bool lrfFault, bool lrfOverTemp,
+                           bool actuatorConnected, bool actuatorFault,
+                           bool imuConnected,
                            bool plc21Connected, bool plc42Connected);
 
 
@@ -329,12 +354,22 @@ signals:
     void errorMessageVisibleChanged();
 
     void dayCameraConnectedChanged();
+    void dayCameraErrorChanged();
     void nightCameraConnectedChanged();
+    void nightCameraErrorChanged();
+
+    void azServoConnectedChanged();
     void azFaultChanged();
+    void elServoConnectedChanged();
     void elFaultChanged();
+
+    void lrfConnectedChanged();
     void lrfFaultChanged();
     void lrfOverTempChanged();
+
+    void actuatorConnectedChanged();
     void actuatorFaultChanged();
+
     void plc21ConnectedChanged();
     void plc42ConnectedChanged();
 
@@ -422,12 +457,22 @@ private:
     bool m_errorMessageVisible;
 
     bool m_dayCameraConnected;
+    bool m_dayCameraError;
     bool m_nightCameraConnected;
+    bool m_nightCameraError;
+
+    bool m_azServoConnected;
     bool m_azFault;
+    bool m_elServoConnected;
     bool m_elFault;
+
+    bool m_lrfConnected;
     bool m_lrfFault;
     bool m_lrfOverTemp;
+
+    bool m_actuatorConnected;
     bool m_actuatorFault;
+
     bool m_plc21Connected;
     bool m_plc42Connected;
 
