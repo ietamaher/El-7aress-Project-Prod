@@ -297,7 +297,7 @@ void CameraVideoStreamDevice::onSystemStateChanged(const SystemStateData &newSta
     m_accelX = newState.AccelX;
     m_accelY = newState.AccelY;
     m_accelZ = newState.AccelZ;
-    m_lrfDistance = newState.lrfDistance;
+    m_lrfDistance = newState.currentTargetRange;
     m_sysCharged = newState.ammoLoaded; // Map SystemStateData fields to your OSD needs
     m_sysArmed = newState.gunArmed;
     m_sysReady = newState.isReady();      // Use the helper function? Or specific flags
