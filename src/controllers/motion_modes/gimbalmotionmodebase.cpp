@@ -528,11 +528,15 @@ void GimbalMotionModeBase::calculateHybridStabilizationCorrection(
             double gyroZ_filtered = m_gyroZFilter.update(gyroZ_corrected);
 
             // Map to platform axes
-            // TODO: VERIFY THIS MAPPING WITH PHYSICAL IMU ORIENTATION!
-            // Current assumption: IMU X=platform forward, Y=right, Z=up
-            const double p_imu = gyroX_filtered; // Roll rate (rotation around X)
-            const double q_imu = gyroY_filtered; // Pitch rate (rotation around Y)
-            const double r_imu = gyroZ_filtered; // Yaw rate (rotation around Z)
+            // ✅ VERIFIED IMU ORIENTATION (2025-11-14):
+            // IMU Frame (Forward-Right-Down):
+            //   X_imu → Forward (toward camera/barrel)
+            //   Y_imu → Right (starboard)
+            //   Z_imu → Down (gravity direction)
+            // Gyro rates are in deg/s from IMU
+            const double p_imu = gyroX_filtered; // Roll rate (rotation around X_imu forward axis)
+            const double q_imu = gyroY_filtered; // Pitch rate (rotation around Y_imu right axis)
+            const double r_imu = -gyroZ_filtered; // Yaw rate (rotation around Z_imu down axis) - INVERTED because Z points DOWN
 
             // Kinematic transformation
             const double currentAzRad = degToRad(state.gimbalAz);

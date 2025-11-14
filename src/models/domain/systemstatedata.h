@@ -351,7 +351,7 @@ struct SystemStateData {
 
     // Night Camera
     double nightZoomPosition = 0.0;     ///< Night camera zoom position (0-1 normalized)
-    double nightCurrentHFOV = 8.0;      ///< Night camera current horizontal field of view in degrees
+    double nightCurrentHFOV = 10.0;     ///< Night camera current horizontal field of view in degrees (FLIR TAU 2, 60mm lens: 10°×8.3°)
     bool nightCameraConnected = false;  ///< Night camera connection status
     bool nightCameraError = false;      ///< Night camera error status (true if errorState != 0x00)
     quint8 nightCameraStatus = 0;       ///< Night camera detailed status code
