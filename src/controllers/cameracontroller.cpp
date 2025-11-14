@@ -3,6 +3,8 @@
 #include "hardware/devices/nightcameracontroldevice.h"
 #include "models/domain/systemstatemodel.h"
 #include "hardware/devices/cameravideostreamdevice.h" // Include the new processor header
+#include "hardware/devices/lrfdevice.h"               // LRF device
+#include "hardware/data/DataTypes.h"                  // For LrfData
 
 #include <QDebug>
 #include <QMetaObject> // For invokeMethod
@@ -10,10 +12,11 @@
 #include <cmath>       // For std::sqrt etc. if needed, but removed handoff
 
 CameraController::CameraController(DayCameraControlDevice* dayControl,
-                                   CameraVideoStreamDevice* dayProcessor,        // Changed
+                                   CameraVideoStreamDevice* dayProcessor,
                                    NightCameraControlDevice* nightControl,
-                                   CameraVideoStreamDevice* nightProcessor,      // Changed
+                                   CameraVideoStreamDevice* nightProcessor,
                                    SystemStateModel* stateModel,
+                                   LRFDevice* lrfDevice,
                                    QObject* parent)
     : QObject(parent),
       m_dayControl(dayControl),
@@ -21,6 +24,7 @@ CameraController::CameraController(DayCameraControlDevice* dayControl,
       m_nightControl(nightControl),
       m_nightProcessor(nightProcessor), // Store processor pointer
       m_stateModel(stateModel),
+      m_lrfDevice(lrfDevice),           // Initialize LRF device
       m_isDayCameraActive(true),        // Default to day camera
       m_lutIndex(0)                     // Default LUT index
 {
@@ -37,6 +41,22 @@ CameraController::CameraController(DayCameraControlDevice* dayControl,
         qInfo() << "CameraController initialized. Active camera is:" << (m_isDayCameraActive ? "Day" : "Night");
     } else {
         qWarning() << "CameraController created without a SystemStateModel!";
+    }
+
+    // ========================================================================
+    // LRF INTEGRATION - Connect to device signal
+    // ========================================================================
+    if (m_lrfDevice) {
+        // Connect directly to LRFDevice signal (using std::shared_ptr signature)
+        connect(m_lrfDevice, &LRFDevice::lrfDataChanged,
+                this, [this](std::shared_ptr<const LrfData> newData) {
+                    if (newData) {
+                        this->onLrfDataChanged(*newData);
+                    }
+                });
+        qInfo() << "[CameraController] LRF device connected";
+    } else {
+        qWarning() << "[CameraController] LRF device not available!";
     }
 
     // Initialization logic moved to initialize() method
@@ -347,5 +367,81 @@ void CameraController::updateStatus(const QString& message)
         statusMessage = message;
         qDebug() << "CameraController Status:" << message;
         emit statusUpdated(message); // Emit signal for external listeners (like status bar)
+    }
+}
+
+// ============================================================================
+// LRF CONTROL METHODS (Laser Range Finder)
+// ============================================================================
+// Called by JoystickController when Button 1 is pressed
+// ============================================================================
+
+void CameraController::triggerLRF()
+{
+    if (!m_lrfDevice) {
+        qWarning() << "[CameraController] LRF device not available!";
+        return;
+    }
+
+    qInfo() << "[CameraController] LRF single shot triggered (Button 1)";
+    m_lrfDevice->sendSingleRanging();
+}
+
+void CameraController::startContinuousLRF()
+{
+    if (!m_lrfDevice) {
+        qWarning() << "[CameraController] LRF device not available!";
+        return;
+    }
+
+    qInfo() << "[CameraController] LRF continuous ranging started (5Hz)";
+    m_lrfDevice->sendContinuousRanging5Hz();
+}
+
+void CameraController::stopContinuousLRF()
+{
+    if (!m_lrfDevice) {
+        qWarning() << "[CameraController] LRF device not available!";
+        return;
+    }
+
+    qInfo() << "[CameraController] LRF ranging stopped";
+    m_lrfDevice->stopRanging();
+}
+
+// ============================================================================
+// LRF DATA HANDLER - Updates SystemStateModel with range measurements
+// ============================================================================
+// Connected to LRFDevice::lrfDataChanged signal in constructor
+// This bridges sensor data (LRF) to fire control (WeaponController reads it)
+// ============================================================================
+
+void CameraController::onLrfDataChanged(const LrfData &newData)
+{
+    if (!m_stateModel) {
+        qWarning() << "[CameraController] SystemStateModel not available!";
+        return;
+    }
+
+    // Only update if ranging is valid and has echo
+    if (newData.isLastRangingValid && newData.lastDistance > 0) {
+        float range_m = static_cast<float>(newData.lastDistance);
+
+        // Update central state (WeaponController reads currentTargetRange for ballistics)
+        m_stateModel->updateTargetRange(range_m);
+
+        qInfo() << "[CameraController] LRF measured:" << range_m << "m"
+                << "- SystemStateModel updated for ballistics";
+    } else {
+        // LRF ranging failed - log the reason
+        if (newData.noEcho) {
+            qWarning() << "[CameraController] LRF: No echo detected (target too far or non-reflective)";
+        } else if (newData.isFault) {
+            qWarning() << "[CameraController] LRF: Device fault detected";
+        } else if (newData.laserNotOut) {
+            qWarning() << "[CameraController] LRF: Laser not firing";
+        } else {
+            qWarning() << "[CameraController] LRF: Invalid ranging result";
+        }
     }
 }

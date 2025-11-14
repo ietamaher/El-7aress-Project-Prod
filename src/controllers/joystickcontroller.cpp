@@ -194,6 +194,24 @@ void JoystickController::onButtonChanged(int button, bool pressed)
         }
         break;
 
+    // ========================================================================
+    // BUTTON 1: LRF TRIGGER (Laser Range Finder)
+    // ========================================================================
+    // Trigger single-shot range measurement for ballistics calculation
+    // LRF is physically mounted with camera, so CameraController manages it
+    // ========================================================================
+    case 1:
+        if (pressed) {
+            if (!curr.stationEnabled) {
+                qDebug() << "[JoystickController] Cannot trigger LRF, station is off.";
+                return;
+            }
+
+            qDebug() << "[JoystickController] Button 1 pressed - Triggering LRF";
+            m_cameraController->triggerLRF();
+        }
+        break;
+
         // Fire Weapon
     case 5:
         if (!curr.stationEnabled) {

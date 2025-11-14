@@ -107,6 +107,7 @@ bool ControllerRegistry::createHardwareControllers()
             m_hardwareManager->nightCameraControl(),
             m_hardwareManager->nightVideoProcessor(),
             m_systemStateModel,
+            m_hardwareManager->lrfDevice(),  // LRF for ranging
             this
         );
 
