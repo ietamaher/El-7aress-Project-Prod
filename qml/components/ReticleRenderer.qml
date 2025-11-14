@@ -296,51 +296,59 @@ Canvas {
         drawCenterDot(ctx, cx, cy, 1.5);
     }
 
-    // TYPE 4: CHEVRON RETICLE (Downward pointing chevron - CQB style)
+    // TYPE 4: CHEVRON RETICLE (Upward pointing chevron - CQB/ACOG style)
     function drawChevronReticle(ctx, cx, cy) {
         var fovScale = 45.0 / currentFov; // Inverse scale: larger when zoomed in, smaller when zoomed out
-        var chevronHeight = 25 * fovScale;
-        var chevronWidth = 18 * fovScale;
-        var lineLen = 60 * fovScale;
-        var gap = 5 * fovScale;
 
-        // Chevron pointing down
+        // MIL-based calibration (assuming 1920px canvas width as baseline)
+        var baseCanvasWidth = 1920;
+        var milsInFOV = currentFov * 17.4533; // Convert FOV degrees to milliradians (1° = 17.4533 mils)
+        var pixelsPerMil = baseCanvasWidth / milsInFOV;
+
+        var chevronHeight = 2.0 * pixelsPerMil; // 2 MIL height
+        var chevronWidth = 1.5 * pixelsPerMil; // 1.5 MIL width
+        var lineLen = 4.0 * pixelsPerMil; // 4 MIL horizontal lines
+        var gap = 0.3 * pixelsPerMil; // 0.3 MIL gap
+
+        // Chevron pointing UP (tip at top)
         drawWithOutline(ctx, function(c) {
             c.beginPath();
-            // Left side of chevron
-            c.moveTo(cx - chevronWidth, cy - chevronHeight);
+            // Left side of chevron (from bottom-left to tip)
+            c.moveTo(cx - chevronWidth, cy + chevronHeight);
             c.lineTo(cx, cy);
-            // Right side of chevron
-            c.lineTo(cx + chevronWidth, cy - chevronHeight);
+            // Right side of chevron (from tip to bottom-right)
+            c.lineTo(cx + chevronWidth, cy + chevronHeight);
             c.stroke();
         });
 
-        // Horizontal reference lines
+        // Horizontal reference lines at chevron base
         drawWithOutline(ctx, function(c) {
             c.beginPath();
             // Left horizontal
-            c.moveTo(cx - lineLen, cy);
-            c.lineTo(cx - chevronWidth - gap, cy);
+            c.moveTo(cx - lineLen, cy + chevronHeight);
+            c.lineTo(cx - chevronWidth - gap, cy + chevronHeight);
             // Right horizontal
-            c.moveTo(cx + chevronWidth + gap, cy);
-            c.lineTo(cx + lineLen, cy);
+            c.moveTo(cx + chevronWidth + gap, cy + chevronHeight);
+            c.lineTo(cx + lineLen, cy + chevronHeight);
             c.stroke();
         });
 
-        // Vertical drop line (for holdover reference)
+        // Vertical drop line (for holdover reference below chevron)
+        var dropLineLen = 4.0 * pixelsPerMil; // 4 MIL drop line
         drawWithOutline(ctx, function(c) {
             c.beginPath();
-            c.moveTo(cx, cy + gap);
-            c.lineTo(cx, cy + lineLen);
+            c.moveTo(cx, cy + chevronHeight + gap);
+            c.lineTo(cx, cy + chevronHeight + dropLineLen);
             c.stroke();
         });
 
-        // Range tick marks on vertical line (below chevron)
-        var tickLength = 3 * fovScale;
-        var tickSpacing = 12 * fovScale;
+        // MIL-calibrated holdover tick marks (1 MIL intervals)
+        var tickLength = 0.4 * pixelsPerMil; // 0.4 MIL tick length
+        var milInterval = 1.0 * pixelsPerMil; // 1 MIL spacing between ticks
+
         for (var i = 1; i <= 4; i++) {
-            var tickY = cy + gap + (i * tickSpacing);
-            if (tickY < cy + lineLen) {
+            var tickY = cy + chevronHeight + gap + (i * milInterval);
+            if (tickY < cy + chevronHeight + dropLineLen) {
                 ctx.strokeStyle = canvas.outlineColor;
                 ctx.lineWidth = 2 + outlineWidth;
                 ctx.beginPath();
@@ -357,7 +365,7 @@ Canvas {
             }
         }
 
-        // Tip dot at chevron point
+        // Tip dot at chevron point (at top)
         drawCenterDot(ctx, cx, cy, 2);
     }
 
