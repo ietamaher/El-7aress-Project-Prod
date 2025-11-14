@@ -762,7 +762,7 @@ Item {
             // STAB
             Text {
                 text: viewModel ? viewModel.stabText : "STAB: OFF"
-                font.pixelSize: 13
+                font.pixelSize: 14
                 font.family: primaryFont
                 color: accentColor
                 anchors.verticalCenter: parent.verticalCenter
@@ -773,7 +773,7 @@ Item {
             // CAM
             Text {
                 text: viewModel ? viewModel.cameraText : "CAM: DAY"
-                font.pixelSize: 13
+                font.pixelSize: 14
                 font.family: primaryFont
                 color: accentColor
                 anchors.verticalCenter: parent.verticalCenter
@@ -790,7 +790,7 @@ Item {
 
                 Text {
                     text: viewModel ? viewModel.fovText : "FOV: 45.0°"
-                    font.pixelSize: 13
+                    font.pixelSize: 14
                     font.family: primaryFont
                     color: accentColor
                     anchors.verticalCenter: parent.verticalCenter
@@ -798,7 +798,7 @@ Item {
 
                 Text {
                     text: "NFOV"
-                    font.pixelSize: 10
+                    font.pixelSize: 11
                     font.family: primaryFont
                     color: accentColor
                     anchors.verticalCenter: parent.verticalCenter
@@ -852,7 +852,7 @@ Item {
 
                 Text {
                     text: "WFOV"
-                    font.pixelSize: 10
+                    font.pixelSize: 11
                     font.family: primaryFont
                     color: accentColor
                     anchors.verticalCenter: parent.verticalCenter
@@ -864,7 +864,7 @@ Item {
             // LRF RANGE
             Text {
                 text: viewModel ? viewModel.lrfText : "LRF: --- m"
-                font.pixelSize: 13
+                font.pixelSize: 14
                 font.family: primaryFont
                 color: accentColor
                 anchors.verticalCenter: parent.verticalCenter
@@ -875,7 +875,7 @@ Item {
             // SYSTEM STATUS
             Text {
                 text: viewModel ? viewModel.statusText : "SYS: --- SAF NRD"
-                font.pixelSize: 13
+                font.pixelSize: 14
                 font.family: primaryFont
                 color: accentColor
                 anchors.verticalCenter: parent.verticalCenter
