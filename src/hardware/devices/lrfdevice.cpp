@@ -2,7 +2,7 @@
 #include "hardware/devices/lrfdevice.h"
 #include "hardware/interfaces/Transport.h"
 #include "hardware/protocols/LrfProtocolParser.h"
-#include "hardware/protocols/LrfMessage.h"
+#include "hardware/messages/LrfMessage.h"
 #include <QTimer>
 #include <QJsonObject>
 #include <QDebug>

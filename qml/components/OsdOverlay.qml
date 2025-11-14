@@ -256,9 +256,9 @@ Item {
     }
 
     Column {
-        x: parent.width - 150
-        y: parent.height - 300
-        spacing: 5
+        x: parent.width - 145
+        y: parent.height - 335
+        spacing: 3
         visible: hasDeviceFaults()
 
         // Day Camera warnings

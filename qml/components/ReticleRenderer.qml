@@ -15,8 +15,8 @@ Canvas {
     property real rangeMeters: 0
     property real confidenceLevel: 1.0 // 0.0 to 1.0
 
-    width: 200
-    height: 200
+    width: 600
+    height: 600
 
     onReticleTypeChanged: requestPaint()
     onColorChanged: requestPaint()
@@ -59,9 +59,9 @@ Canvas {
 
     // TYPE 0: BOX CROSSHAIR (General purpose - NATO standard)
     function drawBoxCrosshair(ctx, cx, cy) {
-        var fovScale = 45.0 / currentFov; // Inverse scale: larger when zoomed in, smaller when zoomed out
+        var fovScale = 20.0 / currentFov; // Inverse scale: larger when zoomed in, smaller when zoomed out
         var lineLen = 80 * fovScale;
-        var boxSize = 50 * fovScale;
+        var boxSize = Math.min(50 * fovScale, 150);
         var halfBox = boxSize / 2;
         var gap = 2 * fovScale;
 
@@ -90,11 +90,11 @@ Canvas {
 
     // TYPE 1: BRACKETS RETICLE (Corner brackets style - Enhanced visibility)
     function drawBracketsReticle(ctx, cx, cy) {
-        var fovScale = 45.0 / currentFov; // Inverse scale: larger when zoomed in, smaller when zoomed out
-        var crosshairLen = 30 * fovScale;
-        var bracketSize = 25 * fovScale;
-        var bracketLength = 12 * fovScale;
-        var bracketThickness = 2 * fovScale;
+        var fovScale = 15.0 / currentFov; // Inverse scale: larger when zoomed in, smaller when zoomed out
+        var crosshairLen = 3 * fovScale;
+        var bracketSize = Math.min(Math.max(25 * fovScale, 30), 200);
+        var bracketLength = Math.min(Math.max(12 * fovScale, 15), 200);
+        var bracketThickness = Math.min(2* fovScale, 6);
 
         drawWithOutline(ctx, function(c) {
             // Horizontal crosshair
@@ -152,7 +152,7 @@ Canvas {
 
     // TYPE 2: DUPLEX CROSSHAIR (Thick outer, thin inner - Sniper style)
     function drawDuplexCrosshair(ctx, cx, cy) {
-        var fovScale = 45.0 / currentFov; // Inverse scale: larger when zoomed in, smaller when zoomed out
+        var fovScale = 25.0 / currentFov; // Inverse scale: larger when zoomed in, smaller when zoomed out
         var outerLen = 80 * fovScale;
         var innerLen = 15 * fovScale;
         var gap = 8 * fovScale;
@@ -233,12 +233,12 @@ Canvas {
 
     // TYPE 3: FINE CROSSHAIR (Thin precision crosshair - Long range)
     function drawFineCrosshair(ctx, cx, cy) {
-        var fovScale = 45.0 / currentFov; // Inverse scale: larger when zoomed in, smaller when zoomed out
+        var fovScale = 25.0 / currentFov; // Inverse scale: larger when zoomed in, smaller when zoomed out
         var lineLen = 90 * fovScale;
         var gap = 6 * fovScale;
         var lineWidth = 1.5;
         var tickLength = 4 * fovScale;
-        var tickSpacing = 15 * fovScale; // Spacing for range ticks
+        var tickSpacing = 0;//5 * fovScale; // Spacing for range ticks
 
         // Main crosshair lines
         ctx.strokeStyle = canvas.outlineColor;
@@ -273,7 +273,7 @@ Canvas {
         ctx.stroke();
 
         // Range estimation ticks (every 15 pixels on vertical axis below center)
-        for (var i = 1; i <= 4; i++) {
+        /*for (var i = 1; i <= 4; i++) {
             var tickY = cy + gap + (i * tickSpacing);
             if (tickY < cy + lineLen) {
                 ctx.strokeStyle = canvas.outlineColor;
@@ -290,7 +290,7 @@ Canvas {
                 ctx.lineTo(cx + tickLength, tickY);
                 ctx.stroke();
             }
-        }
+        }*/
 
         // Center dot
         drawCenterDot(ctx, cx, cy, 1.5);

@@ -1,6 +1,6 @@
 // protocols/LrfProtocolParser.cpp
 #include "LrfProtocolParser.h"
-#include "LrfMessage.h"
+#include "hardware/messages/LrfMessage.h"
 #include <QDebug>
 
 LrfProtocolParser::LrfProtocolParser(QObject* parent) 
