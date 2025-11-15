@@ -272,22 +272,20 @@ void OsdController::onFrameDataReady(const FrameData& frmdata)
     }
 
     // ========================================================================
-    // CCIP PIPPER POSITION - CRITICAL FIX
+    // CCIP PIPPER POSITION - PROPER ARCHITECTURAL FIX
     // ========================================================================
-    // BUG FIX: Was using reticleAimpointImageX/Y_px (zeroing only, NO lead!)
-    //          Now using ccipImpactImageX/Y_px (zeroing + lead angle)
+    // ✅ FIXED: Now reading from FrameData (camera thread) for frame synchronization
+    // Previously read from SystemStateData which caused data source mismatch:
+    //   - Reticle: from FrameData ✅
+    //   - CCIP: from SystemStateData ❌ (STALE!)
+    //   - Acquisition: from FrameData ✅
     //
-    // The SystemStateModel separates these coordinates:
-    //   - reticleAimpointImageX/Y_px: Gun boresight with zeroing ONLY
-    //   - ccipImpactImageX/Y_px: Bullet impact with zeroing + LEAD ANGLE
-    //
-    // This is why CCIP was stuck at center - it wasn't using lead angle!
+    // Now all OSD elements are synchronized to the same frame!
     // ========================================================================
 
-    const SystemStateData& currentState = m_stateModel->data();
     m_viewModel->updateCcipPipper(
-        currentState.ccipImpactImageX_px,    // ← FIXED: Uses CCIP position with lead
-        currentState.ccipImpactImageY_px,    // ← FIXED: Uses CCIP position with lead
+        frmdata.ccipImpactImageX_px,    // ✅ PROPER FIX: Read from FrameData (frame-synchronized)
+        frmdata.ccipImpactImageY_px,    // ✅ PROPER FIX: Read from FrameData (frame-synchronized)
         ccipVisible,
         ccipStatus
     );

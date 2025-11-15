@@ -99,8 +99,13 @@ struct FrameData {
 
     bool leadAngleActive = false; // Indicates if lead angle calculation is active
     LeadAngleStatus leadAngleStatus;
-    int reticleAimpointImageX_px;
-    int reticleAimpointImageY_px;
+    int reticleAimpointImageX_px;  // Gun boresight with zeroing ONLY
+    int reticleAimpointImageY_px;  // Gun boresight with zeroing ONLY
+
+    // ✅ CCIP (Continuously Computed Impact Point) coordinates
+    // Bullet impact prediction with zeroing + lead angle
+    float ccipImpactImageX_px = 0.0f;
+    float ccipImpactImageY_px = 0.0f;
 
     // Optional but helpful:
     float leadAngleOffsetAz_deg;
@@ -301,8 +306,10 @@ private:
     float m_currentWindageSpeed;
     bool m_currentIsReticleInNoFireZone;
     bool m_currentGimbalStoppedAtNTZLimit;
-    int m_currentReticleAimpointImageX_px;
-    int m_currentReticleAimpointImageY_px;
+    int m_currentReticleAimpointImageX_px;     // Reticle: gun boresight with zeroing ONLY
+    int m_currentReticleAimpointImageY_px;     // Reticle: gun boresight with zeroing ONLY
+    float m_currentCcipImpactImageX_px = 0.0f; // ✅ CCIP: bullet impact with zeroing + lead
+    float m_currentCcipImpactImageY_px = 0.0f; // ✅ CCIP: bullet impact with zeroing + lead
     QString m_currentLeadStatusText; 
     QString m_currentScanName; // Name of the current scan (if applicable)
     TrackingPhase m_currentTrackingPhase; // Current tracking phase (e.g., acquisition, tracking)

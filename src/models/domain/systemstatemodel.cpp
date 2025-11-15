@@ -51,6 +51,16 @@ SystemStateModel::SystemStateModel(QObject *parent)
     // Initialize m_currentStateData with defaults if needed
     clearZeroing(); // Zero is lost on power down
     clearWindage(); // Windage is zero on startup
+
+    // ✅ CRITICAL FIX: Calculate initial reticle and CCIP positions
+    // Without this, SystemStateData has default initialization values which
+    // may be incorrect if image dimensions or FOV change after initialization.
+    // This ensures CCIP and acquisition box have correct positions from startup.
+    recalculateDerivedAimpointData();
+    qDebug() << "✓ SystemStateModel initialized - reticle and CCIP positions calculated"
+             << "at (" << m_currentStateData.reticleAimpointImageX_px << ","
+             << m_currentStateData.reticleAimpointImageY_px << ")";
+
     // Connect signals from sub-models to slots here (as was likely intended)
     loadZonesFromFile("zones.json"); // Load initial zones from file if exists
 
@@ -1873,23 +1883,37 @@ void SystemStateModel::startTrackingAcquisition() {
     if (data.currentTrackingPhase == TrackingPhase::Off) {
         data.currentTrackingPhase = TrackingPhase::Acquisition;
 
-        // ⭐ CRITICAL FIX: Use SCREEN CENTER, NOT reticle position
-        // Reticle position includes zeroing/lead offsets for BALLISTICS
-        // Acquisition box is for VISUAL target selection (no ballistic offset)
-        float screenCenterX = static_cast<float>(data.currentImageWidthPx) / 2.0f;
-        float screenCenterY = static_cast<float>(data.currentImageHeightPx) / 2.0f;
+        // ✅ FIX: Center acquisition box on RETICLE position (where gun is pointing)
+        // This provides better UX - when operator aims at target and clicks to track,
+        // the yellow box appears exactly where they're aiming (reticle position)
+        // Reticle position includes zeroing offsets, which is correct because:
+        // - The operator has zeroed the weapon to align gun with camera
+        // - They are aiming AT THE TARGET with the reticle
+        // - The acquisition box should appear WHERE THEY ARE AIMING
+        float reticleCenterX = data.reticleAimpointImageX_px;
+        float reticleCenterY = data.reticleAimpointImageY_px;
 
-        qDebug() << "✓ [FIX UC2/UC3] Starting Acquisition. Centering box on SCREEN CENTER at:"
-                 << screenCenterX << "," << screenCenterY
-                 << "(NOT reticle position which has ballistic offsets)";
+        qDebug() << "========================================";
+        qDebug() << "STARTING TRACKING ACQUISITION";
+        qDebug() << "========================================";
+        qDebug() << "Screen Size:" << data.currentImageWidthPx << "x" << data.currentImageHeightPx;
+        qDebug() << "Screen Center:" << (data.currentImageWidthPx/2) << "," << (data.currentImageHeightPx/2);
+        qDebug() << "Zeroing Status:";
+        qDebug() << "  - Applied:" << data.zeroingAppliedToBallistics;
+        qDebug() << "  - Az Offset:" << data.zeroingAzimuthOffset << "deg";
+        qDebug() << "  - El Offset:" << data.zeroingElevationOffset << "deg";
+        qDebug() << "Reticle Position (from SystemStateData):";
+        qDebug() << "  - X:" << reticleCenterX << "px";
+        qDebug() << "  - Y:" << reticleCenterY << "px";
+        qDebug() << "Centering acquisition box on RETICLE position";
 
-        // Initialize acquisition box centered on SCREEN, not reticle
+        // Initialize acquisition box centered on RETICLE (where gun is pointing)
         float defaultBoxW = 100.0f;
         float defaultBoxH = 100.0f;
         data.acquisitionBoxW_px = defaultBoxW;
         data.acquisitionBoxH_px = defaultBoxH;
-        data.acquisitionBoxX_px = screenCenterX - (defaultBoxW / 2.0f);
-        data.acquisitionBoxY_px = screenCenterY - (defaultBoxH / 2.0f);
+        data.acquisitionBoxX_px = reticleCenterX - (defaultBoxW / 2.0f);
+        data.acquisitionBoxY_px = reticleCenterY - (defaultBoxH / 2.0f);
 
         // Safety: Clamp to screen bounds (should already be centered, but ensure safety)
         data.acquisitionBoxX_px = qBound(0.0f, data.acquisitionBoxX_px,
@@ -1897,9 +1921,12 @@ void SystemStateModel::startTrackingAcquisition() {
         data.acquisitionBoxY_px = qBound(0.0f, data.acquisitionBoxY_px,
                                          static_cast<float>(data.currentImageHeightPx) - data.acquisitionBoxH_px);
 
-        qDebug() << "   Acquisition box initialized: ["
-                 << data.acquisitionBoxX_px << "," << data.acquisitionBoxY_px << "] "
-                 << data.acquisitionBoxW_px << "x" << data.acquisitionBoxH_px;
+        qDebug() << "Acquisition Box Position:";
+        qDebug() << "  - Top-Left: (" << data.acquisitionBoxX_px << "," << data.acquisitionBoxY_px << ")";
+        qDebug() << "  - Size:" << data.acquisitionBoxW_px << "x" << data.acquisitionBoxH_px;
+        qDebug() << "  - Center: (" << (data.acquisitionBoxX_px + defaultBoxW/2.0f) << ","
+                 << (data.acquisitionBoxY_px + defaultBoxH/2.0f) << ")";
+        qDebug() << "========================================";
 
         // We are still in Surveillance and Manual motion
         data.opMode = OperationalMode::Surveillance;
