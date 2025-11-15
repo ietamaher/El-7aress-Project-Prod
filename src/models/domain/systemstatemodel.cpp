@@ -581,6 +581,7 @@ void SystemStateModel::onDayCameraDataChanged(const DayCameraData &dayData)
 
     newData.dayZoomPosition = dayData.zoomPosition;
     newData.dayCurrentHFOV = dayData.currentHFOV;
+    newData.dayCurrentVFOV = dayData.currentVFOV;  // 16:9 aspect ratio (VFOV = HFOV × 9/16)
     newData.dayCameraConnected = dayData.isConnected;
     newData.dayCameraError = dayData.errorState;
     newData.dayCameraStatus = dayData.cameraStatus;
@@ -804,8 +805,8 @@ void SystemStateModel::onPlc21DataChanged(const Plc21PanelData &pData)
 
     newData.authorized = pData.authorizeSw;
     newData.enableStabilization = pData.enableStabilizationSW;
-    newData.activeCameraIsDay = pData.switchCameraSW;
-    newData.emergencyStopActive = pData.authorizeSw;            
+    // DON'T set activeCameraIsDay here - let setActiveCameraIsDay() handle it!
+    newData.emergencyStopActive = pData.authorizeSw;
 
     switch (pData.fireMode) {
     case 0:
@@ -826,13 +827,16 @@ void SystemStateModel::onPlc21DataChanged(const Plc21PanelData &pData)
     newData.plc21Connected = pData.isConnected;
 
     // Auto-disable detection when switching to night camera
-    if (!newData.activeCameraIsDay && m_currentStateData.activeCameraIsDay) {
-        // Switched from day to night camera
+    if (!pData.switchCameraSW && m_currentStateData.activeCameraIsDay) {
+        // Switching from day to night camera
         newData.detectionEnabled = false;
         qInfo() << "SystemStateModel: Night camera activated - Detection auto-disabled";
     }
 
     updateData(newData);
+
+    // ✅ Use setActiveCameraIsDay() - it checks if changed and triggers CCIP recalculation!
+    setActiveCameraIsDay(pData.switchCameraSW);
 }
 
 void SystemStateModel::onPlc42DataChanged(const Plc42Data &pData)
