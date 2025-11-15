@@ -461,6 +461,9 @@ void OsdViewModel::updateCcipPipper(float screen_x_px, float screen_y_px, bool v
 
 void OsdViewModel::updateZeroingDisplay(bool modeActive, bool applied, float azOffset, float elOffset)
 {
+    Q_UNUSED(azOffset);
+    Q_UNUSED(elOffset);
+
     QString newText;
     bool newVisible = false;
 

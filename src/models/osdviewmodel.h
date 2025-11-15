@@ -131,7 +131,6 @@ class OsdViewModel : public QObject
     Q_PROPERTY(bool actuatorConnected READ actuatorConnected NOTIFY actuatorConnectedChanged)
     Q_PROPERTY(bool actuatorFault READ actuatorFault NOTIFY actuatorFaultChanged)
 
-    Q_PROPERTY(bool imuConnected READ imuConnected NOTIFY imuConnectedChanged)
     Q_PROPERTY(bool plc21Connected READ plc21Connected NOTIFY plc21ConnectedChanged)
     Q_PROPERTY(bool plc42Connected READ plc42Connected NOTIFY plc42ConnectedChanged)
 

@@ -347,13 +347,6 @@ void OsdController::onFrameDataReady(const FrameData& frmdata)
         frmdata.zeroingElevationOffset
         );
 
-    // === WINDAGE ===
-    m_viewModel->updateWindageDisplay(
-        frmdata.windageModeActive,
-        frmdata.windageAppliedToBallistics,
-        frmdata.windageSpeedKnots
-        );
-
     // === DETECTION ===
     m_viewModel->updateDetectionDisplay(frmdata.detectionEnabled);
     m_viewModel->updateDetectionBoxes(frmdata.detections);
@@ -447,13 +440,6 @@ void OsdController::onFrameDataReady(const FrameData& frmdata)
         data.zeroingAppliedToBallistics,
         data.zeroingAzimuthOffset,
         data.zeroingElevationOffset
-        );
-
-    // Windage
-    m_viewModel->updateWindageDisplay(
-        data.windageModeActive,
-        data.windageAppliedToBallistics,
-        data.windageSpeedKnots
         );
 
     // Detection
