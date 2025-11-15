@@ -134,20 +134,26 @@ LeadCalculationResult BallisticsProcessor::calculateLeadAngle(
         lag = true;
     }
 
-    if (lag) {
-        result.status = LeadAngleStatus::Lag;
+    // ========================================================================
+    // STATUS DETERMINATION - Priority order matters!
+    // ========================================================================
+    // 1. ZOOM OUT (highest priority) - Lead exceeds FOV, CCIP off-screen
+    // 2. LAG (medium priority) - Lead at max limit but still on-screen
+    // 3. ON (default) - Normal operation
+    // ========================================================================
+
+    // PRIORITY 1: Check ZOOM OUT condition first (lead exceeds FOV)
+    float vfov_approx = currentCameraFovHorizontalDegrees;  // Simplified (assume VFOV ≈ HFOV)
+    if (currentCameraFovHorizontalDegrees > 0 && vfov_approx > 0) {
+        if (std::abs(result.leadAzimuthDegrees) > (currentCameraFovHorizontalDegrees / 2.0f) ||
+            std::abs(result.leadElevationDegrees) > (vfov_approx / 2.0f)) {
+            result.status = LeadAngleStatus::ZoomOut;
+        }
     }
 
-    // Check for ZOOM OUT condition (only if not already lagging, perhaps)
-    if (result.status != LeadAngleStatus::Lag) { // Don't override LAG with ZOOM_OUT if both occur
-        // Check against half FOV. Assuming vertical FOV is proportional or using HFOV for both for simplicity
-        float vfov_approx = currentCameraFovHorizontalDegrees * (1.0f); // Simplified: assuming square view for check
-        if (currentCameraFovHorizontalDegrees > 0 && vfov_approx > 0) {
-             if (std::abs(result.leadAzimuthDegrees) > (currentCameraFovHorizontalDegrees / 2.0f) ||
-                 std::abs(result.leadElevationDegrees) > (vfov_approx / 2.0f) ) {
-                 result.status = LeadAngleStatus::ZoomOut;
-             }
-        }
+    // PRIORITY 2: Check LAG condition (only if not already ZoomOut)
+    if (result.status != LeadAngleStatus::ZoomOut && lag) {
+        result.status = LeadAngleStatus::Lag;
     }
 
     qDebug() << "Ballistics: R:" << targetRangeMeters << "TOF:" << tofS
