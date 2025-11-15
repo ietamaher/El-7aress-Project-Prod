@@ -38,7 +38,7 @@ Item {
         id: statusBlock
         x: 10
         y: 10
-        width: 380
+        width: 340
         // Dynamic height based on content
         height: statusRow.height + 16  // Content height + padding (8px top + 8px bottom)
         color: "#CC000000"
@@ -50,12 +50,12 @@ Item {
             anchors.left: parent.left
             anchors.top: parent.top
             anchors.margins: 8
-            spacing: 20  // Space between left and right columns
+            spacing: 10  // Space between left and right columns
 
             // === LEFT COLUMN ===
             Column {
-                spacing: 4
-                width: 186
+                spacing: 2
+                width: 168
 
                 // MODE
                 Text {
@@ -78,8 +78,7 @@ Item {
                 Row {
                     spacing: 15
                     visible: (viewModel && viewModel.zeroingVisible) ||
-                             (viewModel && viewModel.environmentVisible) ||
-                             (viewModel && viewModel.lacActive)
+                             (viewModel && viewModel.environmentVisible)
 
                     Text {
                         visible: viewModel ? viewModel.zeroingVisible : false
@@ -97,18 +96,12 @@ Item {
                         color: accentColor
                     }
 
-                    Text {
-                        visible: viewModel ? viewModel.lacActive : "LAC: OFF"
-                        text: "LAC: ON"
-                        font.pixelSize: 12
-                        font.family: primaryFont
-                        color: "yellow"
-                    }
+
                 }
 
                 // DETECTION
                 Text {
-                    visible: viewModel ? viewModel.detectionVisible : "DETECTION: OFF"
+                    visible: viewModel ? viewModel.detectionVisible : false
                     text: viewModel ? viewModel.detectionText : "DETECTION: ON"
                     font.pixelSize: 12
                     font.family: primaryFont
@@ -118,7 +111,7 @@ Item {
 
             // === RIGHT COLUMN ===
             Column {
-                spacing: 4
+                spacing: 2
 
                 // MOTION
                 Text {
@@ -148,7 +141,6 @@ Item {
                            (viewModel && viewModel.leadAngleText.includes("ZOOM") ? warningColor : accentColor)
                 }
 
-
             }
         }
     }
@@ -158,9 +150,9 @@ Item {
     // ========================================================================
     Rectangle {
         id: azimuthBox
-        x: parent.width - 150
+        x: parent.width - 130
         y: 10
-        width: 140
+        width: 120
         height: 85
         color: "#99000000"
         border.color: accentColor
@@ -214,9 +206,9 @@ Item {
     // ========================================================================
     Rectangle {
         id: gunStatusBox
-        x: parent.width - 150
+        x: parent.width - 130
         y: 105
-        width: 140
+        width: 120
         height: 45
         color: getGunArmedStatus() ? warningColor : "#555555"
         border.color: "white"
@@ -257,7 +249,7 @@ Item {
 
     Column {
         x: parent.width - 145
-        y: parent.height - 335
+        y: parent.height - 300
         spacing: 3
         visible: hasDeviceFaults()
 
@@ -573,10 +565,10 @@ Item {
     // ========================================================================
     Rectangle {
         id: speedBox
-        x: parent.width - 90
-        y: parent.height/2 - 140
-        width: 85
-        height: 90
+        x: parent.width - 85
+        y: parent.height/2 - 130
+        width: 75
+        height: 80
         color: "#99000000"
         border.color: accentColor
         border.width: 1
@@ -609,10 +601,10 @@ Item {
     // ========================================================================
     Rectangle {
         id: elevationBox
-        x: parent.width - 90
+        x: parent.width - 85
         y: parent.height/2 - 45
-        width: 85
-        height: 90
+        width: 75
+        height: 80
         color: "#99000000"
         border.color: accentColor
         border.width: 1

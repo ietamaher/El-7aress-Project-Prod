@@ -1,0 +1,18 @@
+/home/rapit/El-7aress-Project-Prod/src/models/osdviewmodel.h:480: warning: The property 'imuConnected' is defined multiple times in class OsdViewModel.
+
+/home/rapit/El-7aress-Project-Prod/src/models/osdviewmodel.cpp:462: warning: unused parameter ‘azOffset’ [-Wunused-parameter]
+../../src/models/osdviewmodel.cpp: In member function ‘void OsdViewModel::updateZeroingDisplay(bool, bool, float, float)’:
+../../src/models/osdviewmodel.cpp:462:78: warning: unused parameter ‘azOffset’ [-Wunused-parameter]
+  462 | void OsdViewModel::updateZeroingDisplay(bool modeActive, bool applied, float azOffset, float elOffset)
+      |                                                                        ~~~~~~^~~~~~~~
+/home/rapit/El-7aress-Project-Prod/src/models/osdviewmodel.cpp:462: warning: unused parameter ‘elOffset’ [-Wunused-parameter]
+../../src/models/osdviewmodel.cpp:462:94: warning: unused parameter ‘elOffset’ [-Wunused-parameter]
+  462 | void OsdViewModel::updateZeroingDisplay(bool modeActive, bool applied, float azOffset, float elOffset)
+      |                                                                                        ~~~~~~^~~~~~~~
+/home/rapit/El-7aress-Project-Prod/src/controllers/osdcontroller.cpp:351: error: ‘class OsdViewModel’ has no member named ‘updateWindageDisplay’; did you mean ‘updateLeadAngleDisplay’?
+../../src/controllers/osdcontroller.cpp: In member function ‘void OsdController::onFrameDataReady(const FrameData&)’:
+../../src/controllers/osdcontroller.cpp:351:18: error: ‘class OsdViewModel’ has no member named ‘updateWindageDisplay’; did you mean ‘updateLeadAngleDisplay’?
+  351 |     m_viewModel->updateWindageDisplay(
+      |                  ^~~~~~~~~~~~~~~~~~~~
+      |                  updateLeadAngleDisplay
+:-1: error: [Makefile:22046: osdcontroller.o] Error 1
