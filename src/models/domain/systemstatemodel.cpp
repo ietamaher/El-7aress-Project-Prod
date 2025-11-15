@@ -581,6 +581,7 @@ void SystemStateModel::onDayCameraDataChanged(const DayCameraData &dayData)
 
     newData.dayZoomPosition = dayData.zoomPosition;
     newData.dayCurrentHFOV = dayData.currentHFOV;
+    newData.dayCurrentVFOV = dayData.currentVFOV;  // 16:9 aspect ratio (VFOV = HFOV × 9/16)
     newData.dayCameraConnected = dayData.isConnected;
     newData.dayCameraError = dayData.errorState;
     newData.dayCameraStatus = dayData.cameraStatus;
@@ -825,6 +826,14 @@ void SystemStateModel::onPlc21DataChanged(const Plc21PanelData &pData)
     newData.gimbalSpeed = pData.speedSW;
     newData.plc21Connected = pData.isConnected;
 
+    // ========================================================================
+    // CRITICAL FIX: Detect camera switching and recalculate CCIP pixel position
+    // ========================================================================
+    // When switching between day/night cameras, FOV changes significantly
+    // (day: ~2-64°, night: 5.2°/10.4°) - CCIP pipper must be repositioned!
+    // ========================================================================
+    bool cameraSwitched = (m_currentStateData.activeCameraIsDay != newData.activeCameraIsDay);
+
     // Auto-disable detection when switching to night camera
     if (!newData.activeCameraIsDay && m_currentStateData.activeCameraIsDay) {
         // Switched from day to night camera
@@ -832,7 +841,23 @@ void SystemStateModel::onPlc21DataChanged(const Plc21PanelData &pData)
         qInfo() << "SystemStateModel: Night camera activated - Detection auto-disabled";
     }
 
-    updateData(newData);
+    // Trigger CCIP recalculation when camera switches
+    if (cameraSwitched) {
+        QString oldCam = m_currentStateData.activeCameraIsDay ? "DAY" : "NIGHT";
+        QString newCam = newData.activeCameraIsDay ? "DAY" : "NIGHT";
+        float oldFov = m_currentStateData.activeCameraIsDay ? m_currentStateData.dayCurrentHFOV : m_currentStateData.nightCurrentHFOV;
+        float newFov = newData.activeCameraIsDay ? newData.dayCurrentHFOV : newData.nightCurrentHFOV;
+
+        qDebug() << "✓ [FIX UC5] Camera switched:" << oldCam << "→" << newCam
+                 << "| FOV:" << oldFov << "° →" << newFov << "°"
+                 << "- Recalculating CCIP pixel position";
+
+        m_currentStateData = newData;  // Update state first so recalc uses new camera FOV
+        recalculateDerivedAimpointData();  // ← FIX: Trigger CCIP recalculation
+        emit dataChanged(m_currentStateData);
+    } else {
+        updateData(newData);
+    }
 }
 
 void SystemStateModel::onPlc42DataChanged(const Plc42Data &pData)

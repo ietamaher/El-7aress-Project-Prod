@@ -95,6 +95,7 @@ void DayCameraControlDevice::processMessage(const Message& message) {
         if (partial.zoomPosition != currentData->zoomPosition) {
             newData->zoomPosition = partial.zoomPosition;
             newData->currentHFOV = partial.currentHFOV;
+            newData->currentVFOV = partial.currentVFOV;  // 16:9 aspect ratio
             dataChanged = true;
         }
         if (partial.focusPosition != currentData->focusPosition) {

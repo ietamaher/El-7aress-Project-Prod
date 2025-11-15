@@ -26,8 +26,9 @@ struct DayCameraData {
     bool autofocusEnabled = true;
     quint16 focusPosition = 0;  // 12-bit max
 
-    // Field of view
-    float currentHFOV = 11.0;
+    // Field of view (Sony FCB-EV7520A: 1280×720 native → 1024×768 cropped, NOT square!)
+    float currentHFOV = 11.0;  // Horizontal FOV (2.3° - 63.7° zoom range)
+    float currentVFOV = 11.0;  // Vertical FOV (calculated from HFOV and aspect ratio)
 
     bool operator!=(const DayCameraData &other) const {
         return (isConnected != other.isConnected ||
@@ -38,7 +39,8 @@ struct DayCameraData {
                 zoomPosition != other.zoomPosition ||
                 autofocusEnabled != other.autofocusEnabled ||
                 focusPosition != other.focusPosition ||
-                !qFuzzyCompare(currentHFOV, other.currentHFOV));
+                !qFuzzyCompare(currentHFOV, other.currentHFOV) ||
+                !qFuzzyCompare(currentVFOV, other.currentVFOV));
     }
 };
 
