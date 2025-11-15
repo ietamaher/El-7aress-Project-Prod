@@ -146,19 +146,26 @@ LeadCalculationResult BallisticsProcessorLUT::calculateLeadAngle(
         lag = true;
     }
 
-    if (lag) {
-        result.status = LeadAngleStatus::Lag;
+    // ========================================================================
+    // STATUS DETERMINATION - Priority order matters!
+    // ========================================================================
+    // 1. ZOOM OUT (highest priority) - Lead exceeds FOV, CCIP off-screen
+    // 2. LAG (medium priority) - Lead at max limit but still on-screen
+    // 3. ON (default) - Normal operation
+    // ========================================================================
+
+    // PRIORITY 1: Check ZOOM OUT condition first (lead exceeds FOV)
+    float vfov_approx = currentCameraFovHorizontalDegrees;  // Simplified (assume VFOV ≈ HFOV)
+    if (currentCameraFovHorizontalDegrees > 0 && vfov_approx > 0) {
+        if (std::abs(result.leadAzimuthDegrees) > (currentCameraFovHorizontalDegrees / 2.0f) ||
+            std::abs(result.leadElevationDegrees) > (vfov_approx / 2.0f)) {
+            result.status = LeadAngleStatus::ZoomOut;
+        }
     }
 
-    // Check for ZOOM OUT condition (lead exceeds FOV)
-    if (result.status != LeadAngleStatus::Lag) {
-        float vfov_approx = currentCameraFovHorizontalDegrees;  // Simplified
-        if (currentCameraFovHorizontalDegrees > 0 && vfov_approx > 0) {
-            if (std::abs(result.leadAzimuthDegrees) > (currentCameraFovHorizontalDegrees / 2.0f) ||
-                std::abs(result.leadElevationDegrees) > (vfov_approx / 2.0f)) {
-                result.status = LeadAngleStatus::ZoomOut;
-            }
-        }
+    // PRIORITY 2: Check LAG condition (only if not already ZoomOut)
+    if (result.status != LeadAngleStatus::ZoomOut && lag) {
+        result.status = LeadAngleStatus::Lag;
     }
 
     qDebug() << "[BallisticsProcessorLUT] Range:" << targetRangeMeters << "m"
