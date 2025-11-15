@@ -319,8 +319,10 @@ void CameraVideoStreamDevice::onSystemStateChanged(const SystemStateData &newSta
     // Update the gimbal stopped at NTZ limit status
     m_currentGimbalStoppedAtNTZLimit = newState.isReticleInNoTraverseZone; // Assuming this is the NTZ limit status
     m_isLacActiveForReticle = newState.leadAngleCompensationActive; // Assuming this is the LAC status
-    m_currentReticleAimpointImageX_px= newState.reticleAimpointImageX_px; // Assuming these are the reticle aimpoint positions in pixels
-    m_currentReticleAimpointImageY_px= newState.reticleAimpointImageY_px; // Assuming these are the reticle aimpoint positions in pixels
+    m_currentReticleAimpointImageX_px= newState.reticleAimpointImageX_px; // Reticle: gun boresight with zeroing ONLY
+    m_currentReticleAimpointImageY_px= newState.reticleAimpointImageY_px; // Reticle: gun boresight with zeroing ONLY
+    m_currentCcipImpactImageX_px = newState.ccipImpactImageX_px; // ✅ CCIP: bullet impact with zeroing + lead
+    m_currentCcipImpactImageY_px = newState.ccipImpactImageY_px; // ✅ CCIP: bullet impact with zeroing + lead
      m_currentLeadStatusText= newState.leadStatusText; // Assuming this is the lead status text
     m_currentScanName = newState.currentScanName; // Assuming this is the current scan name
     // Note: Don't update m_trackingEnabled here directly from newState.trackingActive.
@@ -837,8 +839,10 @@ bool CameraVideoStreamDevice::processFrame(GstBuffer *buffer)
         data.isReticleInNoFireZone = m_currentIsReticleInNoFireZone;
         data.gimbalStoppedAtNTZLimit = m_currentGimbalStoppedAtNTZLimit;
         data.leadAngleActive = m_isLacActiveForReticle; // Assuming this is the LAC status
-        data.reticleAimpointImageX_px = m_currentReticleAimpointImageX_px; // Assuming these are the reticle aimpoint positions in pixels
-        data.reticleAimpointImageY_px = m_currentReticleAimpointImageY_px; // Assuming these are the reticle aimpoint positions in pixels
+        data.reticleAimpointImageX_px = m_currentReticleAimpointImageX_px; // Reticle: gun boresight with zeroing ONLY
+        data.reticleAimpointImageY_px = m_currentReticleAimpointImageY_px; // Reticle: gun boresight with zeroing ONLY
+        data.ccipImpactImageX_px = m_currentCcipImpactImageX_px; // ✅ CCIP: bullet impact with zeroing + lead
+        data.ccipImpactImageY_px = m_currentCcipImpactImageY_px; // ✅ CCIP: bullet impact with zeroing + lead
         data.leadStatusText = m_currentLeadStatusText; // Assuming this is the lead status text
         data.currentScanName = m_currentScanName; // Assuming this is the current scan name
         data.currentTrackingPhase = m_currentTrackingPhase;
