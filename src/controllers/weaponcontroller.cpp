@@ -107,15 +107,33 @@ void WeaponController::onSystemStateChanged(const SystemStateData &newData)
                  << m_oldState.leadAngleCompensationActive << "→" << newData.leadAngleCompensationActive;
     }
 
+    // Camera switching (Day ↔ Night) - affects which FOV is used
+    if (m_oldState.activeCameraIsDay != newData.activeCameraIsDay) {
+        ballisticsInputsChanged = true;
+        QString oldCam = m_oldState.activeCameraIsDay ? "DAY" : "NIGHT";
+        QString newCam = newData.activeCameraIsDay ? "DAY" : "NIGHT";
+        float oldFov = m_oldState.activeCameraIsDay ? m_oldState.dayCurrentHFOV : m_oldState.nightCurrentHFOV;
+        float newFov = newData.activeCameraIsDay ? newData.dayCurrentHFOV : newData.nightCurrentHFOV;
+        qDebug() << "[WeaponController] *** CAMERA SWITCHED:" << oldCam << "→" << newCam
+                 << "| Active FOV:" << oldFov << "°" << "→" << newFov << "°";
+    }
+
     // FOV changes (zoom in/out) - affects ZoomOut status
     if (!qFuzzyCompare(m_oldState.dayCurrentHFOV, newData.dayCurrentHFOV) ||
-        !qFuzzyCompare(m_oldState.nightCurrentHFOV, newData.nightCurrentHFOV) ||
-        m_oldState.activeCameraIsDay != newData.activeCameraIsDay) {
+        !qFuzzyCompare(m_oldState.nightCurrentHFOV, newData.nightCurrentHFOV)) {
         ballisticsInputsChanged = true;
-        qDebug() << "[WeaponController] FOV/Camera changed: DayFOV:"
-                 << m_oldState.dayCurrentHFOV << "→" << newData.dayCurrentHFOV
-                 << "NightFOV:" << m_oldState.nightCurrentHFOV << "→" << newData.nightCurrentHFOV
-                 << "IsDay:" << m_oldState.activeCameraIsDay << "→" << newData.activeCameraIsDay;
+
+        // Determine which camera's FOV actually changed
+        if (!qFuzzyCompare(m_oldState.dayCurrentHFOV, newData.dayCurrentHFOV)) {
+            qDebug() << "[WeaponController] Day camera ZOOM:"
+                     << m_oldState.dayCurrentHFOV << "° →" << newData.dayCurrentHFOV << "°"
+                     << (newData.activeCameraIsDay ? "(ACTIVE)" : "(inactive)");
+        }
+        if (!qFuzzyCompare(m_oldState.nightCurrentHFOV, newData.nightCurrentHFOV)) {
+            qDebug() << "[WeaponController] Night camera ZOOM:"
+                     << m_oldState.nightCurrentHFOV << "° →" << newData.nightCurrentHFOV << "°"
+                     << (!newData.activeCameraIsDay ? "(ACTIVE)" : "(inactive)");
+        }
     }
 
     // Target range changes (LRF measurement)
