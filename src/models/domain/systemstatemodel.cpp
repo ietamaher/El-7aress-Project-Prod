@@ -51,6 +51,16 @@ SystemStateModel::SystemStateModel(QObject *parent)
     // Initialize m_currentStateData with defaults if needed
     clearZeroing(); // Zero is lost on power down
     clearWindage(); // Windage is zero on startup
+
+    // ✅ CRITICAL FIX: Calculate initial reticle and CCIP positions
+    // Without this, SystemStateData has default initialization values which
+    // may be incorrect if image dimensions or FOV change after initialization.
+    // This ensures CCIP and acquisition box have correct positions from startup.
+    recalculateDerivedAimpointData();
+    qDebug() << "✓ SystemStateModel initialized - reticle and CCIP positions calculated"
+             << "at (" << m_currentStateData.reticleAimpointImageX_px << ","
+             << m_currentStateData.reticleAimpointImageY_px << ")";
+
     // Connect signals from sub-models to slots here (as was likely intended)
     loadZonesFromFile("zones.json"); // Load initial zones from file if exists
 
