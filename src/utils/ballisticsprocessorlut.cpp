@@ -174,7 +174,11 @@ LeadCalculationResult BallisticsProcessorLUT::calculateLeadAngle(
              << "| Motion Lead Az:" << motionLeadAzDeg << "° El:" << motionLeadElDeg << "°"
              << "| Wind:" << windCorrectionDeg << "°"
              << "| Total Lead Az:" << result.leadAzimuthDegrees << "° El:" << result.leadElevationDegrees << "°"
-             << "| Status:" << static_cast<int>(result.status);
+             << "| FOV:" << currentCameraFovHorizontalDegrees << "° (limit:" << (currentCameraFovHorizontalDegrees / 2.0f) << "°)"
+             << "| Status:" << static_cast<int>(result.status)
+             << (result.status == LeadAngleStatus::On ? "(On)" :
+                 result.status == LeadAngleStatus::Lag ? "(Lag)" :
+                 result.status == LeadAngleStatus::ZoomOut ? "(ZoomOut)" : "(Unknown)");
 
     return result;
 }
