@@ -124,18 +124,7 @@ void OsdController::onSystemStateChanged(const SystemStateData& data)
             data.plc42Connected
         );
 
-        // Update FOV from active camera
-        float fov = data.activeCameraIsDay ? data.dayCurrentHFOV : data.nightCurrentHFOV;
-        m_viewModel->updateFov(fov);
-
-        // Update LRF distance
-        m_viewModel->updateLrfDistance(data.lrfDistance);
-
-        // Update camera type
-        QString cameraType = data.activeCameraIsDay ? "DAY" : "THERMAL";
-        m_viewModel->updateCameraType(cameraType);
-
-        // Update environment display
+        // Update environment display (not in FrameData, so updated here)
         m_viewModel->updateEnvironmentDisplay(
             data.environmentalTemperatureCelsius,
             data.environmentalAltitudeMeters,
