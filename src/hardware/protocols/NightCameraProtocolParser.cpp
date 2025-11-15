@@ -88,9 +88,10 @@ MessagePtr NightCameraProtocolParser::parsePacket(const QByteArray& packet) {
                             static_cast<quint16>(static_cast<quint8>(payloadData[1]));
         data.digitalZoomEnabled = (videoMode == 0x0004);
         data.digitalZoomLevel = data.digitalZoomEnabled ? 2 : 1;
-        data.currentHFOV = data.digitalZoomEnabled ? 5.2 : 10.4;
+        data.currentHFOV = data.digitalZoomEnabled ? 5.2 : 10.4;  // FLIR TAU 2 640×512
+        data.currentVFOV = data.digitalZoomEnabled ? 4.0 : 8.0;   // NOT square sensor!
         qDebug() << "TAU2 Parser: Video mode received:" << Qt::hex << videoMode
-                 << "(Zoom:" << data.digitalZoomLevel << "x)";
+                 << "(Zoom:" << data.digitalZoomLevel << "x, FOV:" << data.currentHFOV << "×" << data.currentVFOV << "°)";
     } else if (functionCode == 0x10 && payloadData.size() >= 2) {
         // VIDEO_LUT response (0x0000=White hot, 0x0001=Black hot, etc.)
         data.videoMode = (static_cast<quint16>(static_cast<quint8>(payloadData[0])) << 8) |

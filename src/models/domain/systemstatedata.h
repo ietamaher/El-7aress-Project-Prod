@@ -343,15 +343,17 @@ struct SystemStateData {
     // Day Camera
     double dayZoomPosition = 0.0;       ///< Day camera zoom position (0-1 normalized)
     double dayCurrentHFOV = 9.0;        ///< Day camera current horizontal field of view in degrees
+    double dayCurrentVFOV = 9.0;        ///< Day camera current vertical field of view in degrees (approx. same as H for day camera)
     bool dayCameraConnected = false;    ///< Day camera connection status
     bool dayCameraError = false;        ///< Day camera error status
-    quint8 dayCameraStatus = 0;         ///< Day camera detailed status code  
+    quint8 dayCameraStatus = 0;         ///< Day camera detailed status code
     bool dayAutofocusEnabled = true;    ///< Day camera autofocus enabled status
     quint16 dayFocusPosition = 0;       ///< Day camera focus position (12-bit max)
 
     // Night Camera
     double nightZoomPosition = 0.0;     ///< Night camera zoom position (0-1 normalized)
-    double nightCurrentHFOV = 10.0;     ///< Night camera current horizontal field of view in degrees (FLIR TAU 2, 60mm lens: 10°×8.3°)
+    double nightCurrentHFOV = 10.4;     ///< Night camera current horizontal field of view in degrees (FLIR TAU 2 wide: 10.4°×8°, narrow: 5.2°×4°)
+    double nightCurrentVFOV = 8.0;      ///< Night camera current vertical field of view in degrees (NOT square sensor! 640×512)
     bool nightCameraConnected = false;  ///< Night camera connection status
     bool nightCameraError = false;      ///< Night camera error status (true if errorState != 0x00)
     quint8 nightCameraStatus = 0;       ///< Night camera detailed status code
@@ -658,15 +660,17 @@ struct SystemStateData {
                // Camera Systems - Day Camera
                qFuzzyCompare(dayZoomPosition, other.dayZoomPosition) &&
                qFuzzyCompare(dayCurrentHFOV, other.dayCurrentHFOV) &&
+               qFuzzyCompare(dayCurrentVFOV, other.dayCurrentVFOV) &&
                dayCameraConnected == other.dayCameraConnected &&
                dayCameraError == other.dayCameraError &&
                dayCameraStatus == other.dayCameraStatus &&
                dayAutofocusEnabled == other.dayAutofocusEnabled &&
                dayFocusPosition == other.dayFocusPosition &&
-               
+
                // Camera Systems - Night Camera
                qFuzzyCompare(nightZoomPosition, other.nightZoomPosition) &&
                qFuzzyCompare(nightCurrentHFOV, other.nightCurrentHFOV) &&
+               qFuzzyCompare(nightCurrentVFOV, other.nightCurrentVFOV) &&
                nightCameraConnected == other.nightCameraConnected &&
                nightCameraError == other.nightCameraError &&
                nightCameraStatus == other.nightCameraStatus &&

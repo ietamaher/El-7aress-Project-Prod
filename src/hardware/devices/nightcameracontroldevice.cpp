@@ -104,7 +104,9 @@ void NightCameraControlDevice::processMessage(const Message& message) {
             newData->digitalZoomEnabled = partial.digitalZoomEnabled;
             newData->digitalZoomLevel = partial.digitalZoomLevel;
             newData->currentHFOV = partial.currentHFOV;
-            qDebug() << m_identifier << "Zoom updated:" << newData->digitalZoomLevel << "x";
+            newData->currentVFOV = partial.currentVFOV;
+            qDebug() << m_identifier << "Zoom updated:" << newData->digitalZoomLevel << "x"
+                     << "(FOV:" << newData->currentHFOV << "×" << newData->currentVFOV << "°)";
         }
 
         // Update LUT if received (from 0x10 VIDEO_LUT response)
@@ -150,7 +152,8 @@ void NightCameraControlDevice::setDigitalZoom(quint8 zoomLevel) {
     auto newData = std::make_shared<NightCameraData>(*data());
     newData->digitalZoomEnabled = (zoomLevel > 0);
     newData->digitalZoomLevel = zoomLevel;
-    newData->currentHFOV = (zoomLevel > 0) ? 5.2 : 10.4;
+    newData->currentHFOV = (zoomLevel > 0) ? 5.2 : 10.4;  // FLIR TAU 2 640×512
+    newData->currentVFOV = (zoomLevel > 0) ? 4.0 : 8.0;   // NOT square sensor!
     updateData(newData);
     emit nightCameraDataChanged(*newData);
 

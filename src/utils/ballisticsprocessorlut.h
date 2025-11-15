@@ -48,7 +48,8 @@ public:
      * @param targetAngularRateElDegS Target angular rate in elevation (deg/s)
      * @param currentMuzzleVelocityMPS Muzzle velocity (m/s) - IGNORED for LUT
      * @param projectileTimeOfFlightGuessS Initial TOF guess - IGNORED for LUT
-     * @param currentCameraFovHorizontalDegrees Current FOV for ZOOM_OUT check
+     * @param currentCameraFovHorizontalDegrees Current horizontal FOV for ZOOM_OUT check
+     * @param currentCameraFovVerticalDegrees Current vertical FOV for ZOOM_OUT check
      * @return LeadCalculationResult with lead angles and status
      */
     LeadCalculationResult calculateLeadAngle(
@@ -57,7 +58,8 @@ public:
         float targetAngularRateElDegS,
         float currentMuzzleVelocityMPS,       // Ignored - table has MV baked in
         float projectileTimeOfFlightGuessS,   // Ignored - table provides exact TOF
-        float currentCameraFovHorizontalDegrees
+        float currentCameraFovHorizontalDegrees,
+        float currentCameraFovVerticalDegrees
     );
 
     /**

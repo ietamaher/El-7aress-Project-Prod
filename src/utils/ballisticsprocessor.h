@@ -27,7 +27,8 @@ public:
         // AmmunitionType ammoType, // Requires ammo parameters (e.g., muzzle velocity, BC)
         float currentMuzzleVelocityMPS, // Example input
         float projectileTimeOfFlightGuessS, // An initial guess, can be iterative
-        float currentCameraFovHorizontalDegrees // Needed for ZOOM_OUT check
+        float currentCameraFovHorizontalDegrees, // Needed for ZOOM_OUT check (horizontal)
+        float currentCameraFovVerticalDegrees    // Needed for ZOOM_OUT check (vertical)
     );
 
     /**

@@ -107,15 +107,40 @@ void WeaponController::onSystemStateChanged(const SystemStateData &newData)
                  << m_oldState.leadAngleCompensationActive << "→" << newData.leadAngleCompensationActive;
     }
 
-    // FOV changes (zoom in/out) - affects ZoomOut status
-    if (!qFuzzyCompare(m_oldState.dayCurrentHFOV, newData.dayCurrentHFOV) ||
-        !qFuzzyCompare(m_oldState.nightCurrentHFOV, newData.nightCurrentHFOV) ||
-        m_oldState.activeCameraIsDay != newData.activeCameraIsDay) {
+    // Camera switching (Day ↔ Night) - affects which FOV is used
+    if (m_oldState.activeCameraIsDay != newData.activeCameraIsDay) {
         ballisticsInputsChanged = true;
-        qDebug() << "[WeaponController] FOV/Camera changed: DayFOV:"
-                 << m_oldState.dayCurrentHFOV << "→" << newData.dayCurrentHFOV
-                 << "NightFOV:" << m_oldState.nightCurrentHFOV << "→" << newData.nightCurrentHFOV
-                 << "IsDay:" << m_oldState.activeCameraIsDay << "→" << newData.activeCameraIsDay;
+        QString oldCam = m_oldState.activeCameraIsDay ? "DAY" : "NIGHT";
+        QString newCam = newData.activeCameraIsDay ? "DAY" : "NIGHT";
+        float oldFov = m_oldState.activeCameraIsDay ? m_oldState.dayCurrentHFOV : m_oldState.nightCurrentHFOV;
+        float newFov = newData.activeCameraIsDay ? newData.dayCurrentHFOV : newData.nightCurrentHFOV;
+        qDebug() << "[WeaponController] *** CAMERA SWITCHED:" << oldCam << "→" << newCam
+                 << "| Active FOV:" << oldFov << "°" << "→" << newFov << "°";
+    }
+
+    // FOV changes (zoom in/out) - affects ZoomOut status
+    // Check both HFOV and VFOV (cameras are NOT square)
+    if (!qFuzzyCompare(m_oldState.dayCurrentHFOV, newData.dayCurrentHFOV) ||
+        !qFuzzyCompare(m_oldState.dayCurrentVFOV, newData.dayCurrentVFOV) ||
+        !qFuzzyCompare(m_oldState.nightCurrentHFOV, newData.nightCurrentHFOV) ||
+        !qFuzzyCompare(m_oldState.nightCurrentVFOV, newData.nightCurrentVFOV)) {
+        ballisticsInputsChanged = true;
+
+        // Determine which camera's FOV actually changed
+        if (!qFuzzyCompare(m_oldState.dayCurrentHFOV, newData.dayCurrentHFOV) ||
+            !qFuzzyCompare(m_oldState.dayCurrentVFOV, newData.dayCurrentVFOV)) {
+            qDebug() << "[WeaponController] Day camera ZOOM:"
+                     << m_oldState.dayCurrentHFOV << "×" << m_oldState.dayCurrentVFOV << "° →"
+                     << newData.dayCurrentHFOV << "×" << newData.dayCurrentVFOV << "°"
+                     << (newData.activeCameraIsDay ? "(ACTIVE)" : "(inactive)");
+        }
+        if (!qFuzzyCompare(m_oldState.nightCurrentHFOV, newData.nightCurrentHFOV) ||
+            !qFuzzyCompare(m_oldState.nightCurrentVFOV, newData.nightCurrentVFOV)) {
+            qDebug() << "[WeaponController] Night camera ZOOM:"
+                     << m_oldState.nightCurrentHFOV << "×" << m_oldState.nightCurrentVFOV << "° →"
+                     << newData.nightCurrentHFOV << "×" << newData.nightCurrentVFOV << "°"
+                     << (!newData.activeCameraIsDay ? "(ACTIVE)" : "(inactive)");
+        }
     }
 
     // Target range changes (LRF measurement)
@@ -285,9 +310,10 @@ void WeaponController::updateFireControlSolution() {
     float targetAngRateAz = sData.currentTargetAngularRateAz;
     float targetAngRateEl = sData.currentTargetAngularRateEl;
     // ✅ FIXED (2025-11-14): Use correct FOV based on active camera
-    // Day: Sony FCB-EV7520A (2.3° - 63.7° variable zoom)
-    // Night: FLIR TAU 2 60mm lens (10° × 8.3° fixed)
-    float currentFOV = sData.activeCameraIsDay ? sData.dayCurrentHFOV : sData.nightCurrentHFOV;
+    // Day: Sony FCB-EV7520A (2.3° - 63.7° variable zoom) - 1280×720 native → 1024×768 cropped
+    // Night: FLIR TAU 2 640×512 - NOT square! (Wide: 10.4°×8°, Narrow: 5.2°×4°)
+    float currentHFOV = sData.activeCameraIsDay ? sData.dayCurrentHFOV : sData.nightCurrentHFOV;
+    float currentVFOV = sData.activeCameraIsDay ? sData.dayCurrentVFOV : sData.nightCurrentVFOV;
     float tofGuess = (targetRange > 0 && sData.muzzleVelocityMPS > 0) ? (targetRange / sData.muzzleVelocityMPS) : 0.0f; // Ensure muzzleVelocity is in SystemStateData
 
     if (!m_ballisticsProcessor) { // If m_ballisticsProcessor is a pointer
@@ -320,7 +346,7 @@ void WeaponController::updateFireControlSolution() {
     LeadCalculationResult lead = m_ballisticsProcessor->calculateLeadAngle(
         targetRange, targetAngRateAz, targetAngRateEl,
         sData.muzzleVelocityMPS, // Pass actual muzzle velocity
-        tofGuess, currentFOV
+        tofGuess, currentHFOV, currentVFOV  // Pass both H and V FOV for non-square sensors
         );
 
     // Update the model with the calculated offsets (these are now for the reticle)

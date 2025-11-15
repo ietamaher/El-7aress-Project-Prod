@@ -52,6 +52,7 @@ struct NightCameraData {
     bool digitalZoomEnabled = false;
     quint8 digitalZoomLevel = 0;
     double currentHFOV = 10.4;
+    double currentVFOV = 8.0;  // FLIR TAU 2 640×512: Wide 10.4°×8°, Narrow 5.2°×4°
     quint16 videoMode = 0;
     quint8 lut = 0;
     quint8 cameraStatus = 0;
@@ -70,6 +71,7 @@ struct NightCameraData {
                 digitalZoomEnabled != other.digitalZoomEnabled ||
                 digitalZoomLevel != other.digitalZoomLevel ||
                 !qFuzzyCompare(currentHFOV, other.currentHFOV) ||
+                !qFuzzyCompare(currentVFOV, other.currentVFOV) ||
                 videoMode != other.videoMode ||
                 cameraStatus != other.cameraStatus ||
                 fpaTemperature != other.fpaTemperature ||
