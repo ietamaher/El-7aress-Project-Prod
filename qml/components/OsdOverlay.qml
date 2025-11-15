@@ -1048,8 +1048,10 @@ Item {
                         border.width: 2
                         x: {
                             var currentFov = viewModel ? viewModel.currentFov : 45.0;
-                            var minFov = 2.8;
-                            var maxFov = 68.0;
+                            // Dynamic FOV limits based on camera type
+                            var isDayCamera = viewModel && viewModel.cameraText.includes("DAY");
+                            var minFov = isDayCamera ? 2.3 : 5.2;   // Day: 2.3°, Night: 5.2°
+                            var maxFov = isDayCamera ? 63.7 : 10.4;  // Day: 63.7°, Night: 10.4°
                             var normalized = (currentFov - minFov) / (maxFov - minFov);
                             return normalized * (parent.width - width);
                         }
@@ -1071,7 +1073,8 @@ Item {
             // LRF RANGE
             Text {
                 text: viewModel ? viewModel.lrfText : "LRF: --- m"
-                font.pixelSize: 14
+                font.pixelSize: 18
+                font.bold: true
                 font.family: primaryFont
                 color: accentColor
                 anchors.verticalCenter: parent.verticalCenter

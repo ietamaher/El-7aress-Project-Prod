@@ -241,7 +241,7 @@ void OsdViewModel::updateFiringMode(FireMode mode)
 void OsdViewModel::updateLrfDistance(float distance)
 {
     QString newText = (distance > 0.1f)
-    ? QString::number(distance, 'f', 1) + " m"
+    ? QString::number(qRound(distance)) + " m"
     : "LRF: --- m";
 
     if (m_lrfText != newText) {
