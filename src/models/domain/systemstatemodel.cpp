@@ -50,6 +50,7 @@ SystemStateModel::SystemStateModel(QObject *parent)
 {
     // Initialize m_currentStateData with defaults if needed
     clearZeroing(); // Zero is lost on power down
+    loadZeroing();  // Load saved zeroing (if exists) but keep DISABLED for safety
     clearWindage(); // Windage is zero on startup
 
     // ✅ CRITICAL FIX: Calculate initial reticle and CCIP positions
@@ -933,6 +934,10 @@ void SystemStateModel::finalizeZeroing() {
         m_currentStateData.zeroingAppliedToBallistics = true; // Zeroing is now active
         qDebug() << "Zeroing procedure finalized. Offsets Az:" << m_currentStateData.zeroingAzimuthOffset
                  << "El:" << m_currentStateData.zeroingElevationOffset;
+
+        // ✅ AUTO-SAVE: Persist zeroing values for future sessions
+        saveZeroing();
+
         emit dataChanged(m_currentStateData);
         emit zeroingStateChanged(false, m_currentStateData.zeroingAzimuthOffset, m_currentStateData.zeroingElevationOffset);
     }
@@ -946,6 +951,64 @@ void SystemStateModel::clearZeroing() { // Called on power down, or manually
     qDebug() << "Zeroing cleared.";
     emit dataChanged(m_currentStateData);
     emit zeroingStateChanged(false, 0.0f, 0.0f);
+}
+
+void SystemStateModel::saveZeroing() {
+    // ========================================================================
+    // ZEROING PERSISTENCE - SAVE
+    // ========================================================================
+    // Saves current zeroing values to QSettings for development/simulation use
+    // IMPORTANT: These values are loaded at startup but NOT automatically applied
+    // This ensures safety - operator must verify zeroing before enabling it
+    // ========================================================================
+
+    QSettings settings("MilitaryRCWS", "El-7aress");
+    settings.beginGroup("Zeroing");
+    settings.setValue("azimuthOffset", m_currentStateData.zeroingAzimuthOffset);
+    settings.setValue("elevationOffset", m_currentStateData.zeroingElevationOffset);
+    settings.setValue("timestamp", QDateTime::currentDateTime().toString(Qt::ISODate));
+    settings.endGroup();
+
+    qDebug() << "✓ Zeroing saved to persistent storage:";
+    qDebug() << "  - Az Offset:" << m_currentStateData.zeroingAzimuthOffset << "deg";
+    qDebug() << "  - El Offset:" << m_currentStateData.zeroingElevationOffset << "deg";
+    qDebug() << "  - Timestamp:" << QDateTime::currentDateTime().toString(Qt::ISODate);
+}
+
+void SystemStateModel::loadZeroing() {
+    // ========================================================================
+    // ZEROING PERSISTENCE - LOAD
+    // ========================================================================
+    // Loads previously saved zeroing values from QSettings
+    // CRITICAL SAFETY FEATURE: Values are loaded but zeroing stays DISABLED
+    // Operator must manually verify and enable zeroing after startup
+    // This prevents automatic application of potentially stale/invalid zeroing
+    // ========================================================================
+
+    QSettings settings("MilitaryRCWS", "El-7aress");
+    settings.beginGroup("Zeroing");
+
+    if (settings.contains("azimuthOffset") && settings.contains("elevationOffset")) {
+        float savedAz = settings.value("azimuthOffset", 0.0f).toFloat();
+        float savedEl = settings.value("elevationOffset", 0.0f).toFloat();
+        QString timestamp = settings.value("timestamp", "Unknown").toString();
+
+        // Load values but keep zeroing DISABLED for safety
+        m_currentStateData.zeroingAzimuthOffset = savedAz;
+        m_currentStateData.zeroingElevationOffset = savedEl;
+        m_currentStateData.zeroingAppliedToBallistics = false;  // ✅ SAFETY: Disabled by default
+        m_currentStateData.zeroingModeActive = false;
+
+        qDebug() << "✓ Loaded saved zeroing values (DISABLED by default for safety):";
+        qDebug() << "  - Az Offset:" << savedAz << "deg";
+        qDebug() << "  - El Offset:" << savedEl << "deg";
+        qDebug() << "  - Saved at:" << timestamp;
+        qDebug() << "  - Status: LOADED but NOT APPLIED (operator must verify and enable)";
+    } else {
+        qDebug() << "No saved zeroing values found - using defaults (0.0, 0.0)";
+    }
+
+    settings.endGroup();
 }
 
 void SystemStateModel::startWindageProcedure() {

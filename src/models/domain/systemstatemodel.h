@@ -48,6 +48,7 @@
 #include <QIODevice>
 #include <QElapsedTimer>
 #include <QDateTime>
+#include <QSettings>
 #include <cmath>
 #include <algorithm>
 #include <limits>
@@ -412,6 +413,19 @@ public:
      * @brief Clears all zeroing adjustments and resets to default values.
      */
     void clearZeroing();
+
+    /**
+     * @brief Saves current zeroing values to persistent storage (QSettings).
+     * @note Values are saved but NOT automatically applied at startup for safety.
+     */
+    void saveZeroing();
+
+    /**
+     * @brief Loads previously saved zeroing values from persistent storage.
+     * @note Values are loaded but zeroing remains DISABLED for safety.
+     * @note Operator must manually apply loaded zeroing after verification.
+     */
+    void loadZeroing();
 
     // =================================
     // WINDAGE COMPENSATION
