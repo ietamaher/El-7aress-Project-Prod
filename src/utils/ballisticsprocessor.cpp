@@ -26,7 +26,8 @@ LeadCalculationResult BallisticsProcessor::calculateLeadAngle(
     float targetAngularRateElDegS,
     float currentMuzzleVelocityMPS, // Now we might use this for a better TOF
     float projectileTimeOfFlightGuessS, // Still useful as an initial guess or if accurately provided
-    float currentCameraFovHorizontalDegrees)
+    float currentCameraFovHorizontalDegrees,
+    float currentCameraFovVerticalDegrees)
 {
     LeadCalculationResult result;
     result.status = LeadAngleStatus::On; // Default to On if calculation proceeds
@@ -143,10 +144,10 @@ LeadCalculationResult BallisticsProcessor::calculateLeadAngle(
     // ========================================================================
 
     // PRIORITY 1: Check ZOOM OUT condition first (lead exceeds FOV)
-    float vfov_approx = currentCameraFovHorizontalDegrees;  // Simplified (assume VFOV ≈ HFOV)
-    if (currentCameraFovHorizontalDegrees > 0 && vfov_approx > 0) {
+    // Use actual VFOV - cameras are NOT square (day: 1280×720→1024×768, night: 640×512)
+    if (currentCameraFovHorizontalDegrees > 0 && currentCameraFovVerticalDegrees > 0) {
         if (std::abs(result.leadAzimuthDegrees) > (currentCameraFovHorizontalDegrees / 2.0f) ||
-            std::abs(result.leadElevationDegrees) > (vfov_approx / 2.0f)) {
+            std::abs(result.leadElevationDegrees) > (currentCameraFovVerticalDegrees / 2.0f)) {
             result.status = LeadAngleStatus::ZoomOut;
         }
     }
