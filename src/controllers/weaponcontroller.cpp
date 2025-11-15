@@ -94,6 +94,47 @@ void WeaponController::onSystemStateChanged(const SystemStateData &newData)
     }
 
     // ========================================================================
+    // BALLISTICS RECALCULATION TRIGGERS
+    // ========================================================================
+    // Detect changes in any parameter that affects lead angle calculation
+    // ========================================================================
+    bool ballisticsInputsChanged = false;
+
+    // LAC activation/deactivation
+    if (m_oldState.leadAngleCompensationActive != newData.leadAngleCompensationActive) {
+        ballisticsInputsChanged = true;
+        qDebug() << "[WeaponController] LAC state changed:"
+                 << m_oldState.leadAngleCompensationActive << "→" << newData.leadAngleCompensationActive;
+    }
+
+    // FOV changes (zoom in/out) - affects ZoomOut status
+    if (!qFuzzyCompare(m_oldState.dayCurrentHFOV, newData.dayCurrentHFOV) ||
+        !qFuzzyCompare(m_oldState.nightCurrentHFOV, newData.nightCurrentHFOV) ||
+        m_oldState.activeCameraIsDay != newData.activeCameraIsDay) {
+        ballisticsInputsChanged = true;
+        qDebug() << "[WeaponController] FOV/Camera changed: DayFOV:"
+                 << m_oldState.dayCurrentHFOV << "→" << newData.dayCurrentHFOV
+                 << "NightFOV:" << m_oldState.nightCurrentHFOV << "→" << newData.nightCurrentHFOV
+                 << "IsDay:" << m_oldState.activeCameraIsDay << "→" << newData.activeCameraIsDay;
+    }
+
+    // Target range changes (LRF measurement)
+    if (!qFuzzyCompare(m_oldState.currentTargetRange, newData.currentTargetRange)) {
+        ballisticsInputsChanged = true;
+        qDebug() << "[WeaponController] Target range changed:"
+                 << m_oldState.currentTargetRange << "→" << newData.currentTargetRange << "m";
+    }
+
+    // Target angular rates (tracking motion)
+    if (!qFuzzyCompare(m_oldState.currentTargetAngularRateAz, newData.currentTargetAngularRateAz) ||
+        !qFuzzyCompare(m_oldState.currentTargetAngularRateEl, newData.currentTargetAngularRateEl)) {
+        ballisticsInputsChanged = true;
+        qDebug() << "[WeaponController] Target angular rates changed: Az:"
+                 << m_oldState.currentTargetAngularRateAz << "→" << newData.currentTargetAngularRateAz
+                 << "El:" << m_oldState.currentTargetAngularRateEl << "→" << newData.currentTargetAngularRateEl;
+    }
+
+    // ========================================================================
     // ENVIRONMENTAL PARAMETERS CHANGE DETECTION
     // ========================================================================
     // If environmental parameters changed and LAC is active, immediately
@@ -116,9 +157,17 @@ void WeaponController::onSystemStateChanged(const SystemStateData &newData)
                  << "Applied:" << m_oldState.environmentalAppliedToBallistics << "→" << newData.environmentalAppliedToBallistics;
     }
 
-    // If LAC is active and environmental params changed, recalculate immediately
-    if (environmentalParamsChanged && newData.leadAngleCompensationActive) {
-        qDebug() << "[WeaponController] Triggering ballistics recalculation due to environmental change";
+    // ========================================================================
+    // TRIGGER BALLISTICS RECALCULATION
+    // ========================================================================
+    // Recalculate if LAC is active AND any input changed
+    // OR if LAC was just activated/deactivated (to set offsets to zero)
+    // ========================================================================
+    if (ballisticsInputsChanged || environmentalParamsChanged) {
+        qDebug() << "[WeaponController] Triggering ballistics recalculation:"
+                 << "InputsChanged=" << ballisticsInputsChanged
+                 << "EnvChanged=" << environmentalParamsChanged
+                 << "LAC=" << newData.leadAngleCompensationActive;
         updateFireControlSolution();
     }
 
