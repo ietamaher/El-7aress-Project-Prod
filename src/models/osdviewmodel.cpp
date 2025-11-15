@@ -32,8 +32,8 @@ OsdViewModel::OsdViewModel(QObject *parent)
     , m_ccipStatus("Off")
     , m_zeroingText("")
     , m_zeroingVisible(false)
-    , m_windageText("")
-    , m_windageVisible(false)
+    , m_environmentText("")
+    , m_environmentVisible(true)
     , m_zoneWarningText("")
     , m_zoneWarningVisible(false)
     , m_leadAngleText("")
@@ -483,27 +483,23 @@ void OsdViewModel::updateZeroingDisplay(bool modeActive, bool applied, float azO
     }
 }
 
-void OsdViewModel::updateWindageDisplay(bool modeActive, bool applied, float speedKnots)
+void OsdViewModel::updateEnvironmentDisplay(float tempCelsius, float altitudeMeters, float crosswindMS)
 {
-    QString newText;
-    bool newVisible = false;
+    // Format environment parameters for display
+    QString newText = QString("T:%1°C  ALT:%2m  WIND:%3m/s")
+                        .arg(tempCelsius, 0, 'f', 1)
+                        .arg(altitudeMeters, 0, 'f', 0)
+                        .arg(crosswindMS, 0, 'f', 1);
 
-    if (modeActive) {
-        newText = QString("W: %1 kt").arg(speedKnots, 0, 'f', 0);
-        newVisible = true;
-    } else if (applied) {
-        newText = QString("W: %1 kt").arg(speedKnots, 0, 'f', 0);
-        newVisible = true;
+    if (m_environmentText != newText) {
+        m_environmentText = newText;
+        emit environmentTextChanged();
     }
 
-    if (m_windageText != newText) {
-        m_windageText = newText;
-        emit windageTextChanged();
-    }
-
-    if (m_windageVisible != newVisible) {
-        m_windageVisible = newVisible;
-        emit windageVisibleChanged();
+    // Always visible
+    if (!m_environmentVisible) {
+        m_environmentVisible = true;
+        emit environmentVisibleChanged();
     }
 }
 
