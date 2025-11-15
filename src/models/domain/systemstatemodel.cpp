@@ -805,8 +805,8 @@ void SystemStateModel::onPlc21DataChanged(const Plc21PanelData &pData)
 
     newData.authorized = pData.authorizeSw;
     newData.enableStabilization = pData.enableStabilizationSW;
-    newData.activeCameraIsDay = pData.switchCameraSW;
-    newData.emergencyStopActive = pData.authorizeSw;            
+    // DON'T set activeCameraIsDay here - let setActiveCameraIsDay() handle it!
+    newData.emergencyStopActive = pData.authorizeSw;
 
     switch (pData.fireMode) {
     case 0:
@@ -835,10 +835,8 @@ void SystemStateModel::onPlc21DataChanged(const Plc21PanelData &pData)
 
     updateData(newData);
 
-    // ✅ SIMPLE FIX: Use existing setActiveCameraIsDay() - it handles CCIP recalculation!
-    if (m_currentStateData.activeCameraIsDay != pData.switchCameraSW) {
-        setActiveCameraIsDay(pData.switchCameraSW);  // Triggers recalculateDerivedAimpointData()
-    }
+    // ✅ Use setActiveCameraIsDay() - it checks if changed and triggers CCIP recalculation!
+    setActiveCameraIsDay(pData.switchCameraSW);
 }
 
 void SystemStateModel::onPlc42DataChanged(const Plc42Data &pData)
