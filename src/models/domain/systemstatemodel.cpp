@@ -1883,9 +1883,19 @@ void SystemStateModel::startTrackingAcquisition() {
         float reticleCenterX = data.reticleAimpointImageX_px;
         float reticleCenterY = data.reticleAimpointImageY_px;
 
-        qDebug() << "✓ Starting Acquisition. Centering box on RETICLE position at:"
-                 << reticleCenterX << "," << reticleCenterY
-                 << "(includes zeroing offset - where operator is aiming)";
+        qDebug() << "========================================";
+        qDebug() << "STARTING TRACKING ACQUISITION";
+        qDebug() << "========================================";
+        qDebug() << "Screen Size:" << data.currentImageWidthPx << "x" << data.currentImageHeightPx;
+        qDebug() << "Screen Center:" << (data.currentImageWidthPx/2) << "," << (data.currentImageHeightPx/2);
+        qDebug() << "Zeroing Status:";
+        qDebug() << "  - Applied:" << data.zeroingAppliedToBallistics;
+        qDebug() << "  - Az Offset:" << data.zeroingAzimuthOffset << "deg";
+        qDebug() << "  - El Offset:" << data.zeroingElevationOffset << "deg";
+        qDebug() << "Reticle Position (from SystemStateData):";
+        qDebug() << "  - X:" << reticleCenterX << "px";
+        qDebug() << "  - Y:" << reticleCenterY << "px";
+        qDebug() << "Centering acquisition box on RETICLE position";
 
         // Initialize acquisition box centered on RETICLE (where gun is pointing)
         float defaultBoxW = 100.0f;
@@ -1901,9 +1911,12 @@ void SystemStateModel::startTrackingAcquisition() {
         data.acquisitionBoxY_px = qBound(0.0f, data.acquisitionBoxY_px,
                                          static_cast<float>(data.currentImageHeightPx) - data.acquisitionBoxH_px);
 
-        qDebug() << "   Acquisition box initialized: ["
-                 << data.acquisitionBoxX_px << "," << data.acquisitionBoxY_px << "] "
-                 << data.acquisitionBoxW_px << "x" << data.acquisitionBoxH_px;
+        qDebug() << "Acquisition Box Position:";
+        qDebug() << "  - Top-Left: (" << data.acquisitionBoxX_px << "," << data.acquisitionBoxY_px << ")";
+        qDebug() << "  - Size:" << data.acquisitionBoxW_px << "x" << data.acquisitionBoxH_px;
+        qDebug() << "  - Center: (" << (data.acquisitionBoxX_px + defaultBoxW/2.0f) << ","
+                 << (data.acquisitionBoxY_px + defaultBoxH/2.0f) << ")";
+        qDebug() << "========================================";
 
         // We are still in Surveillance and Manual motion
         data.opMode = OperationalMode::Surveillance;

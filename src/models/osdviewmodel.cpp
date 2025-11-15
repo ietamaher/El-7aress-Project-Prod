@@ -365,11 +365,23 @@ void OsdViewModel::updateTrackingPhase(TrackingPhase phase, bool hasValidTarget,
     if (m_acquisitionBox != acquisitionBox) {
         m_acquisitionBox = acquisitionBox;
         emit acquisitionBoxChanged();
+
+        if (showAcquisition) {
+            qDebug() << "========================================";
+            qDebug() << "ACQUISITION BOX UPDATE (to QML)";
+            qDebug() << "========================================";
+            qDebug() << "Top-Left:" << acquisitionBox.x() << "," << acquisitionBox.y();
+            qDebug() << "Size:" << acquisitionBox.width() << "x" << acquisitionBox.height();
+            qDebug() << "Center:" << (acquisitionBox.x() + acquisitionBox.width()/2.0)
+                     << "," << (acquisitionBox.y() + acquisitionBox.height()/2.0);
+            qDebug() << "========================================";
+        }
     }
 
     if (m_acquisitionBoxVisible != showAcquisition) {
         m_acquisitionBoxVisible = showAcquisition;
         emit acquisitionBoxVisibleChanged();
+        qDebug() << "Acquisition box visibility:" << (showAcquisition ? "VISIBLE" : "HIDDEN");
     }
 
     // Update tracking box visibility based on phase
@@ -415,10 +427,13 @@ void OsdViewModel::updateReticleOffset(float screen_x_px, float screen_y_px)
         m_reticleOffsetY = offsetY;
         emit reticleOffsetChanged();
 
-        qDebug() << "Reticle Offset:"
-                 << "Screen(" << screen_x_px << "," << screen_y_px << ")"
-                 << "→ Offset(" << offsetX << "," << offsetY << ")";
-    }
+        qDebug() << "========================================";
+        qDebug() << "RETICLE POSITION UPDATE (to QML)";
+        qDebug() << "========================================";
+        qDebug() << "Screen Center:" << centerX << "," << centerY;
+        qDebug() << "Reticle Absolute Position:" << screen_x_px << "," << screen_y_px;
+        qDebug() << "Reticle Offset (from center):" << offsetX << "," << offsetY;
+        qDebug() << "========================================";
 }
 
 void OsdViewModel::updateCcipPipper(float screen_x_px, float screen_y_px, bool visible, const QString& status)
