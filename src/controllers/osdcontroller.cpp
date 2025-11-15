@@ -123,6 +123,13 @@ void OsdController::onSystemStateChanged(const SystemStateData& data)
             data.plc21Connected,
             data.plc42Connected
         );
+
+        // Update environment display (not in FrameData, so updated here)
+        m_viewModel->updateEnvironmentDisplay(
+            data.environmentalTemperatureCelsius,
+            data.environmentalAltitudeMeters,
+            data.environmentalCrosswindMS
+        );
     }
 }
 

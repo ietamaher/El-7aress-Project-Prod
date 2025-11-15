@@ -78,7 +78,7 @@ Item {
                 Row {
                     spacing: 15
                     visible: (viewModel && viewModel.zeroingVisible) ||
-                             (viewModel && viewModel.windageVisible) ||
+                             (viewModel && viewModel.environmentVisible) ||
                              (viewModel && viewModel.lacActive)
 
                     Text {
@@ -90,8 +90,8 @@ Item {
                     }
 
                     Text {
-                        visible: viewModel ? viewModel.windageVisible : false
-                        text: viewModel ? ("[" + viewModel.windageText + "]") : "[W]"
+                        visible: viewModel ? viewModel.environmentVisible : false
+                        text: viewModel ? viewModel.environmentText : "ENV"
                         font.pixelSize: 12
                         font.family: primaryFont
                         color: accentColor
