@@ -1873,23 +1873,27 @@ void SystemStateModel::startTrackingAcquisition() {
     if (data.currentTrackingPhase == TrackingPhase::Off) {
         data.currentTrackingPhase = TrackingPhase::Acquisition;
 
-        // ⭐ CRITICAL FIX: Use SCREEN CENTER, NOT reticle position
-        // Reticle position includes zeroing/lead offsets for BALLISTICS
-        // Acquisition box is for VISUAL target selection (no ballistic offset)
-        float screenCenterX = static_cast<float>(data.currentImageWidthPx) / 2.0f;
-        float screenCenterY = static_cast<float>(data.currentImageHeightPx) / 2.0f;
+        // ✅ FIX: Center acquisition box on RETICLE position (where gun is pointing)
+        // This provides better UX - when operator aims at target and clicks to track,
+        // the yellow box appears exactly where they're aiming (reticle position)
+        // Reticle position includes zeroing offsets, which is correct because:
+        // - The operator has zeroed the weapon to align gun with camera
+        // - They are aiming AT THE TARGET with the reticle
+        // - The acquisition box should appear WHERE THEY ARE AIMING
+        float reticleCenterX = data.reticleAimpointImageX_px;
+        float reticleCenterY = data.reticleAimpointImageY_px;
 
-        qDebug() << "✓ [FIX UC2/UC3] Starting Acquisition. Centering box on SCREEN CENTER at:"
-                 << screenCenterX << "," << screenCenterY
-                 << "(NOT reticle position which has ballistic offsets)";
+        qDebug() << "✓ Starting Acquisition. Centering box on RETICLE position at:"
+                 << reticleCenterX << "," << reticleCenterY
+                 << "(includes zeroing offset - where operator is aiming)";
 
-        // Initialize acquisition box centered on SCREEN, not reticle
+        // Initialize acquisition box centered on RETICLE (where gun is pointing)
         float defaultBoxW = 100.0f;
         float defaultBoxH = 100.0f;
         data.acquisitionBoxW_px = defaultBoxW;
         data.acquisitionBoxH_px = defaultBoxH;
-        data.acquisitionBoxX_px = screenCenterX - (defaultBoxW / 2.0f);
-        data.acquisitionBoxY_px = screenCenterY - (defaultBoxH / 2.0f);
+        data.acquisitionBoxX_px = reticleCenterX - (defaultBoxW / 2.0f);
+        data.acquisitionBoxY_px = reticleCenterY - (defaultBoxH / 2.0f);
 
         // Safety: Clamp to screen bounds (should already be centered, but ensure safety)
         data.acquisitionBoxX_px = qBound(0.0f, data.acquisitionBoxX_px,
