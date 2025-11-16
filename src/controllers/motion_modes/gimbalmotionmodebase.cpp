@@ -40,25 +40,23 @@ void GimbalMotionModeBase::configureVelocityMode(ServoDriverDevice* driverInterf
     driverInterface->writeData(AzdReg::OpDecel, accelData); // Use same for decel
 }
 
-void GimbalMotionModeBase::writeVelocityCommand(ServoDriverDevice* driverInterface, 
-                                              double finalVelocity, 
+void GimbalMotionModeBase::writeVelocityCommand(ServoDriverDevice* driverInterface,
+                                              double finalVelocity,
                                               double scalingFactor)
 {
     if (!driverInterface) return;
 
-    // 1. Convert physical velocity (deg/s) to motor speed (Hz)
-    // The OpSpeed register is a SIGNED 32-bit integer.
-    qint32 speedHz = static_cast<qint32>(finalVelocity * scalingFactor);
+    // 1. Convert physical velocity (deg/s) to motor speed (Hz) as a signed 32-bit
+    // Use lround for proper rounding instead of truncation
+    qint32 speedHz = static_cast<qint32>(std::lround(finalVelocity * scalingFactor));
 
-    // 2. Split the signed 32-bit speed into two 16-bit registers
-    QVector<quint16> speedData = {
-        static_cast<quint16>((speedHz >> 16) & 0xFFFF), // Upper 16 bits
-        static_cast<quint16>(speedHz & 0xFFFF)        // Lower 16 bits
-    };
+    // 2. Do bit-preserving conversion to two 16-bit registers using central helper
+    // This ensures correct handling of negative values (avoids implementation-defined behavior)
+    QVector<quint16> speedData = splitInt32ToRegs(speedHz);
     driverInterface->writeData(AzdReg::OpSpeed, speedData);
 
-    // 3. Trigger the speed update.
-    // From manual, trigger value -4 (FFFF FFFCh) updates the operating speed.
+    // 3. Trigger the speed update (preserve existing trigger sequence)
+    // From manual, trigger value -4 (FFFF FFFCh) updates the operating speed
     QVector<quint16> triggerData = {0xFFFF, 0xFFFC};
     driverInterface->writeData(AzdReg::OpTrigger, triggerData);
 }
@@ -507,7 +505,7 @@ void GimbalMotionModeBase::calculateHybridStabilizationCorrection(
         positionCorrectionEl_dps = qBound(-MAX_POSITION_VEL, positionCorrectionEl_dps, MAX_POSITION_VEL);
     }
 
-    // LAYER 2: Velocity feedforward (gyro-based)
+    // LAYER 2: Velocity feedforward (gyro-based) - EXPERT REVIEW: DT-AWARE FILTERING
     double velocityCorrectionAz_dps = 0.0;
     double velocityCorrectionEl_dps = 0.0;
 
@@ -516,52 +514,61 @@ void GimbalMotionModeBase::calculateHybridStabilizationCorrection(
             velocityCorrectionAz_dps = 0.0;
             velocityCorrectionEl_dps = 0.0;
         } else {
-            // Bias correction (deg/s)
-            double gyroX_corr_dps = state.GyroX - m_gyroBiasX;
-            double gyroY_corr_dps = state.GyroY - m_gyroBiasY;
-            double gyroZ_corr_dps = state.GyroZ - m_gyroBiasZ;
+            // ✅ CRITICAL FIX: Compute dt from internal timer (or fallback to UPDATE_INTERVAL_S)
+            double dt_s = UPDATE_INTERVAL_S;
+            if (m_velocityTimer.isValid()) {
+                dt_s = clampDt(m_velocityTimer.restart() / 1000.0);
+            } else {
+                // If timer not started, start it and assume UPDATE_INTERVAL_S for this frame
+                m_velocityTimer.start();
+            }
 
-            // Filtering (filter expects deg/s)
-            double gyroX_filt_dps = m_gyroXFilter.update(gyroX_corr_dps);
-            double gyroY_filt_dps = m_gyroYFilter.update(gyroY_corr_dps);
-            double gyroZ_filt_dps = m_gyroZFilter.update(gyroZ_corr_dps);
+            // Bias correction (deg/s)
+            double gx = state.GyroX - m_gyroBiasX;
+            double gy = state.GyroY - m_gyroBiasY;
+            double gz = state.GyroZ - m_gyroBiasZ;
+
+            // ✅ CRITICAL FIX: Filter using runtime dt (not fixed sampleRate!)
+            double gx_f = m_gyroXFilter.updateWithDt(gx, dt_s);
+            double gy_f = m_gyroYFilter.updateWithDt(gy, dt_s);
+            double gz_f = m_gyroZFilter.updateWithDt(gz, dt_s);
 
             // ✅ VERIFIED IMU ORIENTATION (2025-11-14):
             // IMU Frame: X forward, Y right, Z down (Forward-Right-Down)
             // Map IMU -> body rates (deg/s)
-            const double p_dps = gyroX_filt_dps;    // roll rate (deg/s)
-            const double q_dps = gyroY_filt_dps;    // pitch rate (deg/s)
-            const double r_dps = -gyroZ_filt_dps;   // yaw rate (deg/s) -- NEGATED because Z is DOWN
+            const double p_dps = gx_f;       // roll rate (deg/s)
+            const double q_dps = gy_f;       // pitch rate (deg/s)
+            const double r_dps = -gz_f;      // yaw rate (deg/s) -- NEGATED because Z is DOWN
 
             // Angles for trig (radians)
-            const double currentAzRad = degToRad(state.gimbalAz);
-            const double currentElRad = degToRad(state.gimbalEl);
+            const double azRad = degToRad(state.gimbalAz);
+            const double elRad = degToRad(state.gimbalEl);
 
-            // platformEffectOnEl (deg/s) = q * cos(az) - p * sin(az)
-            double platformEffectOnEl_dps = (q_dps * cos(currentAzRad)) - (p_dps * sin(currentAzRad));
+            // Platform effects (deg/s)
+            double platformEffectOnEl_dps = (q_dps * cos(azRad)) - (p_dps * sin(azRad));
 
-            // platformEffectOnAz uses tan(el) * (some deg/s) + r_dps -> deg/s overall
-            double tanEl = 0.0;
+            // Robust tan handling with conservative clamp
             const double COS_EPS = 1e-6;
-            const double MAX_TAN_EL = 10.0; // Conservative clamp for practical gimbal range (-20° to +60°)
-            if (qAbs(cos(currentElRad)) < COS_EPS) {
-                tanEl = (currentElRad >= 0.0) ? MAX_TAN_EL : -MAX_TAN_EL;
+            const double MAX_TAN_EL = 1e3;  // Increased clamp for numerical stability
+            double tanEl = 0.0;
+            if (qAbs(cos(elRad)) < COS_EPS) {
+                tanEl = (elRad >= 0) ? MAX_TAN_EL : -MAX_TAN_EL;
             } else {
-                tanEl = tan(currentElRad);
-                if (qAbs(tanEl) > MAX_TAN_EL) tanEl = (tanEl > 0.0) ? MAX_TAN_EL : -MAX_TAN_EL;
+                tanEl = tan(elRad);
+                if (qAbs(tanEl) > MAX_TAN_EL) tanEl = (tanEl > 0 ? MAX_TAN_EL : -MAX_TAN_EL);
             }
 
-            double platformTerm_dps = (q_dps * sin(currentAzRad)) + (p_dps * cos(currentAzRad)); // deg/s
-            double platformEffectOnAz_dps = r_dps + tanEl * platformTerm_dps; // deg/s
+            double platformTerm_degps = (q_dps * sin(azRad)) + (p_dps * cos(azRad)); // deg/s
+            double platformEffectOnAz_dps = r_dps + tanEl * platformTerm_degps; // deg/s
 
             // Corrections are negatives of platform effects
-            velocityCorrectionAz_dps = -platformEffectOnAz_dps;
-            velocityCorrectionEl_dps = -platformEffectOnEl_dps;
+            double azCorr_dps = -platformEffectOnAz_dps;
+            double elCorr_dps = -platformEffectOnEl_dps;
 
             // Limit corrections
             const double MAX_VELOCITY_CORR = 5.0; // deg/s
-            velocityCorrectionAz_dps = qBound(-MAX_VELOCITY_CORR, velocityCorrectionAz_dps, MAX_VELOCITY_CORR);
-            velocityCorrectionEl_dps = qBound(-MAX_VELOCITY_CORR, velocityCorrectionEl_dps, MAX_VELOCITY_CORR);
+            velocityCorrectionAz_dps = qBound(-MAX_VELOCITY_CORR, azCorr_dps, MAX_VELOCITY_CORR);
+            velocityCorrectionEl_dps = qBound(-MAX_VELOCITY_CORR, elCorr_dps, MAX_VELOCITY_CORR);
         }
     }
 
