@@ -1,0 +1,158 @@
+\# LESSON 7: SYSTEM STATUS \& MONITORING
+
+\textbf{Lesson Duration:} 2 hours (Classroom)
+
+\textbf{Learning Objectives:}
+\begin{itemize}
+\item Access System Status display
+\item Interpret device status indicators
+\item Identify fault conditions
+\item Determine when to escalate to maintenance
+\end{itemize}
+
+
+
+\section{7.1 ACCESSING SYSTEM STATUS}
+
+\textbf{Procedure}:
+\begin{enumerate}
+\item Press \textbf{MENU $\checkmark$}
+\item Navigate to \textbf{"System Status"}
+\item Press \textbf{VAL}
+\end{enumerate}
+
+\textbf{Display Sections}:
+\begin{itemize}
+\item Azimuth/Elevation Servos
+\item IMU (Inertial Measurement Unit)
+\item Laser Range Finder (LRF)
+\item Day/Night Cameras
+\item Control Panels
+\item Servo Actuator
+\item Alarms/Warnings
+\end{itemize}
+
+
+
+\section{7.2 DEVICE STATUS REFERENCE}
+
+\subsection{GIMBAL SERVOS (AZIMUTH \& ELEVATION)}
+
+% TABLE ROW: | Parameter | Normal | Warning | Fault | Action |
+% TABLE ROW: |-----------|--------|---------|-------|--------|
+% TABLE ROW: | **Connected** | ✓ | - | ✗ | Notify maintenance |
+% TABLE ROW: | **Torque** | 0-50% | 50-80% | >80% sustained | Allow cooling, reduce motion |
+% TABLE ROW: | **Motor Temp** | 20-60°C | 60-70°C | >70°C | Halt operations, allow cooling |
+% TABLE ROW: | **Driver Temp** | 20-60°C | 60-70°C | >70°C | Halt operations, allow cooling |
+% TABLE ROW: | **Fault Flag** | No | - | Yes | E-Stop, notify maintenance |
+
+
+
+\subsection{IMU (INERTIAL MEASUREMENT UNIT)}
+
+% TABLE ROW: | Parameter | Normal | Warning | Fault | Action |
+% TABLE ROW: |-----------|--------|---------|-------|--------|
+% TABLE ROW: | **Connected** | ✓ | - | ✗ | Stabilization offline, notify maint |
+% TABLE ROW: | **Roll/Pitch** | ±30° | ±30-45° | >45° | Platform unstable, secure vessel |
+% TABLE ROW: | **Temperature** | 20-60°C | 60-70°C | >70°C | Allow cooling |
+
+\NOTE{IMU offline = No stabilization. Manual mode only.}
+
+
+
+\subsection{LASER RANGE FINDER (LRF)}
+
+% TABLE ROW: | Parameter | Normal | Warning | Fault | Action |
+% TABLE ROW: |-----------|--------|---------|-------|--------|
+% TABLE ROW: | **Connected** | ✓ | - | ✗ | Manual range estimation, notify maint |
+% TABLE ROW: | **Temperature** | 20-50°C | 50-60°C | >60°C | Reduce firing rate, allow cooling |
+% TABLE ROW: | **Laser Count** | Incrementing | - | Not incrementing | LRF malfunction |
+% TABLE ROW: | **No Echo** | Occasional | Frequent | Always | Target too far, obscured, or LRF fault |
+
+\NOTE{LRF offline = No ballistics, no LAC. Manual engagement only.}
+
+
+
+\subsection{CAMERAS (DAY \& THERMAL)}
+
+% TABLE ROW: | Parameter | Normal | Warning | Fault | Action |
+% TABLE ROW: |-----------|--------|---------|-------|--------|
+% TABLE ROW: | **Connected** | ✓ | - | ✗ | Switch cameras if available |
+% TABLE ROW: | **Error Flag** | No | - | Yes | Switch cameras, notify maint |
+% TABLE ROW: | **Thermal FFC** | Occasional | Frequent (<5min) | Constant | Thermal camera fault |
+% TABLE ROW: | **Focus** | Clear | Slightly blurred | Very blurred | Autofocus off, manual focus |
+
+\NOTE{Both cameras offline = Mission abort. Cannot engage without visual.}
+
+
+
+\subsection{CONTROL PANELS}
+
+% TABLE ROW: | Device | Function | Fault Impact | Action |
+% TABLE ROW: |--------|----------|--------------|--------|
+% TABLE ROW: | **DCU** | Buttons, switches, lights | No local control, joystick only | Notify maint (ops continue) |
+% TABLE ROW: | **Joystick** | Gimbal control, tracking, fire | Mission abort if no backup | Emergency: Use DCU manual control |
+
+
+
+\section{7.3 ALARM INTERPRETATION}
+
+\subsection{CRITICAL ALARMS (RED)}
+
+% TABLE ROW: | Alarm | Meaning | Immediate Action |
+% TABLE ROW: |-------|---------|------------------|
+% TABLE ROW: | **EMERGENCY STOP ACTIVE** | E-Stop engaged | Identify cause, reset when safe |
+% TABLE ROW: | **WEAPON ARMED (NO AUTHORIZATION)** | Safety violation | Disarm immediately, investigate |
+% TABLE ROW: | **ZONE VIOLATION** | Entering No-Fire/No-Traverse | Halt motion, verify zone config |
+% TABLE ROW: | **SERVO FAULT** | Gimbal malfunction | E-Stop, notify maintenance |
+
+
+
+\subsection{WARNING ALARMS (YELLOW)}
+
+% TABLE ROW: | Alarm | Meaning | Action |
+% TABLE ROW: |-------|---------|--------|
+% TABLE ROW: | **HIGH TEMPERATURE** | Device overheating | Reduce operations, monitor |
+% TABLE ROW: | **LOW CONFIDENCE TRACKING** | Track quality poor | Verify target, consider manual |
+% TABLE ROW: | **ZOOM OUT** | LAC FOV insufficient | Zoom out (Button 8) |
+% TABLE ROW: | **LEAD ANGLE LAG** | Tracking data insufficient | Wait 2-5 seconds |
+
+
+
+\subsection{INFO MESSAGES (GREEN/BLUE)}
+
+% TABLE ROW: | Message | Meaning | Action |
+% TABLE ROW: |---------|---------|--------|
+% TABLE ROW: | **ZEROING APPLIED** | Zero active | Normal ops |
+% TABLE ROW: | **ENV APPLIED** | Environmental settings active | Normal ops |
+% TABLE ROW: | **TRACKING** | Tracking active | Monitor |
+
+
+
+\section{7.4 WHEN TO ESCALATE TO MAINTENANCE}
+
+\textbf{Operator-Level Issues} (fix yourself):
+\begin{itemize}
+\item $\checkmark$ Reset E-Stop (after clearing danger)
+\item $\checkmark$ Power cycle system (soft reboot)
+\item $\checkmark$ Switch cameras (if available)
+\item $\checkmark$ Adjust zoom/focus
+\item $\checkmark$ Re-zero weapon (if needed)
+\end{itemize}
+
+\textbf{Maintenance-Level Issues} (notify immediately):
+\begin{itemize}
+\item $\times$ Device disconnected (and doesn't reconnect after reboot)
+\item $\times$ Persistent fault flags
+\item $\times$ Servo malfunction (erratic motion, no motion)
+\item $\times$ Physical damage observed
+\item $\times$ Thermal runaway (temperature >80\degree{}C)
+\item $\times$ Unusual noises (grinding, clicking, squealing)
+\end{itemize}
+
+
+
+\textbf{END OF LESSON 7}
+
+
+

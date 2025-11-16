@@ -1,0 +1,599 @@
+\# LESSON 3: MENU SYSTEM \& SETTINGS
+
+\textbf{Lesson Duration:} 2 hours (Practical)
+
+\textbf{Learning Objectives:}
+\begin{itemize}
+\item Navigate all menu structures using DCU controls
+\item Configure reticle types and display colors
+\item Access system status information
+\item Modify operational settings safely
+\end{itemize}
+
+
+
+\section{3.1 MENU NAVIGATION BASICS}
+
+\subsection{ACCESSING THE MAIN MENU}
+
+\textbf{Method}: Press \textbf{MENU $\checkmark$} button on DCU
+
+\textbf{Result}:
+\begin{itemize}
+\item Video feed dims (still visible in background)
+\item Menu window appears in center of screen
+\item Current selection is highlighted
+\item Menu title displayed at top
+\end{itemize}
+
+
+
+\subsection{MENU CONTROLS}
+
+% TABLE ROW: | Button | Function |
+% TABLE ROW: |--------|----------|
+% TABLE ROW: | **MENU ✓** | Open menu / Confirm selection / Exit menu |
+% TABLE ROW: | **MENU ▲** | Move selection up / Increase value |
+% TABLE ROW: | **MENU ▼** | Move selection down / Decrease value |
+
+\textbf{Alternative}: Joystick HAT switch can also be used for menu navigation (UP/DOWN/LEFT/RIGHT)
+
+
+
+\subsection{NAVIGATION WORKFLOW}
+
+\textbf{5-Step Process}:
+
+\begin{enumerate}
+\item \textbf{Open Menu}
+\end{enumerate}
+\begin{itemize}
+\item Press \textbf{MENU $\checkmark$}
+\item Main menu appears
+\end{itemize}
+
+\begin{enumerate}
+\item \textbf{Navigate}
+\end{enumerate}
+\begin{itemize}
+\item Press \textbf{▲} or \textbf{▼} to highlight desired option
+\item Section headers (e.g., "--- BALLISTICS ---") are skipped automatically
+\end{itemize}
+
+\begin{enumerate}
+\item \textbf{Select}
+\end{enumerate}
+\begin{itemize}
+\item Press \textbf{MENU $\checkmark$} to enter submenu or activate option
+\item Submenu opens (if applicable)
+\end{itemize}
+
+\begin{enumerate}
+\item \textbf{Return}
+\end{enumerate}
+\begin{itemize}
+\item Navigate to "Return..." option at bottom of menu
+\item Press \textbf{MENU $\checkmark$}
+\item OR: Press \textbf{MENU $\checkmark$} repeatedly on section headers to go back
+\end{itemize}
+
+\begin{enumerate}
+\item \textbf{Exit to Operational Screen}
+\end{enumerate}
+\begin{itemize}
+\item Continue pressing "Return..." until back at live video
+\item System resumes normal operation
+\end{itemize}
+
+\textbf{Tip}: If you get lost in menus, keep selecting "Return..." until you exit completely.
+
+
+
+\section{3.2 MAIN MENU STRUCTURE}
+
+\subsection{COMPLETE MENU TREE}
+
+\begin{verbatim}
+MAIN MENU
+├── --- RETICLE & DISPLAY ---
+│   ├── Personalize Reticle
+│   └── Personalize Colors
+│
+├── --- BALLISTICS ---
+│   ├── Zeroing (Lesson 6)
+│   ├── Environmental Parameters (Lesson 6)
+│   └── Lead Angle Compensation (Lesson 6)
+│
+├── --- SYSTEM ---
+│   ├── Zone Definitions (Lesson 4)
+│   ├── System Status (Lesson 7)
+│   └── Shutdown System
+│
+├── --- INFO ---
+│   └── About
+│
+└── Return ...
+\end{verbatim}
+
+\textbf{Note}: Ballistics and Zone Management are covered in detail in later lessons. This lesson focuses on display settings and basic navigation.
+
+
+
+\section{3.3 RETICLE \& DISPLAY SETTINGS}
+
+\subsection{3.3.1 PERSONALIZE RETICLE}
+
+\textbf{Access}: Main Menu $\rightarrow$ "Personalize Reticle"
+
+\textbf{Purpose}: Select reticle type (crosshair style) for aiming
+
+
+
+\subsubsection{AVAILABLE RETICLE TYPES}
+
+\textbf{1. Box Crosshair} (Default)
+\begin{verbatim}
+        │
+    ┌───┼───┐
+────┤   +   ├────
+    └───┼───┘
+        │
+\end{verbatim}
+\begin{itemize}
+\item Cross with surrounding box
+\item Good for general purpose and tracking
+\item Recommended for most operations
+\end{itemize}
+
+\textbf{2. Brackets Reticle}
+\begin{verbatim}
+    ┌─     ─┐
+        +
+    └─     ─┘
+\end{verbatim}
+\begin{itemize}
+\item Corner brackets with center crosshair
+\item Enhanced visibility
+\item Good for low-contrast targets
+\end{itemize}
+
+\textbf{3. Duplex Crosshair}
+\begin{verbatim}
+  ████│████
+──────+──────
+  ████│████
+\end{verbatim}
+\begin{itemize}
+\item Thick outer lines, thin center
+\item Sniper/precision style
+\item Good for long-range
+\end{itemize}
+
+\textbf{4. Fine Crosshair}
+\begin{verbatim}
+      │
+    ──+──
+      │
+\end{verbatim}
+\begin{itemize}
+\item Thin precision crosshair with range ticks
+\item Minimal obstruction
+\item Best for extreme precision
+\end{itemize}
+
+\textbf{5. Chevron Reticle}
+\begin{verbatim}
+      ˅
+    ──+──
+\end{verbatim}
+\begin{itemize}
+\item Downward pointing chevron
+\item CQB (Close Quarters Battle) style
+\item Good for rapid engagement
+\end{itemize}
+
+
+
+\subsubsection{HOW TO CHANGE RETICLE}
+
+\textbf{Procedure}:
+
+\begin{enumerate}
+\item Press \textbf{MENU $\checkmark$}
+\item Navigate to "Personalize Reticle" (▼)
+\item Press \textbf{MENU $\checkmark$} to enter
+\item Use ▲/▼ to highlight desired reticle
+\item Press \textbf{MENU $\checkmark$} to select
+\item \textbf{Reticle changes immediately} on screen
+\item Navigate to "Return..." (▼)
+\item Press \textbf{MENU $\checkmark$} to return to Main Menu
+\end{enumerate}
+
+\textbf{Current Selection}: Active reticle is marked with "$\checkmark$"
+
+\textbf{Recommendation}: Use \textbf{Box Crosshair} for combat, \textbf{Fine Crosshair} for long-range surveillance.
+
+
+
+\subsection{3.3.2 PERSONALIZE COLORS}
+
+\textbf{Access}: Main Menu $\rightarrow$ "Personalize Colors"
+
+\textbf{Purpose}: Change OSD color scheme for visibility
+
+
+
+\subsubsection{AVAILABLE COLOR THEMES}
+
+% TABLE ROW: | Theme | Primary Color | Use Case |
+% TABLE ROW: |-------|---------------|----------|
+% TABLE ROW: | **Green** | Bright green (70, 226, 165) | Default - good for day and night |
+% TABLE ROW: | **Red** | Red | Night vision compatible |
+% TABLE ROW: | **Yellow** | Yellow | High contrast, bright conditions |
+% TABLE ROW: | **Cyan** | Cyan | Alternative for user preference |
+% TABLE ROW: | **White** | White | Maximum contrast |
+
+\textbf{What Changes}:
+\begin{itemize}
+\item Reticle color
+\item OSD text color
+\item Menu text color
+\item Tracking box color (when not status-coded)
+\end{itemize}
+
+\textbf{What Does NOT Change}:
+\begin{itemize}
+\item Warning messages (always red or yellow)
+\item Tracking status colors (yellow/red/green based on state)
+\item CCIP pipper color
+\end{itemize}
+
+
+
+\subsubsection{HOW TO CHANGE COLOR}
+
+\textbf{Procedure}:
+
+\begin{enumerate}
+\item Press \textbf{MENU $\checkmark$}
+\item Navigate to "Personalize Colors" (▼)
+\item Press \textbf{MENU $\checkmark$} to enter
+\item Use ▲/▼ to highlight desired color
+\item Press \textbf{MENU $\checkmark$} to select
+\item \textbf{OSD changes immediately}
+\item Evaluate visibility
+\item Change again if needed, or select "Return..."
+\end{enumerate}
+
+\textbf{Best Practices}:
+\begin{itemize}
+\item \textbf{Green}: Good all-around choice (default)
+\item \textbf{Red}: Use with night vision equipment
+\item \textbf{Yellow}: Use in bright sunlight or snow
+\item \textbf{White}: Maximum contrast on dark backgrounds
+\end{itemize}
+
+\NOTE{Color selection is personal preference. Choose what you can see best in your operating environment.}
+
+
+
+\section{3.4 SYSTEM MENU OPTIONS}
+
+\subsection{3.4.1 ZONE DEFINITIONS}
+
+\textbf{Access}: Main Menu $\rightarrow$ "Zone Definitions"
+
+\textbf{Purpose}: Manage no-fire zones, no-traverse zones, sector scans, and TRPs
+
+\textbf{Detailed Coverage}: See Lesson 4 (Motion Modes \& Surveillance)
+
+\textbf{Quick Access Functions}:
+\begin{itemize}
+\item View active zones
+\item Enable/disable zones
+\item Navigate to zone editor (supervisor/commander function)
+\end{itemize}
+
+\textbf{Operator Note}: Zone modification usually requires supervisor authorization. Operators can VIEW zones but typically cannot CHANGE them.
+
+
+
+\subsection{3.4.2 SYSTEM STATUS}
+
+\textbf{Access}: Main Menu $\rightarrow$ "System Status"
+
+\textbf{Purpose}: View detailed system health and diagnostics
+
+\textbf{Detailed Coverage}: See Lesson 7 (System Status \& Monitoring)
+
+\textbf{Quick Preview}:
+
+Displays status of all subsystems:
+\begin{itemize}
+\item Cameras (Day/Night) - Connected/Disconnected
+\item Servos (Azimuth/Elevation) - Position, temperature, faults
+\item Laser Rangefinder - Status, temperature
+\item Joystick - Connected/Calibration
+\item Stabilization System - Active/Inactive
+\item Tracking System - State
+\item Weapon Actuator - Position, status
+\end{itemize}
+
+\textbf{When to Check}:
+\begin{itemize}
+\item At startup (verify all green)
+\item When Fault light illuminates
+\item Before critical operations
+\item During troubleshooting
+\end{itemize}
+
+
+
+\subsection{3.4.3 SHUTDOWN SYSTEM}
+
+\textbf{Access}: Main Menu $\rightarrow$ "Shutdown System"
+
+\textbf{Purpose}: Perform orderly software shutdown before powering off
+
+\textbf{Why Use Menu Shutdown}:
+\begin{itemize}
+\item Saves configuration settings
+\item Saves zone data
+\item Closes log files properly
+\item Prevents data corruption
+\item Powers down subsystems in correct sequence
+\end{itemize}
+
+\textbf{Procedure}:
+
+\begin{enumerate}
+\item Press \textbf{MENU $\checkmark$}
+\item Navigate to "Shutdown System" (▼ multiple times)
+\item Press \textbf{MENU $\checkmark$}
+\item \textbf{Confirmation prompt appears}:
+\begin{verbatim}
+   ┌────────────────────────────────┐
+   │      SHUTDOWN SYSTEM?          │
+   │                                │
+   │   This will power down the     │
+   │   RCWS safely.                 │
+   │                                │
+   │   > YES, Shutdown              │
+   │     NO, Cancel                 │
+   └────────────────────────────────┘
+\end{verbatim}
+\item Select "YES, Shutdown" (should be highlighted)
+\item Press \textbf{MENU $\checkmark$} to confirm
+\item \textbf{System shuts down}:
+\end{enumerate}
+\begin{itemize}
+\item "SHUTTING DOWN..." message appears
+\item Progress indicator shows shutdown steps
+\item Cameras power off
+\item Motors de-energize
+\item "SHUTDOWN COMPLETE - Safe to power off" message
+\end{itemize}
+\begin{enumerate}
+\item \textbf{Disable Station Enable} switch on DCU
+\item \textbf{Cut vehicle power} (if end of shift)
+\end{enumerate}
+
+\textbf{ IMPORTANT}: Wait for \osd{SHUTDOWN COMPLETE} message before cutting power. Interrupting shutdown can corrupt configuration files.
+
+
+
+\subsection{3.4.4 ABOUT / INFO}
+
+\textbf{Access}: Main Menu $\rightarrow$ "About"
+
+\textbf{Purpose}: Display system information for troubleshooting and support
+
+\textbf{Information Displayed}:
+\begin{itemize}
+\item System name: "El 7arress RCWS"
+\item Software version (e.g., "v4.5.2")
+\item Build date
+\item Serial number (if configured)
+\item Uptime (hours since power-on)
+\item Operator name (if logged in)
+\end{itemize}
+
+\textbf{Use Case}: Provide this information when reporting issues to maintenance.
+
+
+
+\section{3.5 BALLISTICS MENU (OVERVIEW)}
+
+\textbf{Access}: Main Menu $\rightarrow$ "--- BALLISTICS ---" section
+
+The ballistics menu provides access to fire control settings. These are covered in detail in \textbf{Lesson 6} but are introduced here for awareness.
+
+\subsection{BALLISTICS SUBMENU OPTIONS}
+
+\subsubsection{1. Zeroing}
+\begin{itemize}
+\item Align weapon point of impact with camera crosshair
+\item Adjust azimuth and elevation offsets
+\item Save/load zeroing profiles
+\item \textbf{Detailed in Lesson 6.1}
+\end{itemize}
+
+\subsubsection{2. Environmental Parameters}
+\begin{itemize}
+\item Set temperature (\degree{}C)
+\item Set altitude (meters above sea level)
+\item Set crosswind speed and direction
+\item Apply environmental corrections to ballistics
+\item \textbf{Detailed in Lesson 6.2}
+\end{itemize}
+
+\subsubsection{3. Lead Angle Compensation}
+\begin{itemize}
+\item Enable/disable lead angle for moving targets
+\item View lead angle status (Off/On/Lag/ZoomOut)
+\item Automatically calculates lead based on target velocity
+\item \textbf{Detailed in Lesson 6.3}
+\end{itemize}
+
+\textbf{ OPERATOR NOTE}: Do not modify ballistics settings unless trained. Incorrect settings can cause missed shots or dangerous ricochets. Zeroing and environmental settings are usually performed by designated personnel (e.g., gunner, vehicle commander).
+
+
+
+\section{3.6 MENU QUICK REFERENCE}
+
+\subsection{COMMON MENU TASKS}
+
+\subsubsection{Task 1: Change Reticle}
+\begin{verbatim}
+MENU ✓ → "Personalize Reticle" → MENU ✓
+→ Select reticle (▲/▼) → MENU ✓
+→ "Return..." → MENU ✓
+\end{verbatim}
+\textbf{Time}: \textasciitilde{}10 seconds
+
+
+
+\subsubsection{Task 2: Change Color Scheme}
+\begin{verbatim}
+MENU ✓ → "Personalize Colors" → MENU ✓
+→ Select color (▲/▼) → MENU ✓
+→ "Return..." → MENU ✓
+\end{verbatim}
+\textbf{Time}: \textasciitilde{}10 seconds
+
+
+
+\subsubsection{Task 3: Check System Status}
+\begin{verbatim}
+MENU ✓ → "System Status" → MENU ✓
+→ Review status → "Return..." → MENU ✓
+\end{verbatim}
+\textbf{Time}: \textasciitilde{}15 seconds (plus review time)
+
+
+
+\subsubsection{Task 4: Shutdown via Menu}
+\begin{verbatim}
+MENU ✓ → "Shutdown System" → MENU ✓
+→ "YES, Shutdown" → MENU ✓
+→ Wait for "SHUTDOWN COMPLETE"
+→ Disable Station Enable → Cut power
+\end{verbatim}
+\textbf{Time}: \textasciitilde{}45 seconds
+
+
+
+\subsection{MENU NAVIGATION TIPS}
+
+\begin{enumerate}
+\item \textbf{Muscle Memory}: Practice menu navigation until you can do it without looking at button labels
+\end{enumerate}
+
+\begin{enumerate}
+\item \textbf{HAT Switch Alternative}: Use joystick HAT switch if your hands are already on the joystick
+\end{enumerate}
+
+\begin{enumerate}
+\item \textbf{Quick Exit}: If lost in menus, repeatedly press \textbf{MENU $\checkmark$} on section headers to back out quickly
+\end{enumerate}
+
+\begin{enumerate}
+\item \textbf{Video Still Visible}: Menu is semi-transparent or overlaid - you can still monitor situation while in menu
+\end{enumerate}
+
+\begin{enumerate}
+\item \textbf{Menu Timeout}: Some menus auto-exit after 60 seconds of inactivity (returns to operational screen)
+\end{enumerate}
+
+\begin{enumerate}
+\item \textbf{Combat Discipline}: Minimize menu time during operations. Configure settings during planning/prep, not during engagement.
+\end{enumerate}
+
+
+
+\subsection{MENU TROUBLESHOOTING}
+
+% TABLE ROW: | Problem | Possible Cause | Solution |
+% TABLE ROW: |---------|---------------|----------|
+% TABLE ROW: | Menu won't open | Button stuck or system fault | Try joystick HAT switch, or restart system |
+% TABLE ROW: | Can't select option | On section header | Use ▲/▼ to move to selectable item |
+% TABLE ROW: | Menu frozen | Software hang | Press Emergency Stop, restart system |
+% TABLE ROW: | Settings don't save | Shutdown without menu | Always use "Shutdown System" menu before power-off |
+% TABLE ROW: | Menu text unreadable | Color scheme issue | Change to White or Yellow color theme |
+
+
+
+\section{3.7 MENU BEST PRACTICES}
+
+\subsection{WHEN TO USE MENUS}
+
+$\checkmark$ \textbf{DO use menus for}:
+\begin{itemize}
+\item Changing display preferences (reticle, color)
+\item Checking system status
+\item Reviewing zone definitions
+\item Configuring ballistics (when trained)
+\item Orderly system shutdown
+\end{itemize}
+
+$\times$ \textbf{DO NOT use menus during}:
+\begin{itemize}
+\item Active engagement
+\item Emergency situations
+\item When gimbal must be controlled continuously
+\item Under time pressure
+\end{itemize}
+
+\textbf{Rule of Thumb}: Menus are for setup and configuration, not combat operations.
+
+
+
+\subsection{SETTINGS THAT PERSIST}
+
+\textbf{Saved Between Power Cycles} (stored in configuration):
+\begin{itemize}
+\item Reticle type selection
+\item Color scheme
+\item Zeroing offsets (if saved)
+\item Environmental parameters (if saved)
+\item Zone definitions
+\end{itemize}
+
+\textbf{NOT Saved} (reset on power-up):
+\begin{itemize}
+\item Gimbal position (returns to home)
+\item Active tracking (aborted)
+\item Temporary warnings
+\item Menu navigation position
+\end{itemize}
+
+
+
+\subsection{OPERATOR VS. SUPERVISOR FUNCTIONS}
+
+\textbf{Operator Can}:
+\begin{itemize}
+\item Change reticle and colors
+\item View system status
+\item View zones
+\item Access ballistics menus (view)
+\item Shutdown system
+\end{itemize}
+
+\textbf{Operator Usually CANNOT} (requires authorization):
+\begin{itemize}
+\item Modify zone boundaries
+\item Override no-fire zones
+\item Change ballistics profiles (depends on unit SOP)
+\item Access maintenance menus
+\item Modify system configuration files
+\end{itemize}
+
+\textbf{Consult your unit SOP for specific authorization levels.}
+
+
+
+\textbf{END OF LESSON 3}
+
+
+
