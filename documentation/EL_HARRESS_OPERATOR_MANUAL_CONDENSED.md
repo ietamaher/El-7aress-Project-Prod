@@ -2161,3 +2161,516 @@ Always perform proper shutdown. Do NOT just cut power.
 
 ---
 
+# PART II: OPERATIONAL PROCEDURES
+
+---
+
+# LESSON 3: MENU SYSTEM & SETTINGS
+
+**Lesson Duration:** 2 hours (Practical)
+
+**Learning Objectives:**
+- Navigate all menu structures using DCU controls
+- Configure reticle types and display colors
+- Access system status information
+- Modify operational settings safely
+
+---
+
+## 3.1 MENU NAVIGATION BASICS
+
+### **ACCESSING THE MAIN MENU**
+
+**Method**: Press **MENU ✓** button on DCU
+
+**Result**:
+- Video feed dims (still visible in background)
+- Menu window appears in center of screen
+- Current selection is highlighted
+- Menu title displayed at top
+
+---
+
+### **MENU CONTROLS**
+
+| Button | Function |
+|--------|----------|
+| **MENU ✓** | Open menu / Confirm selection / Exit menu |
+| **MENU ▲** | Move selection up / Increase value |
+| **MENU ▼** | Move selection down / Decrease value |
+
+**Alternative**: Joystick HAT switch can also be used for menu navigation (UP/DOWN/LEFT/RIGHT)
+
+---
+
+### **NAVIGATION WORKFLOW**
+
+**5-Step Process**:
+
+1. **Open Menu**
+   - Press **MENU ✓**
+   - Main menu appears
+
+2. **Navigate**
+   - Press **▲** or **▼** to highlight desired option
+   - Section headers (e.g., "--- BALLISTICS ---") are skipped automatically
+
+3. **Select**
+   - Press **MENU ✓** to enter submenu or activate option
+   - Submenu opens (if applicable)
+
+4. **Return**
+   - Navigate to "Return..." option at bottom of menu
+   - Press **MENU ✓**
+   - OR: Press **MENU ✓** repeatedly on section headers to go back
+
+5. **Exit to Operational Screen**
+   - Continue pressing "Return..." until back at live video
+   - System resumes normal operation
+
+**Tip**: If you get lost in menus, keep selecting "Return..." until you exit completely.
+
+---
+
+## 3.2 MAIN MENU STRUCTURE
+
+### **COMPLETE MENU TREE**
+
+```
+MAIN MENU
+├── --- RETICLE & DISPLAY ---
+│   ├── Personalize Reticle
+│   └── Personalize Colors
+│
+├── --- BALLISTICS ---
+│   ├── Zeroing (Lesson 6)
+│   ├── Environmental Parameters (Lesson 6)
+│   └── Lead Angle Compensation (Lesson 6)
+│
+├── --- SYSTEM ---
+│   ├── Zone Definitions (Lesson 4)
+│   ├── System Status (Lesson 7)
+│   └── Shutdown System
+│
+├── --- INFO ---
+│   └── About
+│
+└── Return ...
+```
+
+**Note**: Ballistics and Zone Management are covered in detail in later lessons. This lesson focuses on display settings and basic navigation.
+
+---
+
+## 3.3 RETICLE & DISPLAY SETTINGS
+
+### **3.3.1 PERSONALIZE RETICLE**
+
+**Access**: Main Menu → "Personalize Reticle"
+
+**Purpose**: Select reticle type (crosshair style) for aiming
+
+---
+
+#### **AVAILABLE RETICLE TYPES**
+
+**1. Box Crosshair** (Default)
+```
+        │
+    ┌───┼───┐
+────┤   +   ├────
+    └───┼───┘
+        │
+```
+- Cross with surrounding box
+- Good for general purpose and tracking
+- Recommended for most operations
+
+**2. Brackets Reticle**
+```
+    ┌─     ─┐
+        +
+    └─     ─┘
+```
+- Corner brackets with center crosshair
+- Enhanced visibility
+- Good for low-contrast targets
+
+**3. Duplex Crosshair**
+```
+  ████│████
+──────+──────
+  ████│████
+```
+- Thick outer lines, thin center
+- Sniper/precision style
+- Good for long-range
+
+**4. Fine Crosshair**
+```
+      │
+    ──+──
+      │
+```
+- Thin precision crosshair with range ticks
+- Minimal obstruction
+- Best for extreme precision
+
+**5. Chevron Reticle**
+```
+      ˅
+    ──+──
+```
+- Downward pointing chevron
+- CQB (Close Quarters Battle) style
+- Good for rapid engagement
+
+---
+
+#### **HOW TO CHANGE RETICLE**
+
+**Procedure**:
+
+1. Press **MENU ✓**
+2. Navigate to "Personalize Reticle" (▼)
+3. Press **MENU ✓** to enter
+4. Use ▲/▼ to highlight desired reticle
+5. Press **MENU ✓** to select
+6. **Reticle changes immediately** on screen
+7. Navigate to "Return..." (▼)
+8. Press **MENU ✓** to return to Main Menu
+
+**Current Selection**: Active reticle is marked with "✓"
+
+**Recommendation**: Use **Box Crosshair** for combat, **Fine Crosshair** for long-range surveillance.
+
+---
+
+### **3.3.2 PERSONALIZE COLORS**
+
+**Access**: Main Menu → "Personalize Colors"
+
+**Purpose**: Change OSD color scheme for visibility
+
+---
+
+#### **AVAILABLE COLOR THEMES**
+
+| Theme | Primary Color | Use Case |
+|-------|---------------|----------|
+| **Green** | Bright green (70, 226, 165) | Default - good for day and night |
+| **Red** | Red | Night vision compatible |
+| **Yellow** | Yellow | High contrast, bright conditions |
+| **Cyan** | Cyan | Alternative for user preference |
+| **White** | White | Maximum contrast |
+
+**What Changes**:
+- Reticle color
+- OSD text color
+- Menu text color
+- Tracking box color (when not status-coded)
+
+**What Does NOT Change**:
+- Warning messages (always red or yellow)
+- Tracking status colors (yellow/red/green based on state)
+- CCIP pipper color
+
+---
+
+#### **HOW TO CHANGE COLOR**
+
+**Procedure**:
+
+1. Press **MENU ✓**
+2. Navigate to "Personalize Colors" (▼)
+3. Press **MENU ✓** to enter
+4. Use ▲/▼ to highlight desired color
+5. Press **MENU ✓** to select
+6. **OSD changes immediately**
+7. Evaluate visibility
+8. Change again if needed, or select "Return..."
+
+**Best Practices**:
+- **Green**: Good all-around choice (default)
+- **Red**: Use with night vision equipment
+- **Yellow**: Use in bright sunlight or snow
+- **White**: Maximum contrast on dark backgrounds
+
+**⚠️ NOTE**: Color selection is personal preference. Choose what you can see best in your operating environment.
+
+---
+
+## 3.4 SYSTEM MENU OPTIONS
+
+### **3.4.1 ZONE DEFINITIONS**
+
+**Access**: Main Menu → "Zone Definitions"
+
+**Purpose**: Manage no-fire zones, no-traverse zones, sector scans, and TRPs
+
+**Detailed Coverage**: See Lesson 4 (Motion Modes & Surveillance)
+
+**Quick Access Functions**:
+- View active zones
+- Enable/disable zones
+- Navigate to zone editor (supervisor/commander function)
+
+**Operator Note**: Zone modification usually requires supervisor authorization. Operators can VIEW zones but typically cannot CHANGE them.
+
+---
+
+### **3.4.2 SYSTEM STATUS**
+
+**Access**: Main Menu → "System Status"
+
+**Purpose**: View detailed system health and diagnostics
+
+**Detailed Coverage**: See Lesson 7 (System Status & Monitoring)
+
+**Quick Preview**:
+
+Displays status of all subsystems:
+- Cameras (Day/Night) - Connected/Disconnected
+- Servos (Azimuth/Elevation) - Position, temperature, faults
+- Laser Rangefinder - Status, temperature
+- Joystick - Connected/Calibration
+- Stabilization System - Active/Inactive
+- Tracking System - State
+- Weapon Actuator - Position, status
+
+**When to Check**:
+- At startup (verify all green)
+- When Fault light illuminates
+- Before critical operations
+- During troubleshooting
+
+---
+
+### **3.4.3 SHUTDOWN SYSTEM**
+
+**Access**: Main Menu → "Shutdown System"
+
+**Purpose**: Perform orderly software shutdown before powering off
+
+**Why Use Menu Shutdown**:
+- Saves configuration settings
+- Saves zone data
+- Closes log files properly
+- Prevents data corruption
+- Powers down subsystems in correct sequence
+
+**Procedure**:
+
+1. Press **MENU ✓**
+2. Navigate to "Shutdown System" (▼ multiple times)
+3. Press **MENU ✓**
+4. **Confirmation prompt appears**:
+   ```
+   ┌────────────────────────────────┐
+   │      SHUTDOWN SYSTEM?          │
+   │                                │
+   │   This will power down the     │
+   │   RCWS safely.                 │
+   │                                │
+   │   > YES, Shutdown              │
+   │     NO, Cancel                 │
+   └────────────────────────────────┘
+   ```
+5. Select "YES, Shutdown" (should be highlighted)
+6. Press **MENU ✓** to confirm
+7. **System shuts down**:
+   - "SHUTTING DOWN..." message appears
+   - Progress indicator shows shutdown steps
+   - Cameras power off
+   - Motors de-energize
+   - "SHUTDOWN COMPLETE - Safe to power off" message
+8. **Disable Station Enable** switch on DCU
+9. **Cut vehicle power** (if end of shift)
+
+**⚠️ IMPORTANT**: Wait for "SHUTDOWN COMPLETE" message before cutting power. Interrupting shutdown can corrupt configuration files.
+
+---
+
+### **3.4.4 ABOUT / INFO**
+
+**Access**: Main Menu → "About"
+
+**Purpose**: Display system information for troubleshooting and support
+
+**Information Displayed**:
+- System name: "El 7arress RCWS"
+- Software version (e.g., "v4.5.2")
+- Build date
+- Serial number (if configured)
+- Uptime (hours since power-on)
+- Operator name (if logged in)
+
+**Use Case**: Provide this information when reporting issues to maintenance.
+
+---
+
+## 3.5 BALLISTICS MENU (OVERVIEW)
+
+**Access**: Main Menu → "--- BALLISTICS ---" section
+
+The ballistics menu provides access to fire control settings. These are covered in detail in **Lesson 6** but are introduced here for awareness.
+
+### **BALLISTICS SUBMENU OPTIONS**
+
+#### **1. Zeroing**
+- Align weapon point of impact with camera crosshair
+- Adjust azimuth and elevation offsets
+- Save/load zeroing profiles
+- **Detailed in Lesson 6.1**
+
+#### **2. Environmental Parameters**
+- Set temperature (°C)
+- Set altitude (meters above sea level)
+- Set crosswind speed and direction
+- Apply environmental corrections to ballistics
+- **Detailed in Lesson 6.2**
+
+#### **3. Lead Angle Compensation**
+- Enable/disable lead angle for moving targets
+- View lead angle status (Off/On/Lag/ZoomOut)
+- Automatically calculates lead based on target velocity
+- **Detailed in Lesson 6.3**
+
+**⚠️ OPERATOR NOTE**: Do not modify ballistics settings unless trained. Incorrect settings can cause missed shots or dangerous ricochets. Zeroing and environmental settings are usually performed by designated personnel (e.g., gunner, vehicle commander).
+
+---
+
+## 3.6 MENU QUICK REFERENCE
+
+### **COMMON MENU TASKS**
+
+#### **Task 1: Change Reticle**
+```
+MENU ✓ → "Personalize Reticle" → MENU ✓
+→ Select reticle (▲/▼) → MENU ✓
+→ "Return..." → MENU ✓
+```
+**Time**: ~10 seconds
+
+---
+
+#### **Task 2: Change Color Scheme**
+```
+MENU ✓ → "Personalize Colors" → MENU ✓
+→ Select color (▲/▼) → MENU ✓
+→ "Return..." → MENU ✓
+```
+**Time**: ~10 seconds
+
+---
+
+#### **Task 3: Check System Status**
+```
+MENU ✓ → "System Status" → MENU ✓
+→ Review status → "Return..." → MENU ✓
+```
+**Time**: ~15 seconds (plus review time)
+
+---
+
+#### **Task 4: Shutdown via Menu**
+```
+MENU ✓ → "Shutdown System" → MENU ✓
+→ "YES, Shutdown" → MENU ✓
+→ Wait for "SHUTDOWN COMPLETE"
+→ Disable Station Enable → Cut power
+```
+**Time**: ~45 seconds
+
+---
+
+### **MENU NAVIGATION TIPS**
+
+1. **Muscle Memory**: Practice menu navigation until you can do it without looking at button labels
+
+2. **HAT Switch Alternative**: Use joystick HAT switch if your hands are already on the joystick
+
+3. **Quick Exit**: If lost in menus, repeatedly press **MENU ✓** on section headers to back out quickly
+
+4. **Video Still Visible**: Menu is semi-transparent or overlaid - you can still monitor situation while in menu
+
+5. **Menu Timeout**: Some menus auto-exit after 60 seconds of inactivity (returns to operational screen)
+
+6. **Combat Discipline**: Minimize menu time during operations. Configure settings during planning/prep, not during engagement.
+
+---
+
+### **MENU TROUBLESHOOTING**
+
+| Problem | Possible Cause | Solution |
+|---------|---------------|----------|
+| Menu won't open | Button stuck or system fault | Try joystick HAT switch, or restart system |
+| Can't select option | On section header | Use ▲/▼ to move to selectable item |
+| Menu frozen | Software hang | Press Emergency Stop, restart system |
+| Settings don't save | Shutdown without menu | Always use "Shutdown System" menu before power-off |
+| Menu text unreadable | Color scheme issue | Change to White or Yellow color theme |
+
+---
+
+## 3.7 MENU BEST PRACTICES
+
+### **WHEN TO USE MENUS**
+
+✅ **DO use menus for**:
+- Changing display preferences (reticle, color)
+- Checking system status
+- Reviewing zone definitions
+- Configuring ballistics (when trained)
+- Orderly system shutdown
+
+❌ **DO NOT use menus during**:
+- Active engagement
+- Emergency situations
+- When gimbal must be controlled continuously
+- Under time pressure
+
+**Rule of Thumb**: Menus are for setup and configuration, not combat operations.
+
+---
+
+### **SETTINGS THAT PERSIST**
+
+**Saved Between Power Cycles** (stored in configuration):
+- Reticle type selection
+- Color scheme
+- Zeroing offsets (if saved)
+- Environmental parameters (if saved)
+- Zone definitions
+
+**NOT Saved** (reset on power-up):
+- Gimbal position (returns to home)
+- Active tracking (aborted)
+- Temporary warnings
+- Menu navigation position
+
+---
+
+### **OPERATOR VS. SUPERVISOR FUNCTIONS**
+
+**Operator Can**:
+- Change reticle and colors
+- View system status
+- View zones
+- Access ballistics menus (view)
+- Shutdown system
+
+**Operator Usually CANNOT** (requires authorization):
+- Modify zone boundaries
+- Override no-fire zones
+- Change ballistics profiles (depends on unit SOP)
+- Access maintenance menus
+- Modify system configuration files
+
+**Consult your unit SOP for specific authorization levels.**
+
+---
+
+**END OF LESSON 3**
+
+---
+
