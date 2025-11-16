@@ -4614,3 +4614,1010 @@ FINAL AIM POINT = Gun Boresight + Zeroing Offset + Environmental Corrections + L
 
 ---
 
+# LESSON 7: SYSTEM STATUS & MONITORING
+
+**Lesson Duration:** 2 hours (Classroom)
+
+**Learning Objectives:**
+- Access System Status display
+- Interpret device status indicators
+- Identify fault conditions
+- Determine when to escalate to maintenance
+
+---
+
+## 7.1 ACCESSING SYSTEM STATUS
+
+**Procedure**:
+1. Press **MENU ✓**
+2. Navigate to **"System Status"**
+3. Press **VAL**
+
+**Display Sections**:
+- Azimuth/Elevation Servos
+- IMU (Inertial Measurement Unit)
+- Laser Range Finder (LRF)
+- Day/Night Cameras
+- Control Panels
+- Servo Actuator
+- Alarms/Warnings
+
+---
+
+## 7.2 DEVICE STATUS REFERENCE
+
+### **GIMBAL SERVOS (AZIMUTH & ELEVATION)**
+
+| Parameter | Normal | Warning | Fault | Action |
+|-----------|--------|---------|-------|--------|
+| **Connected** | ✓ | - | ✗ | Notify maintenance |
+| **Torque** | 0-50% | 50-80% | >80% sustained | Allow cooling, reduce motion |
+| **Motor Temp** | 20-60°C | 60-70°C | >70°C | Halt operations, allow cooling |
+| **Driver Temp** | 20-60°C | 60-70°C | >70°C | Halt operations, allow cooling |
+| **Fault Flag** | No | - | Yes | E-Stop, notify maintenance |
+
+---
+
+### **IMU (INERTIAL MEASUREMENT UNIT)**
+
+| Parameter | Normal | Warning | Fault | Action |
+|-----------|--------|---------|-------|--------|
+| **Connected** | ✓ | - | ✗ | Stabilization offline, notify maint |
+| **Roll/Pitch** | ±30° | ±30-45° | >45° | Platform unstable, secure vessel |
+| **Temperature** | 20-60°C | 60-70°C | >70°C | Allow cooling |
+
+**⚠️ NOTE**: IMU offline = No stabilization. Manual mode only.
+
+---
+
+### **LASER RANGE FINDER (LRF)**
+
+| Parameter | Normal | Warning | Fault | Action |
+|-----------|--------|---------|-------|--------|
+| **Connected** | ✓ | - | ✗ | Manual range estimation, notify maint |
+| **Temperature** | 20-50°C | 50-60°C | >60°C | Reduce firing rate, allow cooling |
+| **Laser Count** | Incrementing | - | Not incrementing | LRF malfunction |
+| **No Echo** | Occasional | Frequent | Always | Target too far, obscured, or LRF fault |
+
+**⚠️ NOTE**: LRF offline = No ballistics, no LAC. Manual engagement only.
+
+---
+
+### **CAMERAS (DAY & THERMAL)**
+
+| Parameter | Normal | Warning | Fault | Action |
+|-----------|--------|---------|-------|--------|
+| **Connected** | ✓ | - | ✗ | Switch cameras if available |
+| **Error Flag** | No | - | Yes | Switch cameras, notify maint |
+| **Thermal FFC** | Occasional | Frequent (<5min) | Constant | Thermal camera fault |
+| **Focus** | Clear | Slightly blurred | Very blurred | Autofocus off, manual focus |
+
+**⚠️ NOTE**: Both cameras offline = Mission abort. Cannot engage without visual.
+
+---
+
+### **CONTROL PANELS**
+
+| Device | Function | Fault Impact | Action |
+|--------|----------|--------------|--------|
+| **DCU** | Buttons, switches, lights | No local control, joystick only | Notify maint (ops continue) |
+| **Joystick** | Gimbal control, tracking, fire | Mission abort if no backup | Emergency: Use DCU manual control |
+
+---
+
+## 7.3 ALARM INTERPRETATION
+
+### **CRITICAL ALARMS (RED)**
+
+| Alarm | Meaning | Immediate Action |
+|-------|---------|------------------|
+| **EMERGENCY STOP ACTIVE** | E-Stop engaged | Identify cause, reset when safe |
+| **WEAPON ARMED (NO AUTHORIZATION)** | Safety violation | Disarm immediately, investigate |
+| **ZONE VIOLATION** | Entering No-Fire/No-Traverse | Halt motion, verify zone config |
+| **SERVO FAULT** | Gimbal malfunction | E-Stop, notify maintenance |
+
+---
+
+### **WARNING ALARMS (YELLOW)**
+
+| Alarm | Meaning | Action |
+|-------|---------|--------|
+| **HIGH TEMPERATURE** | Device overheating | Reduce operations, monitor |
+| **LOW CONFIDENCE TRACKING** | Track quality poor | Verify target, consider manual |
+| **ZOOM OUT** | LAC FOV insufficient | Zoom out (Button 8) |
+| **LEAD ANGLE LAG** | Tracking data insufficient | Wait 2-5 seconds |
+
+---
+
+### **INFO MESSAGES (GREEN/BLUE)**
+
+| Message | Meaning | Action |
+|---------|---------|--------|
+| **ZEROING APPLIED** | Zero active | Normal ops |
+| **ENV APPLIED** | Environmental settings active | Normal ops |
+| **TRACKING** | Tracking active | Monitor |
+
+---
+
+## 7.4 WHEN TO ESCALATE TO MAINTENANCE
+
+**Operator-Level Issues** (fix yourself):
+- ✅ Reset E-Stop (after clearing danger)
+- ✅ Power cycle system (soft reboot)
+- ✅ Switch cameras (if available)
+- ✅ Adjust zoom/focus
+- ✅ Re-zero weapon (if needed)
+
+**Maintenance-Level Issues** (notify immediately):
+- ❌ Device disconnected (and doesn't reconnect after reboot)
+- ❌ Persistent fault flags
+- ❌ Servo malfunction (erratic motion, no motion)
+- ❌ Physical damage observed
+- ❌ Thermal runaway (temperature >80°C)
+- ❌ Unusual noises (grinding, clicking, squealing)
+
+---
+
+**END OF LESSON 7**
+
+---
+
+# LESSON 8: EMERGENCY PROCEDURES
+
+**Lesson Duration:** 3 hours (Classroom 1h + Practical 2h)
+
+**Learning Objectives:**
+- Execute Emergency Stop (E-Stop)
+- Perform emergency tracking abort
+- Respond to weapon malfunctions
+- Handle runaway gimbal
+- Execute emergency system shutdown
+
+---
+
+## 8.1 EMERGENCY STOP (E-STOP)
+
+### **E-STOP BUTTON**
+
+**Location**: Red mushroom button on Control Panel
+
+**When to Use**:
+- ❌ Personnel in line of fire
+- ❌ Gimbal moving toward restricted area
+- ❌ Runaway/uncontrolled motion
+- ❌ Any immediate danger
+
+### **ACTIVATION**
+
+**Action**: **STRIKE E-STOP BUTTON**
+
+**Effect** (IMMEDIATE):
+1. All gimbal motion halted
+2. Weapon fire control disabled
+3. Tracking stopped
+4. System functions locked out
+5. OSD: **"EMERGENCY STOP ACTIVE"** (RED)
+
+---
+
+### **E-STOP RESET**
+
+**Only reset after verifying**:
+- ☐ Immediate danger cleared
+- ☐ Personnel clear
+- ☐ No equipment damage
+- ☐ Cause identified
+- ☐ Safe to resume
+
+**Procedure**:
+1. Twist E-STOP button clockwise
+2. Button pops out
+3. System resets
+4. Check System Status for faults
+5. Perform health check before resuming ops
+
+**⚠️ DO NOT RESET IF**: Cause unknown, damage visible, personnel in danger, maintenance required.
+
+---
+
+## 8.2 EMERGENCY TRACKING ABORT
+
+**Abort tracking immediately when**:
+- ❌ Tracking wrong target
+- ❌ Target enters restricted zone
+- ❌ Friendlies near target
+- ❌ Lost positive ID
+- ❌ System erratic
+- ❌ Civilian identified
+
+**Procedure**: **DOUBLE-CLICK BUTTON 4** (<500ms)
+
+**Effect**:
+- Tracking stops immediately
+- Tracking gate disappears
+- Returns to Manual mode
+- Weapon fire inhibited
+
+**⚠️ NOTE**: No Dead Man Switch required for abort. Works from any phase.
+
+---
+
+## 8.3 WEAPON EMERGENCY PROCEDURES
+
+### **ACCIDENTAL DISCHARGE**
+
+**If weapon fires unintentionally**:
+
+**Immediate Actions** (in order):
+1. **Release Button 5** (Fire) - cease fire
+2. **Release Button 0** (Master Arm) - disarm
+3. **Point gimbal to safe direction** (skyward)
+4. **E-STOP** if motion continues
+5. **Turn Station power OFF**
+
+**Post-Incident**:
+- ☐ Ensure weapon safe
+- ☐ Check for damage/casualties
+- ☐ Notify chain of command immediately
+- ☐ Preserve system logs
+- ☐ Do NOT resume operations until investigation complete
+
+---
+
+### **WEAPON JAM / MALFUNCTION**
+
+**Symptoms**:
+- Weapon fires then stops mid-burst
+- Unusual sounds (click, no firing)
+- Fire button pressed, no response
+
+**Immediate Actions**:
+1. **Release Fire button** (cease trigger)
+2. **Release Master Arm** (disarm)
+3. **Turn Gun Arm switch to SAFE**
+4. **Point gimbal to safe direction**
+5. **Notify command** - weapon malfunction
+
+**⚠️ DO NOT**:
+- ❌ Attempt to clear jam from operator station
+- ❌ Continue firing attempts
+- ❌ Inspect weapon without proper clearance
+
+**Action**: Weapon maintenance personnel required.
+
+---
+
+## 8.4 RUNAWAY GIMBAL
+
+**Symptoms**:
+- Gimbal moves without joystick input
+- Cannot stop gimbal with joystick
+- Gimbal moving toward no-traverse zone
+- Erratic, unpredictable motion
+
+**Immediate Actions** (in order):
+1. **E-STOP** (strike immediately)
+2. **Verify E-Stop engaged** (button latched, motion stopped)
+3. **Turn Station power OFF**
+4. **Notify maintenance** - servo malfunction
+
+**Do NOT reset E-Stop until**:
+- Maintenance personnel inspect system
+- Cause identified and resolved
+- Safety verified
+
+---
+
+## 8.5 LOST COMMUNICATION
+
+### **OPERATOR TO COMMAND**
+
+**Symptoms**: Radio/intercom dead
+
+**Actions**:
+- ☐ Switch to backup radio
+- ☐ Use hand signals (if line of sight)
+- ☐ Continue mission per SOP (if applicable)
+- ☐ Return to safe position (if no comms recovery)
+
+---
+
+### **SYSTEM TO DEVICES**
+
+**Symptoms**: Device disconnected (LRF, Camera, Servo)
+
+**Actions**:
+1. Check System Status (identify device)
+2. Power cycle system (soft reboot)
+3. If device does not reconnect: Operate without device (degraded mode)
+4. Notify maintenance
+
+**Mission Impact**:
+- **LRF offline**: Manual range estimation only, no LAC
+- **Camera offline**: Switch to alternate camera, or mission abort if both offline
+- **Servo offline**: Mission abort
+
+---
+
+## 8.6 EMERGENCY SYSTEM SHUTDOWN
+
+**When to perform full shutdown**:
+- Fire/smoke from system
+- Multiple critical faults
+- Safety concern requiring immediate powerdown
+- Ordered by command
+
+**Procedure**:
+1. **E-STOP** (if not already engaged)
+2. **Turn Gun Arm to SAFE**
+3. **Turn Station Enable switch to OFF**
+4. **Turn main power switch to OFF**
+5. **Disconnect external power** (if directed)
+
+**Post-Shutdown**:
+- ☐ Ensure all motion stopped
+- ☐ Ensure weapon safe
+- ☐ Notify command/maintenance
+- ☐ Secure area (prevent unauthorized restart)
+
+---
+
+## 8.7 EMERGENCY QUICK REFERENCE
+
+| Emergency | Action | Button/Switch |
+|-----------|--------|---------------|
+| **Immediate Danger** | Emergency Stop | E-STOP (red mushroom) |
+| **Wrong Target** | Tracking Abort | Button 4 (double-click) |
+| **Accidental Fire** | Cease Fire, Disarm | Release Button 5, Release Button 0 |
+| **Weapon Jam** | Disarm, Safe Weapon | Release Button 0, Gun Arm SAFE |
+| **Runaway Gimbal** | Emergency Stop, Power Off | E-STOP, Station Power OFF |
+| **Fire/Smoke** | Full Shutdown | E-STOP → Station OFF → Main Power OFF |
+
+---
+
+**END OF LESSON 8**
+
+---
+
+# LESSON 9: OPERATOR MAINTENANCE & TROUBLESHOOTING
+
+**Lesson Duration:** 3 hours (Classroom 1h + Practical 2h)
+
+**Learning Objectives:**
+- Perform daily operator checks
+- Troubleshoot common issues
+- Apply systematic troubleshooting methodology
+- Determine when to escalate to maintenance
+
+---
+
+## 9.1 DAILY OPERATOR CHECKS
+
+### **PRE-OPERATION CHECKLIST**
+
+**Perform before each mission / daily**:
+
+| System | Check | GO Criteria | NO-GO Criteria |
+|--------|-------|-------------|----------------|
+| **Power** | Main power, Station power | All ON, no alarms | Power OFF, alarms present |
+| **Control Panel** | Buttons, switches, lights responsive | All functional | Non-responsive, lights out |
+| **Joystick** | Axes, buttons, Dead Man Switch | Smooth motion, all buttons work | Sticky, unresponsive |
+| **Gimbal** | Azimuth/Elevation motion | Smooth, quiet, full ROM | Grinding, jerky, limits hit |
+| **Cameras** | Day & Thermal video | Clear video, both cameras | No video, errors |
+| **LRF** | Ranging test (known target) | Range within ±5m | No reading, error |
+| **Tracking** | Acquisition test | Gate appears, tracking functional | No gate, tracking fails |
+| **Weapon** | Arming, Safe | Arm/Safe switches functional | Switches stuck, no response |
+| **System Status** | All devices connected | All ✓ Connected | Devices disconnected/faulted |
+
+**If NO-GO**: Do NOT proceed with mission. Notify maintenance.
+
+---
+
+## 9.2 TROUBLESHOOTING METHODOLOGY
+
+### **STOP-LOOK-ASSESS-FIX (SLAF) METHOD**
+
+**S - STOP**:
+- Don't rush to "fix" without understanding
+- Take E-Stop if safety concern
+- Document symptoms
+
+**L - LOOK**:
+- Observe all symptoms carefully
+- Check System Status display
+- Review recent actions (what changed?)
+
+**A - ASSESS**:
+- Narrow down to specific subsystem
+- Check simplest causes first (power, connections, switches)
+- Consult troubleshooting charts
+
+**F - FIX**:
+- Apply operator-level fix if authorized
+- Escalate to maintenance if needed
+- Verify fix resolved issue
+
+---
+
+## 9.3 COMMON ISSUES & FIXES
+
+### **JOYSTICK NOT RESPONDING**
+
+**Symptoms**: No gimbal motion, buttons not working
+
+**Diagnosis**:
+1. Check USB cable (both ends)
+2. Check joystick power LED
+3. Check System Status → Joystick Connected
+
+**Operator-Level Fixes**:
+- ☐ Reconnect USB cable firmly
+- ☐ Power cycle system
+- ☐ Try different USB port
+
+**Escalate if**: Still not detected after power cycle.
+
+---
+
+### **NO VIDEO FROM CAMERA**
+
+**Symptoms**: Black screen, "No Signal"
+
+**Diagnosis**:
+1. Check camera selection (Day vs. Night)
+2. Check System Status → Camera Connected
+3. Check camera switch (Button 10/12)
+
+**Operator-Level Fixes**:
+- ☐ Switch cameras (Button 10/12)
+- ☐ Power cycle system
+- ☐ Check video cable connections (if accessible)
+
+**Escalate if**: Both cameras offline.
+
+---
+
+### **TRACKING FAILS TO LOCK**
+
+**Symptoms**: Stays in LOCK PENDING or returns to ACQUISITION
+
+**Diagnosis**:
+1. Check target contrast (visible on screen?)
+2. Check acquisition gate sizing (too tight/loose?)
+3. Check gimbal motion (stable?)
+
+**Operator-Level Fixes**:
+- ☐ Improve target contrast (switch camera, adjust LUT)
+- ☐ Re-size acquisition gate (10-30% margin)
+- ☐ Hold gimbal steady during lock attempt
+- ☐ Switch to manual engagement (no tracking)
+
+**Escalate if**: Tracking fails on all targets (tracker malfunction).
+
+---
+
+### **GIMBAL NOT MOVING**
+
+**Symptoms**: Joystick input has no effect
+
+**Diagnosis**:
+1. Check E-Stop (engaged?)
+2. Check Station Enable (ON?)
+3. Check motion mode (Manual?)
+4. Check System Status → Servos Connected
+
+**Operator-Level Fixes**:
+- ☐ Reset E-Stop (if engaged)
+- ☐ Turn Station Enable ON
+- ☐ Cycle to Manual mode (Button 11/13)
+- ☐ Power cycle system
+
+**Escalate if**: Servos disconnected or faulted.
+
+---
+
+### **LRF NOT RANGING**
+
+**Symptoms**: No range reading, "NO ECHO"
+
+**Diagnosis**:
+1. Check target distance (within max range ~5km?)
+2. Check target reflectivity (solid surface?)
+3. Check LRF temperature (System Status)
+4. Check atmospheric conditions (fog, smoke?)
+
+**Operator-Level Fixes**:
+- ☐ Re-fire LRF (multiple attempts)
+- ☐ Aim at different target (more reflective)
+- ☐ Allow LRF to cool (if overheated)
+- ☐ Switch to manual range estimation
+
+**Escalate if**: LRF disconnected or constant fault.
+
+---
+
+### **HIGH TEMPERATURE WARNING**
+
+**Symptoms**: "HIGH TEMP" alarm, device overheating
+
+**Diagnosis**:
+1. Check System Status → which device?
+2. Check ambient temperature (extreme heat?)
+3. Check operation tempo (continuous firing?)
+
+**Operator-Level Fixes**:
+- ☐ Reduce operations (allow cooling)
+- ☐ Limit continuous motion/firing
+- ☐ Increase ventilation (if possible)
+- ☐ Monitor temperature (should decrease)
+
+**Escalate if**: Temperature remains >80°C after cooldown period.
+
+---
+
+## 9.4 TROUBLESHOOTING QUICK REFERENCE
+
+| Symptom | Likely Cause | Operator Fix | Escalate If |
+|---------|--------------|--------------|-------------|
+| **No joystick response** | USB disconnected | Reconnect USB, reboot | Still offline after reboot |
+| **Black video** | Camera fault | Switch cameras | Both cameras offline |
+| **Tracking won't lock** | Poor contrast, bad gate | Improve contrast, resize gate | Fails on all targets |
+| **Gimbal frozen** | E-Stop, Station OFF | Reset E-Stop, Station ON | Servo fault |
+| **LRF no reading** | Target too far/obscured | Re-fire, different target | LRF disconnected |
+| **High temp** | Overuse | Reduce ops, cool down | Temp stays >80°C |
+| **Weapon won't arm** | Safety interlocks | Check switches, authorization | Switches non-functional |
+| **Lost zero accuracy** | Drift, maintenance | Re-zero weapon | Persistent after re-zero |
+
+---
+
+**END OF LESSON 9**
+
+---
+
+# LESSON 10: PRACTICAL TRAINING & EVALUATION
+
+**Lesson Duration:** 8 hours (Hands-On Training & Evaluation)
+
+**Learning Objectives:**
+- Demonstrate proficiency in all operator tasks
+- Pass written examination (80% minimum)
+- Pass practical performance evaluation
+- Qualify for operational duty
+
+---
+
+## 10.1 PRACTICAL TRAINING EXERCISES
+
+### **EXERCISE 1: SYSTEM STARTUP & HEALTH CHECK** (30 min)
+
+**Task**: Power up system, perform pre-operation checks
+
+**Performance Standards**:
+- ☐ Correct power-up sequence
+- ☐ All devices detected and connected
+- ☐ Pre-operation checklist 100% complete
+- ☐ Ready for operations within 5 minutes
+
+---
+
+### **EXERCISE 2: MANUAL GIMBAL CONTROL** (30 min)
+
+**Task**: Navigate gimbal to designated azimuth/elevation coordinates
+
+**Performance Standards**:
+- ☐ Smooth, controlled movements
+- ☐ Accuracy: ±2° azimuth, ±2° elevation
+- ☐ Complete 5 targets within 3 minutes
+
+---
+
+### **EXERCISE 3: TARGET ACQUISITION & TRACKING** (1 hour)
+
+**Task**: Acquire and track stationary and moving targets
+
+**Performance Standards**:
+- ☐ Acquisition gate correctly sized (10-30% margin)
+- ☐ Lock achieved within 10 seconds
+- ☐ Track maintained >30 seconds
+- ☐ Clean abort on command
+
+---
+
+### **EXERCISE 4: SIMULATED ENGAGEMENT** (1 hour)
+
+**Task**: Complete engagement sequence (no live fire)
+
+**Performance Standards**:
+- ☐ PID confirmed before engagement
+- ☐ Tracking established (Active Lock)
+- ☐ LAC activated (moving target)
+- ☐ Safety checks complete
+- ☐ Simulated fire (correct procedure)
+- ☐ BDA (Battle Damage Assessment)
+
+---
+
+### **EXERCISE 5: WEAPON ZEROING** (1 hour)
+
+**Task**: Zero weapon at 200m range
+
+**Performance Standards**:
+- ☐ Correct zeroing procedure
+- ☐ Zero applied successfully
+- ☐ Verification shot within ±5cm
+- ☐ "Z" indicator appears on OSD
+
+---
+
+### **EXERCISE 6: EMERGENCY PROCEDURES** (1 hour)
+
+**Task**: Respond to simulated emergencies
+
+**Scenarios**:
+1. Wrong target identified (tracking abort)
+2. Runaway gimbal (E-Stop)
+3. Accidental discharge (cease fire, safe weapon)
+4. Lost communication (switch backup radio)
+
+**Performance Standards**:
+- ☐ Immediate recognition of emergency
+- ☐ Correct procedure executed
+- ☐ Reaction time <2 seconds (critical emergencies)
+
+---
+
+### **EXERCISE 7: TROUBLESHOOTING** (1 hour)
+
+**Task**: Diagnose and resolve simulated faults
+
+**Faults Presented**:
+- Joystick disconnected
+- Camera offline
+- Tracking failure
+- LRF no reading
+
+**Performance Standards**:
+- ☐ Correct diagnosis using SLAF method
+- ☐ Operator-level fix applied (if applicable)
+- ☐ Proper escalation to maintenance (if needed)
+
+---
+
+## 10.2 WRITTEN EXAMINATION
+
+**Format**: 50 multiple-choice questions
+
+**Topics Covered**:
+- Safety procedures (10 questions)
+- Basic operation (10 questions)
+- Tracking & engagement (10 questions)
+- Ballistics & fire control (10 questions)
+- Emergency procedures (5 questions)
+- System status & troubleshooting (5 questions)
+
+**Passing Score**: 80% (40/50 correct)
+
+**Time Limit**: 60 minutes
+
+---
+
+## 10.3 PERFORMANCE EVALUATION
+
+**Format**: Instructor-observed practical assessment
+
+**Evaluation Criteria**:
+
+| Task | Weight | GO/NO-GO Criteria |
+|------|--------|-------------------|
+| **System Startup** | 10% | All steps correct, <5 min |
+| **Manual Control** | 10% | Smooth, accurate (±2°) |
+| **Tracking** | 20% | Lock achieved, maintained |
+| **Simulated Engagement** | 25% | Full sequence, all safety checks |
+| **Zeroing** | 15% | Correct procedure, accurate |
+| **Emergency Response** | 15% | Immediate, correct procedure |
+| **Troubleshooting** | 5% | Correct diagnosis & action |
+
+**Passing Standard**: 80% overall, NO critical errors
+
+**Critical Errors** (automatic failure):
+- ❌ Safety violation (no-fire zone, friendly fire)
+- ❌ Failed to E-Stop when required
+- ❌ Accidental discharge (simulated)
+- ❌ Wrong target engagement
+
+---
+
+## 10.4 QUALIFICATION REQUIREMENTS
+
+**To qualify as El 7arress RCWS Operator**:
+
+**Must pass ALL**:
+- ☐ Written examination (≥80%)
+- ☐ Practical evaluation (≥80%)
+- ☐ Zero critical errors
+- ☐ Instructor recommendation
+
+**Qualification Valid**: 12 months
+
+**Requalification Required**:
+- Annually (refresher training + re-test)
+- After >6 months away from system
+- After major system upgrade
+- If unsafe practices observed
+
+---
+
+**END OF LESSON 10**
+
+---
+
+# APPENDIX A: QUICK REFERENCE CARDS
+
+## A.1 STARTUP SEQUENCE
+
+1. Main Power ON
+2. Station Enable ON
+3. Wait for boot (~60 seconds)
+4. Check System Status (all devices connected)
+5. Perform pre-operation checks
+6. Ready for operations
+
+---
+
+## A.2 CONTROL REFERENCE
+
+### **JOYSTICK**
+
+| Control | Function |
+|---------|----------|
+| **X-Axis** | Azimuth (left/right) |
+| **Y-Axis** | Elevation (up/down) |
+| **Button 0** | Master Arm |
+| **Button 2** | LAC Toggle (hold Button 3) |
+| **Button 3** | Dead Man Switch |
+| **Button 4** | Track Select (single=start, double=abort) |
+| **Button 5** | Fire |
+| **Button 6/8** | Zoom In/Out |
+| **Button 7/9** | Thermal LUT |
+| **Button 10/12** | Camera Switch |
+| **Button 11/13** | Motion Mode Cycle |
+| **D-Pad** | Acquisition gate sizing (in Acquisition mode) |
+
+---
+
+### **CONTROL PANEL (DCU)**
+
+| Control | Function |
+|---------|----------|
+| **E-STOP** | Emergency Stop (red mushroom) |
+| **Station Enable** | Power on/off weapon station |
+| **Gun Arm / Safe** | Weapon arming switch |
+| **MENU ✓** | Menu access / Validate |
+| **▲ / ▼** | Menu navigation |
+| **Authorization Key** | Enable weapon fire |
+| **Indicator Lights** | System status (Armed, Tracking, Faults) |
+
+---
+
+## A.3 OSD INDICATORS
+
+| Indicator | Meaning |
+|-----------|---------|
+| **Z** | Zeroing active |
+| **ENV** | Environmental parameters active |
+| **LEAD ANGLE ON** (GREEN) | LAC active, ready to fire |
+| **LEAD ANGLE LAG** (YELLOW) | LAC waiting for tracking data |
+| **ZOOM OUT** (RED) | LAC FOV insufficient |
+| **ZONE VIOLATION** (RED) | No-Fire/No-Traverse zone warning |
+| **TRACKING** | Tracking active |
+| **ACQUISITION** | Acquisition mode |
+| **RNG: xxxx m** | Laser range reading |
+
+---
+
+## A.4 EMERGENCY ACTIONS
+
+| Emergency | Immediate Action |
+|-----------|------------------|
+| **Personnel in danger** | **E-STOP** |
+| **Wrong target** | **Button 4 (double-click)** |
+| **Accidental fire** | **Release Button 5, Release Button 0** |
+| **Runaway gimbal** | **E-STOP → Station Power OFF** |
+| **Fire/Smoke** | **E-STOP → Main Power OFF** |
+
+---
+
+# APPENDIX B: TECHNICAL SPECIFICATIONS
+
+## B.1 SYSTEM CAPABILITIES
+
+| Parameter | Specification |
+|-----------|---------------|
+| **Azimuth Range** | 360° continuous |
+| **Elevation Range** | -20° to +60° |
+| **Azimuth Speed** | 0-60°/sec |
+| **Elevation Speed** | 0-45°/sec |
+| **Pointing Accuracy** | ±0.5° |
+| **Stabilization** | 3-axis (roll, pitch, yaw) |
+| **Max Weapon Caliber** | 12.7mm (.50 cal) |
+
+---
+
+## B.2 ELECTRO-OPTICAL SYSTEM
+
+### **DAY CAMERA (SONY)**
+
+| Parameter | Specification |
+|-----------|---------------|
+| **Resolution** | 1920×1080 (Full HD) |
+| **Zoom** | Optical continuous |
+| **FOV (Wide)** | ~15° H |
+| **FOV (Tele)** | ~1.5° H |
+| **Focus** | Autofocus / Manual |
+
+---
+
+### **THERMAL CAMERA (FLIR TAU 2)**
+
+| Parameter | Specification |
+|-----------|---------------|
+| **Resolution** | 640×512 pixels |
+| **FOV (Wide)** | 10.4° H × 8° V |
+| **FOV (Narrow)** | 5.2° H × 4° V |
+| **Digital Zoom** | 2× / 4× |
+| **LUTs** | White-Hot, Black-Hot, Rainbow, Ironbow, etc. |
+
+---
+
+### **LASER RANGE FINDER**
+
+| Parameter | Specification |
+|-----------|---------------|
+| **Range** | 20m - 5000m |
+| **Accuracy** | ±5m |
+| **Wavelength** | 1550nm (eye-safe) |
+| **Max Fire Rate** | ~1 Hz (continuous) |
+
+---
+
+## B.3 POWER REQUIREMENTS
+
+| Parameter | Specification |
+|-----------|---------------|
+| **Input Voltage** | 24-28 VDC |
+| **Max Current** | 40A (peak), 20A (nominal) |
+| **Power Consumption** | ~500W nominal, ~1000W peak |
+
+---
+
+# APPENDIX C: ACRONYMS & GLOSSARY
+
+## C.1 ACRONYMS
+
+| Acronym | Definition |
+|---------|------------|
+| **RCWS** | Remote Controlled Weapon Station |
+| **DCU** | Display and Control Unit |
+| **LRF** | Laser Range Finder |
+| **IMU** | Inertial Measurement Unit |
+| **AHRS** | Attitude and Heading Reference System |
+| **FOV** | Field of View |
+| **HFOV** | Horizontal Field of View |
+| **VFOV** | Vertical Field of View |
+| **LAC** | Lead Angle Compensation |
+| **CCIP** | Continuously Computed Impact Point |
+| **TRP** | Target Reference Point |
+| **PID** | Positive Identification |
+| **ROE** | Rules of Engagement |
+| **BDA** | Battle Damage Assessment |
+| **TOF** | Time of Flight |
+| **LUT** | Look-Up Table (Thermal) |
+| **FFC** | Flat Field Correction (Thermal camera calibration) |
+| **E-Stop** | Emergency Stop |
+| **OSD** | On-Screen Display |
+
+---
+
+## C.2 GLOSSARY
+
+**Acquisition**: The phase where operator positions and sizes the tracking gate over the target before requesting lock-on.
+
+**Azimuth**: Horizontal angle, measured in degrees (0-360°). 0°=North, 90°=East, 180°=South, 270°=West.
+
+**Boresight**: The alignment between the camera line-of-sight and the weapon bore axis. Zeroing corrects boresight offset.
+
+**Coast Mode**: Tracking phase where the target is temporarily lost and the system predicts target position to maintain track.
+
+**Dead Man Switch**: Safety interlock requiring continuous operator pressure to enable certain functions (LAC activation).
+
+**Elevation**: Vertical angle, measured in degrees. 0°=horizon, +90°=zenith, -90°=nadir.
+
+**Gimbal**: The stabilized platform that holds the camera and weapon, allowing azimuth and elevation motion.
+
+**Lead Angle**: The angular offset between a moving target's current position and the predicted intercept point, compensating for projectile time-of-flight.
+
+**Lock Pending**: Tracking phase where the system is initializing the tracker algorithm on the target.
+
+**Reticle**: The aiming point displayed on the video feed, showing where the weapon will impact (with zeroing/ballistics applied).
+
+**Stabilization**: The system's ability to compensate for platform motion (vehicle movement, ship roll/pitch) to keep the gimbal pointed at the target.
+
+**Zeroing**: The process of correcting the offset between the camera aim point and weapon impact point, ensuring the reticle accurately represents where rounds will hit.
+
+---
+
+# APPENDIX D: MAINTENANCE LOG TEMPLATE
+
+## D.1 DAILY OPERATOR LOG
+
+**Date**: _______________
+**Operator**: _______________
+**Mission**: _______________
+
+### **PRE-OPERATION CHECKS**
+
+| System | Status (✓ / ✗) | Notes |
+|--------|----------------|-------|
+| Power | | |
+| Control Panel | | |
+| Joystick | | |
+| Gimbal Motion | | |
+| Day Camera | | |
+| Thermal Camera | | |
+| LRF | | |
+| Tracking | | |
+| Weapon Arm/Safe | | |
+| System Status | | |
+
+**GO / NO-GO** (circle one)
+
+---
+
+### **OPERATIONS LOG**
+
+| Time | Activity | Notes |
+|------|----------|-------|
+| | | |
+| | | |
+| | | |
+
+---
+
+### **POST-OPERATION CHECKS**
+
+| System | Status (✓ / ✗) | Notes |
+|--------|----------------|-------|
+| All Devices Connected | | |
+| No Fault Warnings | | |
+| Zero Still Valid | | |
+| System Secured | | |
+
+---
+
+### **FAULTS / ISSUES OBSERVED**
+
+| Issue | Time | Action Taken | Escalated to Maint? |
+|-------|------|--------------|---------------------|
+| | | | |
+| | | | |
+
+---
+
+### **OPERATOR SIGNATURE**
+
+**Name**: _______________ **Signature**: _______________ **Date**: _______________
+
+---
+
+**END OF APPENDICES**
+
+---
+
+**END OF EL 7ARRESS RCWS OPERATOR MANUAL (CONDENSED)**
+
+**Total Lessons**: 10
+**Total Appendices**: 4 (A-D)
+**Target Length**: 80-95 pages
+
+---
+
