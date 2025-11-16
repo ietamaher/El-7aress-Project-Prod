@@ -112,7 +112,7 @@ Rectangle {
                                 height: parent.height
                                 radius: 4
                                 color: accentColor
-                                // Dynamic width based on current parameter (temperature normalized to 0-100°C range)
+                                // Dynamic width based on current parameter
                                 width: {
                                     if (!environmentalViewModel) return 0;
                                     var value = 0;
@@ -123,10 +123,8 @@ Rectangle {
                                     } else if (label.includes("Altitude")) {
                                         // Normalize -100m to 5000m as 0 to 100%
                                         value = (environmentalViewModel.altitude + 100) / 5100.0;
-                                    } else if (label.includes("Crosswind")) {
-                                        // Normalize 0 to 25 m/s as 0 to 100%
-                                        value = environmentalViewModel.crosswind / 25.0;
                                     }
+                                    // NOTE: Crosswind removed - use Windage menu for wind
                                     return Math.max(0, Math.min(1, value)) * parent.width;
                                 }
 

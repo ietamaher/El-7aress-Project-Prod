@@ -258,7 +258,7 @@ public slots:
     void updateCcipPipper(float x_px, float y_px, bool visible, const QString& status);
 
     void updateZeroingDisplay(bool modeActive, bool applied, float azOffset, float elOffset);
-    void updateEnvironmentDisplay(float tempCelsius, float altitudeMeters, float crosswindMS);
+    void updateEnvironmentDisplay(float tempCelsius, float altitudeMeters);
     void updateDetectionDisplay(bool enabled);
     void updateDetectionBoxes(const std::vector<YoloDetection>& detections);
 
