@@ -341,39 +341,19 @@ void WeaponController::stopFiring()
 void WeaponController::updateFireControlSolution() {
     if (!m_stateModel) return;
 
-    if (!m_stateModel->data().leadAngleCompensationActive) {
-        // LAC is off, ensure model reflects zero offsets for reticle
-        if (m_stateModel->data().leadAngleOffsetAz != 0.0f ||
-            m_stateModel->data().leadAngleOffsetEl != 0.0f ||
-            m_stateModel->data().currentLeadAngleStatus != LeadAngleStatus::Off) {
-            m_stateModel->updateCalculatedLeadOffsets(0.0f, 0.0f, LeadAngleStatus::Off);
-        }
-        return; // No lead calculation needed
-    }
-
-    // Get necessary inputs (target range, angular rates, FOV, etc.)
+    // Get system state data first (needed for both windage and LAC)
     SystemStateData sData = m_stateModel->data();
-    float targetRange = sData.currentTargetRange;
-    float targetAngRateAz = sData.currentTargetAngularRateAz;
-    float targetAngRateEl = sData.currentTargetAngularRateEl;
-    // ✅ FIXED (2025-11-14): Use correct FOV based on active camera
-    // Day: Sony FCB-EV7520A (2.3° - 63.7° variable zoom) - 1280×720 native → 1024×768 cropped
-    // Night: FLIR TAU 2 640×512 - NOT square! (Wide: 10.4°×8°, Narrow: 5.2°×4°)
-    float currentHFOV = sData.activeCameraIsDay ? sData.dayCurrentHFOV : sData.nightCurrentHFOV;
-    float currentVFOV = sData.activeCameraIsDay ? sData.dayCurrentVFOV : sData.nightCurrentVFOV;
-    float tofGuess = (targetRange > 0 && sData.muzzleVelocityMPS > 0) ? (targetRange / sData.muzzleVelocityMPS) : 0.0f; // Ensure muzzleVelocity is in SystemStateData
-
-    if (!m_ballisticsProcessor) { // If m_ballisticsProcessor is a pointer
-        qCritical() << "BallisticsComputer pointer is NULL!";
-        return; // Or handle error
-    }
 
     // ========================================================================
     // CALCULATE CROSSWIND FROM WINDAGE (Direction + Speed)
     // ========================================================================
+    // ⚠️ CRITICAL: This calculation must run INDEPENDENTLY of LAC status!
     // Windage provides absolute wind direction and speed.
     // Crosswind component varies with gimbal azimuth (where weapon points).
     // This ensures correct wind correction for any firing direction.
+    // The crosswind value is used by:
+    //   1. Ballistics calculations (when environmental corrections enabled)
+    //   2. OSD display (always shown when windage is set)
     // ========================================================================
     float currentCrosswind = 0.0f;
     if (sData.windageAppliedToBallistics && sData.windageSpeedKnots > 0.001f) {
@@ -392,6 +372,7 @@ void WeaponController::updateFireControlSolution() {
             SystemStateData updatedData = sData;
             updatedData.calculatedCrosswindMS = currentCrosswind;
             m_stateModel->updateData(updatedData);
+            sData = updatedData;  // Update local copy
         }
 
         qDebug() << "[WeaponController] WINDAGE TO CROSSWIND CONVERSION:"
@@ -406,7 +387,40 @@ void WeaponController::updateFireControlSolution() {
             SystemStateData updatedData = sData;
             updatedData.calculatedCrosswindMS = 0.0f;
             m_stateModel->updateData(updatedData);
+            sData = updatedData;  // Update local copy
         }
+    }
+
+    // ========================================================================
+    // CHECK IF LAC (Lead Angle Compensation) IS ACTIVE
+    // ========================================================================
+    // The following LAC calculations only run when LAC is enabled.
+    // Crosswind calculation above runs independently!
+    // ========================================================================
+    if (!sData.leadAngleCompensationActive) {
+        // LAC is off, ensure model reflects zero offsets for reticle
+        if (sData.leadAngleOffsetAz != 0.0f ||
+            sData.leadAngleOffsetEl != 0.0f ||
+            sData.currentLeadAngleStatus != LeadAngleStatus::Off) {
+            m_stateModel->updateCalculatedLeadOffsets(0.0f, 0.0f, LeadAngleStatus::Off);
+        }
+        return; // No lead calculation needed, but crosswind was already calculated above!
+    }
+
+    // Get necessary inputs for LAC (target range, angular rates, FOV, etc.)
+    float targetRange = sData.currentTargetRange;
+    float targetAngRateAz = sData.currentTargetAngularRateAz;
+    float targetAngRateEl = sData.currentTargetAngularRateEl;
+    // ✅ FIXED (2025-11-14): Use correct FOV based on active camera
+    // Day: Sony FCB-EV7520A (2.3° - 63.7° variable zoom) - 1280×720 native → 1024×768 cropped
+    // Night: FLIR TAU 2 640×512 - NOT square! (Wide: 10.4°×8°, Narrow: 5.2°×4°)
+    float currentHFOV = sData.activeCameraIsDay ? sData.dayCurrentHFOV : sData.nightCurrentHFOV;
+    float currentVFOV = sData.activeCameraIsDay ? sData.dayCurrentVFOV : sData.nightCurrentVFOV;
+    float tofGuess = (targetRange > 0 && sData.muzzleVelocityMPS > 0) ? (targetRange / sData.muzzleVelocityMPS) : 0.0f; // Ensure muzzleVelocity is in SystemStateData
+
+    if (!m_ballisticsProcessor) { // If m_ballisticsProcessor is a pointer
+        qCritical() << "BallisticsComputer pointer is NULL!";
+        return; // Or handle error
     }
 
     // ========================================================================
