@@ -31,8 +31,10 @@ private:
    // void reset(){ integral = 0; previousError = 0;} double Kp = 0.8, Ki=0.05, Kd=0.1, integral=0, previousError=0, maxIntegral=50;};
     PIDController m_azPid;
     PIDController m_elPid;
-   // double pidCompute(PIDController& pid, double error, double dt);
 
+    // Rate limiting - track previous velocities for time-based acceleration control
+    double m_previousDesiredAzVel = 0.0;
+    double m_previousDesiredElVel = 0.0;
 
     static constexpr double ARRIVAL_THRESHOLD_DEG = 0.2; // How close to consider a point "reached"
     static constexpr double DECELERATION_DISTANCE_DEG = 2.0;

@@ -38,6 +38,10 @@ private:
     PIDController m_azPid;
     PIDController m_elPid;
 
+    // Rate limiting - track previous velocities for time-based acceleration control
+    double m_previousDesiredAzVel = 0.0;
+    double m_previousDesiredElVel = 0.0;
+
     // --- Motion Tuning Parameters ---
     // Distance from target to switch from cruising to PID-controlled deceleration.
     static constexpr double DECELERATION_DISTANCE_DEG = 3.0;
