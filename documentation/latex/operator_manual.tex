@@ -1,0 +1,1008 @@
+\documentclass[11pt,letterpaper,twoside,openright]{book}
+
+% ============================================================================
+% PACKAGES
+% ============================================================================
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[english]{babel}
+\usepackage{geometry}
+\usepackage{fancyhdr}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{longtable}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{multirow}
+\usepackage{enumitem}
+\usepackage{titlesec}
+\usepackage{tocloft}
+\usepackage[hidelinks]{hyperref}
+\usepackage{listings}
+\usepackage{float}
+\usepackage{caption}
+\usepackage{mdframed}
+\usepackage{tikz}
+\usetikzlibrary{shapes,arrows,positioning}
+\usepackage{textcomp}
+\usepackage{amsmath}
+\usepackage{amssymb}
+
+% ============================================================================
+% PAGE LAYOUT
+% ============================================================================
+\geometry{
+    letterpaper,
+    left=1.25in,
+    right=1.0in,
+    top=1.0in,
+    bottom=1.0in,
+    headsep=0.25in,
+    footskip=0.5in
+}
+
+% ============================================================================
+% COLORS
+% ============================================================================
+\definecolor{warningred}{RGB}{200,20,40}
+\definecolor{cautionorange}{RGB}{255,140,0}
+\definecolor{notegray}{RGB}{100,100,100}
+\definecolor{militarygreen}{RGB}{78,108,80}
+\definecolor{tablegray}{RGB}{240,240,240}
+
+% ============================================================================
+% HEADERS AND FOOTERS
+% ============================================================================
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[LE]{\small\textit{EL 7ARRESS RCWS OPERATOR MANUAL}}
+\fancyhead[RO]{\small\textit{\leftmark}}
+\fancyfoot[LE,RO]{\thepage}
+\fancyfoot[C]{\small CONDENSED VERSION 1.0}
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\footrulewidth}{0.4pt}
+
+\fancypagestyle{plain}{
+    \fancyhf{}
+    \fancyfoot[C]{\thepage}
+    \renewcommand{\headrulewidth}{0pt}
+    \renewcommand{\footrulewidth}{0.4pt}
+}
+
+% ============================================================================
+% CHAPTER AND SECTION FORMATTING
+% ============================================================================
+\titleformat{\chapter}[display]
+  {\normalfont\huge\bfseries\color{militarygreen}}
+  {\chaptertitlename\ \thechapter}{20pt}{\Huge}
+
+\titleformat{\section}
+  {\normalfont\Large\bfseries\color{militarygreen}}
+  {\thesection}{1em}{}
+
+\titleformat{\subsection}
+  {\normalfont\large\bfseries}
+  {\thesubsection}{1em}{}
+
+% ============================================================================
+% TABLE OF CONTENTS
+% ============================================================================
+\setcounter{tocdepth}{2}
+\setcounter{secnumdepth}{3}
+
+% ============================================================================
+% CUSTOM ENVIRONMENTS
+% ============================================================================
+
+% WARNING box
+\newmdenv[
+    linecolor=warningred,
+    backgroundcolor=warningred!10,
+    linewidth=2pt,
+    topline=true,
+    bottomline=true,
+    leftline=true,
+    rightline=true,
+    innertopmargin=10pt,
+    innerbottommargin=10pt,
+    innerrightmargin=10pt,
+    innerleftmargin=10pt
+]{warningbox}
+
+\newcommand{\WARNING}[1]{%
+\begin{warningbox}
+\noindent\textbf{\large\color{warningred}⚠ WARNING}\\[5pt]
+#1
+\end{warningbox}
+}
+
+% CAUTION box
+\newmdenv[
+    linecolor=cautionorange,
+    backgroundcolor=cautionorange!10,
+    linewidth=2pt,
+    topline=true,
+    bottomline=true,
+    leftline=true,
+    rightline=true,
+    innertopmargin=10pt,
+    innerbottommargin=10pt,
+    innerrightmargin=10pt,
+    innerleftmargin=10pt
+]{cautionbox}
+
+\newcommand{\CAUTION}[1]{%
+\begin{cautionbox}
+\noindent\textbf{\large\color{cautionorange}▲ CAUTION}\\[5pt]
+#1
+\end{cautionbox}
+}
+
+% NOTE box
+\newmdenv[
+    linecolor=notegray,
+    backgroundcolor=notegray!5,
+    linewidth=1pt,
+    topline=true,
+    bottomline=true,
+    leftline=true,
+    rightline=true,
+    innertopmargin=8pt,
+    innerbottommargin=8pt,
+    innerrightmargin=8pt,
+    innerleftmargin=8pt
+]{notebox}
+
+\newcommand{\NOTE}[1]{%
+\begin{notebox}
+\noindent\textbf{\color{notegray}NOTE:} #1
+\end{notebox}
+}
+
+% Procedure box
+\newenvironment{procedure}[1]
+{
+    \begin{mdframed}[
+        linecolor=militarygreen,
+        backgroundcolor=militarygreen!5,
+        linewidth=1pt,
+        topline=true,
+        bottomline=true,
+        leftline=true,
+        rightline=true,
+        innertopmargin=10pt,
+        innerbottommargin=10pt,
+        innerrightmargin=10pt,
+        innerleftmargin=10pt
+    ]
+    \noindent\textbf{\large #1}\\[5pt]
+    \begin{enumerate}[leftmargin=1.5em,itemsep=3pt]
+}
+{
+    \end{enumerate}
+    \end{mdframed}
+}
+
+% Checklist
+\newlist{checklist}{itemize}{1}
+\setlist[checklist]{label=$\square$,leftmargin=1.5em}
+
+% ============================================================================
+% CUSTOM COMMANDS
+% ============================================================================
+
+% Button notation
+\newcommand{\button}[1]{\texttt{\textbf{[#1]}}}
+
+% OSD indicator
+\newcommand{\osd}[1]{\texttt{\textbf{#1}}}
+
+% Degrees symbol
+\newcommand{\degree}{$^\circ$}
+
+% ============================================================================
+% DOCUMENT METADATA
+% ============================================================================
+\title{%
+    \vspace{-2cm}
+    \includegraphics[width=3in]{logo.png}\\[1cm]
+    {\Huge\bfseries EL 7ARRESS}\\[0.5cm]
+    {\LARGE Remote Controlled Weapon Station}\\[0.5cm]
+    {\LARGE OPERATOR MANUAL}\\[0.3cm]
+    {\large CONDENSED VERSION}
+}
+\author{}
+\date{Version 1.0 \\ \today}
+
+% ============================================================================
+% BEGIN DOCUMENT
+% ============================================================================
+\begin{document}
+
+% ============================================================================
+% FRONT MATTER
+% ============================================================================
+\frontmatter
+
+% Title Page
+\maketitle
+\thispagestyle{empty}
+
+\clearpage
+
+% Document Control Page
+\chapter*{DOCUMENT CONTROL}
+\addcontentsline{toc}{chapter}{Document Control}
+
+\begin{tabular}{@{}ll@{}}
+\toprule
+\textbf{Document Number:} & EH-OM-COND-001 \\
+\textbf{Version:} & 1.0 \\
+\textbf{Date:} & \today \\
+\textbf{Classification:} & UNCLASSIFIED \\
+\textbf{Distribution:} & Approved for public release \\
+\textbf{Prepared by:} & El 7arress Engineering Team \\
+\textbf{Approved by:} & Technical Director \\
+\bottomrule
+\end{tabular}
+
+\vspace{1cm}
+
+\section*{Revision History}
+
+\begin{longtable}{@{}llp{8cm}@{}}
+\toprule
+\textbf{Version} & \textbf{Date} & \textbf{Changes} \\
+\midrule
+\endhead
+1.0 & \today & Initial condensed release \\
+\bottomrule
+\end{longtable}
+
+\clearpage
+
+% Warnings and Cautions
+\chapter*{WARNINGS, CAUTIONS, AND NOTES}
+\addcontentsline{toc}{chapter}{Warnings, Cautions, and Notes}
+
+\WARNING{%
+\textbf{GENERAL WEAPON SAFETY}\\[5pt]
+This system controls a lethal weapon. Failure to follow safety procedures can result in death or serious injury to personnel. Always maintain positive identification of targets before engaging. Verify no friendly forces are in the line of fire.
+}
+
+\vspace{0.5cm}
+
+\WARNING{%
+\textbf{ELECTRICAL HAZARD}\\[5pt]
+The RCWS operates on 24-28 VDC at up to 40 amperes. Disconnect all power sources before performing any maintenance. Only qualified personnel may service electrical components.
+}
+
+\vspace{0.5cm}
+
+\WARNING{%
+\textbf{LASER HAZARD}\\[5pt]
+The Laser Range Finder emits Class 1M laser radiation at 1550nm. Do not view directly with optical instruments. Ensure range safety protocols are followed during operations.
+}
+
+\vspace{0.5cm}
+
+\CAUTION{%
+\textbf{EQUIPMENT DAMAGE}\\[5pt]
+Operating the gimbal beyond mechanical limits (-20\degree~to +60\degree~elevation) may cause permanent damage to servos and encoders. Always observe gimbal position indicators. Do not force manual movement when power is applied.
+}
+
+\vspace{0.5cm}
+
+\CAUTION{%
+\textbf{ENVIRONMENTAL PROTECTION}\\[5pt]
+Thermal and day cameras are sensitive to extreme temperatures. Operating outside -20\degree C to +60\degree C ambient range may degrade performance or cause damage. Protect system from moisture, dust, and salt spray when not in use.
+}
+
+\vspace{0.5cm}
+
+\NOTE{%
+Throughout this manual, the following conventions apply:
+\begin{itemize}[leftmargin=2em,itemsep=2pt]
+\item \textbf{WARNING} indicates hazards that could result in death or serious injury
+\item \textbf{CAUTION} indicates hazards that could result in equipment damage
+\item \textbf{NOTE} provides additional information or clarification
+\item \button{Button X} indicates joystick or control panel buttons
+\item \osd{TEXT} indicates on-screen display elements
+\end{itemize}
+}
+
+\clearpage
+
+% Table of Contents
+\tableofcontents
+
+\clearpage
+
+% Quick Reference Card
+\chapter*{QUICK REFERENCE CARD}
+\addcontentsline{toc}{chapter}{Quick Reference Card}
+
+\section*{Emergency Actions}
+
+\begin{tabular}{@{}lp{10cm}@{}}
+\toprule
+\textbf{Emergency} & \textbf{Immediate Action} \\
+\midrule
+Personnel in danger & \textbf{STRIKE E-STOP BUTTON} \\
+Wrong target tracked & \textbf{Double-click} \button{Button 4} ($<$500ms) \\
+Accidental discharge & Release \button{Button 5} (Fire), Release \button{Button 0} (Master Arm) \\
+Runaway gimbal & \textbf{E-STOP} → Station Power OFF \\
+Fire or smoke & E-STOP → Station OFF → Main Power OFF \\
+\bottomrule
+\end{tabular}
+
+\vspace{1cm}
+
+\section*{Essential Joystick Controls}
+
+\begin{tabular}{@{}lp{9cm}@{}}
+\toprule
+\textbf{Control} & \textbf{Function} \\
+\midrule
+X/Y Axes & Azimuth (left/right), Elevation (up/down) \\
+\button{Button 0} & Master Arm \\
+\button{Button 3} & Dead Man Switch (safety interlock) \\
+\button{Button 4} & Track Select (single=start, double=abort) \\
+\button{Button 5} & Fire \\
+\button{Button 6/8} & Zoom In/Out \\
+\button{Button 10/12} & Camera Switch (Day/Thermal) \\
+\button{Button 11/13} & Motion Mode Cycle \\
+\bottomrule
+\end{tabular}
+
+\vspace{1cm}
+
+\section*{Pre-Operation Checklist}
+
+\begin{checklist}
+\item Main Power ON, Station Enable ON
+\item All devices connected (System Status check)
+\item Cameras operational (day and thermal)
+\item Gimbal smooth motion test (azimuth/elevation)
+\item Laser Range Finder test
+\item Tracking acquisition test
+\item Weapon Arm/Safe switches functional
+\item Zero active (\osd{Z} indicator on OSD)
+\end{checklist}
+
+\clearpage
+
+% ============================================================================
+% MAIN MATTER
+% ============================================================================
+\mainmatter
+
+% ============================================================================
+% CHAPTER 1: SAFETY BRIEF & SYSTEM OVERVIEW
+% ============================================================================
+\chapter{Safety Brief \& System Overview}
+\label{ch:safety-overview}
+
+\section{Learning Objectives}
+
+Upon completion of this lesson, you will be able to:
+
+\begin{itemize}[leftmargin=2em,itemsep=3pt]
+\item Identify critical safety hazards associated with the El 7arress RCWS
+\item Apply proper safety procedures during all phases of operation
+\item Describe the major components and their functions
+\item Understand system capabilities and limitations
+\item Implement proper safety interlocks before weapon engagement
+\end{itemize}
+
+\textbf{Lesson Duration:} 2 hours (Classroom)
+
+\clearpage
+
+\section{Weapon Safety Principles}
+
+\subsection{Fundamental Safety Rules}
+
+The El 7arress RCWS is a \textbf{lethal weapon system}. All operators must internalize and apply these fundamental safety rules at all times:
+
+\begin{enumerate}[leftmargin=2em,itemsep=5pt]
+\item \textbf{Treat every weapon as if it is loaded}
+   \begin{itemize}
+   \item Never assume the weapon is unloaded
+   \item Always verify weapon status before and after operations
+   \item Maintain awareness of ammunition status
+   \end{itemize}
+
+\item \textbf{Never point the weapon at anything you do not intend to destroy}
+   \begin{itemize}
+   \item Control gimbal direction at all times
+   \item Be aware of no-traverse zones
+   \item Point weapon to safe direction when not engaging
+   \end{itemize}
+
+\item \textbf{Keep your finger off the trigger until ready to fire}
+   \begin{itemize}
+   \item Do not rest finger on fire button
+   \item Engage Master Arm only when engagement authorized
+   \item Use Dead Man Switch as designed (safety interlock)
+   \end{itemize}
+
+\item \textbf{Know your target and what is beyond it}
+   \begin{itemize}
+   \item Achieve Positive Identification (PID) before engagement
+   \item Verify no friendly forces in line of fire
+   \item Consider backstop and ricochet hazards
+   \item Account for maximum weapon range and overshoot
+   \end{itemize}
+\end{enumerate}
+
+\WARNING{%
+Violation of these fundamental safety rules can result in \textbf{fratricide} (killing friendly forces) or \textbf{collateral damage} (harm to civilians/property). There are no exceptions to these rules. If you cannot comply with all four rules, \textbf{DO NOT FIRE}.
+}
+
+\clearpage
+
+\subsection{Safety Interlocks}
+
+The El 7arress RCWS implements multiple safety interlocks to prevent accidental discharge:
+
+\begin{table}[H]
+\centering
+\caption{Safety Interlocks}
+\label{tab:safety-interlocks}
+\begin{tabular}{@{}llp{7cm}@{}}
+\toprule
+\textbf{Interlock} & \textbf{Location} & \textbf{Function} \\
+\midrule
+Station Enable & Control Panel & Must be ON for any system operation \\
+Gun Arm/Safe & Control Panel & Must be in ARM position to enable fire control \\
+Authorization Key & Control Panel & Must be inserted and turned for weapon fire \\
+Dead Man Switch & Joystick \button{Button 3} & Must be held for LAC activation \\
+Master Arm & Joystick \button{Button 0} & Must be engaged to enable fire button \\
+Emergency Stop & Control Panel (Red) & Immediately disables all weapon functions \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\NOTE{%
+All safety interlocks must be in the correct state for weapon fire. If any interlock is not satisfied, the weapon will not fire even if the fire button is pressed. This is intentional and provides defense-in-depth safety.
+}
+
+\subsection{No-Fire and No-Traverse Zones}
+
+\textbf{No-Fire Zones} are designated areas where weapon discharge is prohibited. These may include:
+\begin{itemize}[leftmargin=2em]
+\item Friendly force positions
+\item Civilian population centers
+\item Protected sites (hospitals, cultural sites)
+\item Vehicle structure (hull, superstructure)
+\end{itemize}
+
+\textbf{No-Traverse Zones} are areas where gimbal movement is prohibited to prevent damage to the vehicle or injury to personnel:
+\begin{itemize}[leftmargin=2em]
+\item Vehicle antennas, radar, sensors
+\item Personnel areas (hatches, walkways)
+\item Other vehicle-mounted equipment
+\end{itemize}
+
+\WARNING{%
+If the reticle enters a no-fire zone, the OSD will display \osd{ZONE VIOLATION} in \textcolor{warningred}{RED}. \textbf{DO NOT FIRE} until the gimbal is moved out of the restricted zone. Firing into no-fire zones violates Rules of Engagement (ROE) and may constitute a war crime.
+}
+
+\clearpage
+
+\section{System Overview}
+
+\subsection{Major Components}
+
+The El 7arress Remote Controlled Weapon Station (RCWS) consists of three major assemblies:
+
+\begin{enumerate}[leftmargin=2em,itemsep=5pt]
+\item \textbf{Display and Control Unit (DCU)}
+   \begin{itemize}
+   \item Located inside vehicle (operator station)
+   \item Video display (monitor)
+   \item Control panel with buttons, switches, indicator lights
+   \item Houses main processor and control electronics
+   \end{itemize}
+
+\item \textbf{Joystick Controller}
+   \begin{itemize}
+   \item Primary operator control interface
+   \item 2-axis gimbal control (X/Y axes)
+   \item 14 programmable buttons (0-13)
+   \item 4-direction D-pad (hat switch)
+   \item Dead Man Switch (\button{Button 3})
+   \item 2-stage trigger (Master Arm + Fire)
+   \end{itemize}
+
+\item \textbf{Turret Assembly}
+   \begin{itemize}
+   \item Mounted on vehicle exterior (roof/hull)
+   \item 2-axis stabilized gimbal (azimuth + elevation)
+   \item Electro-Optical System (day camera, thermal camera, laser rangefinder)
+   \item Weapon mount with elevation actuator
+   \item Azimuth and elevation servo motors
+   \item Inertial Measurement Unit (IMU) for stabilization
+   \end{itemize}
+\end{enumerate}
+
+\subsection{System Capabilities}
+
+\begin{table}[H]
+\centering
+\caption{El 7arress RCWS Technical Capabilities}
+\label{tab:system-capabilities}
+\begin{tabular}{@{}lp{8cm}@{}}
+\toprule
+\textbf{Parameter} & \textbf{Specification} \\
+\midrule
+Azimuth Range & 360\degree~continuous rotation \\
+Elevation Range & -20\degree~(down) to +60\degree~(up) \\
+Azimuth Speed & 0-60\degree/second \\
+Elevation Speed & 0-45\degree/second \\
+Pointing Accuracy & $\pm$0.5\degree \\
+Stabilization & 3-axis (roll, pitch, yaw compensation) \\
+Maximum Weapon & 12.7mm (.50 caliber) machine gun \\
+Laser Rangefinder & 20m to 5000m range, $\pm$5m accuracy \\
+Day Camera & 1920×1080 Full HD, continuous optical zoom \\
+Thermal Camera & 640×512 uncooled FLIR, multiple LUTs \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\clearpage
+
+\subsection{Electro-Optical System}
+
+The Electro-Optical System is an \textbf{integrated assembly} containing three sensors:
+
+\begin{enumerate}[leftmargin=2em,itemsep=5pt]
+\item \textbf{Day Camera (Sony)}
+   \begin{itemize}
+   \item Full HD resolution (1920×1080 pixels)
+   \item Continuous optical zoom
+   \item Field of View: $\sim$15\degree~(wide) to $\sim$1.5\degree~(telephoto)
+   \item Autofocus or manual focus modes
+   \item Optimal for daylight, clear weather operations
+   \end{itemize}
+
+\item \textbf{Thermal Camera (FLIR TAU 2)}
+   \begin{itemize}
+   \item Uncooled microbolometer, 640×512 pixels
+   \item Dual Field of View: 10.4\degree×8\degree~(wide), 5.2\degree×4\degree~(narrow)
+   \item Digital zoom: 2× and 4×
+   \item Multiple Look-Up Tables (LUTs): White-Hot, Black-Hot, Rainbow, Ironbow
+   \item Optimal for night, low-light, obscurant (smoke/dust) conditions
+   \end{itemize}
+
+\item \textbf{Laser Range Finder (LRF)}
+   \begin{itemize}
+   \item Eye-safe 1550nm wavelength
+   \item Range: 20m to 5000m
+   \item Accuracy: $\pm$5 meters
+   \item Fire rate: $\sim$1 Hz continuous
+   \item Essential for ballistic fire control and Lead Angle Compensation
+   \end{itemize}
+\end{enumerate}
+
+\NOTE{%
+All three sensors are co-aligned in the Electro-Optical System. The laser rangefinder measures distance to the center of the video image (reticle position). This ensures accurate ballistic calculations.
+}
+
+\clearpage
+
+\subsection{Gimbal and Stabilization}
+
+\subsubsection{2-Axis Gimbal}
+
+The gimbal provides two degrees of freedom:
+
+\begin{itemize}[leftmargin=2em,itemsep=3pt]
+\item \textbf{Azimuth (Horizontal):} 360\degree~continuous rotation
+\item \textbf{Elevation (Vertical):} -20\degree~to +60\degree~range
+\end{itemize}
+
+Servo motors drive both axes with high precision ($\pm$0.5\degree~accuracy). Absolute encoders provide real-time position feedback.
+
+\subsubsection{3-Axis Stabilization}
+
+The Inertial Measurement Unit (IMU) provides vehicle attitude data:
+
+\begin{itemize}[leftmargin=2em,itemsep=3pt]
+\item \textbf{Roll:} Vehicle tilting left/right
+\item \textbf{Pitch:} Vehicle tilting forward/backward
+\item \textbf{Yaw:} Vehicle heading (compass direction)
+\end{itemize}
+
+The stabilization system compensates for platform motion in real-time, keeping the reticle pointed at the target even when the vehicle is moving or on unstable terrain.
+
+\WARNING{%
+If the IMU becomes disconnected or fails, stabilization will be \textbf{offline}. The system will still function in manual mode, but the reticle will move with vehicle motion. Accuracy will be degraded, especially on moving platforms or at sea. Check System Status before operations to verify IMU is connected.
+}
+
+\clearpage
+
+\subsection{Tracking System}
+
+The El 7arress RCWS includes an automated video-based tracking system:
+
+\textbf{Tracking Capabilities:}
+\begin{itemize}[leftmargin=2em,itemsep=3pt]
+\item Automatic target acquisition and lock-on
+\item Real-time target following (30 Hz update rate)
+\item Automatic gimbal control to keep target centered
+\item Predictive coasting during temporary target loss
+\item Integration with Lead Angle Compensation for moving targets
+\end{itemize}
+
+\textbf{Tracking Phases:}
+\begin{enumerate}[leftmargin=2em,itemsep=3pt]
+\item \textbf{Off:} No tracking active
+\item \textbf{Acquisition:} Operator positions tracking gate
+\item \textbf{Lock Pending:} System initializing tracker
+\item \textbf{Active Lock:} Tracking target successfully
+\item \textbf{Coast:} Temporary target loss, prediction active
+\item \textbf{Firing:} Tracking active during weapon discharge
+\end{enumerate}
+
+\NOTE{%
+Tracking is \textbf{optional}. The system can be operated entirely in manual mode. Tracking is most effective for:
+\begin{itemize}
+\item Moving targets (vehicles, personnel)
+\item Extended observation/surveillance
+\item Precision engagement at range
+\end{itemize}
+Tracking may struggle with:
+\begin{itemize}
+\item Very small or distant targets
+\item Low-contrast targets (camouflaged)
+\item Erratic or unpredictable motion
+\end{itemize}
+}
+
+\clearpage
+
+\section{Operational Modes}
+
+\subsection{Motion Modes}
+
+The El 7arress RCWS supports four motion modes:
+
+\begin{table}[H]
+\centering
+\caption{Motion Modes}
+\label{tab:motion-modes}
+\begin{tabular}{@{}llp{6cm}@{}}
+\toprule
+\textbf{Mode} & \textbf{Use Case} & \textbf{Gimbal Control} \\
+\midrule
+Manual & Direct engagement, search & Operator (joystick) \\
+AutoSectorScan & Perimeter surveillance & Automatic (scans between limits) \\
+TRP Scan & Checkpoint monitoring & Automatic (visits waypoints) \\
+Radar Slew & Radar integration (optional) & Automatic (radar cues) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{Mode Cycling:} Press \button{Button 11} or \button{Button 13} to cycle through available modes. Current mode is displayed on the OSD.
+
+\subsection{Fire Control Modes}
+
+\subsubsection{Manual Fire Control}
+
+\begin{itemize}[leftmargin=2em,itemsep=3pt]
+\item Operator aims manually using joystick
+\item Reticle shows aim point with zeroing applied
+\item No ballistic compensation
+\item Suitable for close range, stationary targets
+\end{itemize}
+
+\subsubsection{Ballistic Fire Control}
+
+\begin{itemize}[leftmargin=2em,itemsep=3pt]
+\item Zeroing corrects camera-to-weapon offset
+\item Environmental parameters (temperature, altitude, crosswind) applied
+\item CCIP (Continuously Computed Impact Point) reticle
+\item Suitable for medium to long range, stationary targets
+\end{itemize}
+
+\subsubsection{Lead Angle Compensation (LAC)}
+
+\begin{itemize}[leftmargin=2em,itemsep=3pt]
+\item Requires active tracking
+\item Predicts moving target intercept point
+\item CCIP offset ahead of target (lead angle)
+\item Suitable for moving targets at range
+\end{itemize}
+
+\clearpage
+
+\section{Limitations and Constraints}
+
+\subsection{Environmental Limitations}
+
+\begin{table}[H]
+\centering
+\caption{Environmental Operating Limits}
+\label{tab:env-limits}
+\begin{tabular}{@{}lll@{}}
+\toprule
+\textbf{Parameter} & \textbf{Operating Range} & \textbf{Storage Range} \\
+\midrule
+Temperature & -20\degree C to +60\degree C & -40\degree C to +70\degree C \\
+Humidity & 5\% to 95\% RH (non-condensing) & 5\% to 100\% RH \\
+Altitude & Sea level to 4000m & Sea level to 6000m \\
+Wind & 0 to 25 m/s (sustained) & 0 to 40 m/s (gusts) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\WARNING{%
+Operating outside these environmental limits may degrade performance or cause equipment damage. In extreme cold ($<$-10\degree C), allow extended warm-up time. In extreme heat ($>$50\degree C), monitor servo temperatures and reduce continuous operation.
+}
+
+\subsection{Engagement Limitations}
+
+\begin{itemize}[leftmargin=2em,itemsep=3pt]
+\item \textbf{Minimum Engagement Range:} 20 meters (LRF limitation, safety buffer)
+\item \textbf{Maximum Effective Range:} Depends on weapon, ammunition, and environmental conditions (typically 1500-2000m for 12.7mm)
+\item \textbf{Elevation Limits:} Cannot engage targets below -20\degree~or above +60\degree
+\item \textbf{Obscurants:} Dense smoke, fog, or dust may degrade camera and LRF performance
+\item \textbf{Tracking Limitations:} Small, low-contrast, or erratic targets may not track reliably
+\end{itemize}
+
+\subsection{Power Limitations}
+
+\textbf{Power Source:} 24-28 VDC vehicle power
+
+\textbf{Power Consumption:}
+\begin{itemize}[leftmargin=2em,itemsep=3pt]
+\item Idle: $\sim$200W
+\item Normal operation: $\sim$500W
+\item Peak (rapid gimbal motion + tracking + firing): $\sim$1000W
+\end{itemize}
+
+\CAUTION{%
+Ensure vehicle electrical system can supply continuous 40 amperes at 24 VDC. Low voltage ($<$22 VDC) may cause system instability or automatic shutdown. If voltage drops during operation, reduce gimbal speed or cease firing to lower current draw.
+}
+
+\clearpage
+
+\section{Safety Summary}
+
+\subsection{Critical Safety Reminders}
+
+\begin{enumerate}[leftmargin=2em,itemsep=5pt]
+\item \textbf{ALWAYS} achieve Positive Identification (PID) before engaging
+\item \textbf{ALWAYS} verify no friendly forces in line of fire
+\item \textbf{ALWAYS} check for \osd{ZONE VIOLATION} warnings before firing
+\item \textbf{ALWAYS} maintain awareness of weapon arming status
+\item \textbf{NEVER} defeat or bypass safety interlocks
+\item \textbf{NEVER} fire without proper authorization
+\item \textbf{NEVER} operate equipment you are not qualified on
+\item \textbf{NEVER} leave weapon armed and unattended
+\end{enumerate}
+
+\subsection{Emergency Actions Review}
+
+\begin{table}[H]
+\centering
+\caption{Emergency Actions Quick Reference}
+\label{tab:emergency-actions}
+\begin{tabular}{@{}lp{8cm}@{}}
+\toprule
+\textbf{Emergency} & \textbf{Immediate Action} \\
+\midrule
+Immediate danger & \textbf{STRIKE E-STOP BUTTON} \\
+Wrong target tracked & \textbf{Double-click} \button{Button 4} ($<$500ms) \\
+Accidental discharge & Release \button{Button 5} + Release \button{Button 0} \\
+Runaway gimbal & E-STOP → Station Power OFF \\
+Fire or smoke & E-STOP → Station OFF → Main Power OFF \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\clearpage
+
+% ============================================================================
+% END OF DOCUMENT (shortened for length - continue with remaining chapters)
+% ============================================================================
+
+\backmatter
+
+% ============================================================================
+% APPENDICES
+% ============================================================================
+\appendix
+
+\chapter{Quick Reference Cards}
+\label{app:quick-ref}
+
+\section{Startup Sequence}
+
+\begin{procedure}{System Startup Procedure}
+\item Turn Main Power switch to \textbf{ON}
+\item Turn Station Enable switch to \textbf{ON}
+\item Wait for system boot ($\sim$60 seconds)
+\item Check System Status display (all devices connected)
+\item Perform pre-operation checklist
+\item System ready for operations
+\end{procedure}
+
+\section{Control Reference}
+
+\subsection{Joystick Control Mapping}
+
+\begin{longtable}{@{}lp{9cm}@{}}
+\caption{Joystick Button Functions} \\
+\toprule
+\textbf{Control} & \textbf{Function} \\
+\midrule
+\endfirsthead
+\multicolumn{2}{c}{\textit{(continued)}} \\
+\toprule
+\textbf{Control} & \textbf{Function} \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+X-Axis & Azimuth control (left/right gimbal motion) \\
+Y-Axis & Elevation control (up/down gimbal motion) \\
+\button{Button 0} & Master Arm (stage 1 trigger) \\
+\button{Button 2} & LAC Toggle (requires \button{Button 3} held) \\
+\button{Button 3} & Dead Man Switch (safety interlock) \\
+\button{Button 4} & Track Select (single press = start acquisition, double-click = abort) \\
+\button{Button 5} & Fire (stage 2 trigger) \\
+\button{Button 6} & Zoom In \\
+\button{Button 8} & Zoom Out \\
+\button{Button 7} & Thermal LUT Cycle (thermal camera only) \\
+\button{Button 9} & Thermal LUT Reverse Cycle \\
+\button{Button 10} & Switch to Day Camera \\
+\button{Button 12} & Switch to Thermal Camera \\
+\button{Button 11} & Motion Mode Cycle Forward \\
+\button{Button 13} & Motion Mode Cycle Reverse \\
+D-Pad (Hat Switch) & Acquisition gate sizing (in Acquisition phase only) \\
+\end{longtable}
+
+\clearpage
+
+\chapter{Technical Specifications}
+\label{app:tech-specs}
+
+\section{System Specifications}
+
+\begin{longtable}{@{}lp{9cm}@{}}
+\caption{El 7arress RCWS Technical Specifications} \\
+\toprule
+\textbf{Parameter} & \textbf{Specification} \\
+\midrule
+\endfirsthead
+\multicolumn{2}{c}{\textit{(continued)}} \\
+\toprule
+\textbf{Parameter} & \textbf{Specification} \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+\textbf{Gimbal} & \\
+Azimuth Range & 360\degree~continuous rotation \\
+Elevation Range & -20\degree~to +60\degree \\
+Azimuth Speed & 0-60\degree/second \\
+Elevation Speed & 0-45\degree/second \\
+Pointing Accuracy & $\pm$0.5\degree \\
+Stabilization Axes & 3-axis (roll, pitch, yaw) \\
+\midrule
+\textbf{Day Camera (Sony)} & \\
+Resolution & 1920×1080 (Full HD) \\
+Zoom & Optical continuous \\
+FOV (Wide) & $\sim$15\degree~horizontal \\
+FOV (Telephoto) & $\sim$1.5\degree~horizontal \\
+Focus & Autofocus / Manual \\
+\midrule
+\textbf{Thermal Camera (FLIR TAU 2)} & \\
+Resolution & 640×512 pixels \\
+FOV (Wide) & 10.4\degree~H × 8\degree~V \\
+FOV (Narrow) & 5.2\degree~H × 4\degree~V \\
+Digital Zoom & 2×, 4× \\
+LUTs & White-Hot, Black-Hot, Rainbow, Ironbow, etc. \\
+\midrule
+\textbf{Laser Range Finder} & \\
+Range & 20m to 5000m \\
+Accuracy & $\pm$5 meters \\
+Wavelength & 1550nm (eye-safe Class 1M) \\
+Fire Rate & $\sim$1 Hz continuous \\
+\midrule
+\textbf{Power} & \\
+Input Voltage & 24-28 VDC \\
+Max Current & 40A (peak), 20A (nominal) \\
+Power Consumption & 500W nominal, 1000W peak \\
+\midrule
+\textbf{Environmental} & \\
+Operating Temperature & -20\degree C to +60\degree C \\
+Storage Temperature & -40\degree C to +70\degree C \\
+Humidity & 5\% to 95\% RH (non-condensing) \\
+Altitude & Sea level to 4000m \\
+\end{longtable}
+
+\clearpage
+
+\chapter{Acronyms and Glossary}
+\label{app:acronyms}
+
+\section{Acronyms}
+
+\begin{longtable}{@{}lp{10cm}@{}}
+\caption{Acronym Definitions} \\
+\toprule
+\textbf{Acronym} & \textbf{Definition} \\
+\midrule
+\endfirsthead
+\multicolumn{2}{c}{\textit{(continued)}} \\
+\toprule
+\textbf{Acronym} & \textbf{Definition} \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+RCWS & Remote Controlled Weapon Station \\
+DCU & Display and Control Unit \\
+LRF & Laser Range Finder \\
+IMU & Inertial Measurement Unit \\
+AHRS & Attitude and Heading Reference System \\
+FOV & Field of View \\
+HFOV & Horizontal Field of View \\
+VFOV & Vertical Field of View \\
+LAC & Lead Angle Compensation \\
+CCIP & Continuously Computed Impact Point \\
+TRP & Target Reference Point \\
+PID & Positive Identification \\
+ROE & Rules of Engagement \\
+BDA & Battle Damage Assessment \\
+TOF & Time of Flight \\
+LUT & Look-Up Table (Thermal imaging) \\
+FFC & Flat Field Correction \\
+E-Stop & Emergency Stop \\
+OSD & On-Screen Display \\
+\end{longtable}
+
+\clearpage
+
+\section{Glossary of Terms}
+
+\begin{description}[leftmargin=3cm,style=nextline,itemsep=10pt]
+
+\item[Acquisition] The tracking phase where the operator positions and sizes the tracking gate over the target before requesting lock-on.
+
+\item[Azimuth] Horizontal angle measured in degrees (0-360\degree). 0\degree=North, 90\degree=East, 180\degree=South, 270\degree=West.
+
+\item[Boresight] The alignment between the camera line-of-sight and the weapon bore axis. Zeroing corrects boresight offset.
+
+\item[Coast Mode] Tracking phase where the target is temporarily lost and the system predicts target position to attempt re-acquisition.
+
+\item[Dead Man Switch] Safety interlock requiring continuous operator pressure to enable certain functions (LAC activation on \button{Button 3}).
+
+\item[Elevation] Vertical angle measured in degrees. 0\degree=horizon, +90\degree=zenith, -90\degree=nadir.
+
+\item[Gimbal] The stabilized 2-axis platform that holds the electro-optical system and weapon, allowing azimuth and elevation motion.
+
+\item[Lead Angle] The angular offset between a moving target's current position and the predicted intercept point, compensating for projectile time-of-flight.
+
+\item[Lock Pending] Tracking phase where the system is initializing the tracker algorithm on the target (typically 0.5-2 seconds).
+
+\item[Reticle] The aiming point displayed on the video feed, showing where the weapon will impact after applying zeroing and ballistic corrections.
+
+\item[Stabilization] The system's ability to compensate for platform motion (vehicle movement, ship roll/pitch/yaw) to keep the gimbal pointed at the target.
+
+\item[Zeroing] The process of correcting the offset between the camera aim point and weapon impact point, ensuring the reticle accurately represents where rounds will hit.
+
+\end{description}
+
+\clearpage
+
+% ============================================================================
+% INDEX (optional)
+% ============================================================================
+% \printindex
+
+\end{document}
