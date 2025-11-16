@@ -1,7 +1,8 @@
 #include "trpscanmotionmode.h"
 #include "controllers/gimbalcontroller.h" // For GimbalController and SystemStateData
 #include <QDebug>
-#include <cmath> // For std::sqrt
+#include <QDateTime>  // For throttling model updates
+#include <cmath> // For std::sqrt, std::hypot
 
 TRPScanMotionMode::TRPScanMotionMode()
     : m_currentState(State::Idle)
@@ -38,6 +39,13 @@ void TRPScanMotionMode::enterMode(GimbalController* controller)
     m_currentState = State::Moving;
     m_azPid.reset();
     m_elPid.reset();
+
+    // Reset rate limiting state
+    m_previousDesiredAzVel = 0.0;
+    m_previousDesiredElVel = 0.0;
+
+    // ✅ CRITICAL: Start velocity timer for dt measurement
+    startVelocityTimer();
 
     if (controller) {
         // Set an aggressive acceleration for point-to-point moves
@@ -109,8 +117,81 @@ void TRPScanMotionMode::update(GimbalController* controller)
             const auto& targetTrp = m_trpPage[m_currentTrpIndex];
             SystemStateData data = controller->systemStateModel()->data();
 
-            // Convert TRP target to world-frame for AHRS stabilization
-            if (data.imuConnected) {
+            // ✅ CRITICAL FIX: Measure dt using timer (not fixed UPDATE_INTERVAL_S!)
+            double dt_s = UPDATE_INTERVAL_S;
+            if (m_velocityTimer.isValid()) {
+                dt_s = clampDt(m_velocityTimer.restart() / 1000.0);
+            } else {
+                m_velocityTimer.start();
+            }
+
+            // Calculate errors
+            double errAz = targetTrp.azimuth - data.gimbalAz;
+            double errEl = targetTrp.elevation - data.imuPitchDeg;
+
+            // Normalize Azimuth error for shortest path
+            while (errAz > 180.0)  errAz -= 360.0;
+            while (errAz < -180.0) errAz += 360.0;
+
+            // ✅ ROBUSTNESS: Use hypot for proper 2D distance
+            double distanceToTarget = std::hypot(errAz, errEl);
+
+            // --- 1. ARRIVAL CHECK ---
+            if (distanceToTarget < ARRIVAL_THRESHOLD_DEG) {
+                qDebug() << "[TRPScanMotionMode] Arrived at point" << m_currentTrpIndex;
+                stopServos(controller);
+                m_currentState = State::Halted;
+                m_haltTimer.start();
+                return;
+            }
+
+            // --- 2. MOTION PROFILE LOGIC ---
+            double desiredAzVelocity = 0.0;
+            double desiredElVelocity = 0.0;
+
+            // ✅ CRITICAL BUG FIX: Use actual TRP scanSpeed (not hard-coded 15!)
+            double travelSpeed = targetTrp.scanSpeed;
+
+            if (travelSpeed <= 0.0) {
+                // Speed zero - use PID to hold position
+                desiredAzVelocity = pidCompute(m_azPid, errAz, dt_s);
+                desiredElVelocity = pidCompute(m_elPid, errEl, dt_s);
+            } else {
+                // ✅ CRITICAL FIX: Compute deceleration distance from kinematics
+                const double a = TRP_MAX_ACCEL_DEG_S2;
+                double decelDist = (travelSpeed * travelSpeed) / (2.0 * std::max(a, 1e-3));
+
+                if (distanceToTarget < decelDist) {
+                    // DECELERATION ZONE: Use PID to slow down smoothly
+                    qDebug() << "TRP: Decelerating. Dist:" << distanceToTarget;
+                    desiredAzVelocity = pidCompute(m_azPid, errAz, dt_s);
+                    desiredElVelocity = pidCompute(m_elPid, errEl, dt_s);
+                } else {
+                    // CRUISING ZONE: Move at constant speed
+                    double dirAz = errAz / distanceToTarget;
+                    double dirEl = errEl / distanceToTarget;
+                    desiredAzVelocity = dirAz * travelSpeed;
+                    desiredElVelocity = dirEl * travelSpeed;
+
+                    // ✅ SOFT PID RESET: Reset integrator only (keep derivative history)
+                    m_azPid.integral = 0.0;
+                    m_elPid.integral = 0.0;
+                }
+            }
+
+            // ✅ CRITICAL FIX: Apply time-based rate limiting
+            double maxDelta = TRP_MAX_ACCEL_DEG_S2 * dt_s;
+            desiredAzVelocity = applyRateLimitTimeBased(desiredAzVelocity, m_previousDesiredAzVel, maxDelta);
+            desiredElVelocity = applyRateLimitTimeBased(desiredElVelocity, m_previousDesiredElVel, maxDelta);
+
+            // Update previous velocities for next cycle
+            m_previousDesiredAzVel = desiredAzVelocity;
+            m_previousDesiredElVel = desiredElVelocity;
+
+            // Throttle world-target publish to 10 Hz
+            static qint64 lastPublishMs = 0;
+            qint64 nowMs = QDateTime::currentMSecsSinceEpoch();
+            if (nowMs - lastPublishMs >= 100 && data.imuConnected) {
                 double worldAz, worldEl;
                 convertGimbalToWorldFrame(targetTrp.azimuth, targetTrp.elevation,
                                           data.imuRollDeg, data.imuPitchDeg, data.imuYawDeg,
@@ -120,53 +201,9 @@ void TRPScanMotionMode::update(GimbalController* controller)
                 SystemStateData updatedState = stateModel->data();
                 updatedState.targetAzimuth_world = worldAz;
                 updatedState.targetElevation_world = worldEl;
-                updatedState.useWorldFrameTarget = true; // Enable stabilized scanning
+                updatedState.useWorldFrameTarget = true;
                 stateModel->updateData(updatedState);
-            }
-
-            double errAz = targetTrp.azimuth - data.gimbalAz; // Azimuth still uses encoder
-            double errEl = targetTrp.elevation - data.imuPitchDeg; // Elevation now uses IMU Pitch
-
-            // Normalize Azimuth error for shortest path
-            while (errAz > 180.0)  errAz -= 360.0;
-            while (errAz < -180.0) errAz += 360.0;
-
-            // Corrected to use both Az and El errors for 2D distance.
-            //double distanceToTarget = std::sqrt(errAz * errAz + errEl * errEl);
-            double distanceToTarget = std::sqrt(errEl * errEl); //errAz * errAz + 
-            // --- 1. ARRIVAL CHECK ---
-            if (distanceToTarget < ARRIVAL_THRESHOLD_DEG) {
-                qDebug() << "[TRPScanMotionMode] Arrived at point" << m_currentTrpIndex;
-                stopServos(controller);
-                m_currentState = State::Halted;
-                m_haltTimer.start(); // Start the halt timer
-                return; // End this update cycle
-            }
-
-            // --- 2. MOTION PROFILE LOGIC ---
-            double desiredAzVelocity = 0.0;
-            double desiredElVelocity = 0.0;
-            // Assuming your struct has a `scanSpeed` member. Adjust if name is different.
-            double travelSpeed = 15;//targetTrp.scanSpeed; 
-
-            if (travelSpeed <= 0) { // If speed is 0, just use PID to go to position
-                 desiredAzVelocity = pidCompute(m_azPid, errAz, UPDATE_INTERVAL_S);
-                 desiredElVelocity = pidCompute(m_elPid, errEl, UPDATE_INTERVAL_S);
-            } else if (distanceToTarget < DECELERATION_DISTANCE_DEG) {
-                // DECELERATION ZONE: Use PID to slow down smoothly
-                qDebug() << "TRP: Decelerating. Dist:" << distanceToTarget;
-                desiredAzVelocity = pidCompute(m_azPid, errAz, UPDATE_INTERVAL_S);
-                desiredElVelocity = pidCompute(m_elPid, errEl, UPDATE_INTERVAL_S);
-            } else {
-                // CRUISING ZONE: Move at constant speed
-                double dirAz = errAz / distanceToTarget;
-                double dirEl = errEl / distanceToTarget;
-                desiredAzVelocity = dirAz * travelSpeed;
-                desiredElVelocity = dirEl * travelSpeed;
-
-                // CRITICAL: Reset PID during cruise to prevent integral windup
-                m_azPid.reset();
-                m_elPid.reset();
+                lastPublishMs = nowMs;
             }
 
             sendStabilizedServoCommands(controller, desiredAzVelocity, desiredElVelocity, true);
