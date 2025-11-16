@@ -3898,3 +3898,719 @@ Before engaging, verify **ALL** items:
 
 ---
 
+# LESSON 6: BALLISTICS & FIRE CONTROL
+
+**Lesson Duration:** 5 hours (Classroom 2h + Practical 3h)
+
+**Learning Objectives:**
+- Perform weapon zeroing (boresight alignment)
+- Configure environmental parameters for ballistic corrections
+- Activate and employ Lead Angle Compensation (LAC) for moving targets
+- Interpret fire control status indicators
+- Combine zeroing, environmental settings, and LAC for accurate engagements
+
+---
+
+## 6.1 WEAPON ZEROING (BORESIGHT ALIGNMENT)
+
+### **THE BORESIGHT OFFSET PROBLEM**
+
+**Physical Reality**:
+- Camera and weapon barrel are physically separated (typically 15-30cm)
+- Camera points at reticle center
+- Weapon points at different location
+- **Without correction**: Weapon impacts below/beside reticle aim point
+
+**Diagram**:
+```
+Camera → ⊙ (reticle center)
+         ↓ offset
+Weapon → • (actual impact point)
+```
+
+**Zeroing Solution**:
+- Applies angular offsets to compensate for physical separation
+- **Azimuth Offset**: Horizontal correction (left/right)
+- **Elevation Offset**: Vertical correction (up/down)
+- **After Zeroing**: Reticle shows where weapon will actually hit
+
+---
+
+### **ZEROING PROCEDURE**
+
+#### **Pre-Zeroing Requirements**
+
+**Environmental Conditions**:
+- ✓ Calm wind (<5 knots)
+- ✓ Good visibility (daylight preferred)
+- ✓ Stable platform (vehicle stationary)
+- ✓ Temperature moderate
+
+**Range Setup**:
+- ✓ Known range to target (recommended 100-300m)
+- ✓ Fixed target (large, visible, safe backstop)
+- ✓ No obstructions
+
+**System Status**:
+- ✓ Station powered and initialized
+- ✓ Camera operational (day camera for initial zero)
+- ✓ Weapon loaded and ready
+- ✓ Manual mode (no active tracking or motion modes)
+
+---
+
+#### **COMPLETE ZEROING PROCEDURE (STEP-BY-STEP)**
+
+**STEP 1: Access Zeroing Menu**
+1. Press **MENU ✓** on Control Panel
+2. Navigate to **"Zeroing"** option (▲/▼)
+3. Press **VAL** to enter
+4. Zeroing screen appears with instructions
+
+---
+
+**STEP 2: Aim at Target**
+1. Use joystick to center reticle on target center
+2. Ensure stable aim
+3. Target should be large (minimum 30cm × 30cm)
+4. Target at known range (100-300m recommended)
+
+---
+
+**STEP 3: Fire Test Shot(s)**
+1. Hold **Button 0** (Master Arm)
+2. Press **Button 5** (Fire) - single shot or short burst
+3. Observe impact point on target
+4. Note offset from reticle center (direction and distance)
+
+**Example**:
+- Reticle centered on target bullseye
+- Impact observed 20cm low and 10cm right
+- This offset will be corrected in next steps
+
+---
+
+**STEP 4: Adjust Reticle to Impact**
+
+**OSD displays**: "Use JOYSTICK to move main RETICLE to ACTUAL IMPACT POINT"
+
+1. Use joystick to move reticle from target center to **actual impact location**
+2. Position reticle exactly where weapon hit
+3. This movement is captured as zeroing offset
+4. Do NOT fire again during this step
+
+**Example Continued**:
+- Move joystick down and right
+- Reticle now positioned at impact point (20cm low, 10cm right of center)
+- System records this offset
+
+---
+
+**STEP 5: Apply Zero**
+1. Press **MENU ✓ / VAL** button to apply
+2. System calculates offsets (Azimuth, Elevation)
+3. Completion screen shows: **"Zeroing Adjustment Applied!"**
+4. Displays final offsets (e.g., "Az: 0.85°, El: -1.23°")
+5. **"Z"** indicator appears on OSD (confirms zero active)
+
+---
+
+**STEP 6: Verify Zero**
+1. **Return reticle to target center** (joystick)
+2. Fire verification shot
+3. Impact should now match reticle center
+4. **If offset remains**: Repeat procedure
+5. **If accurate**: Zero complete
+
+**⚠️ NOTE**: Zero values saved to configuration file, loaded automatically on startup.
+
+---
+
+### **MULTI-RANGE ZERO VALIDATION**
+
+**Why Multiple Ranges Matter**:
+- Ballistic arc is curved, not straight
+- Zero at 100m may not be accurate at 500m
+- Single-range zero is a compromise
+
+**Recommended Zero Range**: **200-250m** (best for general-purpose zero, acceptable accuracy 50m-600m)
+
+---
+
+#### **MULTI-RANGE VALIDATION PROCEDURE**
+
+After initial zero at 200m, test at multiple ranges:
+
+| Range | Procedure | Acceptable Error |
+|-------|-----------|------------------|
+| **100m** | Aim at center, fire test shot | ±5cm |
+| **300m** | Aim at center, fire test shot | ±10cm |
+| **500m** | Aim at center, fire test shot | ±20cm (may be low due to drop) |
+
+**If Errors Exceed Acceptable**:
+- Re-zero at primary engagement range (e.g., 250m)
+- Compromise between short and long range accuracy
+
+---
+
+### **CLEARING ACTIVE ZERO**
+
+**When to Clear Zero**:
+- Weapon or camera repositioned (maintenance, replacement)
+- Zero no longer accurate (tested and failed verification)
+- Different weapon or ammunition type installed
+
+**Procedure**:
+1. MENU ✓ → Zeroing → **Clear Zero**
+2. Confirm: **"CLEAR ACTIVE ZERO?"**
+3. MENU ✓ → **"YES"**
+4. OSD **"Z"** indicator disappears
+5. System returns to factory boresight (no offset)
+6. Must perform new zeroing procedure before live fire
+
+---
+
+## 6.2 ENVIRONMENTAL PARAMETERS
+
+### **ENVIRONMENTAL EFFECTS ON BALLISTICS**
+
+Ballistic trajectory is affected by environmental conditions:
+
+| Parameter | Effect on Trajectory | System Correction |
+|-----------|----------------------|-------------------|
+| **Temperature** | Air density changes → drag changes | Ballistic Look-Up Table (LUT) adjustment |
+| **Altitude** | Lower air pressure → less drag | LUT adjustment for altitude |
+| **Crosswind** | Lateral projectile drift | Azimuth offset correction |
+
+**System Fields** (SystemStateData):
+- `environmentalTemperatureCelsius` (default: 15°C)
+- `environmentalAltitudeMeters` (default: 0m / sea level)
+- `environmentalCrosswindMS` (meters per second)
+- `environmentalAppliedToBallistics` (boolean flag)
+
+---
+
+### **ENVIRONMENTAL PARAMETERS SETUP**
+
+#### **ACCESSING ENVIRONMENTAL MENU**
+
+1. Press **MENU ✓**
+2. Navigate to **"Environmental Parameters"** (▲/▼)
+3. Press **VAL** to enter
+4. Environmental configuration screen appears
+
+---
+
+#### **SETTING TEMPERATURE**
+
+**Purpose**: Correct for air density changes due to temperature
+
+**Procedure**:
+1. Select **"Temperature"** option
+2. Use **▲/▼** to adjust value (range: -40°C to +60°C)
+3. Set to **current ambient temperature**
+4. Press **VAL** to confirm
+
+**Temperature Guidelines**:
+
+| Condition | Temperature | Air Density | Trajectory Effect |
+|-----------|-------------|-------------|-------------------|
+| **Cold** | <0°C | High (dense air) | More drag, shorter range |
+| **Standard** | 15°C | Standard (ISO) | No correction |
+| **Hot** | >30°C | Low (thin air) | Less drag, longer range |
+
+**⚠️ NOTE**: Temperature measured at **shooter location**, not target location.
+
+---
+
+#### **SETTING ALTITUDE**
+
+**Purpose**: Correct for air pressure changes with elevation
+
+**Procedure**:
+1. Select **"Altitude"** option
+2. Use **▲/▼** to adjust value (range: -500m to +4000m)
+3. Set to **current altitude above sea level** (meters)
+4. Press **VAL** to confirm
+
+**Altitude Guidelines**:
+
+| Altitude | Air Pressure | Trajectory Effect |
+|----------|--------------|-------------------|
+| **Sea Level (0m)** | Standard (101.3 kPa) | No correction |
+| **1000m** | Lower (~90 kPa) | Less drag, longer range, less drop |
+| **2000m+** | Much lower | Significantly less drag, flatter trajectory |
+
+**⚠️ TIP**: Use GPS, map, or barometric altimeter to determine altitude.
+
+---
+
+#### **SETTING CROSSWIND**
+
+**Purpose**: Correct for lateral projectile drift due to wind
+
+**Procedure**:
+1. Select **"Crosswind"** option
+2. Use **▲/▼** to adjust value (range: 0-25 m/s)
+3. Set to **estimated crosswind speed** (perpendicular to fire direction)
+4. Press **VAL** to confirm
+
+**Crosswind Assessment**:
+
+| Wind Speed (m/s) | Wind Speed (knots) | Visual Cues |
+|------------------|-------------------|-------------|
+| **0-2** | 0-4 | Calm, smoke rises vertically |
+| **3-5** | 6-10 | Light breeze, leaves rustle, flags extended |
+| **6-10** | 12-20 | Moderate wind, small branches move, dust raised |
+| **11-15** | 21-30 | Fresh wind, small trees sway |
+| **16+** | 31+ | Strong wind, large branches move |
+
+**Crosswind Direction**:
+- **Full crosswind**: Wind perpendicular to fire direction (maximum effect)
+- **Partial crosswind**: Wind at angle to fire direction (reduced effect)
+- **Headwind/Tailwind**: Wind along fire direction (minimal lateral drift, affects range only)
+
+**System Assumption**: Crosswind value entered represents **full crosswind component** (perpendicular). Operator should estimate effective crosswind speed accounting for wind angle.
+
+---
+
+#### **APPLYING ENVIRONMENTAL SETTINGS**
+
+**STEP 1: Configure All Parameters**
+- Temperature set
+- Altitude set
+- Crosswind set
+
+**STEP 2: Apply to Ballistics**
+1. Select **"Apply Environmental Settings"**
+2. Confirm: **"APPLY TO BALLISTICS?"**
+3. Press **VAL** → **"YES"**
+4. OSD displays: **"ENV"** indicator (confirms environmental corrections active)
+
+**STEP 3: Verify Active**
+- Check OSD for **"ENV"** indicator
+- Environmental corrections now applied to CCIP reticle
+- All subsequent shots use environmental-corrected ballistics
+
+---
+
+#### **CLEARING ENVIRONMENTAL SETTINGS**
+
+**When to Clear**:
+- Environmental conditions changed significantly
+- Moving to different location (altitude, temperature change)
+- Wind conditions changed
+- Returning to standard conditions
+
+**Procedure**:
+1. MENU ✓ → Environmental Parameters → **Clear Settings**
+2. Confirm: **"CLEAR ENVIRONMENTAL SETTINGS?"**
+3. MENU ✓ → **"YES"**
+4. OSD **"ENV"** indicator disappears
+5. System returns to standard conditions (15°C, 0m altitude, 0 m/s wind)
+
+---
+
+### **ENVIRONMENTAL PARAMETERS QUICK REFERENCE**
+
+| Situation | Temperature | Altitude | Crosswind | Apply? |
+|-----------|-------------|----------|-----------|--------|
+| **Sea level, standard day, calm** | 15°C | 0m | 0 m/s | No (factory default) |
+| **Desert, hot, calm** | 40°C | 0m | 0 m/s | Yes (temperature correction) |
+| **Mountain, cold, windy** | -10°C | 2000m | 8 m/s | Yes (all corrections) |
+| **Temperate, mild, light breeze** | 20°C | 300m | 3 m/s | Optional (small corrections) |
+
+---
+
+## 6.3 LEAD ANGLE COMPENSATION (LAC)
+
+### **THE MOVING TARGET PROBLEM**
+
+**Without Lead Compensation**:
+```
+Time T=0 (Fire)          Time T=TOF (Impact)
+
+Target: [X]              Target: -----> [X]
+         ↓
+Bullet:  •               Bullet:         •
+
+Result: MISS (bullet hits where target WAS)
+```
+
+**With Lead Compensation**:
+```
+Time T=0 (Fire)          Time T=TOF (Impact)
+
+Target: [X]              Target: -----> [X]
+         ↓ (aim ahead)                   ↓
+Bullet:  →→→ •           Bullet:         •
+
+Result: HIT (bullet meets target at predicted position)
+```
+
+---
+
+### **LEAD ANGLE FUNDAMENTALS**
+
+**Lead Angle**: Angular offset between target's current position and predicted intercept point
+
+**Factors Affecting Lead Angle**:
+1. **Target Velocity**: Faster target = more lead
+2. **Target Direction**: Crossing target = maximum lead, approaching/receding = minimal
+3. **Range to Target**: Greater range = longer TOF = more lead
+4. **Projectile Velocity**: Slower projectile = longer TOF = more lead
+5. **Target Angular Rate**: How fast target crosses FOV
+
+**System Calculation Process** (30 Hz update rate):
+1. Measure target motion (tracking system provides angular rates)
+2. Determine range (LRF)
+3. Calculate Time-of-Flight (TOF)
+4. Predict target position (current position + angular rate × TOF)
+5. Calculate lead angle
+6. Apply offset to CCIP reticle
+
+---
+
+### **LAC ACTIVATION REQUIREMENTS**
+
+**Prerequisites**:
+1. ✓ Active target track established (Tracking Phase = Active Lock)
+2. ✓ Valid range data from LRF
+3. ✓ Target exhibiting motion (angular rate > threshold)
+4. ✓ Sufficient camera FOV (not zoomed in excessively)
+5. ✓ System initialized and operational
+
+**Safety Interlock**:
+- **Dead Man Switch (Button 3) MUST be held** during activation
+
+---
+
+### **LAC ACTIVATION PROCEDURE**
+
+**PRE-CONDITIONS**:
+- ☐ Target tracked (Active Lock achieved)
+- ☐ Target moving at measurable velocity
+- ☐ Range data valid (LRF fired successfully)
+- ☐ Camera FOV adequate (avoid max zoom)
+
+**ACTIVATION**:
+1. Hold **Button 3** (Dead Man Switch)
+2. Press **Button 2** (LAC Toggle)
+3. Release Button 2
+4. Release Button 3
+
+**VERIFICATION**:
+- ☐ **"LEAD ANGLE ON"** indicator appears (GREEN)
+- ☐ **"LAC"** bracket appears on CCIP reticle
+- ☐ Reticle pipper shifts to lead position (ahead of target)
+- ☐ Track confidence remains >70%
+
+---
+
+### **LAC STATUS INDICATORS**
+
+#### **STATUS: "LEAD ANGLE ON" (GREEN)**
+
+**Meaning**: LAC active and functioning correctly
+
+**Display**:
+- CCIP reticle offset ahead of target
+- "LAC" bracket visible on reticle
+- Lead offset calculated and applied
+
+**Operator Action**:
+- Aim at CCIP reticle (not at target directly)
+- CCIP shows where to aim for predicted intercept
+- Fire when CCIP on target (system handles lead)
+
+---
+
+#### **STATUS: "LEAD ANGLE LAG" (YELLOW)**
+
+**Meaning**: Insufficient tracking data for accurate lead calculation
+
+**Causes**:
+- Track recently established (<2 seconds)
+- Target velocity not yet stable
+- Tracking confidence fluctuating
+
+**Display**:
+- "LEAD ANGLE LAG" in YELLOW
+- Reticle may show partial lead offset (unreliable)
+
+**Operator Action**:
+- **WAIT** (2-5 seconds) for tracking to stabilize
+- Do NOT fire until status changes to "LEAD ANGLE ON" (GREEN)
+- If LAG persists >10 seconds: Check tracking quality, verify target moving
+
+---
+
+#### **STATUS: "ZOOM OUT" (RED)**
+
+**Meaning**: Camera FOV too narrow for accurate lead calculation
+
+**Causes**:
+- Zoomed in too far (max zoom or near-max zoom)
+- Target angular rate too high for current FOV
+- System cannot measure target velocity accurately
+
+**Display**:
+- "ZOOM OUT" in RED
+- LAC non-functional (lead calculation disabled)
+
+**Operator Action**:
+1. **Zoom out** (Button 8) gradually
+2. Wait for status to change to "LEAD ANGLE ON" (GREEN)
+3. If problem persists: Zoom out more
+4. Acceptable FOV: Typically Wide or Mid zoom (not Tele/Max)
+
+**⚠️ NOTE**: Extremely fast-moving targets may require wide FOV even at close range.
+
+---
+
+### **LAC DEACTIVATION PROCEDURE**
+
+**When to Deactivate**:
+- Target stops moving
+- Lost track of target
+- "ZOOM OUT" warning persists
+- "LEAD ANGLE LAG" persists
+- Engagement complete
+- Switching to stationary target
+
+**DEACTIVATION**:
+1. Hold **Button 3** (Dead Man Switch)
+2. Press **Button 2** (LAC Toggle)
+3. Release Button 2
+4. Release Button 3
+
+**VERIFICATION**:
+- ☐ "LEAD ANGLE ON" indicator disappears
+- ☐ "LAC" bracket removed from CCIP reticle
+- ☐ Reticle pipper returns to boresight alignment
+- ☐ System ready for stationary target engagement
+
+---
+
+### **USING LAC IN ENGAGEMENT**
+
+#### **MOVING TARGET ENGAGEMENT (WITH LAC)**
+
+**Complete Procedure**:
+
+**1. Acquire and Track Target** (Lesson 5)
+- Enter acquisition mode (Button 4)
+- Size gate, request lock-on
+- Achieve Active Lock (green gate, tracking)
+
+**2. Range Target**
+- Fire LRF (or automatic ranging during tracking)
+- Verify range displayed (OSD: RNG: xxxx m)
+
+**3. Enable LAC**
+- Hold Button 3 + Press Button 2
+- Verify **"LEAD ANGLE ON"** (GREEN)
+- Wait if **"LEAD ANGLE LAG"** (YELLOW)
+- Zoom out if **"ZOOM OUT"** (RED)
+
+**4. Observe Lead Offset**
+- CCIP reticle offset ahead of target in direction of motion
+- Lead offset adjusts continuously as target moves
+- **Aim at CCIP reticle** (not at target center)
+
+**5. Fire**
+- Master Arm (Button 0)
+- Fire (Button 5)
+- Rounds impact at predicted intercept point
+
+**6. Observe Effect**
+- Rounds should hit target (not behind target)
+- If missing: Check tracking quality, verify LAC ON, verify range accurate
+
+---
+
+### **LAC LIMITATIONS**
+
+**When LAC Works Best**:
+- ✅ Target moving laterally (crossing FOV)
+- ✅ Target speed >5 m/s (~10 mph)
+- ✅ Range >100 meters
+- ✅ Constant target velocity
+
+**When LAC is NOT Needed**:
+- ❌ Stationary targets (LAC shows no offset)
+- ❌ Targets moving radially (toward/away) - minimal lateral lead
+- ❌ Very close range (<50m) - TOF too short for significant lead
+
+**LAC Limitations**:
+- Requires active tracking (cannot use LAC without track)
+- Requires sufficient FOV (may need to zoom out)
+- Assumes constant target velocity (less accurate if target maneuvering)
+- Not effective for erratic or unpredictable motion
+
+---
+
+## 6.4 COMBINING FIRE CONTROL SYSTEMS
+
+### **FIRE CONTROL SOLUTION HIERARCHY**
+
+The complete fire control solution combines multiple corrections:
+
+```
+FINAL AIM POINT = Gun Boresight + Zeroing Offset + Environmental Corrections + Lead Angle Offset
+```
+
+**System Integration**:
+1. **Gun Boresight**: Factory default (camera-to-weapon offset)
+2. **+ Zeroing Offset**: Operator-configured (corrects boresight error)
+3. **+ Environmental Corrections**: Ballistic LUT adjustments (temperature, altitude, wind)
+4. **+ Lead Angle Offset**: Real-time moving target compensation
+
+**OSD Indicators**:
+- **"Z"**: Zeroing active
+- **"ENV"**: Environmental parameters active
+- **"LEAD ANGLE ON"**: LAC active
+
+**All Active Example**:
+- OSD displays: **Z ENV LEAD ANGLE ON**
+- CCIP reticle shows: Zeroing + Environmental + Lead corrections
+- Most accurate engagement solution
+
+---
+
+### **ENGAGEMENT SCENARIOS**
+
+#### **SCENARIO 1: Stationary Target, Standard Conditions**
+
+**Configuration**:
+- Zeroing: Active (Z)
+- Environmental: Not needed (standard conditions)
+- LAC: Not needed (stationary target)
+
+**OSD**: **Z**
+
+**Fire Control**: Zeroing offset only
+
+---
+
+#### **SCENARIO 2: Stationary Target, Hot Desert, High Altitude**
+
+**Configuration**:
+- Zeroing: Active (Z)
+- Environmental: Active (Temp: 45°C, Alt: 1500m, Wind: 0 m/s)
+- LAC: Not needed (stationary target)
+
+**OSD**: **Z ENV**
+
+**Fire Control**: Zeroing + Environmental (temperature, altitude)
+
+---
+
+#### **SCENARIO 3: Moving Target, Windy Conditions, Mountain**
+
+**Configuration**:
+- Zeroing: Active (Z)
+- Environmental: Active (Temp: -5°C, Alt: 2500m, Wind: 10 m/s)
+- LAC: Active (target moving 15 m/s lateral)
+
+**OSD**: **Z ENV LEAD ANGLE ON**
+
+**Fire Control**: Zeroing + Environmental + Lead Angle (full solution)
+
+---
+
+#### **SCENARIO 4: Close Range, Moving Target, Standard Conditions**
+
+**Configuration**:
+- Zeroing: Active (Z)
+- Environmental: Not needed
+- LAC: Active (target moving, but close range <100m may not require much lead)
+
+**OSD**: **Z LEAD ANGLE ON**
+
+**Fire Control**: Zeroing + Lead Angle
+
+---
+
+### **FIRE CONTROL QUICK REFERENCE**
+
+| Target Type | Range | Conditions | Zeroing | Environmental | LAC | OSD |
+|-------------|-------|------------|---------|---------------|-----|-----|
+| Stationary | Any | Standard | ✅ | ❌ | ❌ | Z |
+| Stationary | Any | Extreme temp/alt | ✅ | ✅ | ❌ | Z ENV |
+| Stationary | Any | Windy | ✅ | ✅ (wind) | ❌ | Z ENV |
+| Moving (slow) | <100m | Standard | ✅ | ❌ | Optional | Z (LEAD ANGLE ON) |
+| Moving (fast) | >100m | Standard | ✅ | ❌ | ✅ | Z LEAD ANGLE ON |
+| Moving (fast) | >100m | Extreme | ✅ | ✅ | ✅ | Z ENV LEAD ANGLE ON |
+
+---
+
+## 6.5 FIRE CONTROL BEST PRACTICES
+
+### **ZEROING**
+
+**Best Practices**:
+- ✅ Zero weapon before first operational use
+- ✅ Verify zero periodically (weekly or after transport)
+- ✅ Re-zero if weapon or camera serviced/replaced
+- ✅ Use consistent ammunition type for zeroing and operations
+- ✅ Zero at primary engagement range (200-250m recommended)
+
+**Common Errors**:
+- ❌ Skipping multi-range validation (zero may be inaccurate at long range)
+- ❌ Moving gimbal between firing test shot and adjusting reticle (invalidates offset measurement)
+- ❌ Assuming zero is permanent (mechanical drift can occur over time)
+
+---
+
+### **ENVIRONMENTAL PARAMETERS**
+
+**Best Practices**:
+- ✅ Update environmental settings at mission start
+- ✅ Re-assess if conditions change significantly during mission
+- ✅ Use handheld weather instruments (thermometer, anemometer, altimeter) for accuracy
+- ✅ Estimate conservatively (err toward standard conditions if unsure)
+
+**Common Errors**:
+- ❌ Using old/stale environmental data from previous mission
+- ❌ Ignoring significant temperature or wind changes
+- ❌ Over-correcting for minor environmental variations (<5°C temp change, <2 m/s wind)
+
+---
+
+### **LEAD ANGLE COMPENSATION**
+
+**Best Practices**:
+- ✅ Only use LAC for targets moving >5 m/s at ranges >100m
+- ✅ Wait for "LEAD ANGLE ON" (GREEN) before firing (ignore "LAG" yellow)
+- ✅ Zoom out if "ZOOM OUT" (RED) warning appears
+- ✅ Trust the system - aim at CCIP reticle, not at target
+
+**Common Errors**:
+- ❌ Activating LAC for stationary targets (adds unnecessary complexity)
+- ❌ Firing while "LEAD ANGLE LAG" (YELLOW) - lead calculation incomplete
+- ❌ Ignoring "ZOOM OUT" (RED) warning - LAC non-functional
+- ❌ "Kentucky windage" (manually aiming off-target) while LAC active - double-correcting
+
+---
+
+### **SAFETY REMINDERS**
+
+**ALWAYS**:
+- ✅ Verify zero before live fire operations
+- ✅ Update environmental parameters for current conditions
+- ✅ Check OSD indicators before firing (Z, ENV, LEAD ANGLE ON)
+- ✅ Use Dead Man Switch when activating/deactivating LAC (safety interlock)
+
+**NEVER**:
+- ❌ Fire without valid zero (impacts will be off-target)
+- ❌ Assume environmental corrections are active (verify "ENV" indicator)
+- ❌ Fire with "ZOOM OUT" (RED) warning (LAC non-functional)
+- ❌ Bypass Dead Man Switch safety interlock
+
+---
+
+**END OF LESSON 6**
+
+---
+
