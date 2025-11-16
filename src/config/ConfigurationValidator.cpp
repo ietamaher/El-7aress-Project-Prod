@@ -1,5 +1,6 @@
 #include "ConfigurationValidator.h"
 #include "controllers/deviceconfiguration.h"
+#include "MotionTuningConfig.h"
 #include "AppConstants.h"
 
 #include <QFile>
@@ -26,6 +27,7 @@ bool ConfigurationValidator::validateAll()
     valid &= validateSafety();
     valid &= validatePerformance();
     valid &= validateHardware();
+    valid &= validateMotionTuning();
 
     if (!m_errors.isEmpty()) {
         qCritical() << "Configuration validation FAILED with" << m_errors.count() << "errors:";
@@ -361,4 +363,60 @@ bool ConfigurationValidator::validatePortPath(const QString& port, const QString
     }
 
     return true;
+}
+
+bool ConfigurationValidator::validateMotionTuning()
+{
+    const auto& cfg = MotionTuningConfig::instance();
+    bool valid = true;
+
+    // Validate filter parameters
+    valid &= validateRange(static_cast<float>(cfg.filters.gyroCutoffFreqHz), 1.0f, 20.0f,
+                          "Gyro cutoff frequency");
+    valid &= validateRange(static_cast<float>(cfg.filters.trackingPositionTau), 0.01f, 1.0f,
+                          "Tracking position tau");
+    valid &= validateRange(static_cast<float>(cfg.filters.trackingVelocityTau), 0.01f, 1.0f,
+                          "Tracking velocity tau");
+    valid &= validateRange(static_cast<float>(cfg.filters.manualJoystickTau), 0.01f, 0.5f,
+                          "Manual joystick tau");
+
+    // Validate motion limits
+    valid &= validateRange(static_cast<float>(cfg.motion.maxAccelerationDegS2), 1.0f, 200.0f,
+                          "Max acceleration");
+    valid &= validateRange(static_cast<float>(cfg.motion.scanMaxAccelDegS2), 1.0f, 100.0f,
+                          "Scan max acceleration");
+    valid &= validateRange(static_cast<float>(cfg.motion.trpMaxAccelDegS2), 1.0f, 200.0f,
+                          "TRP max acceleration");
+    valid &= validateRange(static_cast<float>(cfg.motion.trpDefaultTravelSpeed), 1.0f, 120.0f,
+                          "TRP default travel speed");
+    valid &= validateRange(static_cast<float>(cfg.motion.maxVelocityDegS), 1.0f, 120.0f,
+                          "Max velocity");
+    valid &= validateRange(static_cast<float>(cfg.motion.arrivalThresholdDeg), 0.01f, 5.0f,
+                          "Arrival threshold");
+
+    // Validate PID gains (tracking mode)
+    if (cfg.trackingAz.kp <= 0.0 || cfg.trackingAz.kp > 10.0) {
+        addError("Tracking Az Kp must be in range (0, 10]");
+        valid = false;
+    }
+    if (cfg.trackingAz.ki < 0.0 || cfg.trackingAz.ki > 1.0) {
+        addError("Tracking Az Ki must be in range [0, 1]");
+        valid = false;
+    }
+    if (cfg.trackingAz.kd < 0.0 || cfg.trackingAz.kd > 2.0) {
+        addError("Tracking Az Kd must be in range [0, 2]");
+        valid = false;
+    }
+
+    // Validate servo constants
+    valid &= validateRange(static_cast<float>(cfg.servo.azStepsPerDegree), 100.0f, 10000.0f,
+                          "Azimuth steps per degree");
+    valid &= validateRange(static_cast<float>(cfg.servo.elStepsPerDegree), 100.0f, 10000.0f,
+                          "Elevation steps per degree");
+
+    // Validate manual limits
+    valid &= validateRange(static_cast<float>(cfg.manualLimits.maxAccelHzPerSec), 10000.0f, 2000000.0f,
+                          "Manual max acceleration Hz/s");
+
+    return valid;
 }

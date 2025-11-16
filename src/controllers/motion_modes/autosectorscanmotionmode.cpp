@@ -9,11 +9,17 @@
 AutoSectorScanMotionMode::AutoSectorScanMotionMode(QObject* parent)
     : GimbalMotionModeBase(parent), m_scanZoneSet(false), m_movingToPoint2(true)
 {
-    // --- UNIFORMITY: Configure PID gains in the constructor ---
-    // Gains for a smooth, continuous scan might be different from TRP scan.
-    // We'll use the same values for now, but they can be tuned independently.
-    m_azPid.Kp = 1; m_azPid.Ki = 0.01; m_azPid.Kd = 0.05; m_azPid.maxIntegral = 20.0;
-    m_elPid.Kp = 1; m_elPid.Ki = 0.01; m_elPid.Kd = 0.05; m_elPid.maxIntegral = 20.0;
+    // ✅ Load PID gains from runtime config (field-tunable without rebuild)
+    const auto& cfg = MotionTuningConfig::instance();
+    m_azPid.Kp = cfg.autoScanAz.kp;
+    m_azPid.Ki = cfg.autoScanAz.ki;
+    m_azPid.Kd = cfg.autoScanAz.kd;
+    m_azPid.maxIntegral = cfg.autoScanAz.maxIntegral;
+
+    m_elPid.Kp = cfg.autoScanEl.kp;
+    m_elPid.Ki = cfg.autoScanEl.ki;
+    m_elPid.Kd = cfg.autoScanEl.kd;
+    m_elPid.maxIntegral = cfg.autoScanEl.maxIntegral;
 }
 
 void AutoSectorScanMotionMode::enterMode(GimbalController* controller) {
@@ -138,7 +144,8 @@ void AutoSectorScanMotionMode::update(GimbalController* controller) {
     SystemStateData data = controller->systemStateModel()->data();
 
     // ✅ CRITICAL FIX: Measure dt using timer (not fixed UPDATE_INTERVAL_S!)
-    double dt_s = UPDATE_INTERVAL_S;
+    const auto& cfg = MotionTuningConfig::instance();
+    double dt_s = UPDATE_INTERVAL_S();
     if (m_velocityTimer.isValid()) {
         dt_s = clampDt(m_velocityTimer.restart() / 1000.0);
     } else {
@@ -153,7 +160,7 @@ void AutoSectorScanMotionMode::update(GimbalController* controller) {
     double distanceToTarget = std::hypot(errAz, errEl);
 
     // --- 1. ENDPOINT HANDLING LOGIC ---
-    if (distanceToTarget < ARRIVAL_THRESHOLD_DEG) {
+    if (distanceToTarget < cfg.autoScanParams.arrivalThresholdDeg) {
         qDebug() << "AutoSectorScan: Reached point" << (m_movingToPoint2 ? "2" : "1");
 
         // Toggle direction for next sweep
@@ -185,10 +192,15 @@ void AutoSectorScanMotionMode::update(GimbalController* controller) {
         desiredAzVelocity = pidCompute(m_azPid, errAz, dt_s);
         desiredElVelocity = pidCompute(m_elPid, errEl, dt_s);
     } else {
-        // ✅ CRITICAL FIX: Compute deceleration distance from kinematics
-        const double a = SCAN_MAX_ACCEL_DEG_S2;
+        // ✅ CRITICAL FIX: Compute deceleration distance from kinematics (from config)
+        const double a = cfg.motion.scanMaxAccelDegS2;
         const double v = m_activeScanZone.scanSpeed;
         double decelDist = (v * v) / (2.0 * std::max(a, 1e-3));
+
+        // Allow overriding decelDist from config if specified
+        if (cfg.autoScanParams.decelerationDistanceDeg > 0) {
+            decelDist = cfg.autoScanParams.decelerationDistanceDeg;
+        }
 
         if (distanceToTarget < decelDist) {
             // DECELERATION ZONE: Use PID to slow down smoothly
@@ -211,8 +223,8 @@ void AutoSectorScanMotionMode::update(GimbalController* controller) {
         }
     }
 
-    // ✅ CRITICAL FIX: Apply time-based rate limiting
-    double maxDelta = SCAN_MAX_ACCEL_DEG_S2 * dt_s;  // deg/s^2 * s = deg/s
+    // ✅ CRITICAL FIX: Apply time-based rate limiting (from config)
+    double maxDelta = cfg.motion.scanMaxAccelDegS2 * dt_s;  // deg/s^2 * s = deg/s
     desiredAzVelocity = applyRateLimitTimeBased(desiredAzVelocity, m_previousDesiredAzVel, maxDelta);
     desiredElVelocity = applyRateLimitTimeBased(desiredElVelocity, m_previousDesiredElVel, maxDelta);
 

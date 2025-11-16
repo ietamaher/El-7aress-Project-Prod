@@ -7,6 +7,7 @@
 #include <cmath>
 #include <cstdint>
 #include "models/domain/systemstatedata.h" // Include for SystemStateData
+#include "config/MotionTuningConfig.h"      // Include for runtime-configurable parameters
 
 // Eigen for 3D transformations (rotation matrices)
 #include <Eigen/Dense>
@@ -75,10 +76,12 @@ class GimbalMotionModeBase : public QObject
 public:
     explicit GimbalMotionModeBase(QObject* parent = nullptr)
         : QObject(parent)
-        , m_gyroXFilter(5.0, 100.0)  // 5Hz cutoff, 100Hz sample rate (matches IMU 3DM-GX3-25)
-        , m_gyroYFilter(5.0, 100.0)
-        , m_gyroZFilter(5.0, 100.0)
-    {}
+        , m_gyroXFilter(MotionTuningConfig::instance().filters.gyroCutoffFreqHz, 100.0)
+        , m_gyroYFilter(MotionTuningConfig::instance().filters.gyroCutoffFreqHz, 100.0)
+        , m_gyroZFilter(MotionTuningConfig::instance().filters.gyroCutoffFreqHz, 100.0)
+    {
+        // Filters now use runtime-configurable cutoff frequency from motion_tuning.json
+    }
 
     virtual ~GimbalMotionModeBase() = default;
 
@@ -266,30 +269,53 @@ protected:
     static constexpr quint16 DIRECTION_REVERSE = 0x8000;
     static constexpr quint16 DIRECTION_STOP = 0x0000;
 
-    // Motion limits
+    // Motion limits (hardware-specific, not tunable)
     static constexpr double MIN_ELEVATION_ANGLE = -10.0;
     static constexpr double MAX_ELEVATION_ANGLE = 50.0;
-    static constexpr double MAX_VELOCITY = 30.0; // General velocity limit deg/s
 
     // Scaling factors
     static constexpr float SPEED_SCALING_FACTOR_SCAN = 250.0f;
     static constexpr float SPEED_SCALING_FACTOR_TRP_SCAN = 250.0f;
 
-    // Common PID/Scan constants
-    static constexpr double ARRIVAL_THRESHOLD_DEG = 0.5;   // How close to consider a point "reached"
-    static constexpr double UPDATE_INTERVAL_S = 0.05;      // 50ms update interval
+    // ========================================================================
+    // RUNTIME-CONFIGURABLE PARAMETERS (loaded from motion_tuning.json)
+    // ========================================================================
+    // These inline functions provide access to tunable parameters without rebuild
 
-    // Motion acceleration limits (deg/s²) - Expert Review Critical Additions
-    static constexpr double MAX_ACCELERATION_DEG_S2 = 50.0;       // General max acceleration
-    static constexpr double SCAN_MAX_ACCEL_DEG_S2 = 20.0;         // AutoSectorScan acceleration
-    static constexpr double TRP_MAX_ACCEL_DEG_S2 = 50.0;          // TRP scan acceleration
+    // Common PID/Scan constants
+    static inline double ARRIVAL_THRESHOLD_DEG() {
+        return MotionTuningConfig::instance().motion.arrivalThresholdDeg;
+    }
+    static inline double UPDATE_INTERVAL_S() {
+        return MotionTuningConfig::instance().motion.updateIntervalS;
+    }
+
+    // Motion acceleration limits (deg/s²)
+    static inline double MAX_ACCELERATION_DEG_S2() {
+        return MotionTuningConfig::instance().motion.maxAccelerationDegS2;
+    }
+    static inline double SCAN_MAX_ACCEL_DEG_S2() {
+        return MotionTuningConfig::instance().motion.scanMaxAccelDegS2;
+    }
+    static inline double TRP_MAX_ACCEL_DEG_S2() {
+        return MotionTuningConfig::instance().motion.trpMaxAccelDegS2;
+    }
 
     // Default travel speeds (deg/s)
-    static constexpr double TRP_DEFAULT_TRAVEL_SPEED = 15.0;      // TRP point-to-point travel speed
+    static inline double TRP_DEFAULT_TRAVEL_SPEED() {
+        return MotionTuningConfig::instance().motion.trpDefaultTravelSpeed;
+    }
+    static inline double MAX_VELOCITY() {
+        return MotionTuningConfig::instance().motion.maxVelocityDegS;
+    }
 
-    // Unit conversion constants - centralized (no more magic numbers!)
-    static constexpr double AZ_STEPS_PER_DEGREE = 222500.0 / 360.0;  // Azimuth servo
-    static constexpr double EL_STEPS_PER_DEGREE = 200000.0 / 360.0;  // Elevation servo
+    // Unit conversion constants - centralized
+    static inline double AZ_STEPS_PER_DEGREE() {
+        return MotionTuningConfig::instance().servo.azStepsPerDegree;
+    }
+    static inline double EL_STEPS_PER_DEGREE() {
+        return MotionTuningConfig::instance().servo.elStepsPerDegree;
+    }
 
 private:
     // Helper for angle conversions (scalar)
