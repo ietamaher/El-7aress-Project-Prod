@@ -126,7 +126,7 @@ void RadarSlewMotionMode::update(GimbalController* controller)
 
     // Check for arrival at the destination
     // Corrected to use both Az and El errors for 2D distance.
-    if (std::abs(errAz) < ARRIVAL_THRESHOLD_DEG && std::abs(errEl) < ARRIVAL_THRESHOLD_DEG) {
+    if (std::abs(errAz) < ARRIVAL_THRESHOLD_DEG() && std::abs(errEl) < ARRIVAL_THRESHOLD_DEG()) {
         qInfo() << "[RadarSlewMotionMode] Arrived at target ID:" << m_currentTargetId;
         stopServos(controller);
         m_isSlewInProgress = false;
@@ -146,8 +146,8 @@ void RadarSlewMotionMode::update(GimbalController* controller)
     if (distanceToTarget < DECELERATION_DISTANCE_DEG) {
         // DECELERATION ZONE: Use PID to slow down smoothly
         qDebug() << "[RadarSlewMotionMode] Decelerating. Distance:" << distanceToTarget;
-        desiredAzVelocity = pidCompute(m_azPid, errAz, UPDATE_INTERVAL_S);
-        desiredElVelocity = pidCompute(m_elPid, errEl, UPDATE_INTERVAL_S);
+        desiredAzVelocity = pidCompute(m_azPid, errAz, UPDATE_INTERVAL_S());
+        desiredElVelocity = pidCompute(m_elPid, errEl, UPDATE_INTERVAL_S());
     } else {
         // CRUISING ZONE: Move at constant speed toward target
         double dirAz = errAz / distanceToTarget;

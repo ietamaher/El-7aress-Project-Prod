@@ -26,7 +26,7 @@ private:
     // A higher value gives a more responsive, "tighter" feel.
     static constexpr double MAX_MANUAL_ACCEL_DEGS2 = 100.0; // Tune this value!
     static constexpr float SPEED_MULTIPLIER = 1.0f;
-    static constexpr double UPDATE_INTERVAL_S = 0.05;
+    // NOTE: UPDATE_INTERVAL_S() is now a function in base class (runtime-configurable)
     
     // Command tracking variables
     double m_currentAzSpeedCmd_Hz = 0.0;
