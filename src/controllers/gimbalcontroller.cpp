@@ -114,8 +114,9 @@ void GimbalController::onSystemStateChanged(const SystemStateData &newData)
     }
 
     // --- Target Update for Active Tracking Mode ---
+    // ✅ CRITICAL FIX: Use queued signal instead of direct call (Expert Review - Race Condition Fix)
     if (newData.motionMode == MotionMode::AutoTrack && m_currentMode) {
-        if (auto* trackingMode = dynamic_cast<TrackingMotionMode*>(m_currentMode.get())) {
+        if (dynamic_cast<TrackingMotionMode*>(m_currentMode.get())) {
             if (newData.trackerHasValidTarget) {
                 float screenCenterX_px = newData.currentImageWidthPx / 2.0f;
                 float screenCenterY_px = newData.currentImageHeightPx / 2.0f;
@@ -133,7 +134,6 @@ void GimbalController::onSystemStateChanged(const SystemStateData &newData)
                     newData.currentImageWidthPx, newData.currentImageHeightPx, activeHfov
                 );
 
-
                 // The desired target gimbal position is current gimbal position + this offset
                 // (because the offset tells us how far to move FROM current to get target to center)
                 double targetGimbalAz = newData.gimbalAz + angularOffset.x();
@@ -148,18 +148,16 @@ void GimbalController::onSystemStateChanged(const SystemStateData &newData)
                 );
                 double targetAngularVelAz_dps = angularVelocity.x(); // degrees per second
                 double targetAngularVelEl_dps = angularVelocity.y();
-                // Normalize targetGimbalAz if necessary (0-360)
 
-                // ARCHIVE: docs/legacy-snippets.md#entry-3 (detailed tracking debug logging - useful for troubleshooting)
-                trackingMode->onTargetPositionUpdated(
+                // ✅ EMIT QUEUED SIGNAL instead of direct call - prevents race conditions
+                emit trackingTargetUpdated(
                     targetGimbalAz, targetGimbalEl,
-                    targetAngularVelAz_dps, targetAngularVelEl_dps, // Pass the calculated angular velocities
+                    targetAngularVelAz_dps, targetAngularVelEl_dps,
                     true
                 );
-                // ARCHIVE: docs/legacy-snippets.md#entry-3 (old API without angular velocity params)
             } else {
-                // Target is invalid or lost
-                trackingMode->onTargetPositionUpdated(0, 0, 0, 0, false); // Signal invalid target
+                // Target is invalid or lost - emit queued signal with invalid flag
+                emit trackingTargetUpdated(0, 0, 0, 0, false);
             }
         }
     }    
@@ -222,7 +220,15 @@ void GimbalController::setMotionMode(MotionMode newMode)
         break;
     case MotionMode::AutoTrack:
     case MotionMode::ManualTrack:
-        m_currentMode = std::make_unique<TrackingMotionMode>();
+        {
+            auto trackingMode = std::make_unique<TrackingMotionMode>();
+            // ✅ CRITICAL FIX: Connect with Qt::QueuedConnection to eliminate race conditions
+            // Signal from vision thread → slot on controller thread (queued, thread-safe)
+            connect(this, &GimbalController::trackingTargetUpdated,
+                    trackingMode.get(), &TrackingMotionMode::onTargetPositionUpdated,
+                    Qt::QueuedConnection);
+            m_currentMode = std::move(trackingMode);
+        }
         break;
     case MotionMode::RadarSlew:
         m_currentMode = std::make_unique<RadarSlewMotionMode>();
