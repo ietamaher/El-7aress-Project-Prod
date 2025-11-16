@@ -170,7 +170,6 @@ void WeaponController::onSystemStateChanged(const SystemStateData &newData)
 
     if (!qFuzzyCompare(m_oldState.environmentalTemperatureCelsius, newData.environmentalTemperatureCelsius) ||
         !qFuzzyCompare(m_oldState.environmentalAltitudeMeters, newData.environmentalAltitudeMeters) ||
-        !qFuzzyCompare(m_oldState.environmentalCrosswindMS, newData.environmentalCrosswindMS) ||
         m_oldState.environmentalAppliedToBallistics != newData.environmentalAppliedToBallistics)
     {
         environmentalParamsChanged = true;
@@ -178,8 +177,51 @@ void WeaponController::onSystemStateChanged(const SystemStateData &newData)
         qDebug() << "[WeaponController] Environmental parameters changed:"
                  << "Temp:" << m_oldState.environmentalTemperatureCelsius << "→" << newData.environmentalTemperatureCelsius
                  << "Alt:" << m_oldState.environmentalAltitudeMeters << "→" << newData.environmentalAltitudeMeters
-                 << "Wind:" << m_oldState.environmentalCrosswindMS << "→" << newData.environmentalCrosswindMS
                  << "Applied:" << m_oldState.environmentalAppliedToBallistics << "→" << newData.environmentalAppliedToBallistics;
+    }
+
+    // ========================================================================
+    // WINDAGE PARAMETERS CHANGE DETECTION
+    // ========================================================================
+    // Windage (wind direction + speed) affects crosswind calculation.
+    // If windage changes, we need to recalculate ballistics for all directions.
+    // ========================================================================
+    bool windageParamsChanged = false;
+
+    if (!qFuzzyCompare(m_oldState.windageSpeedKnots, newData.windageSpeedKnots) ||
+        !qFuzzyCompare(m_oldState.windageDirectionDegrees, newData.windageDirectionDegrees) ||
+        m_oldState.windageAppliedToBallistics != newData.windageAppliedToBallistics)
+    {
+        windageParamsChanged = true;
+
+        qDebug() << "[WeaponController] Windage parameters changed:"
+                 << "Speed:" << m_oldState.windageSpeedKnots << "→" << newData.windageSpeedKnots << "knots"
+                 << "Direction:" << m_oldState.windageDirectionDegrees << "→" << newData.windageDirectionDegrees << "°"
+                 << "Applied:" << m_oldState.windageAppliedToBallistics << "→" << newData.windageAppliedToBallistics;
+    }
+
+    // ========================================================================
+    // AZIMUTH CHANGE DETECTION (Critical for Windage!)
+    // ========================================================================
+    // When gimbal azimuth changes, the crosswind component changes even if
+    // wind conditions remain constant. This is because crosswind = wind × sin(angle).
+    // Example: Wind from North at 10 m/s
+    //   - Firing North: crosswind = 0 m/s
+    //   - Firing East: crosswind = 10 m/s
+    // We only recalculate if windage is active (otherwise no point).
+    // ========================================================================
+    bool azimuthChanged = false;
+
+    if (!qFuzzyCompare(m_oldState.azimuthDirection, newData.azimuthDirection)) {
+        // Only flag as change if windage is actually applied
+        if (newData.windageAppliedToBallistics && newData.windageSpeedKnots > 0.001f) {
+            azimuthChanged = true;
+            ballisticsInputsChanged = true;
+
+            qDebug() << "[WeaponController] *** AZIMUTH CHANGED (windage active):"
+                     << m_oldState.azimuthDirection << "°" << "→" << newData.azimuthDirection << "°"
+                     << "| Crosswind will be recalculated for new firing direction";
+        }
     }
 
     // ========================================================================
@@ -187,11 +229,15 @@ void WeaponController::onSystemStateChanged(const SystemStateData &newData)
     // ========================================================================
     // Recalculate if LAC is active AND any input changed
     // OR if LAC was just activated/deactivated (to set offsets to zero)
+    // OR if windage parameters changed (affects crosswind calculation)
+    // OR if azimuth changed with windage active (crosswind component changes)
     // ========================================================================
-    if (ballisticsInputsChanged || environmentalParamsChanged) {
+    if (ballisticsInputsChanged || environmentalParamsChanged || windageParamsChanged) {
         qDebug() << "[WeaponController] Triggering ballistics recalculation:"
                  << "InputsChanged=" << ballisticsInputsChanged
                  << "EnvChanged=" << environmentalParamsChanged
+                 << "WindageChanged=" << windageParamsChanged
+                 << "AzimuthChanged=" << azimuthChanged
                  << "LAC=" << newData.leadAngleCompensationActive;
         updateFireControlSolution();
     }
@@ -322,25 +368,63 @@ void WeaponController::updateFireControlSolution() {
     }
 
     // ========================================================================
+    // CALCULATE CROSSWIND FROM WINDAGE (Direction + Speed)
+    // ========================================================================
+    // Windage provides absolute wind direction and speed.
+    // Crosswind component varies with gimbal azimuth (where weapon points).
+    // This ensures correct wind correction for any firing direction.
+    // ========================================================================
+    float currentCrosswind = 0.0f;
+    if (sData.windageAppliedToBallistics && sData.windageSpeedKnots > 0.001f) {
+        // Convert wind speed from knots to m/s
+        float windSpeedMS = sData.windageSpeedKnots * 0.514444f;  // 1 knot = 0.514444 m/s
+
+        // Calculate crosswind component based on current gimbal azimuth
+        currentCrosswind = calculateCrosswindComponent(
+            windSpeedMS,
+            sData.windageDirectionDegrees,
+            sData.azimuthDirection  // Current gimbal azimuth
+        );
+
+        qDebug() << "[WeaponController] WINDAGE TO CROSSWIND CONVERSION:"
+                 << "Wind Dir:" << sData.windageDirectionDegrees << "° (FROM)"
+                 << "| Wind Speed:" << sData.windageSpeedKnots << "knots (" << windSpeedMS << "m/s)"
+                 << "| Gimbal Az:" << sData.azimuthDirection << "°"
+                 << "| Crosswind Component:" << currentCrosswind << "m/s"
+                 << (currentCrosswind > 0 ? "(right deflection)" : currentCrosswind < 0 ? "(left deflection)" : "(no crosswind)");
+    }
+
+    // ========================================================================
     // UPDATE ENVIRONMENTAL CONDITIONS (if enabled)
     // ========================================================================
     // Apply real-time environmental data from sensors/user input
+    // NOTE: Crosswind is now calculated from windage (above), not from environmental menu
     // ========================================================================
     if (sData.environmentalAppliedToBallistics) {
         // Update ballistics processor with current environmental conditions
         m_ballisticsProcessor->setEnvironmentalConditions(
             sData.environmentalTemperatureCelsius,
             sData.environmentalAltitudeMeters,
-            sData.environmentalCrosswindMS
+            currentCrosswind  // ✅ Use calculated crosswind from windage
         );
 
         qDebug() << "[WeaponController] Environmental corrections ACTIVE:"
                  << "Temp:" << sData.environmentalTemperatureCelsius << "°C"
                  << "Alt:" << sData.environmentalAltitudeMeters << "m"
-                 << "Wind:" << sData.environmentalCrosswindMS << "m/s";
+                 << "Crosswind:" << currentCrosswind << "m/s (from windage)";
     } else {
         // Set to standard conditions when environmental corrections are disabled
-        m_ballisticsProcessor->setEnvironmentalConditions(15.0f, 0.0f, 0.0f);
+        // But still apply windage if active (windage is independent of environmental menu)
+        m_ballisticsProcessor->setEnvironmentalConditions(
+            15.0f,  // Standard temperature
+            0.0f,   // Sea level
+            currentCrosswind  // ✅ Apply windage-derived crosswind even if env corrections off
+        );
+
+        if (sData.windageAppliedToBallistics && sData.windageSpeedKnots > 0.001f) {
+            qDebug() << "[WeaponController] Windage ACTIVE (env corrections OFF):"
+                     << "Crosswind:" << currentCrosswind << "m/s";
+        }
     }
 
     LeadCalculationResult lead = m_ballisticsProcessor->calculateLeadAngle(
@@ -354,4 +438,54 @@ void WeaponController::updateFireControlSolution() {
 
     // NO gimbal offset application here for "Reticle Offset" method.
     // m_gimbalController->setAimpointOffsets(0,0); // Ensure gimbal is not offsetting.
+}
+
+// ============================================================================
+// CROSSWIND CALCULATION FROM WINDAGE
+// ============================================================================
+
+float WeaponController::calculateCrosswindComponent(float windSpeedMS,
+                                                      float windDirectionDeg,
+                                                      float gimbalAzimuthDeg)
+{
+    // ========================================================================
+    // BALLISTICS PHYSICS: Crosswind Component Calculation
+    // ========================================================================
+    // Wind direction: Direction wind is coming FROM (meteorological convention)
+    // Gimbal azimuth: Direction weapon is pointing TO
+    //
+    // Relative angle = wind_direction - firing_direction
+    // Crosswind = wind_speed × sin(relative_angle)
+    //
+    // Examples:
+    //   Wind from 0° (North), firing at 0° (North):
+    //     relative = 0° → sin(0°) = 0 → no crosswind (headwind)
+    //
+    //   Wind from 0° (North), firing at 90° (East):
+    //     relative = -90° → sin(-90°) = -1 → full crosswind (left deflection)
+    //
+    //   Wind from 0° (North), firing at 180° (South):
+    //     relative = -180° → sin(-180°) = 0 → no crosswind (tailwind)
+    //
+    //   Wind from 0° (North), firing at 270° (West):
+    //     relative = -270° = +90° → sin(90°) = +1 → full crosswind (right deflection)
+    // ========================================================================
+
+    // Calculate relative angle between wind and firing direction
+    float relativeAngle = windDirectionDeg - gimbalAzimuthDeg;
+
+    // Normalize to [-180, +180] for correct trigonometry
+    while (relativeAngle > 180.0f) {
+        relativeAngle -= 360.0f;
+    }
+    while (relativeAngle < -180.0f) {
+        relativeAngle += 360.0f;
+    }
+
+    // Calculate crosswind component
+    // sin(90°) = 1.0 → full crosswind (wind perpendicular to fire direction)
+    // sin(0°) = 0.0 → no crosswind (headwind or tailwind)
+    float crosswindMS = windSpeedMS * std::sin(relativeAngle * M_PI / 180.0f);
+
+    return crosswindMS;
 }

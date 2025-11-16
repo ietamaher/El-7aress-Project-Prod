@@ -466,13 +466,11 @@ public:
     void setEnvironmentalAltitude(float meters);
 
     /**
-     * @brief Sets the crosswind speed for ballistic calculations.
-     * @param metersPerSecond Crosswind speed in meters per second.
-     */
-    void setEnvironmentalCrosswind(float metersPerSecond);
-
-    /**
      * @brief Finalizes the environmental procedure and applies settings to ballistics.
+     *
+     * NOTE: Crosswind is no longer part of environmental settings.
+     *       It is calculated dynamically from windage (direction + speed) and
+     *       current gimbal azimuth. See WeaponController::calculateCrosswindComponent()
      */
     void finalizeEnvironmental();
 

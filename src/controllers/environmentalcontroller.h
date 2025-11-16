@@ -36,7 +36,6 @@ private:
         Idle,
         Set_Temperature,
         Set_Altitude,
-        Set_Crosswind,
         Completed
     };
 
@@ -48,7 +47,7 @@ private:
     EnvironmentalState m_currentState;
     float m_currentTemperatureEdit;
     float m_currentAltitudeEdit;
-    float m_currentCrosswindEdit;
+    // NOTE: Crosswind removed - use Windage menu instead (wind direction + speed)
 };
 
 #endif // ENVIRONMENTALCONTROLLER_H

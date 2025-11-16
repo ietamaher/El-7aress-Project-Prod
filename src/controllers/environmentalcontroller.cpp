@@ -10,7 +10,6 @@ EnvironmentalController::EnvironmentalController(QObject *parent)
     , m_currentState(EnvironmentalState::Idle)
     , m_currentTemperatureEdit(15.0f)
     , m_currentAltitudeEdit(0.0f)
-    , m_currentCrosswindEdit(0.0f)
 {
 }
 
@@ -42,7 +41,7 @@ void EnvironmentalController::show()
     const auto& data = m_stateModel->data();
     m_currentTemperatureEdit = data.environmentalTemperatureCelsius;
     m_currentAltitudeEdit = data.environmentalAltitudeMeters;
-    m_currentCrosswindEdit = data.environmentalCrosswindMS;
+    // NOTE: Crosswind removed - use Windage menu for wind conditions
     transitionToState(EnvironmentalState::Set_Temperature);
     m_viewModel->setVisible(true);
 }
@@ -63,7 +62,7 @@ void EnvironmentalController::updateUI()
 {
     switch (m_currentState) {
     case EnvironmentalState::Set_Temperature:
-        m_viewModel->setTitle("Environment (1/3): Temperature");
+        m_viewModel->setTitle("Environment (1/2): Temperature");
         m_viewModel->setInstruction(
             "Set air temperature.\n"
             "Use UP/DOWN to adjust. Press SELECT to confirm."
@@ -76,10 +75,11 @@ void EnvironmentalController::updateUI()
         break;
 
     case EnvironmentalState::Set_Altitude:
-        m_viewModel->setTitle("Environment (2/3): Altitude");
+        m_viewModel->setTitle("Environment (2/2): Altitude");
         m_viewModel->setInstruction(
             "Set altitude above sea level.\n"
-            "Use UP/DOWN to adjust. Press SELECT to confirm."
+            "Use UP/DOWN to adjust. Press SELECT to confirm.\n\n"
+            "NOTE: For wind, use Windage menu."
         );
         m_viewModel->setAltitude(m_currentAltitudeEdit);
         m_viewModel->setShowParameters(true);
@@ -88,50 +88,23 @@ void EnvironmentalController::updateUI()
         );
         break;
 
-    case EnvironmentalState::Set_Crosswind:
-    {
-        m_viewModel->setTitle("Environment (3/3): Crosswind");
-        m_viewModel->setInstruction(
-            "Set crosswind speed.\n"
-            "Negative = wind from RIGHT | Positive = wind from LEFT\n"
-            "Use UP/DOWN to adjust. Press SELECT to confirm."
-        );
-        m_viewModel->setCrosswind(m_currentCrosswindEdit);
-        m_viewModel->setShowParameters(true);
-
-        QString windDirection;
-        if (m_currentCrosswindEdit > 0.1f) {
-            windDirection = " (from LEFT →)";
-        } else if (m_currentCrosswindEdit < -0.1f) {
-            windDirection = " (← from RIGHT)";
-        } else {
-            windDirection = " (no wind)";
-        }
-
-        m_viewModel->setParameterLabel(
-            QString("Crosswind: %1 m/s%2").arg(m_currentCrosswindEdit, 0, 'f', 1).arg(windDirection)
-        );
-    }
-        break;
-
     case EnvironmentalState::Completed:
     {
         const auto& data = m_stateModel->data();
         m_viewModel->setTitle("Environmental Settings Applied");
         m_viewModel->setInstruction(
             QString("Ballistic calculations updated.\n\n"
-                    "Temp: %1°C | Alt: %2m | Wind: %3m/s\n\n"
+                    "Temp: %1°C | Alt: %2m\n\n"
+                    "For wind conditions, use Windage menu.\n\n"
                     "Press SELECT to return.")
                 .arg(data.environmentalTemperatureCelsius, 0, 'f', 1)
                 .arg(data.environmentalAltitudeMeters, 0, 'f', 0)
-                .arg(data.environmentalCrosswindMS, 0, 'f', 1)
         );
         m_viewModel->setShowParameters(true);
         m_viewModel->setParameterLabel(
-            QString("Temp: %1°C | Alt: %2m | Wind: %3m/s (APPLIED)")
+            QString("Temp: %1°C | Alt: %2m (APPLIED)")
                 .arg(data.environmentalTemperatureCelsius, 0, 'f', 1)
                 .arg(data.environmentalAltitudeMeters, 0, 'f', 0)
-                .arg(data.environmentalCrosswindMS, 0, 'f', 1)
         );
     }
         break;
@@ -155,14 +128,10 @@ void EnvironmentalController::onSelectButtonPressed()
 
     case EnvironmentalState::Set_Altitude:
         m_stateModel->setEnvironmentalAltitude(m_currentAltitudeEdit);
-        transitionToState(EnvironmentalState::Set_Crosswind);
-        break;
-
-    case EnvironmentalState::Set_Crosswind:
-        m_stateModel->setEnvironmentalCrosswind(m_currentCrosswindEdit);
         m_stateModel->finalizeEnvironmental();
         qDebug() << "Environmental settings finalized - Temp:" << m_currentTemperatureEdit
-                 << "°C, Alt:" << m_currentAltitudeEdit << "m, Crosswind:" << m_currentCrosswindEdit << "m/s";
+                 << "°C, Alt:" << m_currentAltitudeEdit << "m"
+                 << "| Use Windage menu for wind conditions";
         transitionToState(EnvironmentalState::Completed);
         break;
 
@@ -212,12 +181,6 @@ void EnvironmentalController::onUpButtonPressed()
         updateUI();
         break;
 
-    case EnvironmentalState::Set_Crosswind:
-        m_currentCrosswindEdit += 0.5f;
-        if (m_currentCrosswindEdit > 20.0f) m_currentCrosswindEdit = 20.0f;
-        updateUI();
-        break;
-
     default:
         break;
     }
@@ -235,12 +198,6 @@ void EnvironmentalController::onDownButtonPressed()
     case EnvironmentalState::Set_Altitude:
         m_currentAltitudeEdit -= 50.0f;
         if (m_currentAltitudeEdit < -100.0f) m_currentAltitudeEdit = -100.0f;
-        updateUI();
-        break;
-
-    case EnvironmentalState::Set_Crosswind:
-        m_currentCrosswindEdit -= 0.5f;
-        if (m_currentCrosswindEdit < -20.0f) m_currentCrosswindEdit = -20.0f;
         updateUI();
         break;
 

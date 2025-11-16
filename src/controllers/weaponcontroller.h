@@ -53,12 +53,35 @@ private slots:
     void onActuatorPositionReached();
 
 private:
+    /**
+     * @brief Calculate crosswind component from wind direction and gimbal azimuth
+     *
+     * This function converts absolute wind (direction + speed) into the crosswind
+     * component perpendicular to the firing direction. The crosswind varies with
+     * gimbal azimuth - same wind conditions produce different crosswind based on
+     * where the weapon is pointing.
+     *
+     * @param windSpeedMS Wind speed in meters per second
+     * @param windDirectionDeg Wind direction in degrees (where wind is FROM)
+     * @param gimbalAzimuthDeg Current gimbal azimuth (where weapon is pointing TO)
+     * @return Crosswind component in m/s (positive = right deflection, negative = left)
+     *
+     * Example:
+     *   Wind from North (0°), firing North (0°) → crosswind = 0 m/s (headwind)
+     *   Wind from North (0°), firing East (90°) → crosswind = +wind_speed (full crosswind right)
+     *   Wind from North (0°), firing South (180°) → crosswind = 0 m/s (tailwind)
+     *   Wind from North (0°), firing West (270°) → crosswind = -wind_speed (full crosswind left)
+     */
+    float calculateCrosswindComponent(float windSpeedMS,
+                                       float windDirectionDeg,
+                                       float gimbalAzimuthDeg);
+
     SystemStateModel*  m_stateModel = nullptr;
     Plc42Device* m_plc42 = nullptr;
     ServoActuatorDevice* m_servoActuator = nullptr;
     SystemStateData m_oldState;
     BallisticsProcessorLUT* m_ballisticsProcessor = nullptr;
-    
+
 
     bool m_weaponArmed = false;
     bool m_systemArmed = false;
