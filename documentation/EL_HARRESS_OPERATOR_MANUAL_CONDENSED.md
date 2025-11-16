@@ -382,3 +382,583 @@ Safely and effectively operate the El 7arress RCWS system to acquire, track, and
 
 ---
 
+# PART I: SYSTEM FUNDAMENTALS
+
+---
+
+# LESSON 1: SAFETY BRIEF & SYSTEM OVERVIEW
+
+**Lesson Duration:** 3 hours (Classroom + Walk-Around)
+
+**Learning Objectives:**
+- Identify all safety hazards associated with RCWS operation
+- Demonstrate emergency stop procedures
+- Explain no-fire and no-traverse zone restrictions
+- Identify all major system components during walk-around
+- Describe the function of each major component
+
+---
+
+## 1.1 SAFETY BRIEF
+
+### FIVE FUNDAMENTAL SAFETY RULES
+
+**RULE 1: TREAT EVERY WEAPON AS LOADED**
+- Always assume the RCWS weapon is loaded and armed
+- Never point the system at anything you do not intend to destroy
+- Maintain constant awareness of muzzle direction
+
+**RULE 2: KNOW YOUR TARGET AND WHAT LIES BEYOND**
+- Positively identify targets before engagement
+- Consider overpenetration and ricochets
+- Be aware of civilians, friendly forces, and infrastructure
+- Verify range and backstop conditions
+
+**RULE 3: VERIFY NO-FIRE AND NO-TRAVERSE ZONES**
+- Check zone status on OSD before every engagement
+- Do not override zones without proper authorization
+- Understand that zones protect friendly forces and civilians
+- Report zone violations immediately
+
+**RULE 4: KEEP DEAD MAN SWITCH ENGAGED ONLY WHEN READY TO FIRE**
+- Release Dead Man Switch immediately when not engaging
+- Dead Man Switch is on joystick grip
+- System automatically safes when switch is released
+- Practice rapid release in training
+
+**RULE 5: USE EMERGENCY STOP WHEN IN DOUBT**
+- Large RED button on DCU panel
+- Activates immediately - no confirmation required
+- Stops all gimbal motion and safes weapon
+- Use without hesitation if any unsafe condition develops
+
+---
+
+### SPECIFIC HAZARDS
+
+#### **HAZARD 1: WEAPON DISCHARGE**
+- **Risk**: Death or serious injury from live ammunition
+- **Mitigation**:
+  - Follow all five safety rules
+  - Verify Gun Armed light before trigger pull
+  - Clear weapon per Appendix A before maintenance
+  - Never bypass safety interlocks
+
+#### **HAZARD 2: GIMBAL MOVEMENT**
+- **Risk**: Crushing injury from rotating turret
+- **Mitigation**:
+  - Stay clear of turret during operation (minimum 2 meters)
+  - Use Emergency Stop if personnel enter hazard zone
+  - Never place hands or tools near moving parts
+  - Disable Station Enable switch before approaching turret
+
+#### **HAZARD 3: ELECTRICAL SHOCK**
+- **Risk**: Electrocution from high voltage (110-240V AC)
+- **Mitigation**:
+  - Only qualified maintenance personnel open panels
+  - Disconnect power before any internal work
+  - Do not operate with damaged cables
+  - Report exposed wiring immediately
+
+#### **HAZARD 4: LASER RANGEFINDER**
+- **Risk**: Eye damage from laser (Class 3B laser device)
+- **Mitigation**:
+  - Never look directly into laser aperture
+  - Do not aim at reflective surfaces at close range
+  - Laser safety goggles required for maintenance
+  - LRF automatically times out after 5 seconds
+
+#### **HAZARD 5: THERMAL CAMERA OVERHEATING**
+- **Risk**: Sensor damage from excessive heat
+- **Mitigation**:
+  - Never point thermal camera at sun
+  - Do not aim at fires or intense heat sources
+  - Allow Flat Field Correction (FFC) to complete
+  - Monitor camera temperature on status display
+
+---
+
+### EMERGENCY PROCEDURES (QUICK REFERENCE)
+
+| Emergency | Immediate Action | Follow-Up |
+|-----------|------------------|-----------|
+| **Runaway Gun** | Press EMERGENCY STOP | Notify command, clear area |
+| **Misfire** | Maintain aim 30 sec, safe weapon | Follow misfire procedures |
+| **Injury** | Press EMERGENCY STOP | Administer first aid, call medic |
+| **Fire/Smoke** | Press EMERGENCY STOP, evacuate | Use fire extinguisher if safe |
+| **Zone Violation** | Release trigger, safe weapon | Report incident immediately |
+| **Loss of Video** | Press EMERGENCY STOP | Check connections, restart system |
+| **Jammed Weapon** | Safe weapon, engage manual mode | Clear jam per weapon manual |
+
+**MEMORIZE**: Emergency Stop button location and Dead Man Switch release are your PRIMARY safety controls.
+
+---
+
+## 1.2 SYSTEM OVERVIEW
+
+### SYSTEM DESCRIPTION
+
+The El 7arress RCWS (Remote Controlled Weapon Station) is a stabilized, remotely operated weapon platform designed for vehicle-mounted applications. The system provides:
+
+- **360° azimuth rotation** (continuous)
+- **-20° to +60° elevation** range
+- **Day and thermal imaging** capability
+- **Automatic target tracking**
+- **Laser rangefinding** (50m to 4000m)
+- **Ballistic compensation** for accurate fire
+- **Zone protection** for safety
+
+**Typical Applications:**
+- Perimeter defense
+- Convoy protection
+- Border surveillance
+- Force protection
+- Area denial
+
+---
+
+### MAJOR SYSTEM COMPONENTS
+
+The RCWS consists of three main subsystems:
+
+#### **1. DISPLAY AND CONTROL UNIT (DCU)**
+- **Location**: Inside vehicle, operator station
+- **Functions**:
+  - Video display (1024×768 resolution)
+  - Control buttons and switches
+  - Status indicator lights
+  - Menu navigation
+  - System settings
+
+#### **2. JOYSTICK CONTROLLER**
+- **Location**: Inside vehicle, operator's right hand position
+- **Functions**:
+  - Gimbal slew control (azimuth/elevation)
+  - Camera zoom
+  - Weapon trigger
+  - Tracking control
+  - Function buttons
+  - Dead Man Switch (safety)
+
+#### **3. TURRET ASSEMBLY**
+- **Location**: Exterior vehicle roof mount
+- **Components**:
+  - Electro-Optical System (cameras + laser rangefinder)
+  - Gimbal mechanism (2-axis stabilized)
+  - Weapon mount
+  - Drive motors and actuators
+  - Internal sensors and electronics
+
+---
+
+## 1.3 COMPONENT WALK-AROUND
+
+### **PRE-OPERATION INSPECTION SEQUENCE**
+
+Perform this walk-around before every operation. Use checklist in Appendix C.
+
+---
+
+#### **STATION 1: DISPLAY AND CONTROL UNIT (DCU)**
+
+**Visual Inspection:**
+1. Check display screen for cracks or damage
+2. Verify all buttons and switches move freely
+3. Confirm indicator lights are not broken
+4. Check cable connections are secure
+5. Ensure ventilation ports are not blocked
+
+**DCU Control Panel Layout:**
+
+```
+┌─────────────────────────────────────────────┐
+│         VIDEO DISPLAY SCREEN                │
+│                1024 × 768                    │
+│                                              │
+└─────────────────────────────────────────────┘
+┌─────────────────────────────────────────────┐
+│  [🔴 EMERGENCY]  [POWER]   [SYSTEM READY]   │
+│     STOP                                     │
+│                                              │
+│  [STATION]  [HOME]  [GUN    [FIRE MODE]     │
+│   ENABLE           ARM/SAFE]                │
+│                                              │
+│  [SPEED]    [STABIL.] [DETECT] [AMMO]       │
+│   SELECT     ON/OFF    ON/OFF  [LOADED]     │
+│                                              │
+│  [MENU ▲]  [MENU ▼]  [MENU ✓]  [AUTHOR.]   │
+│                                              │
+└─────────────────────────────────────────────┘
+```
+
+**Button Functions** (detailed in Lesson 2):
+- **Emergency Stop** (RED): Immediate system shutdown
+- **Station Enable**: Master power for system
+- **Home Position**: Return gimbal to forward (0° AZ, 0° EL)
+- **Gun Arm/Safe**: Toggle weapon arming
+- **Fire Mode Selector**: Single / Short Burst / Long Burst
+- **Speed Select**: Low / Medium / High gimbal slew speed
+- **Stabilization On/Off**: Enable/disable platform stabilization
+- **Detection On/Off**: Enable/disable automatic target detection
+- **Menu ▲/▼/✓**: Navigate menus
+
+**Indicator Lights:**
+- **Power** (Green): System powered on
+- **System Ready** (Green): All subsystems operational
+- **Gun Armed** (Red): Weapon is armed - DANGER
+- **Ammo Loaded** (Yellow): Ammunition detected
+- **Authorized** (Green): Operator authorization active
+- **Fault/Alarm** (Red Flashing): System error - check status
+
+**GO/NO-GO Criteria:**
+- ✅ All lights illuminate during power-up self-test
+- ✅ No physical damage to display or controls
+- ✅ All buttons click and return properly
+- ❌ Any cracked screen → NO-GO (maintenance required)
+- ❌ Stuck buttons → NO-GO (maintenance required)
+
+---
+
+#### **STATION 2: JOYSTICK CONTROLLER**
+
+**Visual Inspection:**
+1. Check joystick moves smoothly in all directions
+2. Verify trigger guard is intact
+3. Test Dead Man Switch spring-back
+4. Confirm all buttons click properly
+5. Check cable connection is secure
+
+**Joystick Layout:**
+
+```
+        ┌─────────────┐
+        │  Zoom Rocker│  ← Camera Zoom In/Out
+        │    ▲ ▼      │
+        └─────────────┘
+              │
+        ┌─────────────┐
+        │  [CAM] [TRK]│  ← Camera Switch / Track Select
+        │             │
+        │  [LRF] [FN] │  ← Laser Range / Function
+        │      ★      │  ← Hat Switch (8-way)
+        │             │
+        │   STICK     │  ← Main Stick (AZ/EL control)
+        │      │      │
+        │      │      │
+        └──────┼──────┘
+               │
+          ┌────┴────┐
+          │ TRIGGER │  ← Weapon Trigger
+          │  GUARD  │
+          └─────────┘
+
+    [DEAD MAN SWITCH] ← On grip (must hold)
+```
+
+**Control Functions** (detailed in Lesson 2):
+- **Main Stick**: Gimbal slew (left/right = azimuth, up/down = elevation)
+- **Trigger**: Fire weapon (when armed)
+- **Dead Man Switch**: Must be held for weapon operation
+- **CAM Button**: Toggle Day/Thermal camera
+- **TRK Button**: Initiate/abort tracking
+- **LRF Button**: Activate laser rangefinder
+- **FN Button**: Context-sensitive function
+- **Hat Switch**: Tracking box control / menu navigation
+- **Zoom Rocker**: Camera zoom in/out
+
+**GO/NO-GO Criteria:**
+- ✅ Stick returns to center when released
+- ✅ Trigger has smooth pull with positive click
+- ✅ Dead Man Switch springs back when released
+- ✅ All buttons respond to press
+- ❌ Sticky or binding stick → NO-GO
+- ❌ Dead Man Switch does not return → NO-GO (CRITICAL SAFETY)
+- ❌ Trigger does not return → NO-GO (CRITICAL SAFETY)
+
+---
+
+#### **STATION 3: TURRET ASSEMBLY - EXTERIOR INSPECTION**
+
+**⚠️ WARNING**: Ensure Station Enable switch is OFF before approaching turret.
+
+**Visual Inspection Points:**
+
+**3A. ELECTRO-OPTICAL SYSTEM**
+
+The Electro-Optical (EO) System is an integrated assembly containing:
+- Day Camera (visible spectrum)
+- Thermal Camera (infrared)
+- Laser Rangefinder (LRF)
+
+```
+┌───────────────────────────────────┐
+│    ELECTRO-OPTICAL SYSTEM         │
+│  ┌─────────┐     ┌─────────┐     │
+│  │  DAY    │     │ THERMAL │     │
+│  │ CAMERA  │     │ CAMERA  │     │
+│  │ (Sony)  │     │ (FLIR)  │     │
+│  └─────────┘     └─────────┘     │
+│         ┌─────────┐               │
+│         │   LRF   │               │
+│         │ (Laser) │               │
+│         └─────────┘               │
+└───────────────────────────────────┘
+```
+
+**Inspection Checklist:**
+1. **Day Camera**:
+   - Lens is clean and unscratched
+   - Lens cap removed (if installed)
+   - No cracks in protective housing
+   - Cable connections secure
+
+2. **Thermal Camera**:
+   - Lens is clean (use lens cloth only)
+   - No moisture or condensation visible
+   - Protective cover removed
+   - Camera not pointed at sun
+
+3. **Laser Rangefinder**:
+   - Aperture is clean
+   - No obstructions in front of lens
+   - Warning labels intact
+   - ⚠️ **NEVER** look directly into LRF aperture
+
+**GO/NO-GO Criteria:**
+- ✅ All lenses clean and clear
+- ✅ No visible damage to housings
+- ✅ No loose cables or connections
+- ❌ Cracked lens → NO-GO (maintenance required)
+- ❌ Moisture inside camera → NO-GO (maintenance required)
+- ❌ Obstructed field of view → NO-GO (clear obstruction first)
+
+**3B. GIMBAL MECHANISM**
+
+**Visual Inspection:**
+1. Check for fluid leaks (hydraulic/oil)
+2. Verify no loose bolts or fasteners
+3. Confirm cables are properly routed (not pinched)
+4. Look for signs of impact damage
+5. Check that gimbal rotates freely by hand (power OFF only)
+
+**Gimbal Axes:**
+- **Azimuth Axis** (horizontal rotation): 360° continuous
+- **Elevation Axis** (vertical tilt): -20° to +60°
+
+**Mechanical Limits:**
+- Hard stops prevent over-rotation
+- Limit sensors detect end of travel
+- Software limits prevent sensor contact
+
+**GO/NO-GO Criteria:**
+- ✅ No fluid leaks
+- ✅ Gimbal moves smoothly by hand (power off)
+- ✅ No grinding or binding noises
+- ✅ All cables secured with proper strain relief
+- ❌ Fluid leaks → NO-GO (maintenance required)
+- ❌ Binding or resistance → NO-GO (maintenance required)
+- ❌ Loose mounting bolts → NO-GO (torque to spec)
+
+**3C. WEAPON MOUNT**
+
+**⚠️ WARNING**: Treat all weapons as loaded. Follow weapon-specific clearing procedures (Appendix A).
+
+**Visual Inspection:**
+1. Weapon is properly secured in mount
+2. Feed system (belt/magazine) is intact
+3. No obstructions in barrel or ejection port
+4. Mounting bolts are tight
+5. Weapon safety is engaged (if applicable)
+
+**GO/NO-GO Criteria:**
+- ✅ Weapon securely mounted
+- ✅ Feed mechanism functions properly
+- ✅ Barrel clear of obstructions
+- ❌ Loose weapon → NO-GO (re-secure per manual)
+- ❌ Damaged feed system → NO-GO (repair/replace)
+- ❌ Barrel obstruction → NO-GO (clear and inspect)
+
+**3D. ENVIRONMENTAL PROTECTION**
+
+**Check:**
+1. Weatherproof covers are intact
+2. Drainage holes are not blocked
+3. Cable glands are sealed
+4. No corrosion on exposed metal
+5. Protective covers removed before operation
+
+**GO/NO-GO Criteria:**
+- ✅ All seals intact
+- ✅ No water ingress visible
+- ✅ Drainage holes clear
+- ❌ Water pooling inside → NO-GO (dry and check seals)
+- ❌ Severe corrosion → NO-GO (maintenance required)
+
+---
+
+### **WALK-AROUND COMPLETION**
+
+After completing all inspection stations:
+
+1. **Document Results**: Mark checklist (Appendix C) with GO/NO-GO for each item
+2. **Report Discrepancies**: Any NO-GO items must be reported to maintenance immediately
+3. **Supervisor Review**: Have supervisor verify inspection before operation
+4. **Clear Area**: Ensure all personnel clear of turret before power-up
+5. **Proceed to Startup**: If all items are GO, proceed with Lesson 2 startup procedure
+
+**SAFETY NOTE**: Never operate RCWS with any NO-GO items. Equipment failure can result in injury or death.
+
+---
+
+## 1.4 SYSTEM ARCHITECTURE (SIMPLIFIED)
+
+Understanding how information flows through the system helps with troubleshooting.
+
+### **DATA FLOW DIAGRAM**
+
+```
+┌─────────────────────────────────────────────────────┐
+│                   OPERATOR                          │
+│              (Eyes on DCU Screen)                   │
+│              (Hands on Joystick)                    │
+└────────────┬────────────────────────┬───────────────┘
+             │                        │
+             ▼                        ▼
+    ┌────────────────┐      ┌────────────────┐
+    │   DCU DISPLAY  │      │   JOYSTICK     │
+    │   • Video      │      │   • Slew Cmds  │
+    │   • OSD Info   │      │   • Buttons    │
+    │   • Menus      │      │   • Trigger    │
+    └────────┬───────┘      └────────┬───────┘
+             │                       │
+             └───────────┬───────────┘
+                         │
+                         ▼
+              ┌──────────────────────┐
+              │   CONTROL COMPUTER   │
+              │   • Processes inputs │
+              │   • Updates displays │
+              │   • Manages tracking │
+              │   • Applies ballistics│
+              └──────────┬───────────┘
+                         │
+         ┌───────────────┼───────────────┐
+         │               │               │
+         ▼               ▼               ▼
+┌────────────────┐ ┌────────────┐ ┌────────────┐
+│ ELECTRO-OPTICAL│ │   GIMBAL   │ │   WEAPON   │
+│    SYSTEM      │ │   MOTORS   │ │  ACTUATOR  │
+│ • Day Camera   │ │ • Azimuth  │ │ • Trigger  │
+│ • Thermal Cam  │ │ • Elevation│ │ • Feed     │
+│ • LRF          │ └────────────┘ └────────────┘
+└────────────────┘
+         │
+         │ (Video Feedback)
+         ▼
+   [Back to DCU Display]
+```
+
+**Key Points:**
+- Operator sees video on DCU and controls gimbal with joystick
+- Control computer processes all inputs and manages subsystems
+- Cameras provide real-time video feedback
+- System is a closed-loop: operator adjusts based on what they see
+
+**You don't need to understand the electronics, just the concept:**
+- **INPUT**: Your joystick commands
+- **PROCESSING**: Computer calculates aim point with ballistics
+- **OUTPUT**: Gimbal moves, weapon fires
+- **FEEDBACK**: You see results on screen and adjust
+
+---
+
+## 1.5 SAFETY ZONE CONCEPTS
+
+### NO-FIRE ZONES
+
+**Definition**: Geographic areas where weapon discharge is absolutely prohibited.
+
+**Purpose**:
+- Protect friendly forces
+- Protect civilians and infrastructure
+- Prevent fratricide
+- Comply with rules of engagement (ROE)
+
+**How It Works**:
+- Zones are pre-programmed by command
+- System monitors gimbal position continuously
+- **OSD displays "NO-FIRE ZONE" warning** when reticle enters zone
+- Trigger is **software locked** when in no-fire zone
+- Override requires commander authorization code
+
+**Example No-Fire Zones**:
+- Friendly vehicle positions
+- Civilian buildings (schools, hospitals, mosques)
+- Infrastructure (power plants, water treatment)
+- Friendly patrol routes
+
+**Operator Responsibility**:
+- **Always check OSD for no-fire zone warning before engaging**
+- Do not attempt to fire if warning is displayed
+- Report zone boundary errors to command
+- Never share override codes
+
+---
+
+### NO-TRAVERSE ZONES
+
+**Definition**: Geographic areas where gimbal movement is restricted or prohibited.
+
+**Purpose**:
+- Prevent gimbal from hitting vehicle structure
+- Protect antennas, equipment, or personnel on vehicle
+- Prevent pointing weapon at vehicle crew positions
+- Avoid damaging cables or sensors
+
+**How It Works**:
+- Zones are defined during system installation
+- Gimbal slew is **automatically stopped** at zone boundary
+- You will feel joystick resistance near boundary
+- **OSD displays "NO-TRAVERSE" warning** when approaching zone
+- System prevents entry even if you force joystick
+
+**Example No-Traverse Zones**:
+- Rear 90° arc (to avoid vehicle cabin)
+- Areas with antennas or equipment
+- Personnel access hatches
+- Cable routing areas
+
+**Operator Responsibility**:
+- Learn your vehicle's no-traverse zones
+- Do not fight the system if gimbal stops
+- Report if zones are too restrictive for mission
+- Never disable no-traverse zones without authorization
+
+---
+
+### ZONE VIOLATION PROCEDURES
+
+**If you accidentally enter a zone:**
+
+1. **Release Trigger Immediately** (if weapon armed)
+2. **Slew gimbal out of zone** using joystick
+3. **Verify OSD warning clears**
+4. **Report incident** to supervisor
+5. **Do not re-enter zone** unless mission requires and authorized
+
+**If system prevents zone entry but mission requires it:**
+
+1. **Do NOT force the system**
+2. **Report to commander** immediately
+3. **Request zone boundary adjustment** if appropriate
+4. **Obtain override authorization** if permitted by ROE
+5. **Document all overrides** in mission log
+
+**REMEMBER**: Zones exist for safety. Violating zones can kill friendlies.
+
+---
+
+**END OF LESSON 1**
+
+---
+
