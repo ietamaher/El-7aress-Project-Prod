@@ -90,6 +90,12 @@ public:
     void clearAlarms();
 
 signals:
+    // ✅ CRITICAL FIX: Queued signal for thread-safe target updates (Expert Review)
+    // This signal is emitted from vision thread and connected with Qt::QueuedConnection
+    // to eliminate race conditions between vision updates and motion mode reads
+    void trackingTargetUpdated(double azDeg, double elDeg,
+                              double azVel_dps, double elVel_dps,
+                              bool valid);
 
     void azAlarmDetected(uint16_t alarmCode, const QString &description);
     void azAlarmCleared();
