@@ -3315,3 +3315,586 @@ Each TRP has:
 
 ---
 
+# LESSON 5: TARGET ENGAGEMENT PROCESS
+
+**Lesson Duration:** 4 hours (Classroom 1h + Simulator 3h)
+
+**Learning Objectives:**
+- Execute complete target engagement sequence
+- Operate tracking system through all phases
+- Adjust acquisition gate for target selection
+- Perform emergency tracking abort
+- Execute simulated weapons engagement
+
+---
+
+## 5.1 TARGET ENGAGEMENT SEQUENCE
+
+### **THE SIX-PHASE ENGAGEMENT CYCLE**
+
+```
+1. DETECT    → 2. IDENTIFY → 3. ACQUIRE → 4. TRACK → 5. ENGAGE → 6. ASSESS
+```
+
+| Phase | Operator Actions | Expected Duration |
+|-------|------------------|-------------------|
+| **1. DETECT** | Scan area (manual/auto modes), visual detection | Continuous |
+| **2. IDENTIFY** | Slew to target, zoom in, PID (Positive ID), verify ROE | 5-15 seconds |
+| **3. ACQUIRE** | Enter tracking acquisition, position gate, size gate | 5-10 seconds |
+| **4. TRACK** | Lock-on, monitor track quality | Continuous until engagement |
+| **5. ENGAGE** | Range, LAC (if moving), Master Arm, Fire, Observe | 2-30 seconds |
+| **6. ASSESS** | BDA (Battle Damage Assessment), re-engage or cease | 5-10 seconds |
+
+---
+
+### **DETECT & IDENTIFY (PHASES 1-2)**
+
+**Detection Methods**:
+- Manual scan (joystick control)
+- Auto Sector Scan (Lesson 4)
+- TRP Scan (Lesson 4)
+- Radar cues (if available)
+
+**Identification Requirements**:
+- **PID (Positive Identification)** mandatory before engagement
+- Use zoom to magnify target (Button 6/8)
+- Thermal camera may aid identification (night, obscurants)
+- Verify target meets Rules of Engagement (ROE)
+- Confirm NOT friendly forces
+
+**⚠️ WARNING**: Failure to achieve PID before engagement violates ROE and may result in fratricide.
+
+---
+
+## 5.2 TRACKING SYSTEM OVERVIEW
+
+### **TRACKING PHASE STATE MACHINE**
+
+The tracking system operates through discrete phases:
+
+```
+    OFF
+     ↓ [Button 4: Start Acquisition]
+ ACQUISITION
+     ↓ [Size gate with D-Pad]
+     ↓ [Button 4: Request Lock-On]
+LOCK PENDING
+     ↓ [Tracker initializes]
+ACTIVE LOCK ⟷ COAST
+     ↓         [Target temporarily lost]
+  FIRING
+     ↓ [Cease fire or abort]
+    OFF
+```
+
+### **TRACKING PHASE REFERENCE**
+
+| Phase | OSD Status | Box Color | Box Style | Duration | Gimbal Control |
+|-------|------------|-----------|-----------|----------|----------------|
+| **Off** | MODE: Manual | None | N/A | Until acquisition | Operator (joystick) |
+| **Acquisition** | ACQUISITION | Yellow | Solid | 5-10 sec | Operator (joystick) |
+| **Lock Pending** | LOCK PENDING | Cyan | Solid/Flash | 0.5-2 sec | Operator (hold steady) |
+| **Active Lock** | TRACKING | Green | Dashed | Continuous | Automatic (tracker) |
+| **Coast** | TRACKING (COAST) | Yellow | Dashed | 1-5 sec | Automatic (predict) |
+| **Firing** | TRACKING (FIRING) | Green | Solid | While firing | Automatic (hold) |
+
+### **TRACKING CONTROLS**
+
+| Control | Function | Active Phase(s) |
+|---------|----------|-----------------|
+| **Button 4** (single press) | Start Acquisition / Request Lock-On | Off → Acquisition, Acquisition → Lock Pending |
+| **Button 4** (double-click <500ms) | **EMERGENCY ABORT** | Any phase → Off |
+| **D-Pad ▲** | Decrease gate height (-4 px) | Acquisition only |
+| **D-Pad ▼** | Increase gate height (+4 px) | Acquisition only |
+| **D-Pad ◄** | Decrease gate width (-4 px) | Acquisition only |
+| **D-Pad ►** | Increase gate width (+4 px) | Acquisition only |
+
+---
+
+## 5.3 ACQUISITION PHASE
+
+### **ENTERING ACQUISITION MODE**
+
+**Prerequisites**:
+- Motion mode: Manual
+- Target on-screen and identified
+- Target approximately centered in reticle
+
+**Procedure**:
+
+**1. Press Button 4 (Track Select)**
+
+**Result**:
+- System enters **ACQUISITION** phase
+- Yellow acquisition gate appears (centered on reticle)
+- OSD displays: **MODE: ACQUISITION**
+- Joystick gimbal control remains active
+- D-Pad now controls gate size
+
+---
+
+### **SIZING THE ACQUISITION GATE**
+
+**Objective**: Frame target with 10-30% margin on all sides
+
+**D-Pad Controls**:
+- **UP ▲**: Decrease height
+- **DOWN ▼**: Increase height
+- **LEFT ◄**: Decrease width
+- **RIGHT ►**: Increase width
+- **Step size**: 4 pixels per press
+
+**Gate Sizing Guidelines**:
+
+| Target Framing | Effect on Tracking | Recommendation |
+|----------------|--------------------|-----------------|
+| Too Tight (<10% margin) | Tracker may lose target if target rotates/expands | ❌ Avoid |
+| Optimal (10-30% margin) | Best tracking performance | ✅ Ideal |
+| Too Loose (>50% margin) | Background clutter may confuse tracker | ❌ Avoid |
+
+**Best Practices**:
+- **Vehicles**: Frame entire hull, exclude ground
+- **Personnel**: Include torso/legs, minimize background
+- **Moving targets**: Size slightly larger (anticipate motion)
+- **Default size**: 100×100 pixels (adjust as needed)
+
+---
+
+### **REQUESTING LOCK-ON**
+
+**When Ready**:
+- Target fully visible and framed in gate
+- Target has good contrast against background
+- Target not moving erratically
+
+**Action**: **Press Button 4** (second press)
+
+**Result**:
+- System → **LOCK PENDING** phase
+- Gate color: Yellow → Cyan (or flashing)
+- OSD: **MODE: LOCK PENDING**
+- Tracker initialization begins (0.5-2 seconds)
+
+**⚠️ CAUTION**: Do NOT make rapid gimbal movements during Lock Pending. Hold gimbal steady.
+
+---
+
+## 5.4 LOCK PENDING → ACTIVE LOCK
+
+### **LOCK PENDING PHASE**
+
+**Purpose**: Tracking system initializes on target
+
+**Duration**: 0.5 to 2 seconds (typically ~1 second)
+
+**Operator Action**: **WAIT** - maintain steady gimbal
+
+**What Happens**:
+1. System captures reference image of target
+2. Initializes tracker algorithm
+3. Calculates target features
+4. Begins tracking target in video stream
+
+**Transition Outcomes**:
+
+**✅ SUCCESS**:
+- System → **ACTIVE LOCK** phase
+- Gate color: Green
+- Gate style: Dashed outline
+- OSD: **MODE: TRACKING** or **ACTIVE LOCK**
+- Gimbal control switches to automatic
+
+**❌ FAILURE** (rare):
+- System → **ACQUISITION** phase (retry)
+- Possible causes: Poor contrast, target too small, target motion
+- Operator: Adjust gate size or abort and restart
+
+---
+
+### **ACTIVE LOCK PHASE**
+
+**System Behavior**:
+- Tracker follows target at 30 Hz (30 times/second)
+- Gimbal automatically moves to keep target centered
+- Reticle stays on target center
+- **Joystick axis inputs IGNORED** (tracking in control)
+
+**Visual Indicators**:
+- **Tracking Gate**: Green dashed outline around target
+- **OSD**: MODE: TRACKING or ACTIVE LOCK
+- **Control Panel**: TRACKING light ON (green)
+- **Track Confidence**: >70% (good), 50-70% (marginal), <50% (poor)
+
+---
+
+### **OPERATOR ROLE DURING ACTIVE LOCK**
+
+**Primary Role**: **MONITOR** - system is tracking automatically
+
+**Monitor For**:
+
+1. **Track Quality**:
+   - ✅ Green gate = Good track
+   - ⚠️ Yellow gate = Marginal (may lose soon)
+   - Track confidence >70% (good), <50% (prepare for coast)
+
+2. **Target Status**:
+   - Target correctly identified (didn't jump to wrong object)
+   - Target still valid (meets engagement criteria)
+   - Target not obscured or about to be obscured
+
+3. **Gimbal Position**:
+   - Staying within operational limits
+   - Not approaching no-traverse zones
+   - Elevation within -20° to +60°
+
+**Controls Still Active**:
+- ✅ Button 0 (Master Arm)
+- ✅ Button 2 (LAC toggle)
+- ✅ Button 3 (Dead Man Switch)
+- ✅ Button 4 (double-click abort)
+- ✅ Button 5 (Fire)
+- ✅ Button 6/8 (Zoom) - use cautiously, may affect track
+- ❌ Button 11/13 (Mode cycle) - BLOCKED during tracking
+- ❌ Joystick axes (X/Y) - IGNORED during tracking
+
+---
+
+## 5.5 COAST MODE
+
+### **WHEN COAST ACTIVATES**
+
+**Triggers**:
+- Target temporarily obscured (passes behind object)
+- Target leaves field of view briefly
+- Tracker loses visual lock
+- Dust, smoke, or other obscurants
+
+**System Behavior**:
+- Tracker **predicts** target position based on last known velocity
+- Gimbal continues to predicted position
+- System attempts to re-acquire target
+- Tracking gate: Green → Yellow (dashed)
+
+**Display Changes**:
+- **OSD**: MODE: COAST or TRACKING (COAST)
+- **Gate**: Yellow/amber dashed outline
+- **Warning**: "COASTING - TARGET LOST" may display
+
+---
+
+### **COAST OUTCOMES**
+
+**Typical Duration**: 1-5 seconds
+
+**Outcome 1: Target Re-Acquired** (✅ Success):
+- Target reappears in field of view
+- Tracker re-locks on target
+- System → **ACTIVE LOCK** phase
+- Gate: Yellow → Green
+- Tracking continues normally
+
+**Outcome 2: Coast Timeout** (❌ Failure):
+- Target not re-acquired within timeout (~5 seconds)
+- System gives up
+- System → **OFF** phase
+- Tracking stops
+- Operator must restart tracking if desired
+
+**Operator Action During Coast**:
+- ✅ Wait patiently (system attempting re-acquisition)
+- ✅ Be ready for track to resume
+- ❌ Do NOT abort prematurely (give system time)
+- ❌ Do NOT make manual gimbal movements (joystick ignored)
+
+**Abort Coast If**:
+- Target definitely not coming back (destroyed, permanently obscured)
+- Tracker coasting in wrong direction (confused)
+- Mission changed
+
+---
+
+## 5.6 TRACKING ABORT (EMERGENCY)
+
+### **WHEN TO ABORT TRACKING**
+
+Abort tracking **IMMEDIATELY** if:
+- ❌ Tracking wrong target (friendly, civilian, incorrect target)
+- ❌ Target no longer valid (fails ROE)
+- ❌ Safety concern (entering no-fire zone, gimbal obstruction)
+- ❌ Mission change (new priority, orders to cease)
+- ❌ Tracking erratic (unexpected gimbal behavior)
+
+---
+
+### **ABORT PROCEDURE**
+
+**Action**: **DOUBLE-CLICK BUTTON 4** (<500ms between presses)
+
+**Effect** (IMMEDIATE):
+1. Tracking **STOPS**
+2. System → **OFF** phase
+3. Gimbal holds current position
+4. Tracking gate disappears
+5. Weapon fire **INHIBITED** (even if Master Arm engaged)
+6. OSD: MODE: MANUAL
+
+**Timing**:
+- Press 1 → Press 2 within **500 milliseconds** (half-second)
+- **Too slow** (>500ms): System interprets as two single presses (may restart tracking)
+
+**⚠️ CRITICAL**: Practice double-click timing during training until muscle memory established.
+
+---
+
+### **AFTER ABORT**
+
+**System State**:
+- Manual mode active
+- Joystick gimbal control restored
+- No tracking active
+
+**Next Actions** (mission-dependent):
+- Re-acquire correct target and restart tracking
+- Return to surveillance mode
+- Engage different target
+- Follow commander's orders
+
+---
+
+## 5.7 WEAPONS ENGAGEMENT SEQUENCE
+
+### **PRE-ENGAGEMENT CHECKLIST**
+
+Before engaging, verify **ALL** items:
+
+- ☐ Target positively identified (**PID**)
+- ☐ Target valid (meets ROE)
+- ☐ Fire authorization received (if required)
+- ☐ NOT in no-fire zone (check OSD for zone warnings)
+- ☐ Friendly forces clear
+- ☐ Weapon loaded and ready
+- ☐ Zeroing active (if applicable)
+- ☐ Environmental parameters set (if applicable)
+- ☐ Track established (if using tracking)
+
+**⚠️ WARNING: IF ANY ITEM CANNOT BE CHECKED, DO NOT FIRE.**
+
+---
+
+### **ENGAGEMENT PROCEDURE (STEP-BY-STEP)**
+
+#### **STEP 1: Acquire and Track Target**
+
+1. Detect and identify target (PID mandatory)
+2. **Button 4** → Enter acquisition mode
+3. **D-Pad** → Size gate to frame target (10-30% margin)
+4. **Button 4** → Request lock-on
+5. Wait for **ACTIVE LOCK** (green gate, OSD: TRACKING)
+6. Monitor track quality (confidence >70%, green gate)
+
+---
+
+#### **STEP 2: Range Target**
+
+1. Fire Laser Range Finder (LRF trigger)
+2. Wait for range reading (OSD: **RNG: xxxx m**)
+3. Verify range reasonable
+4. Range used for ballistic calculations (CCIP)
+
+**Note**: LRF may fire automatically during tracking (configuration-dependent). Verify range displayed.
+
+---
+
+#### **STEP 3: Enable Lead Angle Compensation (If Moving Target)**
+
+**If target is moving** (lateral motion, speed >5 m/s, range >100m):
+
+1. Hold **Dead Man Switch** (Button 3)
+2. Press **LAC Toggle** (Button 2)
+3. Verify LAC status:
+   - ✅ **"LEAD ANGLE ON"** (green) = Ready
+   - ⚠️ **"LEAD ANGLE LAG"** (yellow) = Wait for tracking data
+   - ❌ **"ZOOM OUT"** (red) = FOV too narrow, zoom out
+4. Observe CCIP reticle offset ahead of target (lead point)
+
+**If target stationary**: LAC not necessary (CCIP at target center)
+
+**Detailed LAC procedures in Lesson 6.**
+
+---
+
+#### **STEP 4: Final Safety Checks**
+
+1. Verify target still valid
+2. Verify tracking active (green gate, good confidence)
+3. Check OSD for warnings:
+   - ❌ **"ZONE VIOLATION"** = DO NOT FIRE
+   - ❌ **"NO-FIRE ZONE"** = DO NOT FIRE
+   - ✅ No warnings = Clear to fire
+4. Verify friendly forces clear
+5. Verify backstop (if required)
+
+---
+
+#### **STEP 5: Engage Master Arm**
+
+1. Pull trigger to **Stage 1** (half-pull) → **Master Arm** (Button 0)
+   - OR toggle Master Arm switch on Control Panel
+2. Verify **"ARMED"** indicator light ON (red)
+3. OSD may display: **"WEAPON ARMED"**
+
+**⚠️ WEAPON IS NOW HOT**
+
+---
+
+#### **STEP 6: Fire Weapon**
+
+1. Final aim verification (CCIP on target or lead point)
+2. Pull trigger to **Stage 2** (full-pull) → **Fire** (Button 5)
+3. Weapon fires
+4. Hold trigger for desired burst:
+   - **Single Shot**: Quick press/release (1 round)
+   - **Burst**: Hold 2-3 seconds (controlled burst)
+   - **Sustained**: Hold longer (use cautiously)
+
+**During Firing**:
+- Tracking keeps reticle on target
+- Gimbal compensates for recoil
+- Observe rounds impacting
+- Adjust fire as needed
+
+**System State**:
+- Tracking phase → **FIRING**
+- OSD: MODE: TRACKING (FIRING)
+- Gate: Green solid outline
+- Enhanced stabilization active
+
+---
+
+#### **STEP 7: Cease Fire**
+
+1. Release **Fire button** (Button 5 / trigger stage 2)
+2. Weapon stops firing
+3. Release **Master Arm** (Button 0 / trigger stage 1)
+4. Verify **"ARMED"** indicator OFF
+5. Tracking continues (unless aborted)
+
+---
+
+#### **STEP 8: Assess Target (BDA)**
+
+**Battle Damage Assessment**:
+- ✅ Target destroyed? → Stop tracking, report success
+- ⚠️ Target damaged? → Re-engage (repeat Steps 5-7)
+- ❌ Target missed? → Check zeroing/environmental/LAC, re-engage
+- 🔄 Target suppressed? → Maintain track, ready to re-engage
+
+---
+
+#### **STEP 9: Post-Engagement Actions**
+
+1. If target neutralized: **Stop tracking** (double-click Button 4)
+2. Report engagement results to command
+3. Update ammunition count
+4. Scan for additional targets
+5. Resume surveillance or follow orders
+
+---
+
+## 5.8 ENGAGEMENT BEST PRACTICES
+
+### **TARGET SELECTION FOR TRACKING**
+
+**Good Targets**:
+- ✅ High contrast against background
+- ✅ Clearly defined edges
+- ✅ Sufficient size (>30 pixels)
+- ✅ Relatively stable motion
+
+**Difficult Targets**:
+- ⚠️ Low contrast (camouflaged)
+- ⚠️ Very small (distant)
+- ⚠️ Erratic motion (evasive)
+- ⚠️ Partially obscured
+
+**If Tracking Fails**:
+- Try manual engagement (no tracking)
+- Improve contrast (switch camera or thermal LUT)
+- Wait for better tracking opportunity
+
+---
+
+### **LEAD ANGLE COMPENSATION TIPS**
+
+**When to Use LAC**:
+- ✅ Target moving laterally (crossing FOV)
+- ✅ Target speed >5 m/s (~10 mph)
+- ✅ Range >100 meters
+
+**When NOT Needed**:
+- ❌ Stationary targets
+- ❌ Targets moving radially (toward/away from you)
+- ❌ Very close range (<50m)
+
+**LAC Limitations**:
+- Requires tracking active
+- Requires sufficient FOV (may need to zoom out)
+- Assumes constant target velocity (less accurate if maneuvering)
+
+---
+
+### **AMMUNITION CONSERVATION**
+
+**Fire Discipline**:
+- Use controlled bursts (2-5 rounds) vs. full-auto spray
+- Assess after each burst before re-engaging
+- Precision over volume
+
+**Round Count**:
+- Track ammunition expenditure
+- Report when low (<20% remaining)
+- Conserve for high-priority targets
+
+---
+
+### **SAFETY REMINDERS**
+
+**ALWAYS**:
+- ✅ Verify target before engaging (PID mandatory)
+- ✅ Check for friendly forces
+- ✅ Verify NOT in no-fire zone
+- ✅ Follow Rules of Engagement (ROE)
+- ✅ Have fire authorization (if required)
+
+**NEVER**:
+- ❌ Fire without positive identification
+- ❌ Fire into no-fire zones
+- ❌ Fire if friendlies potentially in line of fire
+- ❌ Fire without authorization (if required)
+- ❌ Assume tracking is infallible (monitor track quality)
+
+---
+
+## 5.9 TRACKING QUICK REFERENCE
+
+| Situation | Action | Button/Control |
+|-----------|--------|----------------|
+| Start tracking | Enter acquisition mode | Button 4 (1st press) |
+| Size gate larger | Increase dimensions | D-Pad ▼ (height) / ► (width) |
+| Size gate smaller | Decrease dimensions | D-Pad ▲ (height) / ◄ (width) |
+| Request lock-on | Lock onto target | Button 4 (2nd press) |
+| Monitor track | Observe gate color & confidence | Visual (OSD) |
+| Track degrading | Prepare for coast or abort | Stand by Button 4 |
+| Emergency abort | Stop tracking immediately | Button 4 (double-click <500ms) |
+| Enable LAC | Activate lead compensation | Button 3 + Button 2 |
+| Arm weapon | Engage Master Arm | Button 0 (or trigger stage 1) |
+| Fire weapon | Discharge weapon | Button 5 (or trigger stage 2) |
+| Cease fire | Safe weapon | Release Button 5 & Button 0 |
+
+---
+
+**END OF LESSON 5**
+
+---
+
