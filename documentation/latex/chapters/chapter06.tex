@@ -1,9 +1,16 @@
-\# LESSON 6: BALLISTICS \& FIRE CONTROL
+% BALLISTICS & FIRE CONTROL
 
+\noindent
 \textbf{Lesson Duration:} 5 hours (Classroom 2h + Practical 3h)
 
+\vspace{0.3cm}
+
+\noindent
 \textbf{Learning Objectives:}
-\begin{itemize}
+
+Upon completion of this lesson, you will be able to:
+
+\begin{itemize}[leftmargin=2em,itemsep=3pt]
 \item Perform weapon zeroing (boresight alignment)
 \item Configure environmental parameters for ballistic corrections
 \item Activate and employ Lead Angle Compensation (LAC) for moving targets
@@ -11,6 +18,7 @@
 \item Combine zeroing, environmental settings, and LAC for accurate engagements
 \end{itemize}
 
+\vspace{0.5cm}
 
 
 \section{6.1 WEAPON ZEROING (BORESIGHT ALIGNMENT)}
@@ -40,8 +48,6 @@ Weapon → • (actual impact point)
 \item \textbf{After Zeroing}: Reticle shows where weapon will actually hit
 \end{itemize}
 
-
-
 \subsection{ZEROING PROCEDURE}
 
 \subsubsection{Pre-Zeroing Requirements}
@@ -69,8 +75,6 @@ Weapon → • (actual impact point)
 \item $\checkmark$ Manual mode (no active tracking or motion modes)
 \end{itemize}
 
-
-
 \subsubsection{COMPLETE ZEROING PROCEDURE (STEP-BY-STEP)}
 
 \textbf{STEP 1: Access Zeroing Menu}
@@ -81,8 +85,6 @@ Weapon → • (actual impact point)
 \item Zeroing screen appears with instructions
 \end{enumerate}
 
-
-
 \textbf{STEP 2: Aim at Target}
 \begin{enumerate}
 \item Use joystick to center reticle on target center
@@ -90,8 +92,6 @@ Weapon → • (actual impact point)
 \item Target should be large (minimum 30cm × 30cm)
 \item Target at known range (100-300m recommended)
 \end{enumerate}
-
-
 
 \textbf{STEP 3: Fire Test Shot(s)}
 \begin{enumerate}
@@ -107,8 +107,6 @@ Weapon → • (actual impact point)
 \item Impact observed 20cm low and 10cm right
 \item This offset will be corrected in next steps
 \end{itemize}
-
-
 
 \textbf{STEP 4: Adjust Reticle to Impact}
 
@@ -128,8 +126,6 @@ Weapon → • (actual impact point)
 \item System records this offset
 \end{itemize}
 
-
-
 \textbf{STEP 5: Apply Zero}
 \begin{enumerate}
 \item Press \textbf{MENU $\checkmark$ / VAL} button to apply
@@ -138,8 +134,6 @@ Weapon → • (actual impact point)
 \item Displays final offsets (e.g., "Az: 0.85\degree{}, El: -1.23\degree{}")
 \item \textbf{"Z"} indicator appears on OSD (confirms zero active)
 \end{enumerate}
-
-
 
 \textbf{STEP 6: Verify Zero}
 \begin{enumerate}
@@ -152,8 +146,6 @@ Weapon → • (actual impact point)
 
 \NOTE{Zero values saved to configuration file, loaded automatically on startup.}
 
-
-
 \subsection{MULTI-RANGE ZERO VALIDATION}
 
 \textbf{Why Multiple Ranges Matter}:
@@ -164,8 +156,6 @@ Weapon → • (actual impact point)
 \end{itemize}
 
 \textbf{Recommended Zero Range}: \textbf{200-250m} (best for general-purpose zero, acceptable accuracy 50m-600m)
-
-
 
 \subsubsection{MULTI-RANGE VALIDATION PROCEDURE}
 
@@ -182,8 +172,6 @@ After initial zero at 200m, test at multiple ranges:
 \item Re-zero at primary engagement range (e.g., 250m)
 \item Compromise between short and long range accuracy
 \end{itemize}
-
-
 
 \subsection{CLEARING ACTIVE ZERO}
 
@@ -203,8 +191,6 @@ After initial zero at 200m, test at multiple ranges:
 \item System returns to factory boresight (no offset)
 \item Must perform new zeroing procedure before live fire
 \end{enumerate}
-
-
 
 \section{6.2 ENVIRONMENTAL PARAMETERS}
 
@@ -226,8 +212,6 @@ Ballistic trajectory is affected by environmental conditions:
 \item \texttt{environmentalAppliedToBallistics} (boolean flag)
 \end{itemize}
 
-
-
 \subsection{ENVIRONMENTAL PARAMETERS SETUP}
 
 \subsubsection{ACCESSING ENVIRONMENTAL MENU}
@@ -238,8 +222,6 @@ Ballistic trajectory is affected by environmental conditions:
 \item Press \textbf{VAL} to enter
 \item Environmental configuration screen appears
 \end{enumerate}
-
-
 
 \subsubsection{SETTING TEMPERATURE}
 
@@ -263,8 +245,6 @@ Ballistic trajectory is affected by environmental conditions:
 
 \NOTE{Temperature measured at **shooter location**, not target location.}
 
-
-
 \subsubsection{SETTING ALTITUDE}
 
 \textbf{Purpose}: Correct for air pressure changes with elevation
@@ -286,8 +266,6 @@ Ballistic trajectory is affected by environmental conditions:
 % TABLE ROW: | **2000m+** | Much lower | Significantly less drag, flatter trajectory |
 
 \textbf{ TIP}: Use GPS, map, or barometric altimeter to determine altitude.
-
-
 
 \subsubsection{SETTING CROSSWIND}
 
@@ -320,8 +298,6 @@ Ballistic trajectory is affected by environmental conditions:
 
 \textbf{System Assumption}: Crosswind value entered represents \textbf{full crosswind component} (perpendicular). Operator should estimate effective crosswind speed accounting for wind angle.
 
-
-
 \subsubsection{APPLYING ENVIRONMENTAL SETTINGS}
 
 \textbf{STEP 1: Configure All Parameters}
@@ -346,8 +322,6 @@ Ballistic trajectory is affected by environmental conditions:
 \item All subsequent shots use environmental-corrected ballistics
 \end{itemize}
 
-
-
 \subsubsection{CLEARING ENVIRONMENTAL SETTINGS}
 
 \textbf{When to Clear}:
@@ -367,8 +341,6 @@ Ballistic trajectory is affected by environmental conditions:
 \item System returns to standard conditions (15\degree{}C, 0m altitude, 0 m/s wind)
 \end{enumerate}
 
-
-
 \subsection{ENVIRONMENTAL PARAMETERS QUICK REFERENCE}
 
 % TABLE ROW: | Situation | Temperature | Altitude | Crosswind | Apply? |
@@ -377,8 +349,6 @@ Ballistic trajectory is affected by environmental conditions:
 % TABLE ROW: | **Desert, hot, calm** | 40°C | 0m | 0 m/s | Yes (temperature correction) |
 % TABLE ROW: | **Mountain, cold, windy** | -10°C | 2000m | 8 m/s | Yes (all corrections) |
 % TABLE ROW: | **Temperate, mild, light breeze** | 20°C | 300m | 3 m/s | Optional (small corrections) |
-
-
 
 \section{6.3 LEAD ANGLE COMPENSATION (LAC)}
 
@@ -406,8 +376,6 @@ Bullet:  →→→ •           Bullet:         •
 Result: HIT (bullet meets target at predicted position)
 \end{verbatim}
 
-
-
 \subsection{LEAD ANGLE FUNDAMENTALS}
 
 \textbf{Lead Angle}: Angular offset between target's current position and predicted intercept point
@@ -431,8 +399,6 @@ Result: HIT (bullet meets target at predicted position)
 \item Apply offset to CCIP reticle
 \end{enumerate}
 
-
-
 \subsection{LAC ACTIVATION REQUIREMENTS}
 
 \textbf{Prerequisites}:
@@ -448,8 +414,6 @@ Result: HIT (bullet meets target at predicted position)
 \begin{itemize}
 \item \textbf{Dead Man Switch (\button{Button 3}) MUST be held} during activation
 \end{itemize}
-
-
 
 \subsection{LAC ACTIVATION PROCEDURE}
 
@@ -477,8 +441,6 @@ Result: HIT (bullet meets target at predicted position)
 \item $\square$ Track confidence remains >70\%
 \end{itemize}
 
-
-
 \subsection{LAC STATUS INDICATORS}
 
 \subsubsection{STATUS: "LEAD ANGLE ON" (GREEN)}
@@ -498,8 +460,6 @@ Result: HIT (bullet meets target at predicted position)
 \item CCIP shows where to aim for predicted intercept
 \item Fire when CCIP on target (system handles lead)
 \end{itemize}
-
-
 
 \subsubsection{STATUS: "LEAD ANGLE LAG" (YELLOW)}
 
@@ -524,8 +484,6 @@ Result: HIT (bullet meets target at predicted position)
 \item Do NOT fire until status changes to \osd{LEAD ANGLE ON} (GREEN)
 \item If LAG persists >10 seconds: Check tracking quality, verify target moving
 \end{itemize}
-
-
 
 \subsubsection{STATUS: "ZOOM OUT" (RED)}
 
@@ -554,8 +512,6 @@ Result: HIT (bullet meets target at predicted position)
 
 \NOTE{Extremely fast-moving targets may require wide FOV even at close range.}
 
-
-
 \subsection{LAC DEACTIVATION PROCEDURE}
 
 \textbf{When to Deactivate}:
@@ -583,8 +539,6 @@ Result: HIT (bullet meets target at predicted position)
 \item $\square$ Reticle pipper returns to boresight alignment
 \item $\square$ System ready for stationary target engagement
 \end{itemize}
-
-
 
 \subsection{USING LAC IN ENGAGEMENT}
 
@@ -633,8 +587,6 @@ Result: HIT (bullet meets target at predicted position)
 \item If missing: Check tracking quality, verify LAC ON, verify range accurate
 \end{itemize}
 
-
-
 \subsection{LAC LIMITATIONS}
 
 \textbf{When LAC Works Best}:
@@ -659,8 +611,6 @@ Result: HIT (bullet meets target at predicted position)
 \item Assumes constant target velocity (less accurate if target maneuvering)
 \item Not effective for erratic or unpredictable motion
 \end{itemize}
-
-
 
 \section{6.4 COMBINING FIRE CONTROL SYSTEMS}
 
@@ -694,8 +644,6 @@ FINAL AIM POINT = Gun Boresight + Zeroing Offset + Environmental Corrections + L
 \item Most accurate engagement solution
 \end{itemize}
 
-
-
 \subsection{ENGAGEMENT SCENARIOS}
 
 \subsubsection{SCENARIO 1: Stationary Target, Standard Conditions}
@@ -711,8 +659,6 @@ FINAL AIM POINT = Gun Boresight + Zeroing Offset + Environmental Corrections + L
 
 \textbf{Fire Control}: Zeroing offset only
 
-
-
 \subsubsection{SCENARIO 2: Stationary Target, Hot Desert, High Altitude}
 
 \textbf{Configuration}:
@@ -725,8 +671,6 @@ FINAL AIM POINT = Gun Boresight + Zeroing Offset + Environmental Corrections + L
 \textbf{OSD}: \textbf{Z ENV}
 
 \textbf{Fire Control}: Zeroing + Environmental (temperature, altitude)
-
-
 
 \subsubsection{SCENARIO 3: Moving Target, Windy Conditions, Mountain}
 
@@ -741,8 +685,6 @@ FINAL AIM POINT = Gun Boresight + Zeroing Offset + Environmental Corrections + L
 
 \textbf{Fire Control}: Zeroing + Environmental + Lead Angle (full solution)
 
-
-
 \subsubsection{SCENARIO 4: Close Range, Moving Target, Standard Conditions}
 
 \textbf{Configuration}:
@@ -756,8 +698,6 @@ FINAL AIM POINT = Gun Boresight + Zeroing Offset + Environmental Corrections + L
 
 \textbf{Fire Control}: Zeroing + Lead Angle
 
-
-
 \subsection{FIRE CONTROL QUICK REFERENCE}
 
 % TABLE ROW: | Target Type | Range | Conditions | Zeroing | Environmental | LAC | OSD |
@@ -768,8 +708,6 @@ FINAL AIM POINT = Gun Boresight + Zeroing Offset + Environmental Corrections + L
 % TABLE ROW: | Moving (slow) | <100m | Standard | ✅ | ❌ | Optional | Z (LEAD ANGLE ON) |
 % TABLE ROW: | Moving (fast) | >100m | Standard | ✅ | ❌ | ✅ | Z LEAD ANGLE ON |
 % TABLE ROW: | Moving (fast) | >100m | Extreme | ✅ | ✅ | ✅ | Z ENV LEAD ANGLE ON |
-
-
 
 \section{6.5 FIRE CONTROL BEST PRACTICES}
 
@@ -791,8 +729,6 @@ FINAL AIM POINT = Gun Boresight + Zeroing Offset + Environmental Corrections + L
 \item $\times$ Assuming zero is permanent (mechanical drift can occur over time)
 \end{itemize}
 
-
-
 \subsection{ENVIRONMENTAL PARAMETERS}
 
 \textbf{Best Practices}:
@@ -809,8 +745,6 @@ FINAL AIM POINT = Gun Boresight + Zeroing Offset + Environmental Corrections + L
 \item $\times$ Ignoring significant temperature or wind changes
 \item $\times$ Over-correcting for minor environmental variations (<5\degree{}C temp change, <2 m/s wind)
 \end{itemize}
-
-
 
 \subsection{LEAD ANGLE COMPENSATION}
 
@@ -830,8 +764,6 @@ FINAL AIM POINT = Gun Boresight + Zeroing Offset + Environmental Corrections + L
 \item $\times$ "Kentucky windage" (manually aiming off-target) while LAC active - double-correcting
 \end{itemize}
 
-
-
 \subsection{SAFETY REMINDERS}
 
 \textbf{ALWAYS}:
@@ -849,10 +781,3 @@ FINAL AIM POINT = Gun Boresight + Zeroing Offset + Environmental Corrections + L
 \item $\times$ Fire with \osd{ZOOM OUT} (RED) warning (LAC non-functional)
 \item $\times$ Bypass Dead Man Switch safety interlock
 \end{itemize}
-
-
-
-\textbf{END OF LESSON 6}
-
-
-

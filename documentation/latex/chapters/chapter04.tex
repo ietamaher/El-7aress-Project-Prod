@@ -1,9 +1,16 @@
-\# LESSON 4: MOTION MODES \& SURVEILLANCE
+% MOTION MODES & SURVEILLANCE
 
+\noindent
 \textbf{Lesson Duration:} 3 hours (Classroom + Practical)
 
+\vspace{0.3cm}
+
+\noindent
 \textbf{Learning Objectives:}
-\begin{itemize}
+
+Upon completion of this lesson, you will be able to:
+
+\begin{itemize}[leftmargin=2em,itemsep=3pt]
 \item Explain the purpose of each motion mode
 \item Switch between motion modes safely
 \item Operate automatic sector scan mode
@@ -13,6 +20,7 @@
 \item Save and load zone configurations
 \end{itemize}
 
+\vspace{0.5cm}
 
 
 \section{4.1 MOTION MODES OVERVIEW}
@@ -29,8 +37,6 @@ Motion modes control \textbf{how the gimbal moves} during operations:
 \end{itemize}
 
 \textbf{Purpose}: Different missions require different surveillance patterns. Motion modes let you switch between direct control and automated surveillance.
-
-
 
 \subsection{MODE SELECTION}
 
@@ -49,8 +55,6 @@ Motion modes control \textbf{how the gimbal moves} during operations:
 \end{itemize}
 
 \textbf{ RESTRICTION}: Cannot change modes during tracking acquisition. Must abort tracking first (press TRK button).
-
-
 
 \section{4.2 MANUAL MODE}
 
@@ -81,8 +85,6 @@ Motion modes control \textbf{how the gimbal moves} during operations:
 \item Gimbal behavior changes immediately
 \end{itemize}
 
-
-
 \section{4.3 AUTO SECTOR SCAN MODE}
 
 \subsection{WHAT IS SECTOR SCAN?}
@@ -106,8 +108,6 @@ Motion modes control \textbf{how the gimbal moves} during operations:
 \end{verbatim}
 
 Gimbal continuously scans left-to-right, then right-to-left, repeat.
-
-
 
 \subsection{ACTIVATING SECTOR SCAN}
 
@@ -153,8 +153,6 @@ Gimbal continuously scans left-to-right, then right-to-left, repeat.
 \item Elevation can be fixed or variable (depending on zone setup)
 \end{itemize}
 
-
-
 \subsection{WHILE SECTOR SCANNING}
 
 \textbf{Operator Actions}:
@@ -180,8 +178,6 @@ Gimbal continuously scans left-to-right, then right-to-left, repeat.
 \item OR: Press TRK to start tracking (auto-switches to Manual)
 \end{itemize}
 
-
-
 \subsection{PAUSING / RESUMING SCAN}
 
 \textbf{Not Applicable}: Sector scan runs continuously. To stop:
@@ -190,8 +186,6 @@ Gimbal continuously scans left-to-right, then right-to-left, repeat.
 \end{itemize}
 
 \textbf{Tip}: If you need to temporarily examine something in the sector, use \textbf{Manual} mode to stop, then return to \textbf{AutoSectorScan} when ready.
-
-
 
 \subsection{MULTIPLE SECTOR ZONES}
 
@@ -206,8 +200,6 @@ Gimbal continuously scans left-to-right, then right-to-left, repeat.
 \item Select desired sector
 \item Return to AutoSectorScan mode
 \end{enumerate}
-
-
 
 \section{4.4 TRP SCAN MODE}
 
@@ -229,8 +221,6 @@ Gimbal continuously scans left-to-right, then right-to-left, repeat.
 \begin{verbatim}
 TRP 1 (30s dwell) → TRP 2 (30s dwell) → TRP 3 (30s dwell) → TRP 1 (repeat)
 \end{verbatim}
-
-
 
 \subsection{ACTIVATING TRP SCAN}
 
@@ -268,8 +258,6 @@ TRP 1 (30s dwell) → TRP 2 (30s dwell) → TRP 3 (30s dwell) → TRP 1 (repeat)
 \item Allows operator to observe location before moving on
 \end{itemize}
 
-
-
 \subsection{WHILE TRP SCANNING}
 
 \textbf{Operator Actions}:
@@ -295,8 +283,6 @@ TRP 1 (30s dwell) → TRP 2 (30s dwell) → TRP 3 (30s dwell) → TRP 1 (repeat)
 \item \textbf{Not directly available} - must wait for dwell to complete, OR
 \item Cycle to Manual, reposition, cycle back to TRP mode (restarts from TRP 1)
 \end{itemize}
-
-
 
 \subsection{TRP SCAN BEST PRACTICES}
 
@@ -332,8 +318,6 @@ TRP 1 (30s dwell) → TRP 2 (30s dwell) → TRP 3 (30s dwell) → TRP 1 (repeat)
 \item Use TRP scan for routine surveillance
 \item Switch to Manual when threat detected
 \end{itemize}
-
-
 
 \section{4.5 RADAR SLEW MODE (OPTIONAL)}
 
@@ -377,8 +361,6 @@ TRP 1 (30s dwell) → TRP 2 (30s dwell) → TRP 3 (30s dwell) → TRP 1 (repeat)
 
 \NOTE{Most El 7arress RCWS systems do NOT have radar. This mode will show "RADAR NOT AVAILABLE" if no radar connected.}
 
-
-
 \section{4.6 MOTION MODE QUICK REFERENCE}
 
 % TABLE ROW: | Mode | Use Case | Gimbal Control | Exits to Manual When... |
@@ -390,8 +372,6 @@ TRP 1 (30s dwell) → TRP 2 (30s dwell) → TRP 3 (30s dwell) → TRP 1 (repeat)
 
 \textbf{Emergency Return to Manual}: Press \button{Button 11}/13 repeatedly until \textbf{MODE: Manual} displays
 
-
-
 \section{4.7 ZONE MANAGEMENT - SECTOR SCANS}
 
 \subsection{DEFINING SECTOR SCAN ZONES}
@@ -399,8 +379,6 @@ TRP 1 (30s dwell) → TRP 2 (30s dwell) → TRP 3 (30s dwell) → TRP 1 (repeat)
 Sector scan zones set the \textbf{left and right limits} for AutoSectorScan mode.
 
 \textbf{Access}: Main Menu $\rightarrow$ Zone Definitions $\rightarrow$ Sector Scans
-
-
 
 \subsubsection{SECTOR SCAN ZONE PARAMETERS}
 
@@ -414,8 +392,6 @@ Each sector scan zone has:
 % TABLE ROW: | **Elevation** | Scan elevation angle | 0° (horizon) |
 % TABLE ROW: | **Scan Speed** | Degrees per second | 5°/sec |
 % TABLE ROW: | **Active** | Enable/disable zone | ON / OFF |
-
-
 
 \subsubsection{CREATING A SECTOR SCAN ZONE (STEP-BY-STEP)}
 
@@ -480,8 +456,6 @@ Each sector scan zone has:
 \item Confirmation: \osd{SECTOR SCAN SAVED}
 \end{itemize}
 
-
-
 \textbf{Method 2: Quick Capture} (using joystick)
 
 \begin{enumerate}
@@ -518,8 +492,6 @@ Each sector scan zone has:
 \item Access menu to rename or adjust parameters
 \end{itemize}
 
-
-
 \subsection{ACTIVATING / DEACTIVATING SECTOR ZONES}
 
 \textbf{Multiple Zones}:
@@ -543,8 +515,6 @@ Each sector scan zone has:
 \item MENU $\checkmark$ $\rightarrow$ "Deactivate"
 \end{enumerate}
 
-
-
 \section{4.8 ZONE MANAGEMENT - TARGET REFERENCE POINTS (TRPs)}
 
 \subsection{DEFINING TRPs}
@@ -552,8 +522,6 @@ Each sector scan zone has:
 TRPs are \textbf{fixed locations} the system can automatically slew to.
 
 \textbf{Access}: Main Menu $\rightarrow$ Zone Definitions $\rightarrow$ TRPs
-
-
 
 \subsubsection{TRP PARAMETERS}
 
@@ -566,8 +534,6 @@ Each TRP has:
 % TABLE ROW: | **Elevation** | Angle to TRP | +5° |
 % TABLE ROW: | **Dwell Time** | Observation time | 30 seconds |
 % TABLE ROW: | **Active** | Enable/disable | ON / OFF |
-
-
 
 \subsubsection{CREATING A TRP (STEP-BY-STEP)}
 
@@ -628,8 +594,6 @@ Each TRP has:
 \item Confirmation: "TRP [Name] SAVED"
 \end{itemize}
 
-
-
 \textbf{Method 2: Manual Coordinate Entry}
 
 \begin{enumerate}
@@ -656,8 +620,6 @@ Each TRP has:
 \begin{enumerate}
 \item \textbf{Continue} with name, dwell time, save (same as Method 1)
 \end{enumerate}
-
-
 
 \subsection{MANAGING TRP LIST}
 
@@ -687,8 +649,6 @@ Each TRP has:
 \item Confirm deletion
 \end{itemize}
 
-
-
 \section{4.9 ZONE MANAGEMENT - NO-FIRE \& NO-TRAVERSE ZONES}
 
 (Covered conceptually in Lesson 1, Section 1.5 - this section covers \textbf{viewing} zones via menu)
@@ -714,8 +674,6 @@ Each TRP has:
 
 \textbf{Modification}: Usually requires commander/supervisor authorization
 
-
-
 \subsection{VIEWING NO-TRAVERSE ZONES}
 
 \textbf{Access}: Main Menu $\rightarrow$ Zone Definitions $\rightarrow$ No-Traverse Zones
@@ -734,8 +692,6 @@ Each TRP has:
 \item No-traverse zones prevent gimbal movement into restricted areas
 \item Protects vehicle structure, equipment, personnel
 \end{itemize}
-
-
 
 \section{4.10 SAVING \& LOADING ZONE CONFIGURATIONS}
 
@@ -770,8 +726,6 @@ Each TRP has:
 
 \textbf{File Location}: Saved to internal storage (typically /configs/zones/)
 
-
-
 \subsection{LOADING ZONE CONFIGURATION}
 
 \textbf{Purpose}: Load previously saved zone configuration
@@ -803,8 +757,6 @@ Each TRP has:
 
 \WARNING{Loading a configuration **overwrites** current zones. Save current zones first if needed.}
 
-
-
 \subsection{DEFAULT ZONE CONFIGURATION}
 
 \textbf{Default Zones}:
@@ -822,8 +774,6 @@ Each TRP has:
 
 \textbf{Use Case}: Reset after training or if zones become corrupted
 
-
-
 \section{4.11 SURVEILLANCE BEST PRACTICES}
 
 \subsection{CHOOSING THE RIGHT MODE}
@@ -835,8 +785,6 @@ Each TRP has:
 % TABLE ROW: | Checkpoint routine | TRP Scan | Efficient for fixed locations, repeatable |
 % TABLE ROW: | High-threat area scan | Manual | Requires operator judgment, unpredictable threats |
 % TABLE ROW: | Radar-integrated ops | Radar Slew (if available) | Rapid response to radar cues |
-
-
 
 \subsection{COMBINING MODES WITH TRACKING}
 
@@ -851,8 +799,6 @@ Each TRP has:
 \item \textbf{Abort tracking} (third TRK press)
 \item \textbf{Resume surveillance}: Press \button{Button 11}/13 to return to AutoSectorScan
 \end{enumerate}
-
-
 
 \subsection{ZONE DISCIPLINE}
 
@@ -878,10 +824,3 @@ Each TRP has:
 \item $\checkmark$ Debrief on zone effectiveness
 \item $\checkmark$ Recommend adjustments for future missions
 \end{itemize}
-
-
-
-\textbf{END OF LESSON 4}
-
-
-

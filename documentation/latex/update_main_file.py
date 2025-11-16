@@ -29,6 +29,20 @@ def create_complete_manual():
     # Keep everything up to and including mainmatter
     new_lines = lines[:mainmatter_line+1]
 
+    # Chapter titles (from condensed manual)
+    chapter_titles = {
+        1: "Safety Brief & System Overview",
+        2: "Basic Operation",
+        3: "Menu System & Settings",
+        4: "Motion Modes & Surveillance",
+        5: "Target Engagement Process",
+        6: "Ballistics & Fire Control",
+        7: "System Status & Monitoring",
+        8: "Emergency Procedures",
+        9: "Operator Maintenance & Troubleshooting",
+        10: "Practical Training & Evaluation"
+    }
+
     # Add chapter includes
     new_lines.append('\n')
     new_lines.append('% ============================================================================\n')
@@ -37,8 +51,12 @@ def create_complete_manual():
     new_lines.append('\n')
 
     for i in range(1, 11):
-        new_lines.append(f'% Chapter {i}\n')
+        new_lines.append(f'% Chapter {i}: {chapter_titles[i]}\n')
+        new_lines.append(f'\\chapter{{{chapter_titles[i]}}}\n')
+        new_lines.append(f'\\label{{ch:lesson{i}}}\n')
+        new_lines.append('\n')
         new_lines.append(f'\\input{{chapters/chapter{i:02d}}}\n')
+        new_lines.append('\n')
         new_lines.append('\\clearpage\n')
         new_lines.append('\n')
 
@@ -49,6 +67,14 @@ def create_complete_manual():
     new_lines.append('\\backmatter\n')
     new_lines.append('\n')
 
+    # Appendix titles
+    appendix_titles = {
+        'A': 'Quick Reference Cards',
+        'B': 'Technical Specifications',
+        'C': 'Acronyms & Glossary',
+        'D': 'Maintenance Log Template'
+    }
+
     # Add appendices
     new_lines.append('% ============================================================================\n')
     new_lines.append('% APPENDICES\n')
@@ -57,8 +83,12 @@ def create_complete_manual():
     new_lines.append('\n')
 
     for letter in ['A', 'B', 'C', 'D']:
-        new_lines.append(f'% Appendix {letter}\n')
+        new_lines.append(f'% Appendix {letter}: {appendix_titles[letter]}\n')
+        new_lines.append(f'\\chapter{{{appendix_titles[letter]}}}\n')
+        new_lines.append(f'\\label{{app:{letter.lower()}}}\n')
+        new_lines.append('\n')
         new_lines.append(f'\\input{{appendices/appendix{letter}}}\n')
+        new_lines.append('\n')
         new_lines.append('\\clearpage\n')
         new_lines.append('\n')
 

@@ -122,6 +122,9 @@ def convert_markdown_to_latex(md_text):
     in_list = False
     in_table = False
     list_type = None
+    skip_next_empty_lines = False
+    skip_learning_objectives = False
+    objectives_line_count = 0
 
     for line in lines:
         # Handle code blocks
@@ -143,20 +146,57 @@ def convert_markdown_to_latex(md_text):
             latex_lines.append('')
             continue
 
+        # Skip main lesson/appendix headers (these are chapter titles in main file)
+        if line.startswith('# LESSON') or line.startswith('# APPENDIX'):
+            skip_next_empty_lines = True
+            continue
+
+        # Skip "Lesson Duration:" lines that follow lesson headers
+        if 'Lesson Duration:' in line and '**' in line:
+            continue
+
+        # Skip "Learning Objectives:" section entirely (it's added in header)
+        if line.strip() == '**Learning Objectives:**':
+            skip_learning_objectives = True
+            objectives_line_count = 0
+            continue
+
+        # Count lines in learning objectives section
+        if skip_learning_objectives:
+            objectives_line_count += 1
+            # Check if we've reached the end (typically ends with a header or separator)
+            if line.startswith('##') or line.startswith('---') or (objectives_line_count > 20):
+                skip_learning_objectives = False
+                # Don't skip the current line if it's a header
+                if not (line.startswith('##') or line.startswith('---')):
+                    continue
+            else:
+                continue
+
+        # Skip empty lines right after skipped headers
+        if skip_next_empty_lines and line.strip() == '':
+            continue
+        else:
+            skip_next_empty_lines = False
+
         # Headers (skip # LESSON and # APPENDIX as they're chapter titles)
         if line.startswith('# ') and not ('LESSON' in line or 'APPENDIX' in line):
             latex_lines.append(f'\\chapter{{{escape_latex(line[2:].strip())}}}')
             continue
         elif line.startswith('## '):
-            latex_lines.append(f'\\section{{{escape_latex(line[3:].strip())}}}')
+            title = line[3:].strip()
+            latex_lines.append(f'\\section{{{escape_latex(title)}}}')
+            latex_lines.append('')  # Add blank line after section
             continue
         elif line.startswith('### '):
             title = line[4:].strip().replace('**', '')
             latex_lines.append(f'\\subsection{{{escape_latex(title)}}}')
+            latex_lines.append('')  # Add blank line after subsection
             continue
         elif line.startswith('#### '):
             title = line[5:].strip().replace('**', '')
             latex_lines.append(f'\\subsubsection{{{escape_latex(title)}}}')
+            latex_lines.append('')  # Add blank line after subsubsection
             continue
 
         # WARNING/CAUTION/NOTE boxes
@@ -207,6 +247,10 @@ def convert_markdown_to_latex(md_text):
             latex_lines.append(f'% TABLE ROW: {line}')
             continue
 
+        # Skip "END OF LESSON/APPENDIX" markers
+        if line.strip().startswith('**END OF LESSON') or line.strip().startswith('**END OF APPENDIX'):
+            continue
+
         # Regular text
         if line.strip():
             converted = convert_inline_formatting(escape_latex(line))
@@ -220,20 +264,90 @@ def convert_markdown_to_latex(md_text):
     if in_code_block:
         latex_lines.append('\\end{verbatim}')
 
-    return '\n'.join(latex_lines)
+    # Clean up multiple consecutive blank lines
+    cleaned_lines = []
+    prev_blank = False
+    for line in latex_lines:
+        is_blank = line.strip() == ''
+        if is_blank and prev_blank:
+            continue  # Skip consecutive blank lines
+        cleaned_lines.append(line)
+        prev_blank = is_blank
+
+    return '\n'.join(cleaned_lines)
+
+def extract_metadata(content):
+    """Extract lesson duration and learning objectives from content"""
+    metadata = {
+        'duration': None,
+        'objectives': []
+    }
+
+    # Extract duration
+    duration_match = re.search(r'\*\*Lesson Duration:\*\*\s*(.+?)(?:\n|$)', content)
+    if duration_match:
+        metadata['duration'] = duration_match.group(1).strip()
+
+    # Extract learning objectives
+    obj_section = re.search(r'\*\*Learning Objectives:\*\*(.+?)(?=\n##|\n---|\Z)', content, re.DOTALL)
+    if obj_section:
+        obj_text = obj_section.group(1).strip()
+        # Extract bullet points
+        for line in obj_text.split('\n'):
+            line = line.strip()
+            if line.startswith('- '):
+                metadata['objectives'].append(line[2:].strip())
+
+    return metadata
 
 def generate_chapter_file(chapter_data, output_dir):
     """Generate a chapter .tex file"""
     if 'number' in chapter_data:
         filename = f"chapter{chapter_data['number']:02d}.tex"
+        chapter_title = chapter_data['title']
     else:
         filename = f"appendix{chapter_data['letter']}.tex"
+        chapter_title = chapter_data['title']
 
+    # Extract metadata
+    metadata = extract_metadata(chapter_data['content'])
+
+    # Generate chapter header
+    header_lines = []
+    header_lines.append(f'% {chapter_title}')
+    header_lines.append('')
+
+    # Add lesson metadata if it's a lesson chapter
+    if 'number' in chapter_data and metadata['duration']:
+        header_lines.append('\\noindent')
+        header_lines.append(f'\\textbf{{Lesson Duration:}} {escape_latex(metadata["duration"])}')
+        header_lines.append('')
+        header_lines.append('\\vspace{0.3cm}')
+        header_lines.append('')
+
+        if metadata['objectives']:
+            header_lines.append('\\noindent')
+            header_lines.append('\\textbf{Learning Objectives:}')
+            header_lines.append('')
+            header_lines.append('Upon completion of this lesson, you will be able to:')
+            header_lines.append('')
+            header_lines.append('\\begin{itemize}[leftmargin=2em,itemsep=3pt]')
+            for obj in metadata['objectives']:
+                header_lines.append(f'\\item {escape_latex(obj)}')
+            header_lines.append('\\end{itemize}')
+            header_lines.append('')
+            header_lines.append('\\vspace{0.5cm}')
+            header_lines.append('')
+
+    # Convert main content
     latex_content = convert_markdown_to_latex(chapter_data['content'])
+
+    # Combine header and content
+    full_content = '\n'.join(header_lines) + '\n' + latex_content
 
     output_path = output_dir / filename
     with open(output_path, 'w', encoding='utf-8') as f:
-        f.write(latex_content)
+        f.write(full_content)
 
     print(f"Generated: {filename}")
     return filename
