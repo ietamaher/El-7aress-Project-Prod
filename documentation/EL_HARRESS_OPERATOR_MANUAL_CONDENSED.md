@@ -2674,3 +2674,644 @@ MENU ✓ → "Shutdown System" → MENU ✓
 
 ---
 
+# LESSON 4: MOTION MODES & SURVEILLANCE
+
+**Lesson Duration:** 3 hours (Classroom + Practical)
+
+**Learning Objectives:**
+- Explain the purpose of each motion mode
+- Switch between motion modes safely
+- Operate automatic sector scan mode
+- Utilize Target Reference Point (TRP) scan mode
+- Define and manage no-fire zones
+- Define and manage no-traverse zones
+- Save and load zone configurations
+
+---
+
+## 4.1 MOTION MODES OVERVIEW
+
+### **WHAT ARE MOTION MODES?**
+
+Motion modes control **how the gimbal moves** during operations:
+
+- **Manual Mode**: You control gimbal directly with joystick
+- **Auto Sector Scan**: System automatically scans between two points
+- **TRP Scan**: System sequentially visits pre-defined Target Reference Points
+- **Radar Slew** (if equipped): Gimbal follows radar detections
+
+**Purpose**: Different missions require different surveillance patterns. Motion modes let you switch between direct control and automated surveillance.
+
+---
+
+### **MODE SELECTION**
+
+**How to Change Modes**:
+- Press joystick **Button 11** or **Button 13** (either button cycles modes)
+- Modes cycle in sequence:
+  ```
+  Manual → AutoSectorScan → TRP Scan → Radar Slew → Manual (loops)
+  ```
+
+**Current Mode Display**:
+- OSD bottom center shows: **MODE: Manual**, **MODE: Sector Scan**, **MODE: TRP**, or **MODE: Radar**
+
+**⚠️ RESTRICTION**: Cannot change modes during tracking acquisition. Must abort tracking first (press TRK button).
+
+---
+
+## 4.2 MANUAL MODE
+
+**Description**: Direct operator control via joystick (default mode)
+
+**When to Use**:
+- Direct target engagement
+- Precise aiming
+- Immediate threat response
+- Search operations requiring operator judgment
+
+**Operation**:
+- Joystick LEFT/RIGHT → Azimuth control
+- Joystick UP/DOWN → Elevation control
+- Stick deflection = gimbal speed
+- Center stick = gimbal stops
+
+**Already Covered**: See Lesson 2, Section 2.3 for detailed joystick control
+
+**Transitioning Out of Manual**:
+- Press Button 11 or 13
+- Mode advances to next (AutoSectorScan)
+- Gimbal behavior changes immediately
+
+---
+
+## 4.3 AUTO SECTOR SCAN MODE
+
+### **WHAT IS SECTOR SCAN?**
+
+**Definition**: Automated gimbal movement that continuously scans between two pre-defined points (left and right limits)
+
+**Purpose**:
+- Perimeter surveillance
+- Monitoring a defined sector without operator input
+- Frees operator to monitor other systems or threats
+
+**Visual**:
+```
+    Left Limit              Right Limit
+        ↓                       ↓
+        ●←←←←←←←scan←←←←←←←●
+        ●→→→→→→→scan→→→→→→→●
+             (repeats)
+```
+
+Gimbal continuously scans left-to-right, then right-to-left, repeat.
+
+---
+
+### **ACTIVATING SECTOR SCAN**
+
+**Prerequisites**:
+1. Sector scan zone must be defined (see Section 4.7)
+2. At least one sector scan zone exists
+3. System is in AutoSectorScan mode
+
+**Procedure**:
+
+1. **Cycle to Sector Scan Mode**:
+   - Press Button 11 or 13 until OSD shows: **MODE: Sector Scan**
+
+2. **System Behavior**:
+   - Gimbal automatically slews to **left limit** of active sector
+   - Scans to **right limit** (slow, smooth movement)
+   - Reverses, scans back to **left limit**
+   - Repeats continuously
+
+3. **Scan Speed**:
+   - Default: ~5°/second (configurable in zone definition)
+   - Allows visual inspection as sector scans
+
+4. **Elevation**:
+   - Scans at elevation defined in zone (usually 0° horizon)
+   - Elevation can be fixed or variable (depending on zone setup)
+
+---
+
+### **WHILE SECTOR SCANNING**
+
+**Operator Actions**:
+
+**✅ CAN DO**:
+- Monitor video feed as sector scans
+- Switch cameras (CAM button)
+- Zoom in/out (Zoom rocker)
+- Fire LRF (LRF button) at targets of interest
+- Initiate tracking (TRK button) - *aborts sector scan, switches to Manual*
+
+**❌ CANNOT DO**:
+- Joystick axes do NOT control gimbal (ignored)
+- Cannot manually slew gimbal (must exit mode first)
+
+**To Override**:
+- Press Button 11/13 to return to Manual mode
+- OR: Press TRK to start tracking (auto-switches to Manual)
+
+---
+
+### **PAUSING / RESUMING SCAN**
+
+**Not Applicable**: Sector scan runs continuously. To stop:
+- Cycle back to Manual mode (Button 11/13)
+
+**Tip**: If you need to temporarily examine something in the sector, use **Manual** mode to stop, then return to **AutoSectorScan** when ready.
+
+---
+
+### **MULTIPLE SECTOR ZONES**
+
+**If Multiple Sectors Defined**:
+- System scans **active sector** (last selected via menu)
+- To change active sector:
+  1. Cycle to Manual mode
+  2. Access menu: Zone Definitions → Sector Scans
+  3. Select desired sector
+  4. Return to AutoSectorScan mode
+
+---
+
+## 4.4 TRP SCAN MODE
+
+### **WHAT IS TRP SCAN?**
+
+**TRP** = **Target Reference Point** (pre-defined location of interest)
+
+**Definition**: System sequentially slews to each TRP, dwells (pauses) for observation, then moves to next TRP in list.
+
+**Purpose**:
+- Checkpoint verification (e.g., gate 1, gate 2, gate 3)
+- Known threat areas (e.g., sniper hide sites)
+- Periodic scans of fixed locations
+- More efficient than manual searching
+
+**Visual**:
+```
+TRP 1 (30s dwell) → TRP 2 (30s dwell) → TRP 3 (30s dwell) → TRP 1 (repeat)
+```
+
+---
+
+### **ACTIVATING TRP SCAN**
+
+**Prerequisites**:
+1. At least one TRP must be defined (see Section 4.8)
+2. System is in TRP Scan mode
+
+**Procedure**:
+
+1. **Cycle to TRP Scan Mode**:
+   - Press Button 11 or 13 until OSD shows: **MODE: TRP**
+
+2. **System Behavior**:
+   - Gimbal slews to **first TRP** in list
+   - **Dwells** for configured time (default: 30 seconds)
+   - Slews to **next TRP**
+   - Dwells again
+   - Repeats through entire TRP list, then loops back to first TRP
+
+3. **Dwell Time**:
+   - Configurable per TRP (5-120 seconds)
+   - Allows operator to observe location before moving on
+
+---
+
+### **WHILE TRP SCANNING**
+
+**Operator Actions**:
+
+**During Dwell** (gimbal stationary at TRP):
+- ✅ Observe video
+- ✅ Switch cameras
+- ✅ Zoom
+- ✅ Fire LRF
+- ✅ Initiate tracking (if threat detected)
+
+**During Slew** (gimbal moving between TRPs):
+- Gimbal is in motion
+- Video may be blurred (fast slew)
+- Wait for next dwell to observe
+
+**To Skip to Next TRP**:
+- **Not directly available** - must wait for dwell to complete, OR
+- Cycle to Manual, reposition, cycle back to TRP mode (restarts from TRP 1)
+
+---
+
+### **TRP SCAN BEST PRACTICES**
+
+1. **Define TRPs During Planning**:
+   - Pre-mission: Identify key locations
+   - Enter TRP coordinates via menu (Section 4.8)
+   - Test TRP scan before mission start
+
+2. **Prioritize TRPs**:
+   - Place highest-threat areas first in list
+   - System visits TRPs in order defined
+
+3. **Appropriate Dwell Times**:
+   - Short dwell (10-15s) for quick checks
+   - Long dwell (60s+) for detailed observation or known threat areas
+
+4. **Combine with Manual**:
+   - Use TRP scan for routine surveillance
+   - Switch to Manual when threat detected
+
+---
+
+## 4.5 RADAR SLEW MODE (OPTIONAL)
+
+**Availability**: Only if radar system is integrated
+
+**Description**: Gimbal automatically slews to radar-detected targets
+
+**Purpose**:
+- Rapid threat response
+- Automated cueing from radar
+- Reduces operator workload
+
+**Operation**:
+
+1. **Cycle to Radar Slew Mode**:
+   - Press Button 11/13 until OSD shows: **MODE: Radar**
+
+2. **System Behavior**:
+   - Waits for radar detection
+   - When radar detects target → Gimbal slews to radar coordinates
+   - OSD displays: **RADAR CUE** or **SLEWING TO RADAR**
+   - Operator confirms threat visually on video
+
+3. **Operator Decision**:
+   - If threat confirmed → Initiate tracking (TRK button) or engage
+   - If false alarm → Wait for next radar cue, OR cycle to Manual
+
+**⚠️ NOTE**: Most El 7arress RCWS systems do NOT have radar. This mode will show "RADAR NOT AVAILABLE" if no radar connected.
+
+---
+
+## 4.6 MOTION MODE QUICK REFERENCE
+
+| Mode | Use Case | Gimbal Control | Exits to Manual When... |
+|------|----------|----------------|-------------------------|
+| **Manual** | Direct engagement, search | Joystick | N/A (already manual) |
+| **AutoSectorScan** | Perimeter surveillance | Automatic (between limits) | Cycle mode or press TRK |
+| **TRP Scan** | Checkpoint monitoring | Automatic (TRP sequence) | Cycle mode or press TRK |
+| **Radar Slew** | Radar integration | Automatic (radar cues) | Cycle mode or press TRK |
+
+**Emergency Return to Manual**: Press Button 11/13 repeatedly until **MODE: Manual** displays
+
+---
+
+## 4.7 ZONE MANAGEMENT - SECTOR SCANS
+
+### **DEFINING SECTOR SCAN ZONES**
+
+Sector scan zones set the **left and right limits** for AutoSectorScan mode.
+
+**Access**: Main Menu → Zone Definitions → Sector Scans
+
+---
+
+#### **SECTOR SCAN ZONE PARAMETERS**
+
+Each sector scan zone has:
+
+| Parameter | Description | Typical Value |
+|-----------|-------------|---------------|
+| **Name** | Zone identifier | "Front Gate", "Perimeter East" |
+| **Left Limit (Az)** | Starting azimuth | 045° |
+| **Right Limit (Az)** | Ending azimuth | 135° |
+| **Elevation** | Scan elevation angle | 0° (horizon) |
+| **Scan Speed** | Degrees per second | 5°/sec |
+| **Active** | Enable/disable zone | ON / OFF |
+
+---
+
+#### **CREATING A SECTOR SCAN ZONE (STEP-BY-STEP)**
+
+**Method 1: Manual Entry** (via menu)
+
+1. **Access Menu**:
+   - MENU ✓ → Zone Definitions → Sector Scans → Add New Sector
+
+2. **Enter Name**:
+   - Use ▲/▼ to enter name characters
+   - MENU ✓ to confirm
+
+3. **Set Left Limit**:
+   - Method A: Slew gimbal to desired left position, press MENU ✓ to "Capture Current Position"
+   - Method B: Manually enter azimuth value using ▲/▼
+
+4. **Set Right Limit**:
+   - Same as left limit (capture or manual entry)
+
+5. **Set Elevation**:
+   - Enter elevation angle (typically 0° for horizon scan)
+
+6. **Set Scan Speed**:
+   - Enter degrees/second (5°/sec recommended)
+
+7. **Enable Zone**:
+   - Set Active = ON
+
+8. **Save**:
+   - MENU ✓ → "Save Sector Scan"
+   - Confirmation: "SECTOR SCAN SAVED"
+
+---
+
+**Method 2: Quick Capture** (using joystick)
+
+1. **Position Gimbal**:
+   - Use Manual mode to slew to desired **left limit**
+   - Press **FN Button** + Hold for 2 seconds
+   - OSD displays: "LEFT LIMIT CAPTURED"
+
+2. **Position Right Limit**:
+   - Slew to desired **right limit**
+   - Press **FN Button** + Hold for 2 seconds
+   - OSD displays: "RIGHT LIMIT CAPTURED, SECTOR SCAN ZONE CREATED"
+
+3. **System Auto-Creates Zone**:
+   - Default name: "Sector X" (where X = next available number)
+   - Default elevation: Current elevation
+   - Default speed: 5°/sec
+
+4. **Edit if Needed**:
+   - Access menu to rename or adjust parameters
+
+---
+
+### **ACTIVATING / DEACTIVATING SECTOR ZONES**
+
+**Multiple Zones**:
+- You can define multiple sector scan zones
+- Only ONE can be active at a time
+
+**To Activate a Zone**:
+1. MENU ✓ → Zone Definitions → Sector Scans
+2. Use ▲/▼ to select desired zone
+3. MENU ✓ → "Set as Active"
+4. OSD displays: "SECTOR ZONE [Name] ACTIVE"
+
+**To Deactivate All Sectors**:
+1. MENU ✓ → Zone Definitions → Sector Scans
+2. Select active zone
+3. MENU ✓ → "Deactivate"
+
+---
+
+## 4.8 ZONE MANAGEMENT - TARGET REFERENCE POINTS (TRPs)
+
+### **DEFINING TRPs**
+
+TRPs are **fixed locations** the system can automatically slew to.
+
+**Access**: Main Menu → Zone Definitions → TRPs
+
+---
+
+#### **TRP PARAMETERS**
+
+Each TRP has:
+
+| Parameter | Description | Typical Value |
+|-----------|-------------|---------------|
+| **Name** | TRP identifier | "Gate 1", "Bunker", "Hill 203" |
+| **Azimuth** | Direction to TRP | 090° |
+| **Elevation** | Angle to TRP | +5° |
+| **Dwell Time** | Observation time | 30 seconds |
+| **Active** | Enable/disable | ON / OFF |
+
+---
+
+#### **CREATING A TRP (STEP-BY-STEP)**
+
+**Method 1: Capture Current Position**
+
+1. **Manual Mode**:
+   - Slew gimbal to desired TRP location using joystick
+   - Zoom/focus on exact point
+
+2. **Access Menu**:
+   - MENU ✓ → Zone Definitions → TRPs → Add TRP
+
+3. **Capture Position**:
+   - Select "Capture Current Position"
+   - MENU ✓ to confirm
+   - System records current Az/El
+
+4. **Enter Name**:
+   - Use ▲/▼ to enter TRP name
+   - MENU ✓ to confirm
+
+5. **Set Dwell Time**:
+   - Enter seconds (5-120)
+   - Default: 30 seconds
+
+6. **Enable**:
+   - Set Active = ON
+
+7. **Save**:
+   - MENU ✓ → "Save TRP"
+   - Confirmation: "TRP [Name] SAVED"
+
+---
+
+**Method 2: Manual Coordinate Entry**
+
+1. **Access Menu**:
+   - MENU ✓ → Zone Definitions → TRPs → Add TRP
+
+2. **Enter Azimuth**:
+   - Use ▲/▼ to enter degrees (000-359)
+
+3. **Enter Elevation**:
+   - Use ▲/▼ to enter degrees (-20 to +60)
+
+4. **Continue** with name, dwell time, save (same as Method 1)
+
+---
+
+### **MANAGING TRP LIST**
+
+**TRP Sequence**:
+- TRPs are visited in the order they appear in list
+- To reorder:
+  1. MENU ✓ → Zone Definitions → TRPs
+  2. Select TRP
+  3. "Move Up" or "Move Down"
+
+**Editing TRPs**:
+- Select TRP from list
+- MENU ✓ → "Edit TRP"
+- Modify parameters
+- Save changes
+
+**Deleting TRPs**:
+- Select TRP from list
+- MENU ✓ → "Delete TRP"
+- Confirm deletion
+
+---
+
+## 4.9 ZONE MANAGEMENT - NO-FIRE & NO-TRAVERSE ZONES
+
+(Covered conceptually in Lesson 1, Section 1.5 - this section covers **viewing** zones via menu)
+
+### **VIEWING NO-FIRE ZONES**
+
+**Access**: Main Menu → Zone Definitions → No-Fire Zones
+
+**Display**:
+- List of all defined no-fire zones
+- Each zone shows:
+  - Name (e.g., "Friendly FOB", "Civilian Area 1")
+  - Boundary type (Polygon, Circle, Arc)
+  - Active status (ON/OFF)
+
+**Operator Permission**:
+- **CAN**: View zones, see boundaries on map overlay (if available)
+- **CANNOT**: Modify boundaries, delete zones, override zones
+
+**Modification**: Usually requires commander/supervisor authorization
+
+---
+
+### **VIEWING NO-TRAVERSE ZONES**
+
+**Access**: Main Menu → Zone Definitions → No-Traverse Zones
+
+**Display**:
+- List of all defined no-traverse zones
+- Each zone shows:
+  - Name (e.g., "Rear 90°", "Antenna Area")
+  - Azimuth limits
+  - Active status
+
+**Purpose Reminder**:
+- No-traverse zones prevent gimbal movement into restricted areas
+- Protects vehicle structure, equipment, personnel
+
+---
+
+## 4.10 SAVING & LOADING ZONE CONFIGURATIONS
+
+### **SAVING ZONE CONFIGURATION**
+
+**Purpose**: Save all zones (sectors, TRPs, no-fire, no-traverse) to file for later use
+
+**Procedure**:
+
+1. **Access Menu**:
+   - MENU ✓ → Zone Definitions → Save/Load → Save Configuration
+
+2. **Enter Filename**:
+   - Use ▲/▼ to enter filename
+   - Example: "MISSION_20250115", "PERIMETER_CONFIG"
+
+3. **Confirm Save**:
+   - MENU ✓ → "Save"
+   - OSD displays: "ZONE CONFIG SAVED"
+
+**File Location**: Saved to internal storage (typically /configs/zones/)
+
+---
+
+### **LOADING ZONE CONFIGURATION**
+
+**Purpose**: Load previously saved zone configuration
+
+**Procedure**:
+
+1. **Access Menu**:
+   - MENU ✓ → Zone Definitions → Save/Load → Load Configuration
+
+2. **Select File**:
+   - Use ▲/▼ to browse saved configurations
+   - Displays: Filename, date saved, number of zones
+
+3. **Confirm Load**:
+   - MENU ✓ → "Load"
+   - OSD displays: "ZONE CONFIG LOADED"
+
+**⚠️ WARNING**: Loading a configuration **overwrites** current zones. Save current zones first if needed.
+
+---
+
+### **DEFAULT ZONE CONFIGURATION**
+
+**Default Zones**:
+- System ships with default no-traverse zones (vehicle-specific)
+- Default no-fire zones may be empty (mission-dependent)
+
+**Restoring Defaults**:
+1. MENU ✓ → Zone Definitions → Save/Load → Restore Defaults
+2. Confirm: "RESTORE DEFAULT ZONES?"
+3. MENU ✓ → "YES"
+
+**Use Case**: Reset after training or if zones become corrupted
+
+---
+
+## 4.11 SURVEILLANCE BEST PRACTICES
+
+### **CHOOSING THE RIGHT MODE**
+
+| Situation | Recommended Mode | Rationale |
+|-----------|------------------|-----------|
+| Direct threat engagement | Manual | Full operator control, immediate response |
+| Perimeter watch (quiet) | AutoSectorScan | Automated, frees attention, consistent coverage |
+| Checkpoint routine | TRP Scan | Efficient for fixed locations, repeatable |
+| High-threat area scan | Manual | Requires operator judgment, unpredictable threats |
+| Radar-integrated ops | Radar Slew (if available) | Rapid response to radar cues |
+
+---
+
+### **COMBINING MODES WITH TRACKING**
+
+**Workflow Example**:
+
+1. **Start in AutoSectorScan** (perimeter surveillance)
+2. **Threat detected** during scan
+3. **Press TRK** → System switches to Manual, starts tracking acquisition
+4. **Lock onto threat** (second TRK press)
+5. **Engage or monitor** as threat tracked
+6. **Abort tracking** (third TRK press)
+7. **Resume surveillance**: Press Button 11/13 to return to AutoSectorScan
+
+---
+
+### **ZONE DISCIPLINE**
+
+**Before Mission**:
+- ✅ Load appropriate zone configuration
+- ✅ Verify no-fire zones match current ROE
+- ✅ Test sector scans and TRPs
+- ✅ Brief all operators on zones
+
+**During Mission**:
+- ✅ Respect all zone warnings
+- ✅ Never attempt to override no-fire zones without authorization
+- ✅ Report zone boundary errors to command
+- ✅ Update TRPs as mission evolves (if authorized)
+
+**After Mission**:
+- ✅ Save zone configuration if modified
+- ✅ Debrief on zone effectiveness
+- ✅ Recommend adjustments for future missions
+
+---
+
+**END OF LESSON 4**
+
+---
+
