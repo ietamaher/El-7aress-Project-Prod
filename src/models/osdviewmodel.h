@@ -79,6 +79,9 @@ class OsdViewModel : public QObject
     Q_PROPERTY(QString environmentText READ environmentText NOTIFY environmentTextChanged)
     Q_PROPERTY(bool environmentVisible READ environmentVisible NOTIFY environmentVisibleChanged)
 
+    Q_PROPERTY(QString windageText READ windageText NOTIFY windageTextChanged)
+    Q_PROPERTY(bool windageVisible READ windageVisible NOTIFY windageVisibleChanged)
+
     Q_PROPERTY(QString detectionText READ detectionText NOTIFY detectionTextChanged)
     Q_PROPERTY(bool detectionVisible READ detectionVisible NOTIFY detectionVisibleChanged)
     Q_PROPERTY(QVariantList detectionBoxes READ detectionBoxes NOTIFY detectionBoxesChanged)
@@ -185,6 +188,9 @@ public:
     QString environmentText() const { return m_environmentText; }
     bool environmentVisible() const { return m_environmentVisible; }
 
+    QString windageText() const { return m_windageText; }
+    bool windageVisible() const { return m_windageVisible; }
+
     QString detectionText() const { return m_detectionText; }
     bool detectionVisible() const { return m_detectionVisible; }
     QVariantList detectionBoxes() const { return m_detectionBoxes; }
@@ -259,6 +265,7 @@ public slots:
 
     void updateZeroingDisplay(bool modeActive, bool applied, float azOffset, float elOffset);
     void updateEnvironmentDisplay(float tempCelsius, float altitudeMeters);
+    void updateWindageDisplay(bool windageApplied, float windSpeedKnots, float windDirectionDeg, float calculatedCrosswindMS);
     void updateDetectionDisplay(bool enabled);
     void updateDetectionBoxes(const std::vector<YoloDetection>& detections);
 
@@ -328,6 +335,9 @@ signals:
 
     void environmentTextChanged();
     void environmentVisibleChanged();
+
+    void windageTextChanged();
+    void windageVisibleChanged();
 
     void detectionTextChanged();
     void detectionVisibleChanged();
@@ -421,6 +431,9 @@ private:
 
     QString m_environmentText;
     bool m_environmentVisible;
+
+    QString m_windageText;
+    bool m_windageVisible;
 
     QString m_detectionText;
     bool m_detectionVisible;

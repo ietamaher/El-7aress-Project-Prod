@@ -209,10 +209,11 @@ void WeaponController::onSystemStateChanged(const SystemStateData &newData)
     //   - Firing North: crosswind = 0 m/s
     //   - Firing East: crosswind = 10 m/s
     // We only recalculate if windage is active (otherwise no point).
+    // NOTE: azimuthDirection is uint16_t, use direct comparison not qFuzzyCompare
     // ========================================================================
     bool azimuthChanged = false;
 
-    if (!qFuzzyCompare(m_oldState.azimuthDirection, newData.azimuthDirection)) {
+    if (m_oldState.azimuthDirection != newData.azimuthDirection) {
         // Only flag as change if windage is actually applied
         if (newData.windageAppliedToBallistics && newData.windageSpeedKnots > 0.001f) {
             azimuthChanged = true;
@@ -386,12 +387,26 @@ void WeaponController::updateFireControlSolution() {
             sData.azimuthDirection  // Current gimbal azimuth
         );
 
+        // Store calculated crosswind in state data for OSD display
+        if (std::abs(sData.calculatedCrosswindMS - currentCrosswind) > 0.01f) {
+            SystemStateData updatedData = sData;
+            updatedData.calculatedCrosswindMS = currentCrosswind;
+            m_stateModel->updateData(updatedData);
+        }
+
         qDebug() << "[WeaponController] WINDAGE TO CROSSWIND CONVERSION:"
                  << "Wind Dir:" << sData.windageDirectionDegrees << "° (FROM)"
                  << "| Wind Speed:" << sData.windageSpeedKnots << "knots (" << windSpeedMS << "m/s)"
                  << "| Gimbal Az:" << sData.azimuthDirection << "°"
                  << "| Crosswind Component:" << currentCrosswind << "m/s"
                  << (currentCrosswind > 0 ? "(right deflection)" : currentCrosswind < 0 ? "(left deflection)" : "(no crosswind)");
+    } else {
+        // Clear crosswind when windage is not applied
+        if (std::abs(sData.calculatedCrosswindMS) > 0.01f) {
+            SystemStateData updatedData = sData;
+            updatedData.calculatedCrosswindMS = 0.0f;
+            m_stateModel->updateData(updatedData);
+        }
     }
 
     // ========================================================================

@@ -522,6 +522,32 @@ void OsdViewModel::updateEnvironmentDisplay(float tempCelsius, float altitudeMet
     }
 }
 
+void OsdViewModel::updateWindageDisplay(bool windageApplied, float windSpeedKnots, float windDirectionDeg, float calculatedCrosswindMS)
+{
+    // Format windage information for display
+    QString newText;
+    bool newVisible = false;
+
+    if (windageApplied && windSpeedKnots > 0.001f) {
+        // Show wind direction, speed, and calculated crosswind component
+        newText = QString("WIND: %1° %2kts  XWIND:%3m/s")
+                    .arg(windDirectionDeg, 0, 'f', 0)
+                    .arg(windSpeedKnots, 0, 'f', 1)
+                    .arg(calculatedCrosswindMS, 0, 'f', 1);
+        newVisible = true;
+    }
+
+    if (m_windageText != newText) {
+        m_windageText = newText;
+        emit windageTextChanged();
+    }
+
+    if (m_windageVisible != newVisible) {
+        m_windageVisible = newVisible;
+        emit windageVisibleChanged();
+    }
+}
+
 void OsdViewModel::updateDetectionDisplay(bool enabled)
 {
     QString newText;
