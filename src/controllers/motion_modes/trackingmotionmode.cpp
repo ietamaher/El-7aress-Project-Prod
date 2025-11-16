@@ -2,6 +2,7 @@
 #include "controllers/gimbalcontroller.h"
 #include "models/domain/systemstatemodel.h"
 #include <QDebug>
+#include <QDateTime>  // For throttling model updates
 #include <QtGlobal>
 #include <cmath>
 
@@ -42,7 +43,10 @@ void TrackingMotionMode::enterMode(GimbalController* controller)
     // Reset previous velocities for rate limiting
     m_previousDesiredAzVel = 0.0;
     m_previousDesiredElVel = 0.0;
-    
+
+    // ✅ CRITICAL: Start velocity timer for dt measurement
+    startVelocityTimer();
+
     if (controller) {
         // Set MODERATE acceleration for responsive but smooth tracking
         // Reduced from 200000 to prevent motor overload
@@ -129,17 +133,30 @@ void TrackingMotionMode::update(GimbalController* controller)
         stopServos(controller);
         return;
     }
-    qint64 ms_elapsed = m_velocityTimer.restart(); // restart() returns elapsed and resets
-    double dt_s = ms_elapsed / 1000.0;
+
+    // ✅ CRITICAL FIX: Compute and clamp dt
+    double dt_s = UPDATE_INTERVAL_S;
+    if (m_velocityTimer.isValid()) {
+        dt_s = clampDt(m_velocityTimer.restart() / 1000.0);
+    } else {
+        m_velocityTimer.start();
+    }
+
     SystemStateData data = controller->systemStateModel()->data();
 
+    // ✅ CRITICAL FIX: dt-aware smoothing using alphaFromTauDt (not fixed alpha!)
+    const double tau_pos = 0.12; // 120ms time constant for position (tuneable)
+    const double tau_vel = 0.08; // 80ms time constant for velocity (tuneable)
+    double alphaPos = alphaFromTauDt(tau_pos, dt_s);
+    double alphaVel = alphaFromTauDt(tau_vel, dt_s);
+
     // 1. Smooth the Target Position (for PID feedback)
-    m_smoothedTargetAz = (SMOOTHING_ALPHA * m_targetAz) + (1.0 - SMOOTHING_ALPHA) * m_smoothedTargetAz;
-    m_smoothedTargetEl = (SMOOTHING_ALPHA * m_targetEl) + (1.0 - SMOOTHING_ALPHA) * m_smoothedTargetEl;
+    m_smoothedTargetAz = alphaPos * m_targetAz + (1.0 - alphaPos) * m_smoothedTargetAz;
+    m_smoothedTargetEl = alphaPos * m_targetEl + (1.0 - alphaPos) * m_smoothedTargetEl;
 
     // 2. Smooth the Target Velocity (for feed-forward)
-    m_smoothedAzVel_dps = (VELOCITY_SMOOTHING_ALPHA * m_targetAzVel_dps) + (1.0 - VELOCITY_SMOOTHING_ALPHA) * m_smoothedAzVel_dps;
-    m_smoothedElVel_dps = (VELOCITY_SMOOTHING_ALPHA * m_targetElVel_dps) + (1.0 - VELOCITY_SMOOTHING_ALPHA) * m_smoothedElVel_dps;
+    m_smoothedAzVel_dps = alphaVel * m_targetAzVel_dps + (1.0 - alphaVel) * m_smoothedAzVel_dps;
+    m_smoothedElVel_dps = alphaVel * m_targetElVel_dps + (1.0 - alphaVel) * m_smoothedElVel_dps;
 
     // ========================================================================
     // CRITICAL FIX: Apply Lead Angle to Gimbal Aim Point
@@ -197,30 +214,37 @@ void TrackingMotionMode::update(GimbalController* controller)
     desiredAzVelocity = qBound(-MAX_VELOCITY, desiredAzVelocity, MAX_VELOCITY);
     desiredElVelocity = qBound(-MAX_VELOCITY, desiredElVelocity, MAX_VELOCITY);
 
-    // 8. Apply rate limiting to prevent sudden velocity changes
-    desiredAzVelocity = applyRateLimit(desiredAzVelocity, m_previousDesiredAzVel, VELOCITY_CHANGE_LIMIT);
-    desiredElVelocity = applyRateLimit(desiredElVelocity, m_previousDesiredElVel, VELOCITY_CHANGE_LIMIT);
+    // ✅ CRITICAL FIX: Apply TIME-BASED rate limiting (not fixed per-cycle limit!)
+    double maxDelta = MAX_ACCELERATION * dt_s; // deg/s^2 * s = deg/s
+    desiredAzVelocity = applyRateLimitTimeBased(desiredAzVelocity, m_previousDesiredAzVel, maxDelta);
+    desiredElVelocity = applyRateLimitTimeBased(desiredElVelocity, m_previousDesiredElVel, maxDelta);
 
     // 9. Store current velocities for next cycle
     m_previousDesiredAzVel = desiredAzVelocity;
     m_previousDesiredElVel = desiredElVelocity;
 
+    // ✅ CRITICAL FIX: Throttle model updates to 10 Hz (Expert Review)
     // 10. Convert target to world-frame for AHRS-based stabilization
-    if (data.imuConnected) {
-        // CRITICAL FIX: Convert AIM POINT (with lead) to world frame, NOT visual target
-        // This ensures stabilization maintains the ballistic solution, not just visual lock
-        double worldAz, worldEl;
-        convertGimbalToWorldFrame(aimPointAz, aimPointEl,
-                                  data.imuRollDeg, data.imuPitchDeg, data.imuYawDeg,
-                                  worldAz, worldEl);
+    static qint64 lastPublishMs = 0;
+    qint64 nowMs = QDateTime::currentMSecsSinceEpoch();
+    if (nowMs - lastPublishMs >= 100) { // 10 Hz throttle
+        if (data.imuConnected) {
+            // CRITICAL FIX: Convert AIM POINT (with lead) to world frame, NOT visual target
+            // This ensures stabilization maintains the ballistic solution, not just visual lock
+            double worldAz, worldEl;
+            convertGimbalToWorldFrame(aimPointAz, aimPointEl,
+                                      data.imuRollDeg, data.imuPitchDeg, data.imuYawDeg,
+                                      worldAz, worldEl);
 
-        // Update system state with world-frame target
-        auto stateModel = controller->systemStateModel();
-        SystemStateData updatedState = stateModel->data();
-        updatedState.targetAzimuth_world = worldAz;
-        updatedState.targetElevation_world = worldEl;
-        updatedState.useWorldFrameTarget = true; // Enable world-frame tracking
-        stateModel->updateData(updatedState);
+            // Update system state with world-frame target
+            auto stateModel = controller->systemStateModel();
+            SystemStateData updatedState = stateModel->data();
+            updatedState.targetAzimuth_world = worldAz;
+            updatedState.targetElevation_world = worldEl;
+            updatedState.useWorldFrameTarget = true; // Enable world-frame tracking
+            stateModel->updateData(updatedState);
+        }
+        lastPublishMs = nowMs;
     }
 
     // Debug output (reduced frequency to avoid spam)

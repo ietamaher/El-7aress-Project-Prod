@@ -2,6 +2,7 @@
 #include "controllers/gimbalcontroller.h"
 #include "models/domain/systemstatemodel.h"
 #include <QDebug>
+#include <QDateTime>  // For throttling model updates
 
 ManualMotionMode::ManualMotionMode(QObject* parent)
     : GimbalMotionModeBase(parent)
@@ -11,13 +12,16 @@ ManualMotionMode::ManualMotionMode(QObject* parent)
 void ManualMotionMode::enterMode(GimbalController* controller)
 {
     qDebug() << "[ManualMotionMode] Enter";
-    
+
     if (!controller) return;
     m_currentAzVelocityCmd = 0.0;
-    m_currentElVelocityCmd = 0.0;   
+    m_currentElVelocityCmd = 0.0;
 
     m_filteredAzJoystick = 0.0;
     m_filteredElJoystick = 0.0;
+
+    // ✅ CRITICAL: Start velocity timer for dt measurement
+    startVelocityTimer();
 
     // Set initial acceleration for both servos
     if (auto azServo = controller->azimuthServo()) {
@@ -34,7 +38,6 @@ void ManualMotionMode::exitMode(GimbalController* controller)
     stopServos(controller);
 }
 
- 
 void ManualMotionMode::update(GimbalController* controller)
 {
     if (!checkSafetyConditions(controller)) {
@@ -44,68 +47,69 @@ void ManualMotionMode::update(GimbalController* controller)
 
     SystemStateData data = controller->systemStateModel()->data();
 
+    // ✅ CRITICAL FIX: Measure dt using timer (not fixed UPDATE_INTERVAL_S!)
+    double dt_s = UPDATE_INTERVAL_S;
+    if (m_velocityTimer.isValid()) {
+        dt_s = clampDt(m_velocityTimer.restart() / 1000.0);
+    } else {
+        m_velocityTimer.start();
+    }
+
     // 1. Calculate TARGET velocity in the motor's native units
     static constexpr double MAX_SPEED_HZ = 25000.0;
     double speedPercent = data.gimbalSpeed / 100.0;
     double maxCurrentSpeedHz = speedPercent * MAX_SPEED_HZ;
 
-    // 2. Get processed joystick values
+    // ✅ CRITICAL FIX: dt-aware joystick filter using alphaFromTauDt
+    const double tau_stick = 0.08; // 80ms time constant (tuneable)
+    double alpha = alphaFromTauDt(tau_stick, dt_s);
+
+    // 2. Get and filter joystick values
     double rawAzJoystick = data.joystickAzValue;
     double rawElJoystick = data.joystickElValue;
 
-    double shaped_stick_Azinput = processJoystickInput(rawAzJoystick, m_filteredAzJoystick);
-    double shaped_stick_Elinput = processJoystickInput(rawElJoystick, m_filteredElJoystick);
+    m_filteredAzJoystick = alpha * rawAzJoystick + (1.0 - alpha) * m_filteredAzJoystick;
+    m_filteredElJoystick = alpha * rawElJoystick + (1.0 - alpha) * m_filteredElJoystick;
+
+    // Apply shaping (power curve for finer control)
+    double shaped_stick_Azinput = processJoystickInput(m_filteredAzJoystick, m_filteredAzJoystick);
+    double shaped_stick_Elinput = processJoystickInput(m_filteredElJoystick, m_filteredElJoystick);
 
     // 3. Calculate target speeds
     double targetAzSpeedHz = shaped_stick_Azinput * maxCurrentSpeedHz;
-    double targetElSpeedHz = shaped_stick_Elinput * maxCurrentSpeedHz; 
+    double targetElSpeedHz = shaped_stick_Elinput * maxCurrentSpeedHz;
 
-    // 2. Define our control parameters
-    static constexpr double MAX_ACCEL_HZ_PER_SEC = 15000.0; // Accel in Hz/s^2
-    static constexpr double DEADBAND_HZ = 100.0;           // deadband idea
+    // 4. Define control parameters
+    static constexpr double MAX_ACCEL_HZ_PER_SEC = 15000.0; // Accel in Hz/s
+    static constexpr double DEADBAND_HZ = 100.0;
 
     // Apply deadband to the target speed
     if (std::abs(targetAzSpeedHz) < DEADBAND_HZ) targetAzSpeedHz = 0.0;
     if (std::abs(targetElSpeedHz) < DEADBAND_HZ) targetElSpeedHz = 0.0;
 
-    // 3. Apply the STATE-AWARE Rate Limiter
-    double maxChangeHz = MAX_ACCEL_HZ_PER_SEC * UPDATE_INTERVAL_S;
+    // ✅ CRITICAL FIX: Time-based rate limiter in Hz domain
+    double maxChangeHz = MAX_ACCEL_HZ_PER_SEC * dt_s; // Hz/s * s = Hz
 
-    // --- Azimuth Axis ---
-    if (std::abs(targetAzSpeedHz) > std::abs(m_currentAzSpeedCmd_Hz)) {
-        // ACCELERATING: Ramp up smoothly
-        double error = targetAzSpeedHz - m_currentAzSpeedCmd_Hz;
-        m_currentAzSpeedCmd_Hz += qBound(-maxChangeHz, error, maxChangeHz);
-    } else {
-        // DECELERATING / STOPPING: Command directly for a crisp response
-        m_currentAzSpeedCmd_Hz = targetAzSpeedHz;
-    }
+    // ✅ Apply time-based rate limiting using central helper
+    m_currentAzSpeedCmd_Hz = applyRateLimitTimeBased(targetAzSpeedHz, m_currentAzSpeedCmd_Hz, maxChangeHz);
+    m_currentElSpeedCmd_Hz = applyRateLimitTimeBased(targetElSpeedHz, m_currentElSpeedCmd_Hz, maxChangeHz);
 
-    // --- Elevation Axis ---
-    if (std::abs(targetElSpeedHz) > std::abs(m_currentElSpeedCmd_Hz)) {
-        // ACCELERATING: Ramp up smoothly
-        double error = targetElSpeedHz - m_currentElSpeedCmd_Hz;
-        m_currentElSpeedCmd_Hz += qBound(-maxChangeHz, error, maxChangeHz);
-    } else {
-        // DECELERATING / STOPPING: Command directly
-        m_currentElSpeedCmd_Hz = targetElSpeedHz;
-    }
-
-    // 4. Convert back to deg/s for the stabilization function
-    const double azStepsPerDegree = 222500.0 / 360.0;
-    const double elStepsPerDegree = 200000.0 / 360.0;
-
-    double azVelocityDegS = m_currentAzSpeedCmd_Hz / azStepsPerDegree;
-    double elVelocityDegS = m_currentElSpeedCmd_Hz / elStepsPerDegree;
+    // ✅ Use centralized unit conversions (no more magic numbers!)
+    double azVelocityDegS = m_currentAzSpeedCmd_Hz / AZ_STEPS_PER_DEGREE;
+    double elVelocityDegS = m_currentElSpeedCmd_Hz / EL_STEPS_PER_DEGREE;
 
     // 5. World-frame target management
     constexpr double VELOCITY_THRESHOLD = 0.1; // deg/s
     bool joystickActive = (std::abs(azVelocityDegS) > VELOCITY_THRESHOLD ||
                            std::abs(elVelocityDegS) > VELOCITY_THRESHOLD);
 
+    // ✅ Throttle model updates to 10 Hz (Expert Review)
+    static qint64 lastPublishMs = 0;
+    qint64 nowMs = QDateTime::currentMSecsSinceEpoch();
+
     if (joystickActive) {
-        // Joystick is moving - disable world-frame hold, update target continuously
-        if (data.imuConnected) {
+        // Joystick is moving - disable world-frame hold, update target periodically
+        if (nowMs - lastPublishMs >= 100 && data.imuConnected) {
             // Update world-frame target to current pointing direction
             // This way when joystick is released, gimbal holds current direction
             double worldAz, worldEl;
@@ -120,9 +124,10 @@ void ManualMotionMode::update(GimbalController* controller)
             updatedState.targetElevation_world = worldEl;
             updatedState.useWorldFrameTarget = false; // Disable hold while moving
             stateModel->updateData(updatedState);
+            lastPublishMs = nowMs;
         }
     } else {
-        // Joystick centered - enable world-frame hold
+        // Joystick centered - enable world-frame hold (state change, immediate update)
         if (data.imuConnected) {
             auto stateModel = controller->systemStateModel();
             SystemStateData updatedState = stateModel->data();
