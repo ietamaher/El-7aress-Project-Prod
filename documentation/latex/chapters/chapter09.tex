@@ -1,0 +1,214 @@
+% OPERATOR MAINTENANCE & TROUBLESHOOTING
+
+\noindent
+\textbf{Lesson Duration:} 3 hours (Classroom 1h + Practical 2h)
+
+\vspace{0.3cm}
+
+\noindent
+\textbf{Learning Objectives:}
+
+Upon completion of this lesson, you will be able to:
+
+\begin{itemize}[leftmargin=2em,itemsep=3pt]
+\item Perform daily operator checks
+\item Troubleshoot common issues
+\item Apply systematic troubleshooting methodology
+\item Determine when to escalate to maintenance
+\end{itemize}
+
+\vspace{0.5cm}
+
+
+\section{9.1 DAILY OPERATOR CHECKS}
+
+\subsection{PRE-OPERATION CHECKLIST}
+
+\textbf{Perform before each mission / daily}:
+
+% TABLE ROW: | System | Check | GO Criteria | NO-GO Criteria |
+% TABLE ROW: |--------|-------|-------------|----------------|
+% TABLE ROW: | **Power** | Main power, Station power | All ON, no alarms | Power OFF, alarms present |
+% TABLE ROW: | **Control Panel** | Buttons, switches, lights responsive | All functional | Non-responsive, lights out |
+% TABLE ROW: | **Joystick** | Axes, buttons, Dead Man Switch | Smooth motion, all buttons work | Sticky, unresponsive |
+% TABLE ROW: | **Gimbal** | Azimuth/Elevation motion | Smooth, quiet, full ROM | Grinding, jerky, limits hit |
+% TABLE ROW: | **Cameras** | Day & Thermal video | Clear video, both cameras | No video, errors |
+% TABLE ROW: | **LRF** | Ranging test (known target) | Range within ±5m | No reading, error |
+% TABLE ROW: | **Tracking** | Acquisition test | Gate appears, tracking functional | No gate, tracking fails |
+% TABLE ROW: | **Weapon** | Arming, Safe | Arm/Safe switches functional | Switches stuck, no response |
+% TABLE ROW: | **System Status** | All devices connected | All ✓ Connected | Devices disconnected/faulted |
+
+\textbf{If NO-GO}: Do NOT proceed with mission. Notify maintenance.
+
+\section{9.2 TROUBLESHOOTING METHODOLOGY}
+
+\subsection{STOP-LOOK-ASSESS-FIX (SLAF) METHOD}
+
+\textbf{S - STOP}:
+\begin{itemize}
+\item Don't rush to "fix" without understanding
+\item Take E-Stop if safety concern
+\item Document symptoms
+\end{itemize}
+
+\textbf{L - LOOK}:
+\begin{itemize}
+\item Observe all symptoms carefully
+\item Check System Status display
+\item Review recent actions (what changed?)
+\end{itemize}
+
+\textbf{A - ASSESS}:
+\begin{itemize}
+\item Narrow down to specific subsystem
+\item Check simplest causes first (power, connections, switches)
+\item Consult troubleshooting charts
+\end{itemize}
+
+\textbf{F - FIX}:
+\begin{itemize}
+\item Apply operator-level fix if authorized
+\item Escalate to maintenance if needed
+\item Verify fix resolved issue
+\end{itemize}
+
+\section{9.3 COMMON ISSUES \& FIXES}
+
+\subsection{JOYSTICK NOT RESPONDING}
+
+\textbf{Symptoms}: No gimbal motion, buttons not working
+
+\textbf{Diagnosis}:
+\begin{enumerate}
+\item Check USB cable (both ends)
+\item Check joystick power LED
+\item Check System Status $\rightarrow$ Joystick Connected
+\end{enumerate}
+
+\textbf{Operator-Level Fixes}:
+\begin{itemize}
+\item $\square$ Reconnect USB cable firmly
+\item $\square$ Power cycle system
+\item $\square$ Try different USB port
+\end{itemize}
+
+\textbf{Escalate if}: Still not detected after power cycle.
+
+\subsection{NO VIDEO FROM CAMERA}
+
+\textbf{Symptoms}: Black screen, "No Signal"
+
+\textbf{Diagnosis}:
+\begin{enumerate}
+\item Check camera selection (Day vs. Night)
+\item Check System Status $\rightarrow$ Camera Connected
+\item Check camera switch (\button{Button 10}/12)
+\end{enumerate}
+
+\textbf{Operator-Level Fixes}:
+\begin{itemize}
+\item $\square$ Switch cameras (\button{Button 10}/12)
+\item $\square$ Power cycle system
+\item $\square$ Check video cable connections (if accessible)
+\end{itemize}
+
+\textbf{Escalate if}: Both cameras offline.
+
+\subsection{TRACKING FAILS TO LOCK}
+
+\textbf{Symptoms}: Stays in LOCK PENDING or returns to ACQUISITION
+
+\textbf{Diagnosis}:
+\begin{enumerate}
+\item Check target contrast (visible on screen?)
+\item Check acquisition gate sizing (too tight/loose?)
+\item Check gimbal motion (stable?)
+\end{enumerate}
+
+\textbf{Operator-Level Fixes}:
+\begin{itemize}
+\item $\square$ Improve target contrast (switch camera, adjust LUT)
+\item $\square$ Re-size acquisition gate (10-30\% margin)
+\item $\square$ Hold gimbal steady during lock attempt
+\item $\square$ Switch to manual engagement (no tracking)
+\end{itemize}
+
+\textbf{Escalate if}: Tracking fails on all targets (tracker malfunction).
+
+\subsection{GIMBAL NOT MOVING}
+
+\textbf{Symptoms}: Joystick input has no effect
+
+\textbf{Diagnosis}:
+\begin{enumerate}
+\item Check E-Stop (engaged?)
+\item Check Station Enable (ON?)
+\item Check motion mode (Manual?)
+\item Check System Status $\rightarrow$ Servos Connected
+\end{enumerate}
+
+\textbf{Operator-Level Fixes}:
+\begin{itemize}
+\item $\square$ Reset E-Stop (if engaged)
+\item $\square$ Turn Station Enable ON
+\item $\square$ Cycle to Manual mode (\button{Button 11}/13)
+\item $\square$ Power cycle system
+\end{itemize}
+
+\textbf{Escalate if}: Servos disconnected or faulted.
+
+\subsection{LRF NOT RANGING}
+
+\textbf{Symptoms}: No range reading, \osd{NO ECHO}
+
+\textbf{Diagnosis}:
+\begin{enumerate}
+\item Check target distance (within max range \textasciitilde{}5km?)
+\item Check target reflectivity (solid surface?)
+\item Check LRF temperature (System Status)
+\item Check atmospheric conditions (fog, smoke?)
+\end{enumerate}
+
+\textbf{Operator-Level Fixes}:
+\begin{itemize}
+\item $\square$ Re-fire LRF (multiple attempts)
+\item $\square$ Aim at different target (more reflective)
+\item $\square$ Allow LRF to cool (if overheated)
+\item $\square$ Switch to manual range estimation
+\end{itemize}
+
+\textbf{Escalate if}: LRF disconnected or constant fault.
+
+\subsection{HIGH TEMPERATURE WARNING}
+
+\textbf{Symptoms}: \osd{HIGH TEMP} alarm, device overheating
+
+\textbf{Diagnosis}:
+\begin{enumerate}
+\item Check System Status $\rightarrow$ which device?
+\item Check ambient temperature (extreme heat?)
+\item Check operation tempo (continuous firing?)
+\end{enumerate}
+
+\textbf{Operator-Level Fixes}:
+\begin{itemize}
+\item $\square$ Reduce operations (allow cooling)
+\item $\square$ Limit continuous motion/firing
+\item $\square$ Increase ventilation (if possible)
+\item $\square$ Monitor temperature (should decrease)
+\end{itemize}
+
+\textbf{Escalate if}: Temperature remains >80\degree{}C after cooldown period.
+
+\section{9.4 TROUBLESHOOTING QUICK REFERENCE}
+
+% TABLE ROW: | Symptom | Likely Cause | Operator Fix | Escalate If |
+% TABLE ROW: |---------|--------------|--------------|-------------|
+% TABLE ROW: | **No joystick response** | USB disconnected | Reconnect USB, reboot | Still offline after reboot |
+% TABLE ROW: | **Black video** | Camera fault | Switch cameras | Both cameras offline |
+% TABLE ROW: | **Tracking won't lock** | Poor contrast, bad gate | Improve contrast, resize gate | Fails on all targets |
+% TABLE ROW: | **Gimbal frozen** | E-Stop, Station OFF | Reset E-Stop, Station ON | Servo fault |
+% TABLE ROW: | **LRF no reading** | Target too far/obscured | Re-fire, different target | LRF disconnected |
+% TABLE ROW: | **High temp** | Overuse | Reduce ops, cool down | Temp stays >80°C |
+% TABLE ROW: | **Weapon won't arm** | Safety interlocks | Check switches, authorization | Switches non-functional |
+% TABLE ROW: | **Lost zero accuracy** | Drift, maintenance | Re-zero weapon | Persistent after re-zero |

@@ -1,0 +1,510 @@
+\documentclass[11pt,letterpaper,twoside,openright]{book}
+
+% ============================================================================
+% PACKAGES
+% ============================================================================
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[english]{babel}
+\usepackage{geometry}
+\usepackage{fancyhdr}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{longtable}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{multirow}
+\usepackage{enumitem}
+\usepackage{titlesec}
+\usepackage{tocloft}
+\usepackage[hidelinks]{hyperref}
+\usepackage{listings}
+\usepackage{float}
+\usepackage{caption}
+\usepackage{mdframed}
+\usepackage{tikz}
+\usetikzlibrary{shapes,arrows,positioning}
+\usepackage{textcomp}
+\usepackage{amsmath}
+\usepackage{amssymb}
+
+% ============================================================================
+% PAGE LAYOUT
+% ============================================================================
+\geometry{
+    letterpaper,
+    left=1.25in,
+    right=1.0in,
+    top=1.0in,
+    bottom=1.0in,
+    headsep=0.25in,
+    footskip=0.5in
+}
+
+% ============================================================================
+% COLORS
+% ============================================================================
+\definecolor{warningred}{RGB}{200,20,40}
+\definecolor{cautionorange}{RGB}{255,140,0}
+\definecolor{notegray}{RGB}{100,100,100}
+\definecolor{militarygreen}{RGB}{78,108,80}
+\definecolor{tablegray}{RGB}{240,240,240}
+
+% ============================================================================
+% HEADERS AND FOOTERS
+% ============================================================================
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[LE]{\small\textit{EL 7ARRESS RCWS OPERATOR MANUAL}}
+\fancyhead[RO]{\small\textit{\leftmark}}
+\fancyfoot[LE,RO]{\thepage}
+\fancyfoot[C]{\small CONDENSED VERSION 1.0}
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\footrulewidth}{0.4pt}
+
+\fancypagestyle{plain}{
+    \fancyhf{}
+    \fancyfoot[C]{\thepage}
+    \renewcommand{\headrulewidth}{0pt}
+    \renewcommand{\footrulewidth}{0.4pt}
+}
+
+% ============================================================================
+% CHAPTER AND SECTION FORMATTING
+% ============================================================================
+\titleformat{\chapter}[display]
+  {\normalfont\huge\bfseries\color{militarygreen}}
+  {\chaptertitlename\ \thechapter}{20pt}{\Huge}
+
+\titleformat{\section}
+  {\normalfont\Large\bfseries\color{militarygreen}}
+  {\thesection}{1em}{}
+
+\titleformat{\subsection}
+  {\normalfont\large\bfseries}
+  {\thesubsection}{1em}{}
+
+% ============================================================================
+% TABLE OF CONTENTS
+% ============================================================================
+\setcounter{tocdepth}{2}
+\setcounter{secnumdepth}{3}
+
+% ============================================================================
+% CUSTOM ENVIRONMENTS
+% ============================================================================
+
+% WARNING box
+\newmdenv[
+    linecolor=warningred,
+    backgroundcolor=warningred!10,
+    linewidth=2pt,
+    topline=true,
+    bottomline=true,
+    leftline=true,
+    rightline=true,
+    innertopmargin=10pt,
+    innerbottommargin=10pt,
+    innerrightmargin=10pt,
+    innerleftmargin=10pt
+]{warningbox}
+
+\newcommand{\WARNING}[1]{%
+\begin{warningbox}
+\noindent\textbf{\large\color{warningred}⚠ WARNING}\\[5pt]
+#1
+\end{warningbox}
+}
+
+% CAUTION box
+\newmdenv[
+    linecolor=cautionorange,
+    backgroundcolor=cautionorange!10,
+    linewidth=2pt,
+    topline=true,
+    bottomline=true,
+    leftline=true,
+    rightline=true,
+    innertopmargin=10pt,
+    innerbottommargin=10pt,
+    innerrightmargin=10pt,
+    innerleftmargin=10pt
+]{cautionbox}
+
+\newcommand{\CAUTION}[1]{%
+\begin{cautionbox}
+\noindent\textbf{\large\color{cautionorange}▲ CAUTION}\\[5pt]
+#1
+\end{cautionbox}
+}
+
+% NOTE box
+\newmdenv[
+    linecolor=notegray,
+    backgroundcolor=notegray!5,
+    linewidth=1pt,
+    topline=true,
+    bottomline=true,
+    leftline=true,
+    rightline=true,
+    innertopmargin=8pt,
+    innerbottommargin=8pt,
+    innerrightmargin=8pt,
+    innerleftmargin=8pt
+]{notebox}
+
+\newcommand{\NOTE}[1]{%
+\begin{notebox}
+\noindent\textbf{\color{notegray}NOTE:} #1
+\end{notebox}
+}
+
+% Procedure box
+\newenvironment{procedure}[1]
+{
+    \begin{mdframed}[
+        linecolor=militarygreen,
+        backgroundcolor=militarygreen!5,
+        linewidth=1pt,
+        topline=true,
+        bottomline=true,
+        leftline=true,
+        rightline=true,
+        innertopmargin=10pt,
+        innerbottommargin=10pt,
+        innerrightmargin=10pt,
+        innerleftmargin=10pt
+    ]
+    \noindent\textbf{\large #1}\\[5pt]
+    \begin{enumerate}[leftmargin=1.5em,itemsep=3pt]
+}
+{
+    \end{enumerate}
+    \end{mdframed}
+}
+
+% Checklist
+\newlist{checklist}{itemize}{1}
+\setlist[checklist]{label=$\square$,leftmargin=1.5em}
+
+% ============================================================================
+% CUSTOM COMMANDS
+% ============================================================================
+
+% Button notation
+\newcommand{\button}[1]{\texttt{\textbf{[#1]}}}
+
+% OSD indicator
+\newcommand{\osd}[1]{\texttt{\textbf{#1}}}
+
+% Degrees symbol
+\newcommand{\degree}{$^\circ$}
+
+% ============================================================================
+% DOCUMENT METADATA
+% ============================================================================
+\title{%
+    \vspace{-2cm}
+    \includegraphics[width=3in]{logo.png}\\[1cm]
+    {\Huge\bfseries EL 7ARRESS}\\[0.5cm]
+    {\LARGE Remote Controlled Weapon Station}\\[0.5cm]
+    {\LARGE OPERATOR MANUAL}\\[0.3cm]
+    {\large CONDENSED VERSION}
+}
+\author{}
+\date{Version 1.0 \\ \today}
+
+% ============================================================================
+% BEGIN DOCUMENT
+% ============================================================================
+\begin{document}
+
+% ============================================================================
+% FRONT MATTER
+% ============================================================================
+\frontmatter
+
+% Title Page
+\maketitle
+\thispagestyle{empty}
+
+\clearpage
+
+% Document Control Page
+\chapter*{DOCUMENT CONTROL}
+\addcontentsline{toc}{chapter}{Document Control}
+
+\begin{tabular}{@{}ll@{}}
+\toprule
+\textbf{Document Number:} & EH-OM-COND-001 \\
+\textbf{Version:} & 1.0 \\
+\textbf{Date:} & \today \\
+\textbf{Classification:} & UNCLASSIFIED \\
+\textbf{Distribution:} & Approved for public release \\
+\textbf{Prepared by:} & El 7arress Engineering Team \\
+\textbf{Approved by:} & Technical Director \\
+\bottomrule
+\end{tabular}
+
+\vspace{1cm}
+
+\section*{Revision History}
+
+\begin{longtable}{@{}llp{8cm}@{}}
+\toprule
+\textbf{Version} & \textbf{Date} & \textbf{Changes} \\
+\midrule
+\endhead
+1.0 & \today & Initial condensed release \\
+\bottomrule
+\end{longtable}
+
+\clearpage
+
+% Warnings and Cautions
+\chapter*{WARNINGS, CAUTIONS, AND NOTES}
+\addcontentsline{toc}{chapter}{Warnings, Cautions, and Notes}
+
+\WARNING{%
+\textbf{GENERAL WEAPON SAFETY}\\[5pt]
+This system controls a lethal weapon. Failure to follow safety procedures can result in death or serious injury to personnel. Always maintain positive identification of targets before engaging. Verify no friendly forces are in the line of fire.
+}
+
+\vspace{0.5cm}
+
+\WARNING{%
+\textbf{ELECTRICAL HAZARD}\\[5pt]
+The RCWS operates on 24-28 VDC at up to 40 amperes. Disconnect all power sources before performing any maintenance. Only qualified personnel may service electrical components.
+}
+
+\vspace{0.5cm}
+
+\WARNING{%
+\textbf{LASER HAZARD}\\[5pt]
+The Laser Range Finder emits Class 1M laser radiation at 1550nm. Do not view directly with optical instruments. Ensure range safety protocols are followed during operations.
+}
+
+\vspace{0.5cm}
+
+\CAUTION{%
+\textbf{EQUIPMENT DAMAGE}\\[5pt]
+Operating the gimbal beyond mechanical limits (-20\degree~to +60\degree~elevation) may cause permanent damage to servos and encoders. Always observe gimbal position indicators. Do not force manual movement when power is applied.
+}
+
+\vspace{0.5cm}
+
+\CAUTION{%
+\textbf{ENVIRONMENTAL PROTECTION}\\[5pt]
+Thermal and day cameras are sensitive to extreme temperatures. Operating outside -20\degree C to +60\degree C ambient range may degrade performance or cause damage. Protect system from moisture, dust, and salt spray when not in use.
+}
+
+\vspace{0.5cm}
+
+\NOTE{%
+Throughout this manual, the following conventions apply:
+\begin{itemize}[leftmargin=2em,itemsep=2pt]
+\item \textbf{WARNING} indicates hazards that could result in death or serious injury
+\item \textbf{CAUTION} indicates hazards that could result in equipment damage
+\item \textbf{NOTE} provides additional information or clarification
+\item \button{Button X} indicates joystick or control panel buttons
+\item \osd{TEXT} indicates on-screen display elements
+\end{itemize}
+}
+
+\clearpage
+
+% Table of Contents
+\tableofcontents
+
+\clearpage
+
+% Quick Reference Card
+\chapter*{QUICK REFERENCE CARD}
+\addcontentsline{toc}{chapter}{Quick Reference Card}
+
+\section*{Emergency Actions}
+
+\begin{tabular}{@{}lp{10cm}@{}}
+\toprule
+\textbf{Emergency} & \textbf{Immediate Action} \\
+\midrule
+Personnel in danger & \textbf{STRIKE E-STOP BUTTON} \\
+Wrong target tracked & \textbf{Double-click} \button{Button 4} ($<$500ms) \\
+Accidental discharge & Release \button{Button 5} (Fire), Release \button{Button 0} (Master Arm) \\
+Runaway gimbal & \textbf{E-STOP} → Station Power OFF \\
+Fire or smoke & E-STOP → Station OFF → Main Power OFF \\
+\bottomrule
+\end{tabular}
+
+\vspace{1cm}
+
+\section*{Essential Joystick Controls}
+
+\begin{tabular}{@{}lp{9cm}@{}}
+\toprule
+\textbf{Control} & \textbf{Function} \\
+\midrule
+X/Y Axes & Azimuth (left/right), Elevation (up/down) \\
+\button{Button 0} & Master Arm \\
+\button{Button 3} & Dead Man Switch (safety interlock) \\
+\button{Button 4} & Track Select (single=start, double=abort) \\
+\button{Button 5} & Fire \\
+\button{Button 6/8} & Zoom In/Out \\
+\button{Button 10/12} & Camera Switch (Day/Thermal) \\
+\button{Button 11/13} & Motion Mode Cycle \\
+\bottomrule
+\end{tabular}
+
+\vspace{1cm}
+
+\section*{Pre-Operation Checklist}
+
+\begin{checklist}
+\item Main Power ON, Station Enable ON
+\item All devices connected (System Status check)
+\item Cameras operational (day and thermal)
+\item Gimbal smooth motion test (azimuth/elevation)
+\item Laser Range Finder test
+\item Tracking acquisition test
+\item Weapon Arm/Safe switches functional
+\item Zero active (\osd{Z} indicator on OSD)
+\end{checklist}
+
+\clearpage
+
+% ============================================================================
+% MAIN MATTER
+% ============================================================================
+\mainmatter
+
+% ============================================================================
+% CHAPTERS (Auto-generated from markdown)
+% ============================================================================
+
+% Chapter 1: Safety Brief & System Overview
+\chapter{Safety Brief & System Overview}
+\label{ch:lesson1}
+
+\input{chapters/chapter01}
+
+\clearpage
+
+% Chapter 2: Basic Operation
+\chapter{Basic Operation}
+\label{ch:lesson2}
+
+\input{chapters/chapter02}
+
+\clearpage
+
+% Chapter 3: Menu System & Settings
+\chapter{Menu System & Settings}
+\label{ch:lesson3}
+
+\input{chapters/chapter03}
+
+\clearpage
+
+% Chapter 4: Motion Modes & Surveillance
+\chapter{Motion Modes & Surveillance}
+\label{ch:lesson4}
+
+\input{chapters/chapter04}
+
+\clearpage
+
+% Chapter 5: Target Engagement Process
+\chapter{Target Engagement Process}
+\label{ch:lesson5}
+
+\input{chapters/chapter05}
+
+\clearpage
+
+% Chapter 6: Ballistics & Fire Control
+\chapter{Ballistics & Fire Control}
+\label{ch:lesson6}
+
+\input{chapters/chapter06}
+
+\clearpage
+
+% Chapter 7: System Status & Monitoring
+\chapter{System Status & Monitoring}
+\label{ch:lesson7}
+
+\input{chapters/chapter07}
+
+\clearpage
+
+% Chapter 8: Emergency Procedures
+\chapter{Emergency Procedures}
+\label{ch:lesson8}
+
+\input{chapters/chapter08}
+
+\clearpage
+
+% Chapter 9: Operator Maintenance & Troubleshooting
+\chapter{Operator Maintenance & Troubleshooting}
+\label{ch:lesson9}
+
+\input{chapters/chapter09}
+
+\clearpage
+
+% Chapter 10: Practical Training & Evaluation
+\chapter{Practical Training & Evaluation}
+\label{ch:lesson10}
+
+\input{chapters/chapter10}
+
+\clearpage
+
+% ============================================================================
+% BACK MATTER
+% ============================================================================
+\backmatter
+
+% ============================================================================
+% APPENDICES
+% ============================================================================
+\appendix
+
+% Appendix A: Quick Reference Cards
+\chapter{Quick Reference Cards}
+\label{app:a}
+
+\input{appendices/appendixA}
+
+\clearpage
+
+% Appendix B: Technical Specifications
+\chapter{Technical Specifications}
+\label{app:b}
+
+\input{appendices/appendixB}
+
+\clearpage
+
+% Appendix C: Acronyms & Glossary
+\chapter{Acronyms & Glossary}
+\label{app:c}
+
+\input{appendices/appendixC}
+
+\clearpage
+
+% Appendix D: Maintenance Log Template
+\chapter{Maintenance Log Template}
+\label{app:d}
+
+\input{appendices/appendixD}
+
+\clearpage
+
+% ============================================================================
+% END OF DOCUMENT
+% ============================================================================
+
+\end{document}

@@ -1,0 +1,826 @@
+% MOTION MODES & SURVEILLANCE
+
+\noindent
+\textbf{Lesson Duration:} 3 hours (Classroom + Practical)
+
+\vspace{0.3cm}
+
+\noindent
+\textbf{Learning Objectives:}
+
+Upon completion of this lesson, you will be able to:
+
+\begin{itemize}[leftmargin=2em,itemsep=3pt]
+\item Explain the purpose of each motion mode
+\item Switch between motion modes safely
+\item Operate automatic sector scan mode
+\item Utilize Target Reference Point (TRP) scan mode
+\item Define and manage no-fire zones
+\item Define and manage no-traverse zones
+\item Save and load zone configurations
+\end{itemize}
+
+\vspace{0.5cm}
+
+
+\section{4.1 MOTION MODES OVERVIEW}
+
+\subsection{WHAT ARE MOTION MODES?}
+
+Motion modes control \textbf{how the gimbal moves} during operations:
+
+\begin{itemize}
+\item \textbf{Manual Mode}: You control gimbal directly with joystick
+\item \textbf{Auto Sector Scan}: System automatically scans between two points
+\item \textbf{TRP Scan}: System sequentially visits pre-defined Target Reference Points
+\item \textbf{Radar Slew} (if equipped): Gimbal follows radar detections
+\end{itemize}
+
+\textbf{Purpose}: Different missions require different surveillance patterns. Motion modes let you switch between direct control and automated surveillance.
+
+\subsection{MODE SELECTION}
+
+\textbf{How to Change Modes}:
+\begin{itemize}
+\item Press joystick \textbf{\button{Button 11}} or \textbf{\button{Button 13}} (either button cycles modes)
+\item Modes cycle in sequence:
+\begin{verbatim}
+  Manual → AutoSectorScan → TRP Scan → Radar Slew → Manual (loops)
+\end{verbatim}
+\end{itemize}
+
+\textbf{Current Mode Display}:
+\begin{itemize}
+\item OSD bottom center shows: \textbf{MODE: Manual}, \textbf{MODE: Sector Scan}, \textbf{MODE: TRP}, or \textbf{MODE: Radar}
+\end{itemize}
+
+\textbf{ RESTRICTION}: Cannot change modes during tracking acquisition. Must abort tracking first (press TRK button).
+
+\section{4.2 MANUAL MODE}
+
+\textbf{Description}: Direct operator control via joystick (default mode)
+
+\textbf{When to Use}:
+\begin{itemize}
+\item Direct target engagement
+\item Precise aiming
+\item Immediate threat response
+\item Search operations requiring operator judgment
+\end{itemize}
+
+\textbf{Operation}:
+\begin{itemize}
+\item Joystick LEFT/RIGHT $\rightarrow$ Azimuth control
+\item Joystick UP/DOWN $\rightarrow$ Elevation control
+\item Stick deflection = gimbal speed
+\item Center stick = gimbal stops
+\end{itemize}
+
+\textbf{Already Covered}: See Lesson 2, Section 2.3 for detailed joystick control
+
+\textbf{Transitioning Out of Manual}:
+\begin{itemize}
+\item Press \button{Button 11} or 13
+\item Mode advances to next (AutoSectorScan)
+\item Gimbal behavior changes immediately
+\end{itemize}
+
+\section{4.3 AUTO SECTOR SCAN MODE}
+
+\subsection{WHAT IS SECTOR SCAN?}
+
+\textbf{Definition}: Automated gimbal movement that continuously scans between two pre-defined points (left and right limits)
+
+\textbf{Purpose}:
+\begin{itemize}
+\item Perimeter surveillance
+\item Monitoring a defined sector without operator input
+\item Frees operator to monitor other systems or threats
+\end{itemize}
+
+\textbf{Visual}:
+\begin{verbatim}
+    Left Limit              Right Limit
+        ↓                       ↓
+        ●←←←←←←←scan←←←←←←←●
+        ●→→→→→→→scan→→→→→→→●
+             (repeats)
+\end{verbatim}
+
+Gimbal continuously scans left-to-right, then right-to-left, repeat.
+
+\subsection{ACTIVATING SECTOR SCAN}
+
+\textbf{Prerequisites}:
+\begin{enumerate}
+\item Sector scan zone must be defined (see Section 4.7)
+\item At least one sector scan zone exists
+\item System is in AutoSectorScan mode
+\end{enumerate}
+
+\textbf{Procedure}:
+
+\begin{enumerate}
+\item \textbf{Cycle to Sector Scan Mode}:
+\end{enumerate}
+\begin{itemize}
+\item Press \button{Button 11} or 13 until OSD shows: \textbf{MODE: Sector Scan}
+\end{itemize}
+
+\begin{enumerate}
+\item \textbf{System Behavior}:
+\end{enumerate}
+\begin{itemize}
+\item Gimbal automatically slews to \textbf{left limit} of active sector
+\item Scans to \textbf{right limit} (slow, smooth movement)
+\item Reverses, scans back to \textbf{left limit}
+\item Repeats continuously
+\end{itemize}
+
+\begin{enumerate}
+\item \textbf{Scan Speed}:
+\end{enumerate}
+\begin{itemize}
+\item Default: \textasciitilde{}5\degree{}/second (configurable in zone definition)
+\item Allows visual inspection as sector scans
+\end{itemize}
+
+\begin{enumerate}
+\item \textbf{Elevation}:
+\end{enumerate}
+\begin{itemize}
+\item Scans at elevation defined in zone (usually 0\degree{} horizon)
+\item Elevation can be fixed or variable (depending on zone setup)
+\end{itemize}
+
+\subsection{WHILE SECTOR SCANNING}
+
+\textbf{Operator Actions}:
+
+\textbf{$\checkmark$ CAN DO}:
+\begin{itemize}
+\item Monitor video feed as sector scans
+\item Switch cameras (CAM button)
+\item Zoom in/out (Zoom rocker)
+\item Fire LRF (LRF button) at targets of interest
+\item Initiate tracking (TRK button) - \textit{aborts sector scan, switches to Manual}
+\end{itemize}
+
+\textbf{$\times$ CANNOT DO}:
+\begin{itemize}
+\item Joystick axes do NOT control gimbal (ignored)
+\item Cannot manually slew gimbal (must exit mode first)
+\end{itemize}
+
+\textbf{To Override}:
+\begin{itemize}
+\item Press \button{Button 11}/13 to return to Manual mode
+\item OR: Press TRK to start tracking (auto-switches to Manual)
+\end{itemize}
+
+\subsection{PAUSING / RESUMING SCAN}
+
+\textbf{Not Applicable}: Sector scan runs continuously. To stop:
+\begin{itemize}
+\item Cycle back to Manual mode (\button{Button 11}/13)
+\end{itemize}
+
+\textbf{Tip}: If you need to temporarily examine something in the sector, use \textbf{Manual} mode to stop, then return to \textbf{AutoSectorScan} when ready.
+
+\subsection{MULTIPLE SECTOR ZONES}
+
+\textbf{If Multiple Sectors Defined}:
+\begin{itemize}
+\item System scans \textbf{active sector} (last selected via menu)
+\item To change active sector:
+\end{itemize}
+\begin{enumerate}
+\item Cycle to Manual mode
+\item Access menu: Zone Definitions $\rightarrow$ Sector Scans
+\item Select desired sector
+\item Return to AutoSectorScan mode
+\end{enumerate}
+
+\section{4.4 TRP SCAN MODE}
+
+\subsection{WHAT IS TRP SCAN?}
+
+\textbf{TRP} = \textbf{Target Reference Point} (pre-defined location of interest)
+
+\textbf{Definition}: System sequentially slews to each TRP, dwells (pauses) for observation, then moves to next TRP in list.
+
+\textbf{Purpose}:
+\begin{itemize}
+\item Checkpoint verification (e.g., gate 1, gate 2, gate 3)
+\item Known threat areas (e.g., sniper hide sites)
+\item Periodic scans of fixed locations
+\item More efficient than manual searching
+\end{itemize}
+
+\textbf{Visual}:
+\begin{verbatim}
+TRP 1 (30s dwell) → TRP 2 (30s dwell) → TRP 3 (30s dwell) → TRP 1 (repeat)
+\end{verbatim}
+
+\subsection{ACTIVATING TRP SCAN}
+
+\textbf{Prerequisites}:
+\begin{enumerate}
+\item At least one TRP must be defined (see Section 4.8)
+\item System is in TRP Scan mode
+\end{enumerate}
+
+\textbf{Procedure}:
+
+\begin{enumerate}
+\item \textbf{Cycle to TRP Scan Mode}:
+\end{enumerate}
+\begin{itemize}
+\item Press \button{Button 11} or 13 until OSD shows: \textbf{MODE: TRP}
+\end{itemize}
+
+\begin{enumerate}
+\item \textbf{System Behavior}:
+\end{enumerate}
+\begin{itemize}
+\item Gimbal slews to \textbf{first TRP} in list
+\item \textbf{Dwells} for configured time (default: 30 seconds)
+\item Slews to \textbf{next TRP}
+\item Dwells again
+\item Repeats through entire TRP list, then loops back to first TRP
+\end{itemize}
+
+\begin{enumerate}
+\item \textbf{Dwell Time}:
+\end{enumerate}
+\begin{itemize}
+\item Configurable per TRP (5-120 seconds)
+\item Allows operator to observe location before moving on
+\end{itemize}
+
+\subsection{WHILE TRP SCANNING}
+
+\textbf{Operator Actions}:
+
+\textbf{During Dwell} (gimbal stationary at TRP):
+\begin{itemize}
+\item $\checkmark$ Observe video
+\item $\checkmark$ Switch cameras
+\item $\checkmark$ Zoom
+\item $\checkmark$ Fire LRF
+\item $\checkmark$ Initiate tracking (if threat detected)
+\end{itemize}
+
+\textbf{During Slew} (gimbal moving between TRPs):
+\begin{itemize}
+\item Gimbal is in motion
+\item Video may be blurred (fast slew)
+\item Wait for next dwell to observe
+\end{itemize}
+
+\textbf{To Skip to Next TRP}:
+\begin{itemize}
+\item \textbf{Not directly available} - must wait for dwell to complete, OR
+\item Cycle to Manual, reposition, cycle back to TRP mode (restarts from TRP 1)
+\end{itemize}
+
+\subsection{TRP SCAN BEST PRACTICES}
+
+\begin{enumerate}
+\item \textbf{Define TRPs During Planning}:
+\end{enumerate}
+\begin{itemize}
+\item Pre-mission: Identify key locations
+\item Enter TRP coordinates via menu (Section 4.8)
+\item Test TRP scan before mission start
+\end{itemize}
+
+\begin{enumerate}
+\item \textbf{Prioritize TRPs}:
+\end{enumerate}
+\begin{itemize}
+\item Place highest-threat areas first in list
+\item System visits TRPs in order defined
+\end{itemize}
+
+\begin{enumerate}
+\item \textbf{Appropriate Dwell Times}:
+\end{enumerate}
+\begin{itemize}
+\item Short dwell (10-15s) for quick checks
+\item Long dwell (60s+) for detailed observation or known threat areas
+\end{itemize}
+
+\begin{enumerate}
+\item \textbf{Combine with Manual}:
+\end{enumerate}
+\begin{itemize}
+\item Use TRP scan for routine surveillance
+\item Switch to Manual when threat detected
+\end{itemize}
+
+\section{4.5 RADAR SLEW MODE (OPTIONAL)}
+
+\textbf{Availability}: Only if radar system is integrated
+
+\textbf{Description}: Gimbal automatically slews to radar-detected targets
+
+\textbf{Purpose}:
+\begin{itemize}
+\item Rapid threat response
+\item Automated cueing from radar
+\item Reduces operator workload
+\end{itemize}
+
+\textbf{Operation}:
+
+\begin{enumerate}
+\item \textbf{Cycle to Radar Slew Mode}:
+\end{enumerate}
+\begin{itemize}
+\item Press \button{Button 11}/13 until OSD shows: \textbf{MODE: Radar}
+\end{itemize}
+
+\begin{enumerate}
+\item \textbf{System Behavior}:
+\end{enumerate}
+\begin{itemize}
+\item Waits for radar detection
+\item When radar detects target $\rightarrow$ Gimbal slews to radar coordinates
+\item OSD displays: \textbf{RADAR CUE} or \textbf{SLEWING TO RADAR}
+\item Operator confirms threat visually on video
+\end{itemize}
+
+\begin{enumerate}
+\item \textbf{Operator Decision}:
+\end{enumerate}
+\begin{itemize}
+\item If threat confirmed $\rightarrow$ Initiate tracking (TRK button) or engage
+\item If false alarm $\rightarrow$ Wait for next radar cue, OR cycle to Manual
+\end{itemize}
+
+\NOTE{Most El 7arress RCWS systems do NOT have radar. This mode will show "RADAR NOT AVAILABLE" if no radar connected.}
+
+\section{4.6 MOTION MODE QUICK REFERENCE}
+
+% TABLE ROW: | Mode | Use Case | Gimbal Control | Exits to Manual When... |
+% TABLE ROW: |------|----------|----------------|-------------------------|
+% TABLE ROW: | **Manual** | Direct engagement, search | Joystick | N/A (already manual) |
+% TABLE ROW: | **AutoSectorScan** | Perimeter surveillance | Automatic (between limits) | Cycle mode or press TRK |
+% TABLE ROW: | **TRP Scan** | Checkpoint monitoring | Automatic (TRP sequence) | Cycle mode or press TRK |
+% TABLE ROW: | **Radar Slew** | Radar integration | Automatic (radar cues) | Cycle mode or press TRK |
+
+\textbf{Emergency Return to Manual}: Press \button{Button 11}/13 repeatedly until \textbf{MODE: Manual} displays
+
+\section{4.7 ZONE MANAGEMENT - SECTOR SCANS}
+
+\subsection{DEFINING SECTOR SCAN ZONES}
+
+Sector scan zones set the \textbf{left and right limits} for AutoSectorScan mode.
+
+\textbf{Access}: Main Menu $\rightarrow$ Zone Definitions $\rightarrow$ Sector Scans
+
+\subsubsection{SECTOR SCAN ZONE PARAMETERS}
+
+Each sector scan zone has:
+
+% TABLE ROW: | Parameter | Description | Typical Value |
+% TABLE ROW: |-----------|-------------|---------------|
+% TABLE ROW: | **Name** | Zone identifier | "Front Gate", "Perimeter East" |
+% TABLE ROW: | **Left Limit (Az)** | Starting azimuth | 045° |
+% TABLE ROW: | **Right Limit (Az)** | Ending azimuth | 135° |
+% TABLE ROW: | **Elevation** | Scan elevation angle | 0° (horizon) |
+% TABLE ROW: | **Scan Speed** | Degrees per second | 5°/sec |
+% TABLE ROW: | **Active** | Enable/disable zone | ON / OFF |
+
+\subsubsection{CREATING A SECTOR SCAN ZONE (STEP-BY-STEP)}
+
+\textbf{Method 1: Manual Entry} (via menu)
+
+\begin{enumerate}
+\item \textbf{Access Menu}:
+\end{enumerate}
+\begin{itemize}
+\item MENU $\checkmark$ $\rightarrow$ Zone Definitions $\rightarrow$ Sector Scans $\rightarrow$ Add New Sector
+\end{itemize}
+
+\begin{enumerate}
+\item \textbf{Enter Name}:
+\end{enumerate}
+\begin{itemize}
+\item Use ▲/▼ to enter name characters
+\item MENU $\checkmark$ to confirm
+\end{itemize}
+
+\begin{enumerate}
+\item \textbf{Set Left Limit}:
+\end{enumerate}
+\begin{itemize}
+\item Method A: Slew gimbal to desired left position, press MENU $\checkmark$ to "Capture Current Position"
+\item Method B: Manually enter azimuth value using ▲/▼
+\end{itemize}
+
+\begin{enumerate}
+\item \textbf{Set Right Limit}:
+\end{enumerate}
+\begin{itemize}
+\item Same as left limit (capture or manual entry)
+\end{itemize}
+
+\begin{enumerate}
+\item \textbf{Set Elevation}:
+\end{enumerate}
+\begin{itemize}
+\item Enter elevation angle (typically 0\degree{} for horizon scan)
+\end{itemize}
+
+\begin{enumerate}
+\item \textbf{Set Scan Speed}:
+\end{enumerate}
+\begin{itemize}
+\item Enter degrees/second (5\degree{}/sec recommended)
+\end{itemize}
+
+\begin{enumerate}
+\item \textbf{Enable Zone}:
+\end{enumerate}
+\begin{itemize}
+\item Set Active = ON
+\end{itemize}
+
+\begin{enumerate}
+\item \textbf{Save}:
+\end{enumerate}
+\begin{itemize}
+\item MENU $\checkmark$ $\rightarrow$ "Save Sector Scan"
+\item Confirmation: \osd{SECTOR SCAN SAVED}
+\end{itemize}
+
+\textbf{Method 2: Quick Capture} (using joystick)
+
+\begin{enumerate}
+\item \textbf{Position Gimbal}:
+\end{enumerate}
+\begin{itemize}
+\item Use Manual mode to slew to desired \textbf{left limit}
+\item Press \textbf{FN Button} + Hold for 2 seconds
+\item OSD displays: \osd{LEFT LIMIT CAPTURED}
+\end{itemize}
+
+\begin{enumerate}
+\item \textbf{Position Right Limit}:
+\end{enumerate}
+\begin{itemize}
+\item Slew to desired \textbf{right limit}
+\item Press \textbf{FN Button} + Hold for 2 seconds
+\item OSD displays: "RIGHT LIMIT CAPTURED, SECTOR SCAN ZONE CREATED"
+\end{itemize}
+
+\begin{enumerate}
+\item \textbf{System Auto-Creates Zone}:
+\end{enumerate}
+\begin{itemize}
+\item Default name: "Sector X" (where X = next available number)
+\item Default elevation: Current elevation
+\item Default speed: 5\degree{}/sec
+\end{itemize}
+
+\begin{enumerate}
+\item \textbf{Edit if Needed}:
+\end{enumerate}
+\begin{itemize}
+\item Access menu to rename or adjust parameters
+\end{itemize}
+
+\subsection{ACTIVATING / DEACTIVATING SECTOR ZONES}
+
+\textbf{Multiple Zones}:
+\begin{itemize}
+\item You can define multiple sector scan zones
+\item Only ONE can be active at a time
+\end{itemize}
+
+\textbf{To Activate a Zone}:
+\begin{enumerate}
+\item MENU $\checkmark$ $\rightarrow$ Zone Definitions $\rightarrow$ Sector Scans
+\item Use ▲/▼ to select desired zone
+\item MENU $\checkmark$ $\rightarrow$ "Set as Active"
+\item OSD displays: "SECTOR ZONE [Name] ACTIVE"
+\end{enumerate}
+
+\textbf{To Deactivate All Sectors}:
+\begin{enumerate}
+\item MENU $\checkmark$ $\rightarrow$ Zone Definitions $\rightarrow$ Sector Scans
+\item Select active zone
+\item MENU $\checkmark$ $\rightarrow$ "Deactivate"
+\end{enumerate}
+
+\section{4.8 ZONE MANAGEMENT - TARGET REFERENCE POINTS (TRPs)}
+
+\subsection{DEFINING TRPs}
+
+TRPs are \textbf{fixed locations} the system can automatically slew to.
+
+\textbf{Access}: Main Menu $\rightarrow$ Zone Definitions $\rightarrow$ TRPs
+
+\subsubsection{TRP PARAMETERS}
+
+Each TRP has:
+
+% TABLE ROW: | Parameter | Description | Typical Value |
+% TABLE ROW: |-----------|-------------|---------------|
+% TABLE ROW: | **Name** | TRP identifier | "Gate 1", "Bunker", "Hill 203" |
+% TABLE ROW: | **Azimuth** | Direction to TRP | 090° |
+% TABLE ROW: | **Elevation** | Angle to TRP | +5° |
+% TABLE ROW: | **Dwell Time** | Observation time | 30 seconds |
+% TABLE ROW: | **Active** | Enable/disable | ON / OFF |
+
+\subsubsection{CREATING A TRP (STEP-BY-STEP)}
+
+\textbf{Method 1: Capture Current Position}
+
+\begin{enumerate}
+\item \textbf{Manual Mode}:
+\end{enumerate}
+\begin{itemize}
+\item Slew gimbal to desired TRP location using joystick
+\item Zoom/focus on exact point
+\end{itemize}
+
+\begin{enumerate}
+\item \textbf{Access Menu}:
+\end{enumerate}
+\begin{itemize}
+\item MENU $\checkmark$ $\rightarrow$ Zone Definitions $\rightarrow$ TRPs $\rightarrow$ Add TRP
+\end{itemize}
+
+\begin{enumerate}
+\item \textbf{Capture Position}:
+\end{enumerate}
+\begin{itemize}
+\item Select "Capture Current Position"
+\item MENU $\checkmark$ to confirm
+\item System records current Az/El
+\end{itemize}
+
+\begin{enumerate}
+\item \textbf{Enter Name}:
+\end{enumerate}
+\begin{itemize}
+\item Use ▲/▼ to enter TRP name
+\item MENU $\checkmark$ to confirm
+\end{itemize}
+
+\begin{enumerate}
+\item \textbf{Set Dwell Time}:
+\end{enumerate}
+\begin{itemize}
+\item Enter seconds (5-120)
+\item Default: 30 seconds
+\end{itemize}
+
+\begin{enumerate}
+\item \textbf{Enable}:
+\end{enumerate}
+\begin{itemize}
+\item Set Active = ON
+\end{itemize}
+
+\begin{enumerate}
+\item \textbf{Save}:
+\end{enumerate}
+\begin{itemize}
+\item MENU $\checkmark$ $\rightarrow$ "Save TRP"
+\item Confirmation: "TRP [Name] SAVED"
+\end{itemize}
+
+\textbf{Method 2: Manual Coordinate Entry}
+
+\begin{enumerate}
+\item \textbf{Access Menu}:
+\end{enumerate}
+\begin{itemize}
+\item MENU $\checkmark$ $\rightarrow$ Zone Definitions $\rightarrow$ TRPs $\rightarrow$ Add TRP
+\end{itemize}
+
+\begin{enumerate}
+\item \textbf{Enter Azimuth}:
+\end{enumerate}
+\begin{itemize}
+\item Use ▲/▼ to enter degrees (000-359)
+\end{itemize}
+
+\begin{enumerate}
+\item \textbf{Enter Elevation}:
+\end{enumerate}
+\begin{itemize}
+\item Use ▲/▼ to enter degrees (-20 to +60)
+\end{itemize}
+
+\begin{enumerate}
+\item \textbf{Continue} with name, dwell time, save (same as Method 1)
+\end{enumerate}
+
+\subsection{MANAGING TRP LIST}
+
+\textbf{TRP Sequence}:
+\begin{itemize}
+\item TRPs are visited in the order they appear in list
+\item To reorder:
+\end{itemize}
+\begin{enumerate}
+\item MENU $\checkmark$ $\rightarrow$ Zone Definitions $\rightarrow$ TRPs
+\item Select TRP
+\item "Move Up" or "Move Down"
+\end{enumerate}
+
+\textbf{Editing TRPs}:
+\begin{itemize}
+\item Select TRP from list
+\item MENU $\checkmark$ $\rightarrow$ "Edit TRP"
+\item Modify parameters
+\item Save changes
+\end{itemize}
+
+\textbf{Deleting TRPs}:
+\begin{itemize}
+\item Select TRP from list
+\item MENU $\checkmark$ $\rightarrow$ "Delete TRP"
+\item Confirm deletion
+\end{itemize}
+
+\section{4.9 ZONE MANAGEMENT - NO-FIRE \& NO-TRAVERSE ZONES}
+
+(Covered conceptually in Lesson 1, Section 1.5 - this section covers \textbf{viewing} zones via menu)
+
+\subsection{VIEWING NO-FIRE ZONES}
+
+\textbf{Access}: Main Menu $\rightarrow$ Zone Definitions $\rightarrow$ No-Fire Zones
+
+\textbf{Display}:
+\begin{itemize}
+\item List of all defined no-fire zones
+\item Each zone shows:
+\item Name (e.g., "Friendly FOB", "Civilian Area 1")
+\item Boundary type (Polygon, Circle, Arc)
+\item Active status (ON/OFF)
+\end{itemize}
+
+\textbf{Operator Permission}:
+\begin{itemize}
+\item \textbf{CAN}: View zones, see boundaries on map overlay (if available)
+\item \textbf{CANNOT}: Modify boundaries, delete zones, override zones
+\end{itemize}
+
+\textbf{Modification}: Usually requires commander/supervisor authorization
+
+\subsection{VIEWING NO-TRAVERSE ZONES}
+
+\textbf{Access}: Main Menu $\rightarrow$ Zone Definitions $\rightarrow$ No-Traverse Zones
+
+\textbf{Display}:
+\begin{itemize}
+\item List of all defined no-traverse zones
+\item Each zone shows:
+\item Name (e.g., "Rear 90\degree{}", "Antenna Area")
+\item Azimuth limits
+\item Active status
+\end{itemize}
+
+\textbf{Purpose Reminder}:
+\begin{itemize}
+\item No-traverse zones prevent gimbal movement into restricted areas
+\item Protects vehicle structure, equipment, personnel
+\end{itemize}
+
+\section{4.10 SAVING \& LOADING ZONE CONFIGURATIONS}
+
+\subsection{SAVING ZONE CONFIGURATION}
+
+\textbf{Purpose}: Save all zones (sectors, TRPs, no-fire, no-traverse) to file for later use
+
+\textbf{Procedure}:
+
+\begin{enumerate}
+\item \textbf{Access Menu}:
+\end{enumerate}
+\begin{itemize}
+\item MENU $\checkmark$ $\rightarrow$ Zone Definitions $\rightarrow$ Save/Load $\rightarrow$ Save Configuration
+\end{itemize}
+
+\begin{enumerate}
+\item \textbf{Enter Filename}:
+\end{enumerate}
+\begin{itemize}
+\item Use ▲/▼ to enter filename
+\item Example: "MISSION\_20250115", "PERIMETER\_CONFIG"
+\end{itemize}
+
+\begin{enumerate}
+\item \textbf{Confirm Save}:
+\end{enumerate}
+\begin{itemize}
+\item MENU $\checkmark$ $\rightarrow$ "Save"
+\item OSD displays: \osd{ZONE CONFIG SAVED}
+\end{itemize}
+
+\textbf{File Location}: Saved to internal storage (typically /configs/zones/)
+
+\subsection{LOADING ZONE CONFIGURATION}
+
+\textbf{Purpose}: Load previously saved zone configuration
+
+\textbf{Procedure}:
+
+\begin{enumerate}
+\item \textbf{Access Menu}:
+\end{enumerate}
+\begin{itemize}
+\item MENU $\checkmark$ $\rightarrow$ Zone Definitions $\rightarrow$ Save/Load $\rightarrow$ Load Configuration
+\end{itemize}
+
+\begin{enumerate}
+\item \textbf{Select File}:
+\end{enumerate}
+\begin{itemize}
+\item Use ▲/▼ to browse saved configurations
+\item Displays: Filename, date saved, number of zones
+\end{itemize}
+
+\begin{enumerate}
+\item \textbf{Confirm Load}:
+\end{enumerate}
+\begin{itemize}
+\item MENU $\checkmark$ $\rightarrow$ "Load"
+\item OSD displays: \osd{ZONE CONFIG LOADED}
+\end{itemize}
+
+\WARNING{Loading a configuration **overwrites** current zones. Save current zones first if needed.}
+
+\subsection{DEFAULT ZONE CONFIGURATION}
+
+\textbf{Default Zones}:
+\begin{itemize}
+\item System ships with default no-traverse zones (vehicle-specific)
+\item Default no-fire zones may be empty (mission-dependent)
+\end{itemize}
+
+\textbf{Restoring Defaults}:
+\begin{enumerate}
+\item MENU $\checkmark$ $\rightarrow$ Zone Definitions $\rightarrow$ Save/Load $\rightarrow$ Restore Defaults
+\item Confirm: "RESTORE DEFAULT ZONES?"
+\item MENU $\checkmark$ $\rightarrow$ \osd{YES}
+\end{enumerate}
+
+\textbf{Use Case}: Reset after training or if zones become corrupted
+
+\section{4.11 SURVEILLANCE BEST PRACTICES}
+
+\subsection{CHOOSING THE RIGHT MODE}
+
+% TABLE ROW: | Situation | Recommended Mode | Rationale |
+% TABLE ROW: |-----------|------------------|-----------|
+% TABLE ROW: | Direct threat engagement | Manual | Full operator control, immediate response |
+% TABLE ROW: | Perimeter watch (quiet) | AutoSectorScan | Automated, frees attention, consistent coverage |
+% TABLE ROW: | Checkpoint routine | TRP Scan | Efficient for fixed locations, repeatable |
+% TABLE ROW: | High-threat area scan | Manual | Requires operator judgment, unpredictable threats |
+% TABLE ROW: | Radar-integrated ops | Radar Slew (if available) | Rapid response to radar cues |
+
+\subsection{COMBINING MODES WITH TRACKING}
+
+\textbf{Workflow Example}:
+
+\begin{enumerate}
+\item \textbf{Start in AutoSectorScan} (perimeter surveillance)
+\item \textbf{Threat detected} during scan
+\item \textbf{Press TRK} $\rightarrow$ System switches to Manual, starts tracking acquisition
+\item \textbf{Lock onto threat} (second TRK press)
+\item \textbf{Engage or monitor} as threat tracked
+\item \textbf{Abort tracking} (third TRK press)
+\item \textbf{Resume surveillance}: Press \button{Button 11}/13 to return to AutoSectorScan
+\end{enumerate}
+
+\subsection{ZONE DISCIPLINE}
+
+\textbf{Before Mission}:
+\begin{itemize}
+\item $\checkmark$ Load appropriate zone configuration
+\item $\checkmark$ Verify no-fire zones match current ROE
+\item $\checkmark$ Test sector scans and TRPs
+\item $\checkmark$ Brief all operators on zones
+\end{itemize}
+
+\textbf{During Mission}:
+\begin{itemize}
+\item $\checkmark$ Respect all zone warnings
+\item $\checkmark$ Never attempt to override no-fire zones without authorization
+\item $\checkmark$ Report zone boundary errors to command
+\item $\checkmark$ Update TRPs as mission evolves (if authorized)
+\end{itemize}
+
+\textbf{After Mission}:
+\begin{itemize}
+\item $\checkmark$ Save zone configuration if modified
+\item $\checkmark$ Debrief on zone effectiveness
+\item $\checkmark$ Recommend adjustments for future missions
+\end{itemize}

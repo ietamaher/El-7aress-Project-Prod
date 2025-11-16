@@ -1,0 +1,242 @@
+% EMERGENCY PROCEDURES
+
+\noindent
+\textbf{Lesson Duration:} 3 hours (Classroom 1h + Practical 2h)
+
+\vspace{0.3cm}
+
+\noindent
+\textbf{Learning Objectives:}
+
+Upon completion of this lesson, you will be able to:
+
+\begin{itemize}[leftmargin=2em,itemsep=3pt]
+\item Execute Emergency Stop (E-Stop)
+\item Perform emergency tracking abort
+\item Respond to weapon malfunctions
+\item Handle runaway gimbal
+\item Execute emergency system shutdown
+\end{itemize}
+
+\vspace{0.5cm}
+
+
+\section{8.1 EMERGENCY STOP (E-STOP)}
+
+\subsection{E-STOP BUTTON}
+
+\textbf{Location}: Red mushroom button on Control Panel
+
+\textbf{When to Use}:
+\begin{itemize}
+\item $\times$ Personnel in line of fire
+\item $\times$ Gimbal moving toward restricted area
+\item $\times$ Runaway/uncontrolled motion
+\item $\times$ Any immediate danger
+\end{itemize}
+
+\subsection{ACTIVATION}
+
+\textbf{Action}: \textbf{STRIKE E-STOP BUTTON}
+
+\textbf{Effect} (IMMEDIATE):
+\begin{enumerate}
+\item All gimbal motion halted
+\item Weapon fire control disabled
+\item Tracking stopped
+\item System functions locked out
+\item OSD: \textbf{\osd{EMERGENCY STOP ACTIVE}} (RED)
+\end{enumerate}
+
+\subsection{E-STOP RESET}
+
+\textbf{Only reset after verifying}:
+\begin{itemize}
+\item $\square$ Immediate danger cleared
+\item $\square$ Personnel clear
+\item $\square$ No equipment damage
+\item $\square$ Cause identified
+\item $\square$ Safe to resume
+\end{itemize}
+
+\textbf{Procedure}:
+\begin{enumerate}
+\item Twist E-STOP button clockwise
+\item Button pops out
+\item System resets
+\item Check System Status for faults
+\item Perform health check before resuming ops
+\end{enumerate}
+
+\textbf{ DO NOT RESET IF}: Cause unknown, damage visible, personnel in danger, maintenance required.
+
+\section{8.2 EMERGENCY TRACKING ABORT}
+
+\textbf{Abort tracking immediately when}:
+\begin{itemize}
+\item $\times$ Tracking wrong target
+\item $\times$ Target enters restricted zone
+\item $\times$ Friendlies near target
+\item $\times$ Lost positive ID
+\item $\times$ System erratic
+\item $\times$ Civilian identified
+\end{itemize}
+
+\textbf{Procedure}: \textbf{DOUBLE-CLICK BUTTON 4} (<500ms)
+
+\textbf{Effect}:
+\begin{itemize}
+\item Tracking stops immediately
+\item Tracking gate disappears
+\item Returns to Manual mode
+\item Weapon fire inhibited
+\end{itemize}
+
+\NOTE{No Dead Man Switch required for abort. Works from any phase.}
+
+\section{8.3 WEAPON EMERGENCY PROCEDURES}
+
+\subsection{ACCIDENTAL DISCHARGE}
+
+\textbf{If weapon fires unintentionally}:
+
+\textbf{Immediate Actions} (in order):
+\begin{enumerate}
+\item \textbf{Release \button{Button 5}} (Fire) - cease fire
+\item \textbf{Release \button{Button 0}} (Master Arm) - disarm
+\item \textbf{Point gimbal to safe direction} (skyward)
+\item \textbf{E-STOP} if motion continues
+\item \textbf{Turn Station power OFF}
+\end{enumerate}
+
+\textbf{Post-Incident}:
+\begin{itemize}
+\item $\square$ Ensure weapon safe
+\item $\square$ Check for damage/casualties
+\item $\square$ Notify chain of command immediately
+\item $\square$ Preserve system logs
+\item $\square$ Do NOT resume operations until investigation complete
+\end{itemize}
+
+\subsection{WEAPON JAM / MALFUNCTION}
+
+\textbf{Symptoms}:
+\begin{itemize}
+\item Weapon fires then stops mid-burst
+\item Unusual sounds (click, no firing)
+\item Fire button pressed, no response
+\end{itemize}
+
+\textbf{Immediate Actions}:
+\begin{enumerate}
+\item \textbf{Release Fire button} (cease trigger)
+\item \textbf{Release Master Arm} (disarm)
+\item \textbf{Turn Gun Arm switch to SAFE}
+\item \textbf{Point gimbal to safe direction}
+\item \textbf{Notify command} - weapon malfunction
+\end{enumerate}
+
+\textbf{ DO NOT}:
+\begin{itemize}
+\item $\times$ Attempt to clear jam from operator station
+\item $\times$ Continue firing attempts
+\item $\times$ Inspect weapon without proper clearance
+\end{itemize}
+
+\textbf{Action}: Weapon maintenance personnel required.
+
+\section{8.4 RUNAWAY GIMBAL}
+
+\textbf{Symptoms}:
+\begin{itemize}
+\item Gimbal moves without joystick input
+\item Cannot stop gimbal with joystick
+\item Gimbal moving toward no-traverse zone
+\item Erratic, unpredictable motion
+\end{itemize}
+
+\textbf{Immediate Actions} (in order):
+\begin{enumerate}
+\item \textbf{E-STOP} (strike immediately)
+\item \textbf{Verify E-Stop engaged} (button latched, motion stopped)
+\item \textbf{Turn Station power OFF}
+\item \textbf{Notify maintenance} - servo malfunction
+\end{enumerate}
+
+\textbf{Do NOT reset E-Stop until}:
+\begin{itemize}
+\item Maintenance personnel inspect system
+\item Cause identified and resolved
+\item Safety verified
+\end{itemize}
+
+\section{8.5 LOST COMMUNICATION}
+
+\subsection{OPERATOR TO COMMAND}
+
+\textbf{Symptoms}: Radio/intercom dead
+
+\textbf{Actions}:
+\begin{itemize}
+\item $\square$ Switch to backup radio
+\item $\square$ Use hand signals (if line of sight)
+\item $\square$ Continue mission per SOP (if applicable)
+\item $\square$ Return to safe position (if no comms recovery)
+\end{itemize}
+
+\subsection{SYSTEM TO DEVICES}
+
+\textbf{Symptoms}: Device disconnected (LRF, Camera, Servo)
+
+\textbf{Actions}:
+\begin{enumerate}
+\item Check System Status (identify device)
+\item Power cycle system (soft reboot)
+\item If device does not reconnect: Operate without device (degraded mode)
+\item Notify maintenance
+\end{enumerate}
+
+\textbf{Mission Impact}:
+\begin{itemize}
+\item \textbf{LRF offline}: Manual range estimation only, no LAC
+\item \textbf{Camera offline}: Switch to alternate camera, or mission abort if both offline
+\item \textbf{Servo offline}: Mission abort
+\end{itemize}
+
+\section{8.6 EMERGENCY SYSTEM SHUTDOWN}
+
+\textbf{When to perform full shutdown}:
+\begin{itemize}
+\item Fire/smoke from system
+\item Multiple critical faults
+\item Safety concern requiring immediate powerdown
+\item Ordered by command
+\end{itemize}
+
+\textbf{Procedure}:
+\begin{enumerate}
+\item \textbf{E-STOP} (if not already engaged)
+\item \textbf{Turn Gun Arm to SAFE}
+\item \textbf{Turn Station Enable switch to OFF}
+\item \textbf{Turn main power switch to OFF}
+\item \textbf{Disconnect external power} (if directed)
+\end{enumerate}
+
+\textbf{Post-Shutdown}:
+\begin{itemize}
+\item $\square$ Ensure all motion stopped
+\item $\square$ Ensure weapon safe
+\item $\square$ Notify command/maintenance
+\item $\square$ Secure area (prevent unauthorized restart)
+\end{itemize}
+
+\section{8.7 EMERGENCY QUICK REFERENCE}
+
+% TABLE ROW: | Emergency | Action | Button/Switch |
+% TABLE ROW: |-----------|--------|---------------|
+% TABLE ROW: | **Immediate Danger** | Emergency Stop | E-STOP (red mushroom) |
+% TABLE ROW: | **Wrong Target** | Tracking Abort | Button 4 (double-click) |
+% TABLE ROW: | **Accidental Fire** | Cease Fire, Disarm | Release Button 5, Release Button 0 |
+% TABLE ROW: | **Weapon Jam** | Disarm, Safe Weapon | Release Button 0, Gun Arm SAFE |
+% TABLE ROW: | **Runaway Gimbal** | Emergency Stop, Power Off | E-STOP, Station Power OFF |
+% TABLE ROW: | **Fire/Smoke** | Full Shutdown | E-STOP → Station OFF → Main Power OFF |
