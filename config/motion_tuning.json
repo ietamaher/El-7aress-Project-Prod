@@ -1,0 +1,126 @@
+{
+  "version": "1.0",
+  "comment": "Motion Control Tuning Parameters - Field-adjustable without rebuild",
+
+  "filters": {
+    "gyro": {
+      "cutoffFreqHz": 5.0,
+      "comment": "Gyro low-pass filter cutoff frequency (1-20 Hz recommended)"
+    },
+    "tracking": {
+      "positionTau": 0.12,
+      "velocityTau": 0.08,
+      "comment": "Time constants for target position/velocity smoothing (seconds)"
+    },
+    "manual": {
+      "joystickTau": 0.08,
+      "comment": "Joystick input filter time constant (seconds)"
+    }
+  },
+
+  "motion": {
+    "maxAccelerationDegS2": 50.0,
+    "scanMaxAccelDegS2": 20.0,
+    "trpMaxAccelDegS2": 50.0,
+    "trpDefaultTravelSpeed": 15.0,
+    "maxVelocityDegS": 30.0,
+    "arrivalThresholdDeg": 0.5,
+    "updateIntervalS": 0.05,
+    "comment": "General motion limits and control loop parameters"
+  },
+
+  "servo": {
+    "azStepsPerDegree": 618.0556,
+    "elStepsPerDegree": 555.5556,
+    "comment": "Servo unit conversions (222500/360 for AZ, 200000/360 for EL)"
+  },
+
+  "pid": {
+    "tracking": {
+      "azimuth": {
+        "kp": 1.0,
+        "ki": 0.005,
+        "kd": 0.01,
+        "maxIntegral": 10.0,
+        "comment": "Tracking mode azimuth PID gains (reduced for stability)"
+      },
+      "elevation": {
+        "kp": 1.0,
+        "ki": 0.005,
+        "kd": 0.01,
+        "maxIntegral": 10.0,
+        "comment": "Tracking mode elevation PID gains (reduced for stability)"
+      }
+    },
+
+    "autoSectorScan": {
+      "azimuth": {
+        "kp": 1.0,
+        "ki": 0.01,
+        "kd": 0.05,
+        "maxIntegral": 20.0,
+        "comment": "AutoSectorScan azimuth PID gains"
+      },
+      "elevation": {
+        "kp": 1.0,
+        "ki": 0.01,
+        "kd": 0.05,
+        "maxIntegral": 20.0,
+        "comment": "AutoSectorScan elevation PID gains"
+      },
+      "decelerationDistanceDeg": 5.0,
+      "arrivalThresholdDeg": 0.2,
+      "comment": "AutoSectorScan deceleration and arrival parameters"
+    },
+
+    "trpScan": {
+      "azimuth": {
+        "kp": 1.2,
+        "ki": 0.015,
+        "kd": 0.08,
+        "maxIntegral": 25.0,
+        "comment": "TRP scan azimuth PID gains"
+      },
+      "elevation": {
+        "kp": 1.2,
+        "ki": 0.015,
+        "kd": 0.08,
+        "maxIntegral": 25.0,
+        "comment": "TRP scan elevation PID gains"
+      },
+      "decelerationDistanceDeg": 3.0,
+      "arrivalThresholdDeg": 0.1,
+      "comment": "TRP scan deceleration and arrival parameters"
+    },
+
+    "radarSlew": {
+      "azimuth": {
+        "kp": 1.5,
+        "ki": 0.08,
+        "kd": 0.15,
+        "maxIntegral": 30.0,
+        "comment": "Radar slew azimuth PID gains (aggressive for fast slew)"
+      },
+      "elevation": {
+        "kp": 1.5,
+        "ki": 0.08,
+        "kd": 0.15,
+        "maxIntegral": 30.0,
+        "comment": "Radar slew elevation PID gains (aggressive for fast slew)"
+      }
+    }
+  },
+
+  "accelLimits": {
+    "manualMaxAccelHzPerSec": 500000.0,
+    "comment": "Maximum acceleration for manual joystick mode (Hz/s)"
+  },
+
+  "tuningNotes": {
+    "note1": "After editing this file, restart the application to apply changes",
+    "note2": "PID gains: Kp controls response speed, Ki eliminates steady-state error, Kd dampens oscillation",
+    "note3": "Time constants (tau): Lower = faster response but more noise. Typical range: 0.05-0.2s",
+    "note4": "Acceleration limits: Lower = smoother motion but slower. Higher = faster but may stress servos",
+    "note5": "For field tuning: Start with tracking PID, then scan modes, then slew modes"
+  }
+}

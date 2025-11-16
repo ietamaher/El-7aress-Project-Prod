@@ -48,7 +48,7 @@ void ManualMotionMode::update(GimbalController* controller)
     SystemStateData data = controller->systemStateModel()->data();
 
     // ✅ CRITICAL FIX: Measure dt using timer (not fixed UPDATE_INTERVAL_S!)
-    double dt_s = UPDATE_INTERVAL_S;
+    double dt_s = UPDATE_INTERVAL_S();
     if (m_velocityTimer.isValid()) {
         dt_s = clampDt(m_velocityTimer.restart() / 1000.0);
     } else {
@@ -60,9 +60,9 @@ void ManualMotionMode::update(GimbalController* controller)
     double speedPercent = data.gimbalSpeed / 100.0;
     double maxCurrentSpeedHz = speedPercent * MAX_SPEED_HZ;
 
-    // ✅ CRITICAL FIX: dt-aware joystick filter using alphaFromTauDt
-    const double tau_stick = 0.08; // 80ms time constant (tuneable)
-    double alpha = alphaFromTauDt(tau_stick, dt_s);
+    // ✅ CRITICAL FIX: dt-aware joystick filter using runtime-configurable tau
+    const auto& cfg = MotionTuningConfig::instance();
+    double alpha = alphaFromTauDt(cfg.filters.manualJoystickTau, dt_s);
 
     // 2. Get and filter joystick values
     double rawAzJoystick = data.joystickAzValue;
@@ -80,23 +80,22 @@ void ManualMotionMode::update(GimbalController* controller)
     double targetElSpeedHz = shaped_stick_Elinput * maxCurrentSpeedHz;
 
     // 4. Define control parameters
-    static constexpr double MAX_ACCEL_HZ_PER_SEC = 15000.0; // Accel in Hz/s
     static constexpr double DEADBAND_HZ = 100.0;
 
     // Apply deadband to the target speed
     if (std::abs(targetAzSpeedHz) < DEADBAND_HZ) targetAzSpeedHz = 0.0;
     if (std::abs(targetElSpeedHz) < DEADBAND_HZ) targetElSpeedHz = 0.0;
 
-    // ✅ CRITICAL FIX: Time-based rate limiter in Hz domain
-    double maxChangeHz = MAX_ACCEL_HZ_PER_SEC * dt_s; // Hz/s * s = Hz
+    // ✅ CRITICAL FIX: Time-based rate limiter in Hz domain (from config)
+    double maxChangeHz = cfg.manualLimits.maxAccelHzPerSec * dt_s; // Hz/s * s = Hz
 
     // ✅ Apply time-based rate limiting using central helper
     m_currentAzSpeedCmd_Hz = applyRateLimitTimeBased(targetAzSpeedHz, m_currentAzSpeedCmd_Hz, maxChangeHz);
     m_currentElSpeedCmd_Hz = applyRateLimitTimeBased(targetElSpeedHz, m_currentElSpeedCmd_Hz, maxChangeHz);
 
     // ✅ Use centralized unit conversions (no more magic numbers!)
-    double azVelocityDegS = m_currentAzSpeedCmd_Hz / AZ_STEPS_PER_DEGREE;
-    double elVelocityDegS = m_currentElSpeedCmd_Hz / EL_STEPS_PER_DEGREE;
+    double azVelocityDegS = m_currentAzSpeedCmd_Hz / AZ_STEPS_PER_DEGREE();
+    double elVelocityDegS = m_currentElSpeedCmd_Hz / EL_STEPS_PER_DEGREE();
 
     // 5. World-frame target management
     constexpr double VELOCITY_THRESHOLD = 0.1; // deg/s

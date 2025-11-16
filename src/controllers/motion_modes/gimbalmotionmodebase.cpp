@@ -116,20 +116,17 @@ void GimbalMotionModeBase::sendStabilizedServoCommands(GimbalController* control
         finalElVelocity += elCorrection;
     }
 
-    // --- Step 3: Apply system-wide velocity limits ---
-    finalAzVelocity = qBound(-MAX_VELOCITY, finalAzVelocity, MAX_VELOCITY);
-    finalElVelocity = qBound(-MAX_VELOCITY, finalElVelocity, MAX_VELOCITY);
+    // --- Step 3: Apply system-wide velocity limits (from config) ---
+    finalAzVelocity = qBound(-MAX_VELOCITY(), finalAzVelocity, MAX_VELOCITY());
+    finalElVelocity = qBound(-MAX_VELOCITY(), finalElVelocity, MAX_VELOCITY());
 
     // --- Step 4: Convert to servo steps and send commands (AZD-KD velocity mode) ---
-    const double azStepsPerDegree = 222500.0 / 360.0;
-    const double elStepsPerDegree = 200000.0 / 360.0;
-
     // Send velocity commands to AZD-KD drivers (Operation Type 16)
     if (auto azServo = controller->azimuthServo()) {
-        writeVelocityCommand(azServo, finalAzVelocity, azStepsPerDegree);
+        writeVelocityCommand(azServo, finalAzVelocity, AZ_STEPS_PER_DEGREE());
     }
     if (auto elServo = controller->elevationServo()) {
-        writeVelocityCommand(elServo, -finalElVelocity, elStepsPerDegree);
+        writeVelocityCommand(elServo, -finalElVelocity, EL_STEPS_PER_DEGREE());
     }
 }
 

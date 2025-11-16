@@ -10,8 +10,17 @@ TRPScanMotionMode::TRPScanMotionMode()
 {
     // Configure PID gains for responsive and smooth stopping at waypoints.
     // These might need tuning based on your gimbal\"s physical characteristics.
-    m_azPid.Kp = 1.2; m_azPid.Ki = 0.1; m_azPid.Kd = 0.1; m_azPid.maxIntegral = 20.0;
-    m_elPid.Kp = 1.2; m_elPid.Ki = 0.1; m_elPid.Kd = 0.1; m_elPid.maxIntegral = 20.0;
+    // ✅ Load PID gains from runtime config (field-tunable without rebuild)
+    const auto& cfg = MotionTuningConfig::instance();
+    m_azPid.Kp = cfg.trpScanAz.kp;
+    m_azPid.Ki = cfg.trpScanAz.ki;
+    m_azPid.Kd = cfg.trpScanAz.kd;
+    m_azPid.maxIntegral = cfg.trpScanAz.maxIntegral;
+
+    m_elPid.Kp = cfg.trpScanEl.kp;
+    m_elPid.Ki = cfg.trpScanEl.ki;
+    m_elPid.Kd = cfg.trpScanEl.kd;
+    m_elPid.maxIntegral = cfg.trpScanEl.maxIntegral;
 }
 
 void TRPScanMotionMode::setActiveTRPPage(const std::vector<TargetReferencePoint>& trpPage)
@@ -118,7 +127,8 @@ void TRPScanMotionMode::update(GimbalController* controller)
             SystemStateData data = controller->systemStateModel()->data();
 
             // ✅ CRITICAL FIX: Measure dt using timer (not fixed UPDATE_INTERVAL_S!)
-            double dt_s = UPDATE_INTERVAL_S;
+            const auto& cfg = MotionTuningConfig::instance();
+            double dt_s = UPDATE_INTERVAL_S();
             if (m_velocityTimer.isValid()) {
                 dt_s = clampDt(m_velocityTimer.restart() / 1000.0);
             } else {
@@ -137,7 +147,7 @@ void TRPScanMotionMode::update(GimbalController* controller)
             double distanceToTarget = std::hypot(errAz, errEl);
 
             // --- 1. ARRIVAL CHECK ---
-            if (distanceToTarget < ARRIVAL_THRESHOLD_DEG) {
+            if (distanceToTarget < cfg.trpScanParams.arrivalThresholdDeg) {
                 qDebug() << "[TRPScanMotionMode] Arrived at point" << m_currentTrpIndex;
                 stopServos(controller);
                 m_currentState = State::Halted;
@@ -149,17 +159,22 @@ void TRPScanMotionMode::update(GimbalController* controller)
             double desiredAzVelocity = 0.0;
             double desiredElVelocity = 0.0;
 
-            // ✅ Use default TRP travel speed (TargetReferencePoint struct doesn't have per-point speed)
-            double travelSpeed = TRP_DEFAULT_TRAVEL_SPEED;
+            // ✅ Use default TRP travel speed from config (TargetReferencePoint struct doesn't have per-point speed)
+            double travelSpeed = cfg.motion.trpDefaultTravelSpeed;
 
             if (travelSpeed <= 0.0) {
                 // Speed zero - use PID to hold position
                 desiredAzVelocity = pidCompute(m_azPid, errAz, dt_s);
                 desiredElVelocity = pidCompute(m_elPid, errEl, dt_s);
             } else {
-                // ✅ CRITICAL FIX: Compute deceleration distance from kinematics
-                const double a = TRP_MAX_ACCEL_DEG_S2;
+                // ✅ CRITICAL FIX: Compute deceleration distance from kinematics (from config)
+                const double a = cfg.motion.trpMaxAccelDegS2;
                 double decelDist = (travelSpeed * travelSpeed) / (2.0 * std::max(a, 1e-3));
+
+                // Allow overriding decelDist from config if specified
+                if (cfg.trpScanParams.decelerationDistanceDeg > 0) {
+                    decelDist = cfg.trpScanParams.decelerationDistanceDeg;
+                }
 
                 if (distanceToTarget < decelDist) {
                     // DECELERATION ZONE: Use PID to slow down smoothly
@@ -179,8 +194,8 @@ void TRPScanMotionMode::update(GimbalController* controller)
                 }
             }
 
-            // ✅ CRITICAL FIX: Apply time-based rate limiting
-            double maxDelta = TRP_MAX_ACCEL_DEG_S2 * dt_s;
+            // ✅ CRITICAL FIX: Apply time-based rate limiting (from config)
+            double maxDelta = cfg.motion.trpMaxAccelDegS2 * dt_s;
             desiredAzVelocity = applyRateLimitTimeBased(desiredAzVelocity, m_previousDesiredAzVel, maxDelta);
             desiredElVelocity = applyRateLimitTimeBased(desiredElVelocity, m_previousDesiredElVel, maxDelta);
 

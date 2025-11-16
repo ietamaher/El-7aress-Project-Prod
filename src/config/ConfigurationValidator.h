@@ -45,6 +45,7 @@ private:
     static bool validateSafety();
     static bool validatePerformance();
     static bool validateHardware();
+    static bool validateMotionTuning();
 
     // Helper methods
     static void addError(const QString& message);

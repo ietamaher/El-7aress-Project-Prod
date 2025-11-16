@@ -1,8 +1,10 @@
 #include <QGuiApplication>
 #include <QQmlApplicationEngine>
-#include <QQuickWindow> 
+#include <QQuickWindow>
 #include "controllers/systemcontroller.h"
 #include "controllers/deviceconfiguration.h"
+#include "config/MotionTuningConfig.h"
+#include "config/ConfigurationValidator.h"
 #include <gst/gst.h>
 
 
@@ -24,7 +26,20 @@ int main(int argc, char *argv[])
         qCritical() << "Failed to load device configuration!";
         return -1;
     }
-    
+
+    // Load motion tuning configuration
+    if (!MotionTuningConfig::load("./config/motion_tuning.json")) {
+        qWarning() << "Failed to load motion tuning config - using defaults";
+        // Continue anyway - defaults are loaded
+    }
+
+    // Validate all configurations
+    if (!ConfigurationValidator::validateAll()) {
+        qCritical() << "Configuration validation FAILED!";
+        qCritical() << "Please fix configuration errors before continuing.";
+        return -1;
+    }
+
     // Initialize system
     SystemController sysCtrl;
     sysCtrl.initializeHardware();

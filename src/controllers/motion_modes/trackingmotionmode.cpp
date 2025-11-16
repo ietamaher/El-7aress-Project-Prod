@@ -6,29 +6,23 @@
 #include <QtGlobal>
 #include <cmath>
 
-// Define smoothing and rate limiting constants
-static const double SMOOTHING_ALPHA = 0.3;           // Position smoothing (0.0 = no smoothing, 1.0 = no filtering)
-static const double VELOCITY_SMOOTHING_ALPHA = 0.2;   // Velocity smoothing (more aggressive)
-static const double MAX_VELOCITY = 15.0;              // Maximum velocity in deg/s
-static const double MAX_ACCELERATION = 30.0;          // Maximum acceleration in deg/s²
-static const double VELOCITY_CHANGE_LIMIT = 5.0;      // Maximum velocity change per update cycle
-
 TrackingMotionMode::TrackingMotionMode(QObject* parent)
     : GimbalMotionModeBase(parent), m_targetValid(false), m_targetAz(0.0), m_targetEl(0.0)
     , m_smoothedAzVel_dps(0.0), m_smoothedElVel_dps(0.0)
-    , m_previousDesiredAzVel(0.0), m_previousDesiredElVel(0.0)  // Initialize previous velocities
+    , m_previousDesiredAzVel(0.0), m_previousDesiredElVel(0.0)
 {
-    // Configure PID gains for STABLE and SMOOTH target tracking
-    // Reduced gains to prevent motor overload
-    m_azPid.Kp = 0.15;  // Reduced from 0.25
-    m_azPid.Ki = 0.005; // Reduced from 0.01
-    m_azPid.Kd = 0.01;  // Reduced from 0.02
-    m_azPid.maxIntegral = 10.0; // Reduced from 20.0
+    // ✅ Load PID gains from runtime config (field-tunable without rebuild)
+    const auto& cfg = MotionTuningConfig::instance();
 
-    m_elPid.Kp = 0.15;  // Reduced from 0.25
-    m_elPid.Ki = 0.005; // Reduced from 0.01
-    m_elPid.Kd = 0.01;  // Reduced from 0.02
-    m_elPid.maxIntegral = 10.0; // Reduced from 20.0
+    m_azPid.Kp = cfg.trackingAz.kp;
+    m_azPid.Ki = cfg.trackingAz.ki;
+    m_azPid.Kd = cfg.trackingAz.kd;
+    m_azPid.maxIntegral = cfg.trackingAz.maxIntegral;
+
+    m_elPid.Kp = cfg.trackingEl.kp;
+    m_elPid.Ki = cfg.trackingEl.ki;
+    m_elPid.Kd = cfg.trackingEl.kd;
+    m_elPid.maxIntegral = cfg.trackingEl.maxIntegral;
 }
 
 void TrackingMotionMode::enterMode(GimbalController* controller)
@@ -135,7 +129,7 @@ void TrackingMotionMode::update(GimbalController* controller)
     }
 
     // ✅ CRITICAL FIX: Compute and clamp dt
-    double dt_s = UPDATE_INTERVAL_S;
+    double dt_s = UPDATE_INTERVAL_S();
     if (m_velocityTimer.isValid()) {
         dt_s = clampDt(m_velocityTimer.restart() / 1000.0);
     } else {
@@ -144,11 +138,10 @@ void TrackingMotionMode::update(GimbalController* controller)
 
     SystemStateData data = controller->systemStateModel()->data();
 
-    // ✅ CRITICAL FIX: dt-aware smoothing using alphaFromTauDt (not fixed alpha!)
-    const double tau_pos = 0.12; // 120ms time constant for position (tuneable)
-    const double tau_vel = 0.08; // 80ms time constant for velocity (tuneable)
-    double alphaPos = alphaFromTauDt(tau_pos, dt_s);
-    double alphaVel = alphaFromTauDt(tau_vel, dt_s);
+    // ✅ CRITICAL FIX: dt-aware smoothing using runtime-configurable tau
+    const auto& cfg = MotionTuningConfig::instance();
+    double alphaPos = alphaFromTauDt(cfg.filters.trackingPositionTau, dt_s);
+    double alphaVel = alphaFromTauDt(cfg.filters.trackingVelocityTau, dt_s);
 
     // 1. Smooth the Target Position (for PID feedback)
     m_smoothedTargetAz = alphaPos * m_targetAz + (1.0 - alphaPos) * m_smoothedTargetAz;
@@ -210,12 +203,13 @@ void TrackingMotionMode::update(GimbalController* controller)
     desiredAzVelocity = applyVelocityScaling(desiredAzVelocity, errAz);
     desiredElVelocity = applyVelocityScaling(desiredElVelocity, errEl);
 
-    // 7. Apply system velocity constraints
-    desiredAzVelocity = qBound(-MAX_VELOCITY, desiredAzVelocity, MAX_VELOCITY);
-    desiredElVelocity = qBound(-MAX_VELOCITY, desiredElVelocity, MAX_VELOCITY);
+    // 7. Apply system velocity constraints (from config)
+    double maxVel = cfg.motion.maxVelocityDegS;
+    desiredAzVelocity = qBound(-maxVel, desiredAzVelocity, maxVel);
+    desiredElVelocity = qBound(-maxVel, desiredElVelocity, maxVel);
 
-    // ✅ CRITICAL FIX: Apply TIME-BASED rate limiting (not fixed per-cycle limit!)
-    double maxDelta = MAX_ACCELERATION * dt_s; // deg/s^2 * s = deg/s
+    // ✅ CRITICAL FIX: Apply TIME-BASED rate limiting (from config)
+    double maxDelta = cfg.motion.maxAccelerationDegS2 * dt_s; // deg/s^2 * s = deg/s
     desiredAzVelocity = applyRateLimitTimeBased(desiredAzVelocity, m_previousDesiredAzVel, maxDelta);
     desiredElVelocity = applyRateLimitTimeBased(desiredElVelocity, m_previousDesiredElVel, maxDelta);
 

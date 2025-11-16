@@ -10,10 +10,17 @@ RadarSlewMotionMode::RadarSlewMotionMode(QObject* parent)
     m_currentTargetId(0),
     m_isSlewInProgress(false)
 {
-    // Configure PID gains for fast but stable slewing.
-    // These will likely be more aggressive than the TRP scan PIDs.
-    m_azPid.Kp = 1.5; m_azPid.Ki = 0.08; m_azPid.Kd = 0.15; m_azPid.maxIntegral = 30.0;
-    m_elPid.Kp = 1.5; m_elPid.Ki = 0.08; m_elPid.Kd = 0.15; m_elPid.maxIntegral = 30.0;
+    // ✅ Load PID gains from runtime config (field-tunable without rebuild)
+    const auto& cfg = MotionTuningConfig::instance();
+    m_azPid.Kp = cfg.radarSlewAz.kp;
+    m_azPid.Ki = cfg.radarSlewAz.ki;
+    m_azPid.Kd = cfg.radarSlewAz.kd;
+    m_azPid.maxIntegral = cfg.radarSlewAz.maxIntegral;
+
+    m_elPid.Kp = cfg.radarSlewEl.kp;
+    m_elPid.Ki = cfg.radarSlewEl.ki;
+    m_elPid.Kd = cfg.radarSlewEl.kd;
+    m_elPid.maxIntegral = cfg.radarSlewEl.maxIntegral;
 }
 
 void RadarSlewMotionMode::enterMode(GimbalController* controller)
