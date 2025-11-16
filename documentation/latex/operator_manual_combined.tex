@@ -1,0 +1,753 @@
+%!TeX encoding = UTF-8
+\UseRawInputEncoding
+\documentclass[11pt,a4paper,twoside,openright]{book}
+
+% ============================================================================
+% PACKAGE IMPORTS
+% ============================================================================
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[english]{babel}
+\usepackage{geometry}
+\usepackage{fancyhdr}
+\usepackage{titlesec}
+\usepackage{tocloft}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{colortbl}
+\usepackage{longtable}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{enumitem}
+\usepackage{tikz}
+\usetikzlibrary{shapes,arrows,positioning}
+\usepackage{listings}
+\usepackage{hyperref}
+\usepackage{bookmark}
+\usepackage{tcolorbox}
+\tcbuselibrary{breakable,skins}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{textcomp}
+\usepackage{wasysym}
+\usepackage{fontawesome5}    % for warning icons
+\usepackage{pmboxdraw}
+\usepackage{inconsolata}      % nicer monospace font
+\usepackage{setspace}
+\setstretch{0.95}
+
+% Compact list spacing
+\usepackage{enumitem}
+\setlist{itemsep=0pt,parsep=0pt,topsep=4pt}
+
+% Icon commands
+\newcommand{\warningsign}{\faExclamationTriangle}
+\newcommand{\cautionsign}{\faExclamationCircle}
+\newcommand{\notesign}{\faInfoCircle}
+
+% Listings setup for box-drawing characters
+\lstset{
+  basicstyle=\ttfamily,
+  extendedchars=true,
+  literate=
+    {│}{{\textSFxi}}1
+    {├}{{\textSFviii}}1
+    {─}{{\textSFx}}1
+    {└}{{\textSFii}}1
+    {┐}{{\textSFi}}1
+    {┌}{{\textSFiii}}1
+    {┤}{{\textSFiv}}1
+    {┘}{{\textSFvi}}1
+    {┴}{{\textSFxii}}1
+    {┬}{{\textSFxiii}}1
+    {┼}{{\textSFxv}}1
+}
+
+% ============================================================================
+% PAGE GEOMETRY
+% ============================================================================
+\geometry{
+    a4paper,
+    top=1in,
+    bottom=1in,
+    left=1.25in,
+    right=1in,
+    headheight=0.75in,
+    headsep=0.25in,
+    footskip=0.5in
+}
+
+% ============================================================================
+% COLORS
+% ============================================================================
+\definecolor{milred}{RGB}{153,0,0}
+\definecolor{milyellow}{RGB}{204,153,0}
+\definecolor{milblue}{RGB}{0,51,102}
+\definecolor{milgreen}{RGB}{0,102,51}
+\definecolor{lightgray}{RGB}{245,245,245}
+\definecolor{mediumgray}{RGB}{200,200,200}
+\definecolor{darkgray}{RGB}{100,100,100}
+
+% ============================================================================
+% HYPERREF SETUP
+% ============================================================================
+\hypersetup{
+    colorlinks=true,
+    linkcolor=milblue,
+    urlcolor=milblue,
+    citecolor=milblue,
+    bookmarksnumbered=true,
+    bookmarksopen=true,
+    pdftitle={EL 7ARRESS RCWS Operator Manual},
+    pdfauthor={Tunisian Ministry of Defense},
+    pdfsubject={Remote Controlled Weapon Station Operator Manual},
+    pdfkeywords={RCWS, Operator Manual, Military, Weapon System}
+}
+
+% ============================================================================
+% HEADER AND FOOTER SETUP
+% ============================================================================
+\pagestyle{fancy}
+\fancyhf{}
+
+% Classification markings
+\fancyhead[L]{\small\textcolor{milred}{\textbf{RESTRICTED}}}
+\fancyhead[C]{\small\textit{El 7arress RCWS Operator Manual}}
+\fancyhead[R]{\small\textcolor{milred}{\textbf{RESTRICTED}}}
+\fancyfoot[L]{\small RCWS-OM-001-EN v1.0}
+\fancyfoot[C]{\small\thepage}
+\fancyfoot[R]{\small October 2025}
+
+% Plain style for chapter pages
+\fancypagestyle{plain}{
+    \fancyhf{}
+    \fancyhead[L]{\small\textcolor{milred}{\textbf{RESTRICTED}}}
+    \fancyhead[R]{\small\textcolor{milred}{\textbf{RESTRICTED}}}
+    \fancyfoot[C]{\small\thepage}
+    \renewcommand{\headrulewidth}{0.4pt}
+    \renewcommand{\footrulewidth}{0.4pt}
+}
+
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\footrulewidth}{0.4pt}
+
+% ============================================================================
+% TITLE FORMATTING
+% ============================================================================
+\titleformat{\chapter}[display]
+  {\normalfont\huge\bfseries\color{milblue}}
+  {\chaptertitlename\ \thechapter}{20pt}{\Huge}
+\titleformat{\section}
+  {\normalfont\Large\bfseries\color{milblue}}
+  {\thesection}{1em}{}
+\titleformat{\subsection}
+  {\normalfont\large\bfseries\color{milblue}}
+  {\thesubsection}{1em}{}
+\titleformat{\subsubsection}
+  {\normalfont\normalsize\bfseries\color{milblue}}
+  {\thesubsubsection}{1em}{}
+
+% ============================================================================
+% TABLE OF CONTENTS FORMATTING
+% ============================================================================
+\renewcommand{\cfttoctitlefont}{\Huge\bfseries\color{milblue}}
+\renewcommand{\cftchapfont}{\bfseries}
+\renewcommand{\cftchappagefont}{\bfseries}
+\setlength{\cftbeforechapskip}{10pt}
+
+% ============================================================================
+% WARNING/CAUTION/NOTE BOXES (using tcolorbox)
+% ============================================================================
+\newtcolorbox{warningbox}[1][WARNING]{
+    colback=milred!5,
+    colframe=milred,
+    fonttitle=\bfseries,
+    title={\Large\warningsign\ #1},
+    breakable,
+    enhanced,
+    sharp corners,
+    boxrule=2pt,
+    left=10pt,
+    right=10pt,
+    top=10pt,
+    bottom=10pt
+}
+
+\newtcolorbox{cautionbox}[1][CAUTION]{
+    colback=milyellow!10,
+    colframe=milyellow,
+    fonttitle=\bfseries,
+    title={\Large\cautionsign\ #1},
+    breakable,
+    enhanced,
+    sharp corners,
+    boxrule=2pt,
+    left=10pt,
+    right=10pt,
+    top=10pt,
+    bottom=10pt
+}
+
+\newtcolorbox{notebox}[1][NOTE]{
+    colback=milblue!5,
+    colframe=milblue,
+    fonttitle=\bfseries,
+    title={\Large\notesign\ #1},
+    breakable,
+    enhanced,
+    sharp corners,
+    boxrule=1pt,
+    left=10pt,
+    right=10pt,
+    top=8pt,
+    bottom=8pt
+}
+
+% Procedure box (using tcolorbox)
+\newtcolorbox{procedurebox}[1][PROCEDURE]{
+    colback=milgreen!5,
+    colframe=milgreen,
+    fonttitle=\bfseries,
+    title={\large #1},
+    breakable,
+    enhanced,
+    sharp corners,
+    boxrule=1.5pt,
+    left=10pt,
+    right=10pt,
+    top=10pt,
+    bottom=10pt
+}
+
+% ============================================================================
+% COMMAND-STYLE SHORTCUTS FOR BOXES
+% ============================================================================
+% Easy-to-use command wrappers for warning/caution/note boxes
+\newcommand{\WARNING}[1]{%
+\begin{warningbox}
+#1
+\end{warningbox}
+}
+
+\newcommand{\CAUTION}[1]{%
+\begin{cautionbox}
+#1
+\end{cautionbox}
+}
+
+\newcommand{\NOTE}[1]{%
+\begin{notebox}
+#1
+\end{notebox}
+}
+
+% Procedure environment with automatic numbering
+\newenvironment{procedure}[1]
+{
+    \begin{procedurebox}[#1]
+    \begin{enumerate}[leftmargin=1.5em,itemsep=3pt]
+}
+{
+    \end{enumerate}
+    \end{procedurebox}
+}
+
+% ============================================================================
+% LISTINGS SETUP (for code/configuration examples)
+% ============================================================================
+\lstset{
+    basicstyle=\ttfamily\small,
+    breaklines=true,
+    frame=single,
+    backgroundcolor=\color{lightgray},
+    commentstyle=\color{milgreen},
+    keywordstyle=\color{milblue}\bfseries,
+    stringstyle=\color{milred}
+}
+
+% ============================================================================
+% CUSTOM COMMANDS
+% ============================================================================
+% Legacy commands for compatibility
+\newcommand{\lesson}[1]{\chapter{LESSON #1}}
+\newcommand{\appendixchapter}[1]{\chapter{APPENDIX #1}}
+
+% Operator-friendly commands
+\newcommand{\button}[1]{\texttt{\textbf{[#1]}}}      % Joystick button notation
+\newcommand{\osd}[1]{\texttt{\textbf{#1}}}           % On-Screen Display indicator
+\newcommand{\degree}{$^\circ$}                        % Degrees symbol
+
+% Checkbox for checklists
+\newcommand{\checkbox}{$\square$\ }
+
+% Checklist environment
+\newlist{checklist}{itemize}{1}
+\setlist[checklist]{label=$\square$,leftmargin=1.5em}
+
+% Table column types
+\newcolumntype{L}[1]{>{\raggedright\arraybackslash}p{#1}}
+\newcolumntype{C}[1]{>{\centering\arraybackslash}p{#1}}
+\newcolumntype{R}[1]{>{\raggedleft\arraybackslash}p{#1}}
+
+% ============================================================================
+% DOCUMENT BEGINS
+% ============================================================================
+\begin{document}
+
+% ============================================================================
+% TITLE PAGE
+% ============================================================================
+\begin{titlepage}
+    \centering
+    \vspace*{0.5cm}
+
+    {\Huge\textcolor{milred}{\textbf{RESTRICTED}}}\par
+    \vspace{1cm}
+
+    {\Huge\bfseries\textcolor{milblue}{EL 7ARRESS RCWS}\par}
+    \vspace{0.5cm}
+    {\LARGE\bfseries REMOTE CONTROLLED WEAPON STATION\par}
+    \vspace{0.5cm}
+    {\LARGE\bfseries OPERATOR MANUAL\par}
+
+    \vspace{2cm}
+
+    % Image placeholder - add coat of arms here
+    % \includegraphics[width=3in]{tunisia_coat_of_arms.png}
+    \vspace{2cm}
+    % Note: Replace with actual coat of arms image
+
+    \vspace{2cm}
+
+    {\Large\bfseries TUNISIAN MINISTRY OF DEFENSE\par}
+
+    \vfill
+
+    {\large VERSION 1.0\par}
+    \vspace{0.3cm}
+    {\large CLASSIFICATION: RESTRICTED\par}
+    \vspace{0.3cm}
+    {\large DATE: October 2025\par}
+
+    \vspace{1cm}
+
+    {\Huge\textcolor{milred}{\textbf{RESTRICTED}}}\par
+\end{titlepage}
+
+% ============================================================================
+% DOCUMENT CONTROL PAGE
+% ============================================================================
+\chapter*{DOCUMENT CONTROL}
+\addcontentsline{toc}{chapter}{Document Control}
+
+\begin{longtable}{|L{0.3\textwidth}|L{0.65\textwidth}|}
+\hline
+\rowcolor{milblue!20}
+\textbf{Item} & \textbf{Details} \\
+\hline
+\endfirsthead
+
+\hline
+\rowcolor{milblue!20}
+\textbf{Item} & \textbf{Details} \\
+\hline
+\endhead
+
+\textbf{Document Title} & El 7arress RCWS Operator Manual \\
+\hline
+\textbf{Document Number} & RCWS-OM-001-EN \\
+\hline
+\textbf{Version} & 1.0 \\
+\hline
+\textbf{Date} & October 30, 2025 \\
+\hline
+\textbf{Classification} & RESTRICTED \\
+\hline
+\textbf{Prepared By} & El 7arress Project Team \\
+\hline
+\textbf{Approved By} & Ministry of Defense - Equipment Division \\
+\hline
+\textbf{Language} & English \\
+\hline
+\end{longtable}
+
+\section*{REVISION HISTORY}
+
+\begin{longtable}{|C{0.15\textwidth}|C{0.2\textwidth}|L{0.4\textwidth}|L{0.2\textwidth}|}
+\hline
+\rowcolor{milblue!20}
+\textbf{Version} & \textbf{Date} & \textbf{Description} & \textbf{Author} \\
+\hline
+\endfirsthead
+
+\hline
+\rowcolor{milblue!20}
+\textbf{Version} & \textbf{Date} & \textbf{Description} & \textbf{Author} \\
+\hline
+\endhead
+
+1.0 & Oct 30, 2025 & Initial Release & El 7arress Team \\
+\hline
+\end{longtable}
+
+\section*{DISTRIBUTION LIST}
+
+This document is RESTRICTED and shall only be distributed to:
+\begin{itemize}[leftmargin=*]
+    \item Authorized military operators
+    \item Training personnel
+    \item Maintenance personnel (as required)
+    \item Command staff
+\end{itemize}
+
+\vspace{1cm}
+
+\WARNING{%
+\textbf{DESTRUCTION NOTICE}\\[5pt]
+DESTROY BY: Shredding or burning when superseded or no longer needed.
+}
+
+% ============================================================================
+% WARNINGS AND CAUTIONS PAGE
+% ============================================================================
+\chapter*{WARNINGS AND CAUTIONS}
+\addcontentsline{toc}{chapter}{Warnings and Cautions}
+
+\WARNING{%
+\textbf{LETHAL WEAPON SYSTEM}\\[5pt]
+This system controls a live weapon platform. Failure to follow safety procedures can result in death or serious injury. Always treat the weapon as if it is loaded. Maintain positive identification of targets before engaging. Verify no friendly forces are in the line of fire.
+}
+
+\vspace{0.5cm}
+
+\CAUTION{%
+\textbf{ELECTRICAL HAZARDS}\\[5pt]
+The RCWS operates on 24-28 VDC at up to 40 amperes. Disconnect all power sources before performing any maintenance. Only qualified personnel shall perform electrical servicing.
+}
+
+\vspace{0.5cm}
+
+\WARNING{%
+\textbf{MOVING PARTS}\\[5pt]
+The gimbal system contains high-speed rotating components. Keep clear of moving parts during operation. Emergency stop must be accessible at all times.
+}
+
+\vspace{0.5cm}
+
+\WARNING{%
+\textbf{LASER HAZARD}\\[5pt]
+The Laser Range Finder emits Class 1M laser radiation at 1550nm. Do not view directly with optical instruments. Ensure range safety protocols are followed during operations.
+}
+
+\vspace{0.5cm}
+
+\CAUTION{%
+\textbf{EQUIPMENT DAMAGE - GIMBAL LIMITS}\\[5pt]
+Operating the gimbal beyond mechanical limits (-20\degree~to +60\degree~elevation) may cause permanent damage to servos and encoders. Always observe gimbal position indicators. Do not force manual movement when power is applied.
+}
+
+\vspace{0.5cm}
+
+\CAUTION{%
+\textbf{ENVIRONMENTAL PROTECTION}\\[5pt]
+Thermal and day cameras are sensitive to extreme temperatures. Operating outside -20\degree C to +60\degree C ambient range may degrade performance or cause damage. Protect system from moisture, dust, and salt spray when not in use.
+}
+
+\vspace{0.5cm}
+
+\NOTE{%
+Throughout this manual, the following conventions apply:
+\begin{itemize}[leftmargin=2em,itemsep=2pt]
+\item \textbf{WARNING} indicates hazards that could result in death or serious injury
+\item \textbf{CAUTION} indicates hazards that could result in equipment damage
+\item \textbf{NOTE} provides additional information or clarification
+\item \button{Button X} indicates joystick or control panel buttons
+\item \osd{TEXT} indicates on-screen display elements
+\end{itemize}
+}
+
+% ============================================================================
+% TABLE OF CONTENTS
+% ============================================================================
+\tableofcontents
+
+% ============================================================================
+% LIST OF TABLES
+% ============================================================================
+\listoftables
+\addcontentsline{toc}{chapter}{List of Tables}
+
+% ============================================================================
+% FRONT MATTER - PROGRAM OF INSTRUCTION
+% ============================================================================
+\chapter*{PROGRAM OF INSTRUCTION (POI)}
+\addcontentsline{toc}{chapter}{Program of Instruction}
+
+\section*{COURSE OVERVIEW}
+
+\begin{longtable}{|L{0.3\textwidth}|L{0.65\textwidth}|}
+\hline
+\rowcolor{milblue!20}
+\textbf{Item} & \textbf{Details} \\
+\hline
+\endfirsthead
+
+\hline
+\rowcolor{milblue!20}
+\textbf{Item} & \textbf{Details} \\
+\hline
+\endhead
+
+\textbf{Course Title} & El 7arress RCWS Operator Qualification Course \\
+\hline
+\textbf{Course Code} & RCWS-OQC-001 \\
+\hline
+\textbf{Course Length} & 60 hours (theory) + 8 hours (live fire) \\
+\hline
+\textbf{Class Size} & Maximum 8 students per instructor \\
+\hline
+\textbf{Prerequisites} & \begin{minipage}[t]{0.6\textwidth}
+\begin{itemize}[leftmargin=*,nosep,after=\strut]
+    \item Active military service
+    \item Basic weapons qualification
+    \item Security clearance (RESTRICTED level or higher)
+    \item Medical fitness for duty
+\end{itemize}
+\end{minipage} \\
+\hline
+\end{longtable}
+
+\subsection*{Course Description}
+
+This course qualifies military operators to safely and effectively operate the El 7arress Remote Controlled Weapon Station (RCWS). Students will learn system operation, targeting procedures, tracking techniques, ballistic compensation, emergency procedures, and live fire engagement.
+
+\subsection*{Learning Outcomes}
+
+Upon successful completion of this course, students will be able to:
+
+\begin{enumerate}[leftmargin=*]
+    \item Safely operate the El 7arress RCWS in all environmental conditions
+    \item Perform pre-operation checks and system status verification
+    \item Execute target acquisition, tracking, and engagement procedures
+    \item Apply ballistic compensation for various ammunition types and ranges
+    \item Respond to emergency situations and system malfunctions
+    \item Perform operator-level maintenance and troubleshooting
+    \item Conduct post-operation procedures and documentation
+\end{enumerate}
+
+% ============================================================================
+% QUICK REFERENCE CARD
+% ============================================================================
+\chapter*{QUICK REFERENCE CARD}
+\addcontentsline{toc}{chapter}{Quick Reference Card}
+
+\section*{Emergency Actions}
+
+\begin{longtable}{@{}lp{10cm}@{}}
+\toprule
+\textbf{Emergency} & \textbf{Immediate Action} \\
+\midrule
+\endhead
+Personnel in danger & \textbf{STRIKE E-STOP BUTTON IMMEDIATELY} \\
+Wrong target tracked & Double-click \button{Button 4} ($<$500ms) to abort tracking \\
+Accidental discharge & Release \button{Button 5} (Fire), Release \button{Button 0} (Master Arm) \\
+Runaway gimbal & \textbf{E-STOP} → Station Power OFF \\
+Fire or smoke & E-STOP → Station OFF → Main Power OFF → Evacuate \\
+\bottomrule
+\end{longtable}
+
+\vspace{1cm}
+
+\section*{Essential Joystick Controls}
+
+\begin{longtable}{@{}lp{9cm}@{}}
+\toprule
+\textbf{Control} & \textbf{Function} \\
+\midrule
+\endhead
+X/Y Axes & Azimuth (left/right), Elevation (up/down) \\
+\button{Button 0} & Master Arm (must hold for firing) \\
+\button{Button 3} & Dead Man Switch (safety interlock) \\
+\button{Button 4} & Track Select (single=start, double=abort) \\
+\button{Button 5} & Fire (requires Master Arm + Dead Man) \\
+\button{Button 6/8} & Zoom In/Out \\
+\button{Button 10/12} & Camera Switch (Day/Thermal) \\
+\button{Button 11/13} & Motion Mode Cycle \\
+\bottomrule
+\end{longtable}
+
+\vspace{1cm}
+
+\section*{Pre-Operation Checklist}
+
+\begin{checklist}
+\item Main Power ON, verify power indicator
+\item Station Enable ON, verify station active
+\item All devices connected (System Status check - all green)
+\item Day camera operational (clear image, proper exposure)
+\item Thermal camera operational (image quality acceptable)
+\item Gimbal smooth motion test (azimuth 360\degree, elevation -20\degree~to +60\degree)
+\item Laser Range Finder test (returns valid range)
+\item Tracking acquisition test (lock on test target)
+\item Weapon Arm/Safe switches functional
+\item Active ballistic zero loaded (\osd{Z} indicator visible on OSD)
+\item Emergency Stop button accessible and functional
+\item Communication with command post established
+\end{checklist}
+
+\vspace{1cm}
+
+\section*{On-Screen Display (OSD) Indicators}
+
+\begin{longtable}{@{}lp{9cm}@{}}
+\toprule
+\textbf{Indicator} & \textbf{Meaning} \\
+\midrule
+\endhead
+\osd{ARM} & Master Arm enabled (red text) \\
+\osd{SAFE} & Weapon safe (green text) \\
+\osd{TRK} & Tracking mode active \\
+\osd{Z} & Ballistic zero active \\
+\osd{LRF} & Laser range displayed (meters) \\
+\osd{AZ/EL} & Azimuth/Elevation angles \\
+\osd{TEMP} & System temperature warning \\
+\osd{LOW PWR} & Low power warning \\
+\bottomrule
+\end{longtable}
+
+% ============================================================================
+% MAIN MATTER
+% ============================================================================
+\mainmatter
+
+% ============================================================================
+% CHAPTERS (Auto-generated from markdown)
+% ============================================================================
+
+% Chapter 1: Safety Brief & System Overview
+\chapter{Safety Brief \& System Overview}
+\label{ch:lesson1}
+
+\input{chapters/chapter01}
+
+\clearpage
+
+% Chapter 2: Basic Operation
+\chapter{Basic Operation}
+\label{ch:lesson2}
+
+\input{chapters/chapter02}
+
+\clearpage
+
+% Chapter 3: Menu System & Settings
+\chapter{Menu System \& Settings}
+\label{ch:lesson3}
+
+\input{chapters/chapter03}
+
+\clearpage
+
+% Chapter 4: Motion Modes & Surveillance
+\chapter{Motion Modes \& Surveillance}
+\label{ch:lesson4}
+
+\input{chapters/chapter04}
+
+\clearpage
+
+% Chapter 5: Target Engagement Process
+\chapter{Target Engagement Process}
+\label{ch:lesson5}
+
+\input{chapters/chapter05}
+
+\clearpage
+
+% Chapter 6: Ballistics & Fire Control
+\chapter{Ballistics \& Fire Control}
+\label{ch:lesson6}
+
+\input{chapters/chapter06}
+
+\clearpage
+
+% Chapter 7: System Status & Monitoring
+\chapter{System Status \& Monitoring}
+\label{ch:lesson7}
+
+\input{chapters/chapter07}
+
+\clearpage
+
+% Chapter 8: Emergency Procedures
+\chapter{Emergency Procedures}
+\label{ch:lesson8}
+
+\input{chapters/chapter08}
+
+\clearpage
+
+% Chapter 9: Operator Maintenance & Troubleshooting
+\chapter{Operator Maintenance \& Troubleshooting}
+\label{ch:lesson9}
+
+\input{chapters/chapter09}
+
+\clearpage
+
+% Chapter 10: Practical Training & Evaluation
+\chapter{Practical Training \& Evaluation}
+\label{ch:lesson10}
+
+\input{chapters/chapter10}
+
+\clearpage
+
+% ============================================================================
+% BACK MATTER
+% ============================================================================
+\backmatter
+
+% ============================================================================
+% APPENDICES
+% ============================================================================
+\appendix
+
+% Appendix A: Quick Reference Cards
+\chapter{Quick Reference Cards}
+\label{app:a}
+
+\input{appendices/appendixA}
+
+\clearpage
+
+% Appendix B: Technical Specifications
+\chapter{Technical Specifications}
+\label{app:b}
+
+\input{appendices/appendixB}
+
+\clearpage
+
+% Appendix C: Acronyms \& Glossary
+\chapter{Acronyms \& Glossary}
+\label{app:c}
+
+\input{appendices/appendixC}
+
+\clearpage
+
+% Appendix D: Maintenance Log Template
+\chapter{Maintenance Log Template}
+\label{app:d}
+
+\input{appendices/appendixD}
+
+\clearpage
+
+% ============================================================================
+% END OF DOCUMENT
+% ============================================================================
+
+\end{document}
