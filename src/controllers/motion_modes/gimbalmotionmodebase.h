@@ -3,6 +3,9 @@
 
 #include <QObject>
 #include <QtMath>
+#include <QElapsedTimer>
+#include <cmath>
+#include <cstdint>
 #include "models/domain/systemstatedata.h" // Include for SystemStateData
 
 // Eigen for 3D transformations (rotation matrices)
@@ -15,31 +18,46 @@ class GimbalController;
 // Low-pass filter class for gyroscope data
 class GyroLowPassFilter {
 private:
-    double alpha;           // Filter coefficient (0 < alpha < 1)
+    double cutoffFreq;      // Cutoff frequency in Hz
+    double alpha;           // Filter coefficient (0 < alpha < 1) - for fixed sampleRate fallback
     double filteredValue;   // Current filtered value
     bool initialized;       // Whether filter has been initialized
 
 public:
-    GyroLowPassFilter(double cutoffFreq = 10.0, double sampleRate = 100.0) : initialized(false) {
-        // Calculate alpha from cutoff frequency and sample rate
-        // alpha = dt / (RC + dt), where RC = 1 / (2 * pi * cutoff_freq)
-        double dt = 1.0 / sampleRate;
+    // Constructor: cutoffFreq in Hz, sampleRate in Hz (optional)
+    GyroLowPassFilter(double cutoffFreqHz = 5.0, double sampleRateHz = 100.0)
+        : cutoffFreq(cutoffFreqHz), initialized(false)
+    {
+        // Precompute alpha for fixed sampleRate fallback
+        double dt = 1.0 / sampleRateHz;
         double RC = 1.0 / (2.0 * M_PI * cutoffFreq);
         alpha = dt / (RC + dt);
-
-        // Clamp alpha to reasonable bounds
-        alpha = qBound(0.01, alpha, 0.99);
+        alpha = qBound(0.0001, alpha, 0.9999);
     }
 
+    // Legacy update (uses precomputed sampleRate alpha)
     double update(double newValue) {
         if (!initialized) {
             filteredValue = newValue;
             initialized = true;
             return filteredValue;
         }
-
-        // Low-pass filter: y[n] = alpha * x[n] + (1 - alpha) * y[n-1]
         filteredValue = alpha * newValue + (1.0 - alpha) * filteredValue;
+        return filteredValue;
+    }
+
+    // New: update using runtime dt (seconds) and cutoffFreq
+    double updateWithDt(double newValue, double dt) {
+        if (!initialized) {
+            filteredValue = newValue;
+            initialized = true;
+            return filteredValue;
+        }
+        if (dt <= 0.0) dt = 1e-3;
+        double RC = 1.0 / (2.0 * M_PI * cutoffFreq);
+        double a = dt / (RC + dt); // computed alpha
+        a = qBound(1e-6, a, 0.999999);
+        filteredValue = a * newValue + (1.0 - a) * filteredValue;
         return filteredValue;
     }
 
@@ -113,7 +131,66 @@ public:
         Eigen::Vector3d& angVel_world_dps);
 
 protected:
+    // ========================================================================
+    // VELOCITY TIMER & CENTRAL HELPERS (Expert Review - Critical Fixes)
+    // ========================================================================
 
+    /**
+     * @brief Velocity timer used across modes to compute dt
+     */
+    QElapsedTimer m_velocityTimer;
+
+    /**
+     * @brief Clamp dt to avoid divide-by-zero and unrealistic values
+     * @param dt Time delta in seconds
+     * @return Clamped dt (minimum 1 ms, maximum implicit)
+     */
+    static inline double clampDt(double dt) {
+        return qMax(dt, 1e-3); // 1 ms minimum
+    }
+
+    /**
+     * @brief Compute IIR filter alpha from time constant tau and actual dt
+     * @param tau Time constant in seconds (e.g., 0.15 for 150ms response)
+     * @param dt Measured time step in seconds
+     * @return Alpha coefficient for this update
+     */
+    static inline double alphaFromTauDt(double tau, double dt) {
+        if (dt <= 0.0) dt = 1e-3;
+        return 1.0 - std::exp(-dt / tau);
+    }
+
+    /**
+     * @brief Apply time-based rate limiting (prevents acceleration spikes)
+     * @param desired Target velocity (deg/s)
+     * @param prev Previous velocity (deg/s)
+     * @param maxDelta Maximum change allowed this cycle (deg/s) = MAX_ACCEL * dt
+     * @return Rate-limited velocity
+     */
+    static inline double applyRateLimitTimeBased(double desired, double prev, double maxDelta) {
+        double delta = desired - prev;
+        delta = qBound(-maxDelta, delta, maxDelta);
+        return prev + delta;
+    }
+
+    /**
+     * @brief Split signed 32-bit integer into two 16-bit registers (bit-preserving)
+     * @param value Signed 32-bit value (e.g., motor speed in Hz)
+     * @return Vector of two 16-bit registers [upper, lower]
+     */
+    static inline QVector<quint16> splitInt32ToRegs(int32_t value) {
+        uint32_t u = static_cast<uint32_t>(static_cast<int32_t>(value));
+        return { static_cast<quint16>((u >> 16) & 0xFFFF),
+                 static_cast<quint16>(u & 0xFFFF) };
+    }
+
+public:
+    /**
+     * @brief Start velocity timer - call in enterMode() of derived classes
+     */
+    void startVelocityTimer() { m_velocityTimer.start(); }
+
+protected:
 
     /**
      * @brief Calculates and sends final servo commands, incorporating full kinematic stabilization.
@@ -201,6 +278,15 @@ protected:
     // Common PID/Scan constants
     static constexpr double ARRIVAL_THRESHOLD_DEG = 0.5;   // How close to consider a point "reached"
     static constexpr double UPDATE_INTERVAL_S = 0.05;      // 50ms update interval
+
+    // Motion acceleration limits (deg/s²) - Expert Review Critical Additions
+    static constexpr double MAX_ACCELERATION_DEG_S2 = 50.0;       // General max acceleration
+    static constexpr double SCAN_MAX_ACCEL_DEG_S2 = 20.0;         // AutoSectorScan acceleration
+    static constexpr double TRP_MAX_ACCEL_DEG_S2 = 50.0;          // TRP scan acceleration
+
+    // Unit conversion constants - centralized (no more magic numbers!)
+    static constexpr double AZ_STEPS_PER_DEGREE = 222500.0 / 360.0;  // Azimuth servo
+    static constexpr double EL_STEPS_PER_DEGREE = 200000.0 / 360.0;  // Elevation servo
 
 private:
     // Helper for angle conversions (scalar)
