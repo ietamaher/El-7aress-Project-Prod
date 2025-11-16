@@ -962,3 +962,1202 @@ Understanding how information flows through the system helps with troubleshootin
 
 ---
 
+# LESSON 2: BASIC OPERATION
+
+**Lesson Duration:** 4 hours (Classroom + Practical)
+
+**Learning Objectives:**
+- Perform complete system startup procedure
+- Operate all DCU buttons, switches, and controls
+- Control gimbal movement using joystick
+- Switch between day and thermal cameras
+- Operate camera zoom controls
+- Interpret all OSD elements correctly
+- Perform normal system shutdown
+
+---
+
+## 2.1 SYSTEM STARTUP PROCEDURE
+
+### **PRE-STARTUP CHECKLIST**
+
+Before powering on the system, verify:
+
+1. ✅ **Walk-around inspection complete** (Lesson 1) - all items GO
+2. ✅ **Weapon cleared** per Appendix A
+3. ✅ **Ammunition removed** or accounted for
+4. ✅ **All personnel clear** of turret (minimum 2 meters)
+5. ✅ **Vehicle power available** (check voltage: 20-30V DC nominal)
+6. ✅ **Operator qualified** and authorized
+7. ✅ **Mission briefing received** (zones, ROE, threats)
+8. ✅ **Communication established** with command
+
+**⚠️ WARNING**: Do not start system if any checklist item is not complete.
+
+---
+
+### **STARTUP SEQUENCE (10 STEPS)**
+
+Perform steps in order. Do not skip steps.
+
+#### **STEP 1: INITIAL POWER-UP**
+
+**Action**:
+- Ensure **Station Enable** switch is in **OFF** position
+- Apply vehicle power to RCWS (circuit breaker ON or power cable connected)
+
+**Expected Result**:
+- **Power** indicator light illuminates (Green)
+- DCU screen displays boot logo
+- System begins self-test (approximately 30 seconds)
+
+**If NO Power Light**:
+- Check vehicle power supply (voltage 20-30V DC)
+- Check circuit breaker
+- Check cable connections
+- Report to maintenance if power available but no light
+
+---
+
+#### **STEP 2: BOOT SELF-TEST**
+
+**Action**:
+- Observe DCU screen during boot
+- Wait for self-test to complete (DO NOT interrupt)
+
+**Expected Display Sequence**:
+1. El 7arress logo appears
+2. "SYSTEM INITIALIZING..." message
+3. Progress bar advances
+4. Device status list appears:
+   ```
+   Checking Devices...
+   [ OK ] Day Camera
+   [ OK ] Thermal Camera
+   [ OK ] Laser Rangefinder
+   [ OK ] Azimuth Motor
+   [ OK ] Elevation Motor
+   [ OK ] Joystick Controller
+   [ -- ] Weapon Actuator (if not installed)
+
+   System Ready
+   Press STATION ENABLE to continue
+   ```
+
+**If Any Device Shows [FAIL]**:
+- **DO NOT PROCEED** with startup
+- Note which device failed
+- Report to maintenance immediately
+- System may operate in degraded mode (e.g., without LRF) but requires supervisor approval
+
+---
+
+#### **STEP 3: ENABLE STATION**
+
+**Action**:
+- Move **Station Enable** switch from **OFF** to **ON**
+
+**Expected Result**:
+- **System Ready** light illuminates (Green)
+- Gimbal motors energize (you may hear a soft hum)
+- Video feed appears on DCU screen
+- OSD overlay displays system information
+- Gimbal automatically moves to **Home Position** (0° AZ, 0° EL)
+
+**⚠️ CAUTION**: Gimbal will move during this step. Ensure area is clear.
+
+**If Gimbal Does Not Move to Home**:
+- Check for mechanical obstructions
+- Verify no-traverse zones are not blocking home position
+- Press **Home** button manually (see Step 4)
+- If still no movement, report to maintenance
+
+---
+
+#### **STEP 4: VERIFY HOME POSITION**
+
+**Action**:
+- Observe OSD azimuth and elevation readings
+- If not at home (AZ: 000°, EL: 00°), press **Home** button
+
+**Expected Result**:
+- OSD displays: **AZ: 000° EL: 00°** (±2° tolerance)
+- Reticle is centered on screen
+- Gimbal points directly forward relative to vehicle
+
+**Why Home Position Matters**:
+- Provides known reference point
+- Ensures gimbal is mechanically centered
+- Verifies servo position feedback is accurate
+- Required before calibration or zeroing
+
+---
+
+#### **STEP 5: SELECT CAMERA**
+
+**Action**:
+- Press **CAM** button on joystick to select Day or Thermal camera
+- Default camera is **Day** (visible spectrum)
+
+**Expected Result**:
+- OSD displays camera type: **DAY** or **THERMAL**
+- Video image switches between color (day) and grayscale/colorized (thermal)
+- FOV (Field of View) value updates on OSD
+
+**Day Camera**:
+- Color image
+- Better detail in good lighting
+- FOV: 2° to 60° (depending on zoom)
+
+**Thermal Camera**:
+- Grayscale or false-color image
+- Detects heat signatures
+- Works in darkness, smoke, fog
+- FOV: 10.4° (wide) or 5.2° (narrow - digital zoom)
+
+---
+
+#### **STEP 6: TEST GIMBAL MOVEMENT**
+
+**Action**:
+- Gently move joystick in all directions (left/right/up/down)
+- Verify gimbal responds smoothly
+- Return joystick to center (gimbal stops)
+
+**Expected Result**:
+- Gimbal slews in direction of joystick movement
+- OSD azimuth/elevation values update in real-time
+- No grinding, binding, or unusual noises
+- Gimbal stops when joystick returns to center
+
+**Movement Directions**:
+- Joystick LEFT → Gimbal slews LEFT (azimuth decreases)
+- Joystick RIGHT → Gimbal slews RIGHT (azimuth increases)
+- Joystick UP → Gimbal tilts UP (elevation increases)
+- Joystick DOWN → Gimbal tilts DOWN (elevation decreases)
+
+**If Gimbal Moves Erratically or Not at All**:
+- Press **Emergency Stop** immediately
+- Check for loose cables or obstructions
+- Report to maintenance
+
+---
+
+#### **STEP 7: TEST CAMERA ZOOM**
+
+**Action**:
+- Press **Zoom Rocker** UP (zoom in) and DOWN (zoom out)
+- Observe video image magnification change
+- Observe FOV value on OSD
+
+**Expected Result**:
+- Image magnifies when zooming in (FOV decreases)
+- Image wide-angle when zooming out (FOV increases)
+- Zoom is smooth with no jerking
+- OSD FOV updates continuously
+
+**Day Camera Zoom**:
+- Wide: 60° FOV
+- Narrow: 2° FOV
+- Continuous motorized zoom
+
+**Thermal Camera Zoom**:
+- Wide: 10.4° HFOV
+- Narrow: 5.2° HFOV (2× digital zoom)
+- OSD indicates "ZOOM ×1" or "ZOOM ×2"
+
+---
+
+#### **STEP 8: TEST LASER RANGEFINDER (LRF)**
+
+**Action**:
+- Aim reticle at a known object 100m+ away
+- Press and hold **LRF** button on joystick
+
+**Expected Result**:
+- Laser fires (you will NOT see visible beam - infrared)
+- OSD displays range reading: **RNG: XXXm**
+- Range updates within 1 second
+- LRF automatically times out after 5 seconds
+
+**⚠️ WARNING**: Do not aim LRF at people, animals, or reflective surfaces at close range. Eye damage can occur.
+
+**If No Range Reading**:
+- Target may be out of range (50m to 4000m valid)
+- Target may be non-reflective (water, glass)
+- LRF may be faulty (check System Status in Lesson 7)
+
+---
+
+#### **STEP 9: ENABLE STABILIZATION**
+
+**Action**:
+- Set **Stabilization** switch to **ON**
+
+**Expected Result**:
+- OSD displays **STAB: ON**
+- Gimbal compensates for vehicle movement
+- Reticle remains steady on target even if vehicle rocks
+
+**Stabilization Modes**:
+- **ON**: Gimbal actively compensates for vehicle pitch/roll/yaw
+- **OFF**: Gimbal is fixed relative to vehicle body
+
+**When to Use Stabilization**:
+- ✅ Always ON during normal operations
+- ✅ Essential for accurate fire on moving vehicle
+- ✅ Required for tracking moving targets
+- ❌ OFF only for maintenance or troubleshooting
+
+---
+
+#### **STEP 10: SYSTEM READY - FINAL CHECK**
+
+**Action**:
+- Verify all indicator lights show correct status:
+  - **Power**: Green (ON)
+  - **System Ready**: Green (ON)
+  - **Gun Armed**: OFF (system is SAFE)
+  - **Ammo Loaded**: Yellow (if ammo present) or OFF
+  - **Authorized**: Green (if logged in) or OFF
+  - **Fault/Alarm**: OFF (no errors)
+
+- Verify OSD displays:
+  - Live video feed (day or thermal)
+  - Azimuth and elevation values
+  - Current FOV
+  - System mode (Manual)
+  - No warning messages
+
+**If All Checks Pass**:
+- ✅ System is ready for operation
+- ✅ Proceed with mission tasks
+- ✅ Log startup time in operator log
+
+**If Any Check Fails**:
+- ❌ Do not proceed to weapons operation
+- ❌ Troubleshoot using Lesson 9
+- ❌ Report to supervisor/maintenance
+
+---
+
+### **STARTUP TROUBLESHOOTING (QUICK REFERENCE)**
+
+| Problem | Possible Cause | Action |
+|---------|---------------|--------|
+| No power light | No vehicle power | Check circuit breaker, voltage |
+| Self-test fails | Device malfunction | Note failed device, report to maintenance |
+| No video feed | Camera error | Check camera connections, restart system |
+| Gimbal won't move | Motors disabled or fault | Check Station Enable, check for faults |
+| Erratic gimbal movement | Joystick calibration | Recalibrate joystick (maintenance task) |
+| LRF no reading | Out of range or bad target | Aim at closer/better reflective target |
+| Thermal image frozen | FFC in progress | Wait 5 seconds for FFC to complete |
+
+---
+
+## 2.2 DISPLAY AND CONTROL UNIT (DCU) OPERATIONS
+
+### **DCU BUTTON AND SWITCH FUNCTIONS (DETAILED)**
+
+---
+
+#### **EMERGENCY STOP BUTTON (RED)**
+
+**Location**: Top left of DCU panel, large RED button
+
+**Function**: Immediate system shutdown for safety emergencies
+
+**Operation**:
+1. Press button (no confirmation required)
+2. System immediately:
+   - Stops all gimbal movement
+   - Safes weapon (trigger disabled)
+   - Locks servos in place
+   - Displays "EMERGENCY STOP ACTIVE" on OSD
+
+**To Reset**:
+1. Twist/pull button to release (depending on button type)
+2. Verify emergency condition is resolved
+3. Press **Station Enable** OFF then ON to restart
+4. System will re-initialize (30 seconds)
+
+**When to Use**:
+- Personnel enter turret hazard zone
+- Runaway gun movement
+- Fire or smoke
+- Any unsafe condition
+- Loss of control
+
+**⚠️ CRITICAL**: Do NOT hesitate to use Emergency Stop. Better safe than sorry.
+
+---
+
+#### **STATION ENABLE SWITCH**
+
+**Location**: DCU panel, toggle switch
+
+**Positions**: OFF / ON
+
+**Function**: Master enable/disable for entire RCWS
+
+**OFF Position**:
+- Gimbal motors disabled (turret cannot move)
+- Video still displays (cameras remain powered)
+- Weapon is safed
+- Safe to approach turret for inspection
+
+**ON Position**:
+- Gimbal motors enabled
+- All subsystems operational
+- Turret can move if joystick input received
+- Stay clear of turret
+
+**When to Use OFF**:
+- Before approaching turret
+- During maintenance
+- When leaving operator station
+- End of shift/mission
+
+---
+
+#### **HOME POSITION BUTTON**
+
+**Location**: DCU panel
+
+**Function**: Returns gimbal to forward-facing position (0° AZ, 0° EL)
+
+**Operation**:
+1. Press button once
+2. Gimbal automatically slews to home position (takes 3-10 seconds depending on current position)
+3. Gimbal stops at AZ: 000°, EL: 00°
+
+**When to Use**:
+- At startup (if gimbal doesn't auto-home)
+- Before shutdown
+- To establish known reference
+- When disoriented in azimuth
+
+**⚠️ CAUTION**: Gimbal will move when button is pressed. Ensure area is clear.
+
+---
+
+#### **GUN ARM/SAFE SWITCH**
+
+**Location**: DCU panel, guarded toggle switch (flip up guard to access)
+
+**Positions**: SAFE / ARM
+
+**Function**: Arms or safes the weapon system
+
+**SAFE Position** (Default):
+- Weapon trigger disabled
+- **Gun Armed** light is OFF
+- Trigger pull has no effect
+- Safe for non-combat operations
+
+**ARM Position**:
+- Weapon trigger enabled
+- **Gun Armed** light illuminates RED
+- Trigger pull will fire weapon (if other conditions met)
+- Only use during combat or live fire training
+
+**Safety Interlocks** (all must be true to fire):
+1. Gun Arm switch in ARM position
+2. Dead Man Switch held on joystick
+3. Authorized (if authorization system enabled)
+4. Not in a no-fire zone
+5. Trigger pulled
+
+**⚠️ WARNING**: When Gun Armed light is RED, treat weapon as HOT. One trigger pull away from firing.
+
+---
+
+#### **FIRE MODE SELECTOR**
+
+**Location**: DCU panel, rotary selector switch
+
+**Positions**: SINGLE / SHORT BURST / LONG BURST
+
+**Function**: Selects weapon fire mode
+
+**SINGLE**:
+- One round per trigger pull
+- Trigger must be released and pulled again for next round
+- Most accurate mode
+- Use for precision engagement
+
+**SHORT BURST**:
+- 3-5 rounds per trigger pull (depends on weapon)
+- Automatic burst, then stops
+- Good balance of accuracy and firepower
+- Use for moving targets or suppression
+
+**LONG BURST**:
+- Continuous fire while trigger held
+- Full automatic until trigger released or ammo exhausted
+- Less accurate due to recoil
+- Use for area suppression or close-range threats
+
+**⚠️ CAUTION**: Fire mode selector position should be verified before each engagement. Wrong mode can waste ammo or fail to stop threat.
+
+---
+
+#### **SPEED SELECT SWITCH**
+
+**Location**: DCU panel, 3-position switch
+
+**Positions**: LOW / MEDIUM / HIGH
+
+**Function**: Sets gimbal slew speed (how fast turret moves with joystick)
+
+**LOW Speed**:
+- Slow, precise movements
+- Good for: Zeroing, fine adjustments, long-range precision
+- Maximum slew rate: ~5°/second
+
+**MEDIUM Speed** (Default):
+- Moderate speed for general use
+- Good for: Normal surveillance, target acquisition
+- Maximum slew rate: ~20°/second
+
+**HIGH Speed**:
+- Fast movements for rapid target engagement
+- Good for: Close-range threats, multiple targets, emergency response
+- Maximum slew rate: ~60°/second
+
+**Tip**: Start with MEDIUM for most operations. Switch to LOW for precision, HIGH for emergencies.
+
+---
+
+#### **STABILIZATION ON/OFF SWITCH**
+
+**Location**: DCU panel, toggle switch
+
+**Positions**: OFF / ON
+
+**Function**: Enables or disables platform stabilization
+
+**OFF**:
+- Gimbal is fixed relative to vehicle body
+- If vehicle tilts, reticle tilts with it
+- Use only for troubleshooting or maintenance
+
+**ON** (Default):
+- Gimbal compensates for vehicle movement
+- Reticle stays on target even if vehicle rocks
+- Essential for accurate fire from moving platform
+
+**How It Works**:
+- System reads vehicle pitch, roll, yaw
+- Gimbal motors counter-rotate to cancel movement
+- Reticle stays stabilized on target
+
+**⚠️ IMPORTANT**: Always use ON during operations. OFF mode degrades accuracy significantly.
+
+---
+
+#### **DETECTION ON/OFF SWITCH**
+
+**Location**: DCU panel, toggle switch
+
+**Positions**: OFF / ON
+
+**Function**: Enables or disables automatic target detection (if equipped)
+
+**OFF** (Default):
+- No automatic detection
+- Operator manually searches for targets
+
+**ON**:
+- System highlights potential targets on screen
+- Bounding boxes appear around detected objects (people, vehicles)
+- Operator still makes final decision to engage
+
+**⚠️ NOTE**: Detection system is AI-assisted. It is NOT perfect. Operator is responsible for target identification. Never fire without positive ID.
+
+---
+
+#### **MENU BUTTONS (▲ / ▼ / ✓)**
+
+**Location**: DCU panel, three buttons
+
+**Function**: Navigate system menus and adjust settings
+
+**MENU ▲ (UP)**:
+- Move selection up in menu
+- Increase parameter values
+
+**MENU ▼ (DOWN)**:
+- Move selection down in menu
+- Decrease parameter values
+
+**MENU ✓ (VALIDATE)**:
+- Open main menu (first press)
+- Confirm selection
+- Enter submenu
+- Exit menu (when at top level)
+
+**Usage**: Covered in detail in Lesson 3.
+
+---
+
+### **DCU INDICATOR LIGHTS (DETAILED)**
+
+---
+
+#### **POWER (Green)**
+
+- **ON**: Vehicle power is supplied to RCWS
+- **OFF**: No power (check circuit breaker)
+
+---
+
+#### **SYSTEM READY (Green)**
+
+- **ON**: All subsystems initialized and operational
+- **OFF**: System booting, in error state, or disabled
+- **Flashing**: System is degraded (some devices failed but operation possible)
+
+---
+
+#### **GUN ARMED (Red)**
+
+- **ON**: Weapon is armed and ready to fire
+- **OFF**: Weapon is safed (trigger disabled)
+- **⚠️ WARNING**: When lit, one trigger pull from firing
+
+---
+
+#### **AMMO LOADED (Yellow)**
+
+- **ON**: Ammunition belt/magazine detected
+- **OFF**: No ammunition or feed system disconnected
+
+---
+
+#### **AUTHORIZED (Green)**
+
+- **ON**: Operator has entered valid authorization code
+- **OFF**: Operator not authorized (weapon will not fire even if armed)
+- **NOTE**: Authorization system may be disabled depending on configuration
+
+---
+
+#### **FAULT/ALARM (Red)**
+
+- **OFF**: No faults
+- **Flashing Slow**: Warning condition (non-critical, check System Status)
+- **Flashing Fast**: Alarm condition (critical fault, system may shut down)
+- **Solid ON**: Emergency stop active or critical failure
+
+**When Fault Light Activates**:
+1. Note the flash pattern
+2. Access System Status menu (Lesson 7)
+3. Read fault description
+4. Take corrective action or report to maintenance
+
+---
+
+## 2.3 JOYSTICK CONTROLLER OPERATIONS
+
+### **JOYSTICK CONTROL TECHNIQUES**
+
+---
+
+#### **PROPER GRIP**
+
+**Right Hand Position**:
+1. Wrap fingers around joystick grip
+2. Index finger rests on trigger (outside trigger guard when not firing)
+3. Thumb on top, near CAM and TRK buttons
+4. **Dead Man Switch is on rear of grip** - squeeze with palm/fingers to engage
+
+**Left Hand** (optional):
+- Can assist with zoom rocker if needed
+- Generally free for other tasks (radio, notes, etc.)
+
+**Posture**:
+- Sit upright with elbow supported
+- Wrist relaxed (not bent)
+- Don't "death grip" the joystick - light touch is better
+
+---
+
+#### **GIMBAL SLEW TECHNIQUE**
+
+**Main Stick (Azimuth and Elevation Control)**:
+
+**Small Movements** (Precision):
+- Deflect stick slightly from center (10-20%)
+- Gimbal moves slowly
+- Good for: Tracking, zeroing, fine adjustments
+
+**Large Movements** (Rapid Slew):
+- Deflect stick fully (80-100%)
+- Gimbal moves at maximum speed (based on Speed Select switch)
+- Good for: Searching, responding to threats, sector scans
+
+**Smooth Tracking**:
+- Apply constant, smooth stick pressure
+- Anticipate target movement
+- Lead the target slightly
+- Practice makes perfect
+
+**Joystick Center Detent**:
+- Joystick has small dead-zone at center
+- Helps prevent accidental movement
+- If gimbal drifts when stick is released, joystick needs calibration (maintenance task)
+
+---
+
+#### **CAMERA SWITCH (CAM BUTTON)**
+
+**Location**: Top of joystick, left button
+
+**Function**: Toggle between Day and Thermal cameras
+
+**Operation**:
+- Press once → Switches camera
+- OSD updates to show **DAY** or **THERMAL**
+- Video image changes immediately
+
+**When to Use Day Camera**:
+- ✅ Good lighting conditions
+- ✅ Need color information (e.g., identifying vehicle markings)
+- ✅ Need maximum zoom range (2° to 60° FOV)
+
+**When to Use Thermal Camera**:
+- ✅ Darkness, dawn, dusk
+- ✅ Smoke, fog, dust
+- ✅ Detecting hidden personnel (heat signatures)
+- ✅ Identifying recently fired weapons (barrel heat)
+
+**Tip**: Experienced operators frequently switch between cameras to get best situational awareness.
+
+---
+
+#### **TRACK SELECT (TRK BUTTON)**
+
+**Location**: Top of joystick, right button
+
+**Function**: Initiate or abort automatic target tracking
+
+**Operation**:
+1. **First Press** → Enters Acquisition mode (yellow box appears)
+2. **Second Press** → Locks onto target in box (tracking starts)
+3. **Third Press** → Aborts tracking (returns to manual mode)
+
+**Detailed Procedure**: Covered in Lesson 5 (Target Engagement Process)
+
+---
+
+#### **LASER RANGEFINDER (LRF BUTTON)**
+
+**Location**: Middle of joystick, left button
+
+**Function**: Fires laser to measure range to target
+
+**Operation**:
+1. Aim reticle at target
+2. Press and hold LRF button
+3. Laser fires (invisible infrared beam)
+4. OSD displays range: **RNG: XXXm**
+5. Release button when done (or auto-timeout after 5 seconds)
+
+**Range**: 50m to 4000m (depending on target reflectivity)
+
+**Accuracy**: ±5 meters
+
+**⚠️ WARNING**: Class 3B laser. Do not aim at people or reflective surfaces at close range.
+
+**Tip**: Always range your target before engaging. Ballistics compensation requires accurate range.
+
+---
+
+#### **FUNCTION (FN BUTTON)**
+
+**Location**: Middle of joystick, right button
+
+**Function**: Context-sensitive - function changes based on current mode
+
+**Typical Functions**:
+- **In Manual Mode**: No function (reserved for future use)
+- **In Tracking Mode**: Adjust acquisition box size
+- **In Menu Mode**: Quick-select common functions
+- **In Zeroing Mode**: Capture impact point
+
+**Consult OSD for current FN button assignment** (may display hint at bottom of screen)
+
+---
+
+#### **HAT SWITCH (8-WAY DIRECTIONAL)**
+
+**Location**: Center of joystick, top surface
+
+**Function**: Multi-purpose control depending on mode
+
+**Positions**:
+- Center (neutral)
+- Up, Down, Left, Right
+- Up-Left, Up-Right, Down-Left, Down-Right (diagonals)
+
+**Functions by Mode**:
+
+| Mode | Hat Switch Function |
+|------|---------------------|
+| **Manual Mode** | Quick slew gimbal (alternative to main stick) |
+| **Tracking Mode** | Move acquisition box position |
+| **Menu Mode** | Navigate menus (alternative to DCU buttons) |
+| **Zeroing Mode** | Adjust offset values |
+
+**Most Common Use**: Moving acquisition box during target tracking setup.
+
+---
+
+#### **ZOOM ROCKER (▲ / ▼)**
+
+**Location**: Very top of joystick
+
+**Function**: Camera zoom in/out
+
+**Operation**:
+- Press **UP (▲)** → Zoom in (magnify image, FOV decreases)
+- Press **DOWN (▼)** → Zoom out (wide view, FOV increases)
+- Hold to zoom continuously
+- Release to stop zooming
+
+**Zoom Ranges**:
+- **Day Camera**: 2° to 60° FOV (30× optical zoom)
+- **Thermal Camera**: 5.2° to 10.4° HFOV (2× digital zoom)
+
+**Zoom Strategy**:
+- **Wide zoom** for searching/surveillance
+- **Narrow zoom** for identification and precision engagement
+- **Medium zoom** for tracking and general operations
+
+**Auto-Focus** (Day Camera Only):
+- Camera automatically focuses as you zoom
+- Can be disabled for manual focus (advanced)
+
+---
+
+#### **WEAPON TRIGGER**
+
+**Location**: Front of joystick grip, inside trigger guard
+
+**Function**: Fires weapon (when all safety interlocks satisfied)
+
+**Trigger Pull Technique**:
+1. Place index finger on trigger
+2. Take up slack (first stage - no resistance)
+3. Breathe out slowly
+4. Squeeze smoothly (second stage - resistance increases)
+5. **BANG** - weapon fires
+6. Hold trigger for burst mode, release for single shot
+
+**Safety Interlocks** (all must be met):
+- ✅ Gun Armed switch in ARM position
+- ✅ Dead Man Switch held
+- ✅ Authorized (if required)
+- ✅ Not in no-fire zone
+- ✅ Ammo loaded
+
+**If Trigger Pulls But No Fire**:
+- Check Gun Armed light (RED = armed)
+- Check Dead Man Switch is engaged
+- Check Authorized light (if applicable)
+- Check OSD for "NO-FIRE ZONE" warning
+- Check weapon is loaded
+- If all OK, possible weapon malfunction (report to maintenance)
+
+---
+
+#### **DEAD MAN SWITCH**
+
+**Location**: Rear of joystick grip (squeeze with palm/fingers)
+
+**Function**: Safety device - must be held for weapon operation
+
+**Operation**:
+- **Squeezed** → Dead Man Switch engaged (weapon can fire if other conditions met)
+- **Released** → Dead Man Switch disengaged (weapon safed immediately)
+
+**Purpose**:
+- Prevents accidental discharge if operator is incapacitated
+- Automatic safety if operator loses grip
+- Required safety interlock for firing
+
+**Proper Technique**:
+- Hold naturally as part of grip
+- Don't squeeze too hard (causes fatigue)
+- Practice rapid release (for emergencies)
+
+**⚠️ CRITICAL SAFETY RULE**: Release Dead Man Switch immediately when not actively engaging a target.
+
+**Failure Mode**:
+- If Dead Man Switch fails to spring back → **NO-GO** condition
+- Report to maintenance immediately
+- Do not operate system
+
+---
+
+## 2.4 ON-SCREEN DISPLAY (OSD) INTERPRETATION
+
+### **OSD LAYOUT AND ELEMENTS**
+
+The OSD provides real-time system information overlaid on the video feed. Learn to interpret all elements quickly.
+
+---
+
+### **COMPLETE OSD LAYOUT**
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│ AZ: 045°  EL: +12°   |  DAY  FOV: 9.0°  ZOOM: 15×   [●REC]  │ ← Top Bar
+│                                                                │
+│                                                                │
+│                          [Target Box]                         │ ← Tracking Box (if active)
+│                              ┌──┐                             │
+│                              └──┘                             │
+│                                                                │
+│                                + ←Reticle (Aimpoint)          │
+│                               (*)←CCIP Pipper (Impact Point)  │
+│                                                                │
+│  NO-FIRE ZONE WARNING                    STAB: ON            │
+│                                                                │
+│                                                                │
+│ RNG: 850m          MODE: Manual          STATUS: ARMED        │ ← Bottom Bar
+│ TEMP: 35°C         TRACK: Off            AMMO: 450           │
+└──────────────────────────────────────────────────────────────┘
+```
+
+---
+
+### **TOP BAR ELEMENTS (LEFT TO RIGHT)**
+
+#### **AZ: XXX°** (Azimuth)
+- Current gimbal azimuth position
+- Range: 000° to 359°
+- 000° = North (or vehicle forward, depending on configuration)
+- Clockwise: 090° = East, 180° = South, 270° = West
+
+#### **EL: ±XX°** (Elevation)
+- Current gimbal elevation position
+- Range: -20° to +60°
+- 00° = Horizon
+- Positive = Above horizon (tilted up)
+- Negative = Below horizon (tilted down)
+
+#### **DAY / THERMAL** (Camera Type)
+- Shows which camera is active
+- **DAY** = Visible spectrum camera (color)
+- **THERMAL** = Infrared camera (heat signatures)
+
+#### **FOV: X.X°** (Field of View)
+- Current camera field of view (horizontal angle)
+- Smaller value = more zoomed in
+- Larger value = wider view
+- Day camera: 2° to 60°
+- Thermal camera: 5.2° to 10.4°
+
+#### **ZOOM: XX×** (Zoom Factor)
+- Shows zoom magnification relative to wide view
+- Day camera: 1× to 30× optical
+- Thermal camera: 1× or 2× digital
+
+#### **[●REC]** (Recording Indicator - if equipped)
+- Shows if video is being recorded
+- Red dot = recording active
+- May not be present on all systems
+
+---
+
+### **CENTER AREA ELEMENTS**
+
+#### **Reticle (+)**
+- **Main aiming point** (usually center of screen)
+- This is where the **gun is currently aimed** (with zeroing applied)
+- Crosshair design depends on reticle type selected (see Lesson 3)
+- **Fire weapon with reticle on target**
+
+#### **CCIP Pipper ((*))**
+- **Continuously Computed Impact Point**
+- Shows where bullet will actually hit with **ALL ballistic corrections**:
+  - Zeroing offset
+  - Environmental corrections (temp, altitude, wind)
+  - Lead angle (if tracking moving target)
+- May be offset from reticle if ballistics are applied
+- **For moving targets, put CCIP pipper on target, not reticle**
+
+**Reticle vs. CCIP**:
+- **No ballistics applied** → Reticle and CCIP are same location
+- **Ballistics applied** → CCIP offset from reticle
+- **Always aim with CCIP for accurate hits**
+
+#### **Tracking Box (Yellow/Red/Green)**
+- Appears only when tracking is active
+- Color indicates tracking state:
+  - **Yellow Solid** = Acquisition mode (user positioning box)
+  - **Yellow Dashed** = Lock pending or coast mode
+  - **Red Dashed** = Active lock (tracking target)
+  - **Green Dashed** = Firing mode (holding position)
+- Box size adapts to target
+- See Lesson 5 for detailed tracking states
+
+---
+
+### **BOTTOM BAR ELEMENTS (LEFT SIDE)**
+
+#### **RNG: XXXm** (Range)
+- Distance to target from last LRF measurement
+- Updates when you press LRF button
+- Range: 50m to 4000m
+- **---m** = No range data (LRF not fired or failed)
+
+#### **TEMP: XX°C** (Temperature)
+- System temperature (ambient or component)
+- Used for: Monitoring, environmental ballistics
+- Typical range: -20°C to +50°C
+- **⚠️ WARNING**: If temp exceeds 60°C, system may shut down
+
+---
+
+### **BOTTOM BAR ELEMENTS (CENTER)**
+
+#### **MODE: XXXXX** (Motion Mode)
+- Shows current gimbal control mode:
+  - **Manual** = Joystick control
+  - **Auto Track** = Automatic target tracking
+  - **Sector Scan** = Automatic sector scanning
+  - **TRP Scan** = Target Reference Point scan
+  - **Idle** = System idle (startup or fault)
+- See Lesson 4 for all motion modes
+
+#### **TRACK: XXXXX** (Tracking Status)
+- Shows tracking system state:
+  - **Off** = Not tracking
+  - **Acquiring** = Positioning acquisition box
+  - **Lock Pending** = Attempting to lock onto target
+  - **Active** = Locked and following target
+  - **Coast** = Temporarily lost target, predicting position
+  - **Firing** = Holding position during weapon fire
+- See Lesson 5 for tracking details
+
+---
+
+### **BOTTOM BAR ELEMENTS (RIGHT SIDE)**
+
+#### **STATUS: XXXXX** (System Status)
+- Overall weapon system status:
+  - **SAFE** = Gun is safed (cannot fire)
+  - **ARMED** = Gun is armed (ready to fire)
+  - **READY** = All conditions met for firing
+  - **FAULT** = System error (check Fault light)
+
+#### **AMMO: XXX** (Ammunition Count - if equipped)
+- Remaining rounds in belt/magazine
+- Counts down as rounds are fired
+- **⚠️ WARNING**: When count reaches 0, weapon is empty
+- May show **---** if ammo counter not installed
+
+#### **STAB: ON/OFF** (Stabilization Status)
+- Shows if platform stabilization is enabled
+- **ON** = Gimbal compensating for vehicle movement (normal)
+- **OFF** = Gimbal fixed to vehicle (troubleshooting only)
+
+---
+
+### **WARNING MESSAGES (CENTER SCREEN)**
+
+Warnings appear in large text when critical conditions are detected:
+
+#### **NO-FIRE ZONE WARNING**
+- **Message**: "NO-FIRE ZONE - WEAPON SAFED"
+- **Color**: Red, flashing
+- **Meaning**: Reticle is inside a no-fire zone
+- **Action**: Do NOT fire. Slew gimbal out of zone.
+
+#### **NO-TRAVERSE WARNING**
+- **Message**: "NO-TRAVERSE ZONE - MOVEMENT RESTRICTED"
+- **Color**: Yellow
+- **Meaning**: Gimbal approaching or in no-traverse zone
+- **Action**: Slew in opposite direction
+
+#### **EMERGENCY STOP ACTIVE**
+- **Message**: "EMERGENCY STOP - SYSTEM SAFED"
+- **Color**: Red, solid
+- **Meaning**: Emergency stop button has been pressed
+- **Action**: Resolve emergency, reset button, restart system
+
+#### **SYSTEM FAULT**
+- **Message**: "FAULT: [description]"
+- **Color**: Red or yellow depending on severity
+- **Meaning**: Hardware or software fault detected
+- **Action**: Access System Status (Lesson 7) for details
+
+#### **TARGET LOST**
+- **Message**: "TRACKING LOST - COAST MODE"
+- **Color**: Yellow
+- **Meaning**: Target tracking lost (occlusion, out of frame)
+- **Action**: System predicting, manual reacquisition may be needed
+
+#### **AUTHORIZATION REQUIRED**
+- **Message**: "NOT AUTHORIZED - ENTER CODE"
+- **Color**: Yellow
+- **Meaning**: Operator authorization required before firing
+- **Action**: Enter authorization code via menu
+
+---
+
+### **OSD QUICK INTERPRETATION DRILL**
+
+Practice reading the OSD in under 3 seconds:
+
+**Scan Pattern (Top to Bottom, Left to Right)**:
+1. **Azimuth/Elevation** → Where am I pointed?
+2. **Camera & FOV** → What am I seeing?
+3. **Reticle/CCIP** → Where will I hit?
+4. **Warnings** → Any safety issues?
+5. **Status** → Ready to fire?
+
+**Example OSD Read**:
+```
+AZ: 045°  EL: +12°  |  DAY  FOV: 9.0°
+RNG: 850m  MODE: Manual  STATUS: ARMED
+```
+
+**Interpretation**:
+- Pointed northeast (45°), tilted up 12°
+- Using day camera, medium zoom (9° FOV)
+- Range to target: 850 meters
+- Manual control mode
+- System is armed and ready to fire
+
+**⚠️ CHECK**: No warnings displayed → Good to engage if target identified
+
+---
+
+## 2.5 SYSTEM SHUTDOWN PROCEDURE
+
+Always perform proper shutdown. Do NOT just cut power.
+
+---
+
+### **SHUTDOWN SEQUENCE (7 STEPS)**
+
+#### **STEP 1: SAFE THE WEAPON**
+
+**Action**:
+- Move **Gun Arm/Safe** switch to **SAFE**
+- Verify **Gun Armed** light is OFF
+- Release Dead Man Switch on joystick
+
+**Why**: Ensures weapon cannot fire during shutdown
+
+---
+
+#### **STEP 2: RETURN TO HOME POSITION**
+
+**Action**:
+- Press **Home** button on DCU
+- Wait for gimbal to slew to 0° AZ, 0° EL
+
+**Why**: Parks gimbal in known position for next startup
+
+---
+
+#### **STEP 3: DISABLE STABILIZATION**
+
+**Action**:
+- Move **Stabilization** switch to **OFF**
+
+**Why**: Reduces power draw and motor wear
+
+---
+
+#### **STEP 4: ACCESS SHUTDOWN MENU (Optional but Recommended)**
+
+**Action**:
+- Press **MENU ✓** button
+- Navigate to **SYSTEM** → **Shutdown**
+- Select **"Shutdown System"**
+- Confirm shutdown
+
+**Result**:
+- System performs orderly shutdown
+- Saves settings and logs
+- Powers down cameras and motors
+- Displays "SHUTDOWN COMPLETE" message
+
+**Why**: Proper software shutdown prevents data corruption
+
+---
+
+#### **STEP 5: DISABLE STATION**
+
+**Action**:
+- Move **Station Enable** switch to **OFF**
+
+**Result**:
+- **System Ready** light turns OFF
+- Gimbal motors de-energize
+- System enters standby mode
+- Video feed may remain (depending on configuration)
+
+---
+
+#### **STEP 6: REMOVE VEHICLE POWER (End of Shift)**
+
+**Action**:
+- If end of mission/shift, disconnect vehicle power:
+  - Turn off circuit breaker, OR
+  - Disconnect power cable (if external)
+
+**Result**:
+- **Power** light turns OFF
+- DCU screen goes black
+- All systems powered down
+
+**Skip this step** if:
+- Operator change only (next operator will power up)
+- Short break (< 1 hour)
+
+---
+
+#### **STEP 7: SECURE WEAPON AND EQUIPMENT**
+
+**Action**:
+- Clear weapon per Appendix A (if required)
+- Remove ammunition (if required by SOP)
+- Install protective covers on cameras (if environmental exposure)
+- Lock operator station (if applicable)
+- Complete operator log entry
+
+---
+
+### **POST-SHUTDOWN CHECKS**
+
+- ✅ Gun Armed light is OFF
+- ✅ Gimbal is at home position (0° AZ, 0° EL)
+- ✅ Station Enable is OFF
+- ✅ Weapon is cleared (if required)
+- ✅ Covers installed (if required)
+- ✅ Operator log entry complete
+
+---
+
+### **SHUTDOWN TROUBLESHOOTING**
+
+| Problem | Possible Cause | Action |
+|---------|---------------|--------|
+| Gimbal won't go to home | Obstruction or fault | Manually slew to approximate home, report fault |
+| Shutdown menu not responding | Software hang | Press Emergency Stop, wait 10 sec, power off |
+| Can't disable Station Enable | Switch stuck | Press Emergency Stop, cut vehicle power, report maintenance |
+| System won't power off | Software error | Press Emergency Stop, cut vehicle power at source |
+
+---
+
+**END OF LESSON 2**
+
+---
+
