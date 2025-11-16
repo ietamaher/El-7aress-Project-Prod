@@ -512,7 +512,7 @@ void GimbalMotionModeBase::calculateHybridStabilizationCorrection(
             velocityCorrectionEl_dps = 0.0;
         } else {
             // ✅ CRITICAL FIX: Compute dt from internal timer (or fallback to UPDATE_INTERVAL_S)
-            double dt_s = UPDATE_INTERVAL_S;
+            double dt_s = UPDATE_INTERVAL_S();
             if (m_velocityTimer.isValid()) {
                 dt_s = clampDt(m_velocityTimer.restart() / 1000.0);
             } else {
