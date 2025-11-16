@@ -149,8 +149,8 @@ void TRPScanMotionMode::update(GimbalController* controller)
             double desiredAzVelocity = 0.0;
             double desiredElVelocity = 0.0;
 
-            // ✅ CRITICAL BUG FIX: Use actual TRP scanSpeed (not hard-coded 15!)
-            double travelSpeed = targetTrp.scanSpeed;
+            // ✅ Use default TRP travel speed (TargetReferencePoint struct doesn't have per-point speed)
+            double travelSpeed = TRP_DEFAULT_TRAVEL_SPEED;
 
             if (travelSpeed <= 0.0) {
                 // Speed zero - use PID to hold position

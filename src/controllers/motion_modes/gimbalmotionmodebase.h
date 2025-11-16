@@ -284,6 +284,9 @@ protected:
     static constexpr double SCAN_MAX_ACCEL_DEG_S2 = 20.0;         // AutoSectorScan acceleration
     static constexpr double TRP_MAX_ACCEL_DEG_S2 = 50.0;          // TRP scan acceleration
 
+    // Default travel speeds (deg/s)
+    static constexpr double TRP_DEFAULT_TRAVEL_SPEED = 15.0;      // TRP point-to-point travel speed
+
     // Unit conversion constants - centralized (no more magic numbers!)
     static constexpr double AZ_STEPS_PER_DEGREE = 222500.0 / 360.0;  // Azimuth servo
     static constexpr double EL_STEPS_PER_DEGREE = 200000.0 / 360.0;  // Elevation servo
