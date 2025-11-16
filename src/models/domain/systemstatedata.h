@@ -557,6 +557,7 @@ struct SystemStateData {
     float windageDirectionDegrees = 0.0f;   ///< Wind direction for windage calculation in degrees
     bool windageAppliedToBallistics = false; ///< Whether windage is applied to ballistic calculations
     bool windageDirectionCaptured = false;
+    float calculatedCrosswindMS = 0.0f;     ///< Calculated crosswind component in m/s (from windage + azimuth)
 
     // Environmental Conditions (for Ballistic LUT)
     // NOTE: Crosswind is NOT stored here - it's calculated from windage (direction + speed)
