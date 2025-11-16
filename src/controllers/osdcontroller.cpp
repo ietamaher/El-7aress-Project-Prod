@@ -125,10 +125,10 @@ void OsdController::onSystemStateChanged(const SystemStateData& data)
         );
 
         // Update environment display (not in FrameData, so updated here)
+        // NOTE: Wind/crosswind not shown here - use Windage menu instead
         m_viewModel->updateEnvironmentDisplay(
             data.environmentalTemperatureCelsius,
-            data.environmentalAltitudeMeters,
-            data.environmentalCrosswindMS
+            data.environmentalAltitudeMeters
         );
     }
 }

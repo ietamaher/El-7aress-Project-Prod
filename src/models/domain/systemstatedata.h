@@ -559,10 +559,11 @@ struct SystemStateData {
     bool windageDirectionCaptured = false;
 
     // Environmental Conditions (for Ballistic LUT)
+    // NOTE: Crosswind is NOT stored here - it's calculated from windage (direction + speed)
+    //       and current gimbal azimuth. See WeaponController::calculateCrosswindComponent()
     bool environmentalModeActive = false;   ///< Environmental settings mode active status
     float environmentalTemperatureCelsius = 15.0f; ///< Air temperature in degrees Celsius (ISO standard: 15°C)
     float environmentalAltitudeMeters = 0.0f;      ///< Altitude above sea level in meters
-    float environmentalCrosswindMS = 0.0f;         ///< Crosswind speed in meters per second
     bool environmentalAppliedToBallistics = false; ///< Whether environmental settings are applied    
     // Lead Angle Compensation
     bool leadAngleCompensationActive = false;           ///< Lead angle compensation active status
@@ -838,7 +839,6 @@ struct SystemStateData {
                environmentalModeActive == other.environmentalModeActive &&
                qFuzzyCompare(environmentalTemperatureCelsius, other.environmentalTemperatureCelsius) &&
                qFuzzyCompare(environmentalAltitudeMeters, other.environmentalAltitudeMeters) &&
-               qFuzzyCompare(environmentalCrosswindMS, other.environmentalCrosswindMS) &&
                environmentalAppliedToBallistics == other.environmentalAppliedToBallistics &&
                leadAngleCompensationActive == other.leadAngleCompensationActive &&
                currentLeadAngleStatus == other.currentLeadAngleStatus &&

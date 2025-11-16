@@ -1044,14 +1044,6 @@ void SystemStateModel::setEnvironmentalAltitude(float meters) {
     }
 }
 
-void SystemStateModel::setEnvironmentalCrosswind(float metersPerSecond) {
-    if (m_currentStateData.environmentalModeActive) {
-        m_currentStateData.environmentalCrosswindMS = metersPerSecond;
-        qDebug() << "Environmental crosswind set to:" << m_currentStateData.environmentalCrosswindMS << "m/s";
-        emit dataChanged(m_currentStateData);
-    }
-}
-
 void SystemStateModel::finalizeEnvironmental() {
     if (m_currentStateData.environmentalModeActive) {
         m_currentStateData.environmentalModeActive = false;
@@ -1059,20 +1051,21 @@ void SystemStateModel::finalizeEnvironmental() {
         qDebug() << "Environmental procedure finalized."
                  << "Temp:" << m_currentStateData.environmentalTemperatureCelsius << "°C"
                  << "Altitude:" << m_currentStateData.environmentalAltitudeMeters << "m"
-                 << "Crosswind:" << m_currentStateData.environmentalCrosswindMS << "m/s"
-                 << "Applied:" << m_currentStateData.environmentalAppliedToBallistics;
+                 << "Applied:" << m_currentStateData.environmentalAppliedToBallistics
+                 << "| NOTE: Crosswind calculated from windage, not environmental menu";
         emit dataChanged(m_currentStateData);
     }
 }
 
 void SystemStateModel::clearEnvironmental() {
     // Reset to ISA standard atmosphere
+    // NOTE: Crosswind is NOT stored here - it's calculated from windage
     m_currentStateData.environmentalModeActive = false;
     m_currentStateData.environmentalTemperatureCelsius = 15.0f;   // ISA standard: 15°C at sea level
     m_currentStateData.environmentalAltitudeMeters = 0.0f;        // Sea level
-    m_currentStateData.environmentalCrosswindMS = 0.0f;           // No wind
     m_currentStateData.environmentalAppliedToBallistics = false;
-    qDebug() << "Environmental settings cleared (ISA standard atmosphere).";
+    qDebug() << "Environmental settings cleared (ISA standard atmosphere)."
+             << "| NOTE: Use windage menu to set wind conditions";
     emit dataChanged(m_currentStateData);
 }
 

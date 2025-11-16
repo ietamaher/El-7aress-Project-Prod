@@ -501,13 +501,14 @@ void OsdViewModel::updateZeroingDisplay(bool modeActive, bool applied, float azO
     }
 }
 
-void OsdViewModel::updateEnvironmentDisplay(float tempCelsius, float altitudeMeters, float crosswindMS)
+void OsdViewModel::updateEnvironmentDisplay(float tempCelsius, float altitudeMeters)
 {
     // Format environment parameters for display
-    QString newText = QString("T:%1°C  ALT:%2m  WIND:%3m/s")
+    // NOTE: Wind is now handled by Windage menu (direction + speed),
+    //       not environmental settings. Crosswind is calculated dynamically.
+    QString newText = QString("T:%1°C  ALT:%2m")
                         .arg(tempCelsius, 0, 'f', 1)
-                        .arg(altitudeMeters, 0, 'f', 0)
-                        .arg(crosswindMS, 0, 'f', 1);
+                        .arg(altitudeMeters, 0, 'f', 0);
 
     if (m_environmentText != newText) {
         m_environmentText = newText;
