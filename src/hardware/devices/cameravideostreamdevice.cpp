@@ -710,7 +710,7 @@ bool CameraVideoStreamDevice::processFrame(GstBuffer *buffer)
                             } else {
                                 qWarning() << "[CAM" << m_cameraIndex << "] Tracker init failed. Reporting failure to model.";
                                 // Report failure to model so it can transition back to Off
-                                m_stateModel->updateTrackingResult(m_cameraIndex, false, 0,0,0,0,0,0, VPI_TRACKING_STATE_LOST);
+                                m_stateModel->updateTrackingResult(m_cameraIndex, false, 0,0,0,0,0,0, VPI_TRACKING_STATE_LOST, 0.0f);
                             }
                         }
                         // Fall through to runTrackingCycle if initialized (or just initialized)
@@ -740,7 +740,7 @@ bool CameraVideoStreamDevice::processFrame(GstBuffer *buffer)
                             m_currentTarget = {};
                             m_currentTarget.state = VPI_TRACKING_STATE_LOST;
                             // Inform model of lost state so it can transition to Off
-                            m_stateModel->updateTrackingResult(m_cameraIndex, false, 0,0,0,0,0,0, VPI_TRACKING_STATE_LOST);
+                            m_stateModel->updateTrackingResult(m_cameraIndex, false, 0,0,0,0,0,0, VPI_TRACKING_STATE_LOST, 0.0f);
                         }
                         break;
 
@@ -756,7 +756,7 @@ bool CameraVideoStreamDevice::processFrame(GstBuffer *buffer)
                             qWarning() << "[CAM" << m_cameraIndex << "] Anomaly: In Firing but tracker not initialized. Resetting.";
                             m_currentTarget = {};
                             m_currentTarget.state = VPI_TRACKING_STATE_LOST;
-                            m_stateModel->updateTrackingResult(m_cameraIndex, false, 0,0,0,0,0,0, VPI_TRACKING_STATE_LOST);
+                            m_stateModel->updateTrackingResult(m_cameraIndex, false, 0,0,0,0,0,0, VPI_TRACKING_STATE_LOST, 0.0f);
                         }
                         break;
 
