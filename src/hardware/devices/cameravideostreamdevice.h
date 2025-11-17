@@ -339,13 +339,25 @@ private:
     // YoloInference Engine
     YoloInference m_inference;      // Object detection inference handler
 
+    // --- Async Detection Members ---
+    QMutex m_detectionMutex;
+    std::vector<YoloDetection> m_latestDetections;
+    QElapsedTimer m_lastDetectionTime;
+    bool m_detectionInProgress;
+    cv::Mat m_detectionFrame; // Buffer for async detection
+
+    // --- Latency Measurement ---
+    QElapsedTimer m_latencyTimer;
+    qint64 m_frameArrivalTime;
+    qint64 m_totalLatency_ms;
+    qint64 m_frameProcessedCount;
 
     int m_frameCount = 0;
 
     int m_cropTop;
     int m_cropBottom;
     int m_cropLeft;
-    int m_cropRight;    
+    int m_cropRight;
     bool m_currentAmmunitionLevel;
 };
 
