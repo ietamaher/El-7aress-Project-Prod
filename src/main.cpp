@@ -36,55 +36,41 @@ int main(int argc, char *argv[])
         qInfo() << "Running in windowed mode (for development)";
     }
     
-    // Determine config directory - try multiple locations
-    QString configDir;
-    QString appDir = QCoreApplication::applicationDirPath();
+    // ========================================================================
+    // CONFIGURATION LOADING - HYBRID APPROACH
+    // Try filesystem first (for field updates), fallback to embedded resources
+    // ========================================================================
 
-    // List of paths to try (in order of preference)
-    QStringList searchPaths = {
-        "./config",                    // Current working directory
-        appDir + "/config",            // Next to executable
-        appDir + "/../config",         // Parent of executable (build/Debug/.. scenario)
-        appDir + "/../../config",      // Two levels up (build/Desktop-Debug/../../ scenario)
-        appDir + "/../../../config"    // Three levels up (deep build dirs)
-    };
+    QString configDir = QCoreApplication::applicationDirPath() + "/config";
+    qInfo() << "Configuration directory:" << QDir(configDir).absolutePath();
 
-    // Find first path that contains motion_tuning.json
-    bool found = false;
-    for (const QString& path : searchPaths) {
-        QString testPath = QDir(path).absolutePath() + "/motion_tuning.json";
-        if (QFileInfo::exists(testPath)) {
-            configDir = path;
-            found = true;
-            qInfo() << "Found config at:" << QDir(path).absolutePath();
-            break;
-        }
-    }
-
-    if (!found) {
-        qWarning() << "Config directory not found in any search path!";
-        qWarning() << "Searched paths:";
-        for (const QString& path : searchPaths) {
-            qWarning() << "  -" << QDir(path).absolutePath();
-        }
-        configDir = "./config"; // Fallback to current dir
-    }
-
-    qInfo() << "Using config directory:" << QDir(configDir).absolutePath();
-
-    // Load configuration
+    // --- LOAD DEVICES CONFIGURATION ---
     QString devicesPath = configDir + "/devices.json";
+    if (!QFileInfo::exists(devicesPath)) {
+        qWarning() << "devices.json not found in filesystem, using embedded resource";
+        devicesPath = ":/config/devices.json";
+    }
+
     if (!DeviceConfiguration::load(devicesPath)) {
         qCritical() << "Failed to load device configuration from:" << devicesPath;
+        qCritical() << "Cannot start without valid hardware configuration!";
         return -1;
     }
+    qInfo() << "Loaded devices.json from:" << devicesPath;
 
-    // Load motion tuning configuration
+    // --- LOAD MOTION TUNING CONFIGURATION ---
     QString motionTuningPath = configDir + "/motion_tuning.json";
+    if (!QFileInfo::exists(motionTuningPath)) {
+        qWarning() << "motion_tuning.json not found in filesystem, using embedded resource";
+        motionTuningPath = ":/config/motion_tuning.json";
+    }
+
     if (!MotionTuningConfig::load(motionTuningPath)) {
         qWarning() << "Failed to load motion tuning config from:" << motionTuningPath;
         qWarning() << "Using default values";
         // Continue anyway - defaults are loaded
+    } else {
+        qInfo() << "Loaded motion_tuning.json from:" << motionTuningPath;
     }
 
     // Validate all configurations
