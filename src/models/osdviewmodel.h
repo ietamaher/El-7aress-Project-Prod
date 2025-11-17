@@ -50,6 +50,8 @@ class OsdViewModel : public QObject
     Q_PROPERTY(QColor trackingBoxColor READ trackingBoxColor NOTIFY trackingBoxColorChanged)
     Q_PROPERTY(bool trackingBoxDashed READ trackingBoxDashed NOTIFY trackingBoxDashedChanged)
     Q_PROPERTY(bool isTrackingActive READ isTrackingActive NOTIFY isTrackingActiveChanged)
+    Q_PROPERTY(float trackingConfidence READ trackingConfidence NOTIFY trackingConfidenceChanged)
+    Q_PROPERTY(bool trackingActive READ trackingActive NOTIFY trackingActiveChanged)
 
     // Acquisition box (for Tracking_Acquisition phase)
     Q_PROPERTY(QRectF acquisitionBox READ acquisitionBox NOTIFY acquisitionBoxChanged)
@@ -171,6 +173,8 @@ public:
     QColor trackingBoxColor() const { return m_trackingBoxColor; }
     bool trackingBoxDashed() const { return m_trackingBoxDashed; }
     bool isTrackingActive() const { return m_isTrackingActive; }
+    float trackingConfidence() const { return m_confidenceLevel; }  // Use existing m_confidenceLevel
+    bool trackingActive() const { return m_isTrackingActive; }      // Alias for backward compatibility
 
     QRectF acquisitionBox() const { return m_acquisitionBox; }
     bool acquisitionBoxVisible() const { return m_acquisitionBoxVisible; }
@@ -325,6 +329,8 @@ signals:
     void trackingBoxColorChanged();
     void trackingBoxDashedChanged();
     void isTrackingActiveChanged();
+    void trackingConfidenceChanged();
+    void trackingActiveChanged();
 
     void acquisitionBoxChanged();
     void acquisitionBoxVisibleChanged();

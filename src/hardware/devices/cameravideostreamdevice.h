@@ -50,7 +50,7 @@ struct FrameData {
     bool trackerInitialized = false;
     VPITrackingState trackingState = VPI_TRACKING_STATE_LOST;
     QRect trackingBbox = QRect(0, 0, 0, 0); // Use QRect for Qt integration
-     // tracking confidence 
+    float trackingConfidence = 0.0f;  ///< Tracking confidence score (0.0-1.0) from VPI DCF tracker
     OperationalMode currentOpMode = OperationalMode::Idle;
     MotionMode motionMode = MotionMode::Manual;
     bool stabEnabled = false;
@@ -291,6 +291,7 @@ private:
     QElapsedTimer m_velocityTimer; // To measure time between frames
     float m_lastTargetCenterX_px;
     float m_lastTargetCenterY_px;
+    float m_currentConfidence;      ///< Current tracking confidence score (0.0-1.0) from VPI tracker
 
 
     // OpenCV Buffers (if needed for intermediate steps)

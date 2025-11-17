@@ -494,12 +494,14 @@ public:
      * @param velocityX_px_s Target velocity in X direction (pixels per second).
      * @param velocityY_px_s Target velocity in Y direction (pixels per second).
      * @param state Raw VPI tracking state.
+     * @param confidence Tracking confidence score (0.0-1.0) from VPI tracker.
      */
     void updateTrackingResult(int cameraIndex, bool hasLock,
                               float centerX_px, float centerY_px,
                               float width_px, float height_px,
                               float velocityX_px_s, float velocityY_px_s,
-                              VPITrackingState state);
+                              VPITrackingState state,
+                              float confidence);
 
     /**
      * @brief Starts tracking acquisition mode (user positioning gate).

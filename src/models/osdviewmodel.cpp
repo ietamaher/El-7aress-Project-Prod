@@ -407,6 +407,7 @@ void OsdViewModel::updateTrackingActive(bool active)
     if (m_isTrackingActive != active) {
         m_isTrackingActive = active;
         emit isTrackingActiveChanged();
+        emit trackingActiveChanged();  // Emit alias signal for QML compatibility
     }
 }
 // ============================================================================
@@ -682,6 +683,7 @@ void OsdViewModel::updateConfidenceLevel(float confidence)
     if (m_confidenceLevel != confidence) {
         m_confidenceLevel = confidence;
         emit confidenceLevelChanged();
+        emit trackingConfidenceChanged();  // Emit new signal for QML compatibility
     }
 }
 

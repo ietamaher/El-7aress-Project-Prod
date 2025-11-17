@@ -519,6 +519,7 @@ struct SystemStateData {
     bool startTracking = false;          ///< Start tracking command status
     bool requestTrackingRestart = false; ///< Tracking restart request status
     bool trackingActive = false;         ///< Current tracking active status
+    float trackingConfidence = 0.0f;     ///< Tracking confidence score (0.0-1.0) from VPI tracker
     double targetAz = 0.0;               ///< Current target azimuth in degrees
     double targetEl = 0.0;               ///< Current target elevation in degrees
     float trackedTargetVelocityX_px_s = 0.0;
@@ -810,6 +811,7 @@ struct SystemStateData {
                startTracking == other.startTracking &&
                requestTrackingRestart == other.requestTrackingRestart &&
                trackingActive == other.trackingActive &&
+               qFuzzyCompare(trackingConfidence, other.trackingConfidence) &&
                qFuzzyCompare(targetAz, other.targetAz) &&
                qFuzzyCompare(targetEl, other.targetEl) &&
                qFuzzyCompare(trackedTargetVelocityX_px_s, other.trackedTargetVelocityX_px_s) &&

@@ -310,25 +310,8 @@ void OsdController::onFrameDataReady(const FrameData& frmdata)
     m_viewModel->updateLacActive(lacEffectivelyActive);
     m_viewModel->updateRangeMeters(frmdata.lrfDistance);
 
-    // Confidence level based on status
-    float confidence = 1.0f;
-    if (frmdata.leadAngleActive) {
-        switch (frmdata.leadAngleStatus) {
-        case LeadAngleStatus::On:
-            confidence = 1.0f;
-            break;
-        case LeadAngleStatus::Lag:
-            confidence = 0.5f;  // Reduced confidence
-            break;
-        case LeadAngleStatus::ZoomOut:
-            confidence = 0.0f;  // No confidence - can't calculate lead
-            break;
-        default:
-            confidence = 0.0f;
-            break;
-        }
-    }
-    m_viewModel->updateConfidenceLevel(confidence);
+    // Use actual tracking confidence from VPI tracker
+    m_viewModel->updateConfidenceLevel(frmdata.trackingConfidence);
 
     // === TRACKING BOX ===
     m_viewModel->updateTrackingBox(
