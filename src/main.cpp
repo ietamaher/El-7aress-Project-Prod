@@ -1,6 +1,8 @@
 #include <QGuiApplication>
 #include <QQmlApplicationEngine>
 #include <QQuickWindow>
+#include <QDir>
+#include <QFileInfo>
 #include "controllers/systemcontroller.h"
 #include "controllers/deviceconfiguration.h"
 #include "config/MotionTuningConfig.h"
@@ -21,15 +23,32 @@ int main(int argc, char *argv[])
         qInfo() << "Running in windowed mode (for development)";
     }
     
+    // Determine config directory (try current dir first, then app dir)
+    QString configDir = "./config";
+    if (!QFileInfo::exists(configDir + "/devices.json")) {
+        // Try relative to executable location
+        QString appDir = QCoreApplication::applicationDirPath();
+        configDir = appDir + "/config";
+        if (!QFileInfo::exists(configDir + "/devices.json")) {
+            // Try parent directory (for build dir scenario)
+            configDir = appDir + "/../config";
+        }
+    }
+
+    qInfo() << "Using config directory:" << QDir(configDir).absolutePath();
+
     // Load configuration
-    if (!DeviceConfiguration::load("./config/devices.json")) {
-        qCritical() << "Failed to load device configuration!";
+    QString devicesPath = configDir + "/devices.json";
+    if (!DeviceConfiguration::load(devicesPath)) {
+        qCritical() << "Failed to load device configuration from:" << devicesPath;
         return -1;
     }
 
     // Load motion tuning configuration
-    if (!MotionTuningConfig::load("./config/motion_tuning.json")) {
-        qWarning() << "Failed to load motion tuning config - using defaults";
+    QString motionTuningPath = configDir + "/motion_tuning.json";
+    if (!MotionTuningConfig::load(motionTuningPath)) {
+        qWarning() << "Failed to load motion tuning config from:" << motionTuningPath;
+        qWarning() << "Using default values";
         // Continue anyway - defaults are loaded
     }
 
