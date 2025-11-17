@@ -67,9 +67,12 @@ void WindageController::updateUI()
             "Press SELECT when aligned."
             );
         m_viewModel->setShowWindSpeed(false);
+        m_viewModel->setShowWindDirection(false);
         break;
 
     case WindageState::Set_WindSpeed:
+    {
+        const SystemStateData& data = m_stateModel->data();
         m_viewModel->setTitle("Windage (2/2): Speed");
         m_viewModel->setInstruction(
             "Set HEADWIND speed.\n"
@@ -82,29 +85,51 @@ void WindageController::updateUI()
         m_viewModel->setWindSpeedLabel(
             QString("Headwind: %1 knots").arg(m_currentWindSpeedEdit, 0, 'f', 0)
             );
+
+        // Show captured wind direction
+        if (data.windageDirectionCaptured) {
+            m_viewModel->setWindDirection(data.windageDirectionDegrees);
+            m_viewModel->setWindDirectionLabel(
+                QString("Wind FROM: %1°").arg(data.windageDirectionDegrees, 0, 'f', 0)
+                );
+            m_viewModel->setShowWindDirection(true);
+        }
         break;
+    }
 
     case WindageState::Completed:
+    {
+        const SystemStateData& data = m_stateModel->data();
         m_viewModel->setTitle("Windage Set");
         m_viewModel->setInstruction(
-            QString("Windage set to %1 knots and applied.\n"
+            QString("Windage set to %1° @ %2 knots and applied.\n"
                     "'W' will display on OSD.\n\n"
                     "Press SELECT to return.")
-                .arg(m_stateModel->data().windageSpeedKnots, 0, 'f', 0)
+                .arg(data.windageDirectionDegrees, 0, 'f', 0)
+                .arg(data.windageSpeedKnots, 0, 'f', 0)
             );
-        m_viewModel->setWindSpeed(m_stateModel->data().windageSpeedKnots);
+        m_viewModel->setWindSpeed(data.windageSpeedKnots);
         m_viewModel->setShowWindSpeed(true);
         m_viewModel->setWindSpeedLabel(
             QString("Headwind: %1 knots (APPLIED)")
-                .arg(m_stateModel->data().windageSpeedKnots, 0, 'f', 0)
+                .arg(data.windageSpeedKnots, 0, 'f', 0)
             );
+
+        // Show applied wind direction
+        m_viewModel->setWindDirection(data.windageDirectionDegrees);
+        m_viewModel->setWindDirectionLabel(
+            QString("Wind FROM: %1° (APPLIED)").arg(data.windageDirectionDegrees, 0, 'f', 0)
+            );
+        m_viewModel->setShowWindDirection(true);
         break;
+    }
 
     case WindageState::Idle:
     default:
         m_viewModel->setTitle("Windage Setting");
         m_viewModel->setInstruction("");
         m_viewModel->setShowWindSpeed(false);
+        m_viewModel->setShowWindDirection(false);
         break;
     }
 }
@@ -114,12 +139,35 @@ void WindageController::onSelectButtonPressed()
     switch (m_currentState) {
     case WindageState::Instruct_AlignToWind:
     {
-        // Capture wind direction from current WS azimuth
+        // Capture wind direction from current absolute weapon bearing
+        // Wind direction is ABSOLUTE (relative to true North), not relative to vehicle!
+        // Therefore we must use: Absolute bearing = IMU yaw + Station azimuth
         const SystemStateData& data = m_stateModel->data();
-        float currentAzimuth = data.azimuthDirection; // Get current WS orientation
 
-        m_stateModel->captureWindageDirection(currentAzimuth);
-        qDebug() << "Wind direction captured at azimuth:" << currentAzimuth << "degrees";
+        float absoluteBearing;
+
+        // Check if IMU is connected
+        if (!data.imuConnected) {
+            // ⚠️ WARNING: IMU not connected! Fallback to station azimuth only
+            // This is NOT correct for moving vehicles, but better than nothing
+            absoluteBearing = data.azimuthDirection;
+            qCritical() << "⚠️ WARNING: IMU NOT CONNECTED! Wind direction captured as station azimuth only:" << absoluteBearing << "°";
+            qCritical() << "Wind direction will be INCORRECT if vehicle rotates!";
+            qCritical() << "Please connect IMU for accurate windage.";
+        } else {
+            // ✅ IMU connected: Calculate correct absolute gimbal bearing
+            absoluteBearing = static_cast<float>(data.imuYawDeg) + data.azimuthDirection;
+
+            // Normalize to 0-360 range
+            while (absoluteBearing >= 360.0f) absoluteBearing -= 360.0f;
+            while (absoluteBearing < 0.0f) absoluteBearing += 360.0f;
+
+            qDebug() << "Wind direction captured - Vehicle Heading (IMU):" << data.imuYawDeg << "°"
+                     << "Station Az:" << data.azimuthDirection << "°"
+                     << "Absolute Bearing:" << absoluteBearing << "degrees (wind FROM this direction)";
+        }
+
+        m_stateModel->captureWindageDirection(absoluteBearing);
 
         // Load current wind speed for editing
         m_currentWindSpeedEdit = data.windageSpeedKnots;

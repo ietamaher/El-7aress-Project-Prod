@@ -76,6 +76,26 @@ Rectangle {
                     width: windageRoot.width - 80
                 }
 
+                // Wind direction display
+                Rectangle {
+                    width: parent.width
+                    height: 60
+                    color: Qt.rgba(accentColor.r, accentColor.g, accentColor.b, 0.05)
+                    radius: 5
+                    border.color: Qt.rgba(accentColor.r, accentColor.g, accentColor.b, 0.3)
+                    border.width: 1
+                    visible: windageViewModel ? windageViewModel.showWindDirection : false
+
+                    Text {
+                        anchors.centerIn: parent
+                        text: windageViewModel ? windageViewModel.windDirectionLabel : "Wind FROM: 0°"
+                        font.pixelSize: 18
+                        font.weight: Font.Bold
+                        font.family: "Segoe UI"
+                        color: accentColor
+                    }
+                }
+
                 // Wind speed display
                 Rectangle {
                     width: parent.width

@@ -131,6 +131,12 @@ void OsdController::onSystemStateChanged(const SystemStateData& data)
         );
 
         // Update windage display (shows wind direction, speed, and calculated crosswind)
+        if (data.windageAppliedToBallistics && data.windageSpeedKnots > 0.001f) {
+            qDebug() << "[OsdController] Updating windage display:"
+                     << "Direction:" << data.windageDirectionDegrees << "°"
+                     << "Speed:" << data.windageSpeedKnots << "kts"
+                     << "Crosswind:" << data.calculatedCrosswindMS << "m/s";
+        }
         m_viewModel->updateWindageDisplay(
             data.windageAppliedToBallistics,
             data.windageSpeedKnots,

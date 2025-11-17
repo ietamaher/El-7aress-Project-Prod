@@ -201,27 +201,45 @@ void WeaponController::onSystemStateChanged(const SystemStateData &newData)
     }
 
     // ========================================================================
-    // AZIMUTH CHANGE DETECTION (Critical for Windage!)
+    // ABSOLUTE BEARING CHANGE DETECTION (Critical for Windage!)
     // ========================================================================
-    // When gimbal azimuth changes, the crosswind component changes even if
+    // When absolute gimbal bearing changes, the crosswind component changes even if
     // wind conditions remain constant. This is because crosswind = wind × sin(angle).
+    // Absolute bearing = IMU yaw (vehicle heading) + Station azimuth
+    // Changes when EITHER:
+    //   1. Station azimuth changes (gimbal rotates relative to vehicle)
+    //   2. IMU yaw changes (vehicle rotates)
     // Example: Wind from North at 10 m/s
     //   - Firing North: crosswind = 0 m/s
     //   - Firing East: crosswind = 10 m/s
     // We only recalculate if windage is active (otherwise no point).
     // NOTE: azimuthDirection is uint16_t, use direct comparison not qFuzzyCompare
     // ========================================================================
-    bool azimuthChanged = false;
+    bool absoluteBearingChanged = false;
 
+    // Check station azimuth change
     if (m_oldState.azimuthDirection != newData.azimuthDirection) {
         // Only flag as change if windage is actually applied
         if (newData.windageAppliedToBallistics && newData.windageSpeedKnots > 0.001f) {
-            azimuthChanged = true;
+            absoluteBearingChanged = true;
             ballisticsInputsChanged = true;
 
-            qDebug() << "[WeaponController] *** AZIMUTH CHANGED (windage active):"
+            qDebug() << "[WeaponController] *** STATION AZIMUTH CHANGED (windage active):"
                      << m_oldState.azimuthDirection << "°" << "→" << newData.azimuthDirection << "°"
-                     << "| Crosswind will be recalculated for new firing direction";
+                     << "| Crosswind will be recalculated for new gimbal position";
+        }
+    }
+
+    // Check IMU yaw change (vehicle rotation)
+    if (!qFuzzyCompare(m_oldState.imuYawDeg, newData.imuYawDeg)) {
+        // Only flag as change if windage is actually applied
+        if (newData.windageAppliedToBallistics && newData.windageSpeedKnots > 0.001f) {
+            absoluteBearingChanged = true;
+            ballisticsInputsChanged = true;
+
+            qDebug() << "[WeaponController] *** VEHICLE HEADING CHANGED (windage active):"
+                     << m_oldState.imuYawDeg << "°" << "→" << newData.imuYawDeg << "°"
+                     << "| Crosswind will be recalculated for new vehicle orientation";
         }
     }
 
@@ -231,14 +249,14 @@ void WeaponController::onSystemStateChanged(const SystemStateData &newData)
     // Recalculate if LAC is active AND any input changed
     // OR if LAC was just activated/deactivated (to set offsets to zero)
     // OR if windage parameters changed (affects crosswind calculation)
-    // OR if azimuth changed with windage active (crosswind component changes)
+    // OR if absolute bearing changed with windage active (crosswind component changes)
     // ========================================================================
     if (ballisticsInputsChanged || environmentalParamsChanged || windageParamsChanged) {
         qDebug() << "[WeaponController] Triggering ballistics recalculation:"
                  << "InputsChanged=" << ballisticsInputsChanged
                  << "EnvChanged=" << environmentalParamsChanged
                  << "WindageChanged=" << windageParamsChanged
-                 << "AzimuthChanged=" << azimuthChanged
+                 << "AbsoluteBearingChanged=" << absoluteBearingChanged
                  << "LAC=" << newData.leadAngleCompensationActive;
         updateFireControlSolution();
     }
@@ -348,8 +366,9 @@ void WeaponController::updateFireControlSolution() {
     // CALCULATE CROSSWIND FROM WINDAGE (Direction + Speed)
     // ========================================================================
     // ⚠️ CRITICAL: This calculation must run INDEPENDENTLY of LAC status!
-    // Windage provides absolute wind direction and speed.
-    // Crosswind component varies with gimbal azimuth (where weapon points).
+    // Windage provides absolute wind direction and speed (relative to true North).
+    // Crosswind component varies with absolute gimbal bearing (where weapon points).
+    // Absolute gimbal bearing = Vehicle heading (IMU yaw) + Station azimuth
     // This ensures correct wind correction for any firing direction.
     // The crosswind value is used by:
     //   1. Ballistics calculations (when environmental corrections enabled)
@@ -360,11 +379,19 @@ void WeaponController::updateFireControlSolution() {
         // Convert wind speed from knots to m/s
         float windSpeedMS = sData.windageSpeedKnots * 0.514444f;  // 1 knot = 0.514444 m/s
 
-        // Calculate crosswind component based on current gimbal azimuth
+        // Calculate absolute gimbal bearing (true bearing where weapon is pointing)
+        // Vehicle heading (IMU yaw) + Station azimuth (relative to vehicle)
+        float absoluteGimbalBearing = static_cast<float>(sData.imuYawDeg) + sData.azimuthDirection;
+
+        // Normalize to 0-360 range
+        while (absoluteGimbalBearing >= 360.0f) absoluteGimbalBearing -= 360.0f;
+        while (absoluteGimbalBearing < 0.0f) absoluteGimbalBearing += 360.0f;
+
+        // Calculate crosswind component based on absolute gimbal bearing
         currentCrosswind = calculateCrosswindComponent(
             windSpeedMS,
             sData.windageDirectionDegrees,
-            sData.azimuthDirection  // Current gimbal azimuth
+            absoluteGimbalBearing  // Absolute gimbal bearing (IMU yaw + station azimuth)
         );
 
         // Store calculated crosswind in state data for OSD display
@@ -378,7 +405,9 @@ void WeaponController::updateFireControlSolution() {
         qDebug() << "[WeaponController] WINDAGE TO CROSSWIND CONVERSION:"
                  << "Wind Dir:" << sData.windageDirectionDegrees << "° (FROM)"
                  << "| Wind Speed:" << sData.windageSpeedKnots << "knots (" << windSpeedMS << "m/s)"
-                 << "| Gimbal Az:" << sData.azimuthDirection << "°"
+                 << "| Vehicle Heading (IMU):" << sData.imuYawDeg << "°"
+                 << "| Station Az:" << sData.azimuthDirection << "°"
+                 << "| Absolute Gimbal Bearing:" << absoluteGimbalBearing << "°"
                  << "| Crosswind Component:" << currentCrosswind << "m/s"
                  << (currentCrosswind > 0 ? "(right deflection)" : currentCrosswind < 0 ? "(left deflection)" : "(no crosswind)");
     } else {
