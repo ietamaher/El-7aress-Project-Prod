@@ -3,6 +3,7 @@
 
 #include <QDebug>
 #include <QElapsedTimer>
+#include <QtConcurrent/QtConcurrent>
 #include <stdexcept>
 
 #include <opencv2/imgcodecs.hpp>
@@ -104,11 +105,22 @@ CameraVideoStreamDevice::CameraVideoStreamDevice(int cameraIndex,
                 cv::Size(640, 640),
                 "", // classes.txt path
                 true), // use CUDA for GPU acceleration
-    
+
+    // Async Detection Members
+    m_detectionInProgress(false),
+
+    // Latency Measurement
+    m_frameArrivalTime(0),
+    m_totalLatency_ms(0),
+    m_frameProcessedCount(0),
+
     // Frame counter
     m_frameCount(0)
     // m_stateMutex is default constructed (no initialization needed)
 {
+    // Start latency timer
+    m_latencyTimer.start();
+    m_lastDetectionTime.start();
 
     memset(&m_currentTarget, 0, sizeof(m_currentTarget));
     m_currentTarget.state = VPI_TRACKING_STATE_LOST;
@@ -364,8 +376,8 @@ bool CameraVideoStreamDevice::initializeGStreamer()
         "videocrop top=%4 left= %6 bottom=%5  right=%7 ! "
         "videoscale ! "
         "video/x-raw,width=1024,height=768 ! "
-        "queue max-size-buffers=2 leaky=downstream ! "
-        "appsink name=mysink emit-signals=true max-buffers=2 drop=true sync=false")
+        "queue max-size-buffers=1 leaky=downstream ! "
+        "appsink name=mysink emit-signals=true max-buffers=1 drop=true sync=false")
         .arg(m_deviceName)
         .arg(m_sourceWidth)
         .arg(m_sourceHeight)
@@ -577,6 +589,11 @@ void CameraVideoStreamDevice::cleanupVPI()
 // processFrame: Populate FrameData, including data.trackingBbox (should compile now)
 bool CameraVideoStreamDevice::processFrame(GstBuffer *buffer)
 {
+    // ========================================================================
+    // LATENCY MEASUREMENT: Record frame arrival timestamp
+    // ========================================================================
+    m_frameArrivalTime = m_latencyTimer.elapsed();
+
     GstMapInfo mapInfo = GST_MAP_INFO_INIT;
     VPIImage vpiImgInput_wrapped = nullptr;
     cv::Mat cvFrameBGRA;
@@ -604,31 +621,49 @@ bool CameraVideoStreamDevice::processFrame(GstBuffer *buffer)
         cv::cvtColor(m_yuy2_host_buffer, cvFrameBGRA, cv::COLOR_YUV2BGRA_YUY2);
         if (cvFrameBGRA.empty()) throw std::runtime_error("cv::cvtColor failed YUY2->BGRA.");
 
-        // --- Object Detection Start ---
+        // ====================================================================
+        // ASYNC OBJECT DETECTION - Non-blocking inference
+        // ====================================================================
         std::vector<YoloDetection> detections;
-        bool detection_this_frame = m_detectionEnabled.load(std::memory_order_relaxed);
+        bool detection_enabled = m_detectionEnabled.load(std::memory_order_relaxed);
 
-        // Only run detection on day camera (camera 0), not night camera (camera 1)
-        if (detection_this_frame && m_cameraIndex == 0) {
-            // The YoloInference class expects a BGR cv::Mat by default (due to blobFromImage swapRB=true)
-            // Or it might handle BGRA if you modify it. Let's assume BGR for now.
+        // Only run detection on day camera (camera 0), every 3rd frame (10Hz)
+        if (detection_enabled && m_cameraIndex == 0 && (m_frameCount % 3 == 0)) {
+            // Convert BGRA to BGR for YOLO (non-blocking, just queue)
             if (cvFrameBGRA.channels() == 4) {
                 cv::cvtColor(cvFrameBGRA, cvFrameBGR, cv::COLOR_BGRA2BGR);
-            } else if (cvFrameBGRA.channels() == 3) { // If it was already BGR for some reason
+            } else if (cvFrameBGRA.channels() == 3) {
                 cvFrameBGR = cvFrameBGRA;
-            } else {
-                qWarning() << "Cam" << m_cameraIndex << "Unsupported channel count for detection input:" << cvFrameBGRA.channels();
-                // Potentially skip detection or handle error
             }
 
+            // Launch async detection if previous one finished
             if (!cvFrameBGR.empty()) {
-                QElapsedTimer detectionTimer;
-                detectionTimer.start();
-                detections = m_inference.runInference(cvFrameBGR); // Pass the BGR frame
-                qDebug() << "Cam" << m_cameraIndex << "Inference time:" << detectionTimer.elapsed() << "ms, Detections:" << detections.size();
+                QMutexLocker locker(&m_detectionMutex);
+                if (!m_detectionInProgress) {
+                    // Copy frame for async processing
+                    m_detectionFrame = cvFrameBGR.clone();
+                    m_detectionInProgress = true;
+                    locker.unlock();
+
+                    // Launch async detection (non-blocking)
+                    QtConcurrent::run([this]() {
+                        auto result = m_inference.runInference(m_detectionFrame);
+
+                        QMutexLocker lock(&m_detectionMutex);
+                        m_latestDetections = result;
+                        m_detectionInProgress = false;
+                        m_lastDetectionTime.restart();
+                    });
+                }
             }
         }
-        // --- Object Detection End ---
+
+        // Use latest available detections (non-blocking read)
+        {
+            QMutexLocker locker(&m_detectionMutex);
+            detections = m_latestDetections;
+        }
+        // --- Object Detection End (Async) ---
 
         // 3. Wrap BGRA Mat for VPI input
         CHECK_VPI_STATUS(vpiImageCreateWrapperOpenCVMat(cvFrameBGRA, 0, &vpiImgInput_wrapped));
@@ -849,9 +884,27 @@ bool CameraVideoStreamDevice::processFrame(GstBuffer *buffer)
         data.acquisitionBoxH_px = m_currentAcquisitionBoxH_px  ;
         data.trackerHasValidTarget = true;
         data.leadAngleStatus = m_currentLeadAngleStatus;          
-        data.leadAngleOffsetAz_deg = m_currentLeadAngleOffsetAz;  
-        data.leadAngleOffsetEl_deg = m_currentLeadAngleOffsetEl;  
+        data.leadAngleOffsetAz_deg = m_currentLeadAngleOffsetAz;
+        data.leadAngleOffsetEl_deg = m_currentLeadAngleOffsetEl;
         data.stationAmmunitionLevel = m_currentAmmunitionLevel;
+
+        // ====================================================================
+        // LATENCY MEASUREMENT: Calculate glass-to-glass latency
+        // ====================================================================
+        qint64 frameCompleteTime = m_latencyTimer.elapsed();
+        qint64 frameLatency_ms = frameCompleteTime - m_frameArrivalTime;
+        m_totalLatency_ms += frameLatency_ms;
+        m_frameProcessedCount++;
+
+        // Report every 30 frames (once per second at 30fps)
+        if (m_frameProcessedCount % 30 == 0) {
+            qint64 avgLatency = m_totalLatency_ms / m_frameProcessedCount;
+            qInfo() << "🎯 [CAM" << m_cameraIndex << "] Glass-to-Glass Latency:"
+                    << "Current=" << frameLatency_ms << "ms"
+                    << "| Average=" << avgLatency << "ms"
+                    << "| Frames=" << m_frameProcessedCount;
+        }
+
         // 7. Emit FrameData
         if (!data.baseImage.isNull()) emit frameDataReady(data);
 
