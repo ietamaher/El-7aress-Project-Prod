@@ -173,8 +173,8 @@ public:
     QColor trackingBoxColor() const { return m_trackingBoxColor; }
     bool trackingBoxDashed() const { return m_trackingBoxDashed; }
     bool isTrackingActive() const { return m_isTrackingActive; }
-    float trackingConfidence() const { return m_confidenceLevel; }  // Use existing m_confidenceLevel
-    bool trackingActive() const { return m_isTrackingActive; }      // Alias for backward compatibility
+    float trackingConfidence() const { return m_trackingConfidence; }  // VPI tracking confidence
+    bool trackingActive() const { return m_isTrackingActive; }         // Alias for backward compatibility
 
     QRectF acquisitionBox() const { return m_acquisitionBox; }
     bool acquisitionBoxVisible() const { return m_acquisitionBoxVisible; }
@@ -285,7 +285,8 @@ public slots:
 
     void updateLacActive(bool active);
     void updateRangeMeters(float range);
-    void updateConfidenceLevel(float confidence);
+    void updateConfidenceLevel(float confidence);      // LAC confidence
+    void updateTrackingConfidence(float confidence);   // VPI tracking confidence
 
     void updateStartupMessage(const QString& message, bool visible);
     void updateErrorMessage(const QString& message, bool visible);
@@ -476,7 +477,8 @@ private:
 
     bool m_lacActive;
     float m_rangeMeters;
-    float m_confidenceLevel;
+    float m_confidenceLevel;           // LAC confidence (lead angle compensation)
+    float m_trackingConfidence;        // VPI tracking confidence (separate from LAC)
 
     QString m_startupMessageText;
     bool m_startupMessageVisible;

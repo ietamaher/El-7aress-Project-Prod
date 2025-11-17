@@ -50,6 +50,7 @@ OsdViewModel::OsdViewModel(QObject *parent)
     , m_lacActive(false)
     , m_rangeMeters(0.0f)
     , m_confidenceLevel(1.0f)
+    , m_trackingConfidence(0.0f)
     , m_startupMessageText("")
     , m_startupMessageVisible(false)
     , m_errorMessageText("")
@@ -683,7 +684,14 @@ void OsdViewModel::updateConfidenceLevel(float confidence)
     if (m_confidenceLevel != confidence) {
         m_confidenceLevel = confidence;
         emit confidenceLevelChanged();
-        emit trackingConfidenceChanged();  // Emit new signal for QML compatibility
+    }
+}
+
+void OsdViewModel::updateTrackingConfidence(float confidence)
+{
+    if (m_trackingConfidence != confidence) {
+        m_trackingConfidence = confidence;
+        emit trackingConfidenceChanged();
     }
 }
 
