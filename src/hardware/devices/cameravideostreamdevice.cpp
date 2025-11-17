@@ -856,7 +856,7 @@ bool CameraVideoStreamDevice::processFrame(GstBuffer *buffer)
         data.fireMode = m_fireMode;
         data.reticleType = m_reticleType;
         data.colorStyle = m_colorStyle;
-        data.detectionEnabled = detection_this_frame;
+        data.detectionEnabled = detection_enabled;
         data.detections = detections;
         data.zeroingModeActive = m_currentZeroingModeActive;
         data.zeroingAppliedToBallistics = m_currentZeroingApplied;
