@@ -261,7 +261,7 @@ bool GimbalMotionModeBase::checkSafetyConditions(GimbalController* controller)
         deadManSwitchOk = data.deadManSwitchActive;
     }
 
-    return data.stationEnabled &&
+    return data.stationEnabled && // data.hatchState &&
            !data.emergencyStopActive &&   deadManSwitchOk;
 }
 

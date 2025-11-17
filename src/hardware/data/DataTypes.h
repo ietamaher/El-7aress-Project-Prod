@@ -319,7 +319,7 @@ struct Plc42Data {
     bool stationLowerSensor = false;
     bool emergencyStopActive = false;
     bool ammunitionLevel = false;
-    bool stationInput1 = false;
+    bool hatchState = false;
     bool stationInput2 = false;
     bool stationInput3 = false;
     bool solenoidActive = false;
@@ -340,7 +340,7 @@ struct Plc42Data {
                 stationLowerSensor != other.stationLowerSensor ||
                 emergencyStopActive != other.emergencyStopActive ||
                 ammunitionLevel != other.ammunitionLevel ||
-                stationInput1 != other.stationInput1 ||
+                hatchState != other.hatchState ||
                 stationInput2 != other.stationInput2 ||
                 stationInput3 != other.stationInput3 ||
                 solenoidActive != other.solenoidActive ||

@@ -23,38 +23,16 @@ int main(int argc, char *argv[])
         qInfo() << "Running in windowed mode (for development)";
     }
     
-    // Determine config directory - try multiple locations
-    QString configDir;
-    QString appDir = QCoreApplication::applicationDirPath();
-
-    // List of paths to try (in order of preference)
-    QStringList searchPaths = {
-        "./config",                    // Current working directory
-        appDir + "/config",            // Next to executable
-        appDir + "/../config",         // Parent of executable (build/Debug/.. scenario)
-        appDir + "/../../config",      // Two levels up (build/Desktop-Debug/../../ scenario)
-        appDir + "/../../../config"    // Three levels up (deep build dirs)
-    };
-
-    // Find first path that contains motion_tuning.json
-    bool found = false;
-    for (const QString& path : searchPaths) {
-        QString testPath = QDir(path).absolutePath() + "/motion_tuning.json";
-        if (QFileInfo::exists(testPath)) {
-            configDir = path;
-            found = true;
-            qInfo() << "Found config at:" << QDir(path).absolutePath();
-            break;
+    // Determine config directory (try current dir first, then app dir)
+    QString configDir = "./config";
+    if (!QFileInfo::exists(configDir + "/devices.json")) {
+        // Try relative to executable location
+        QString appDir = QCoreApplication::applicationDirPath();
+        configDir = appDir + "/config";
+        if (!QFileInfo::exists(configDir + "/devices.json")) {
+            // Try parent directory (for build dir scenario)
+            configDir = appDir + "/../config";
         }
-    }
-
-    if (!found) {
-        qWarning() << "Config directory not found in any search path!";
-        qWarning() << "Searched paths:";
-        for (const QString& path : searchPaths) {
-            qWarning() << "  -" << QDir(path).absolutePath();
-        }
-        configDir = "./config"; // Fallback to current dir
     }
 
     qInfo() << "Using config directory:" << QDir(configDir).absolutePath();

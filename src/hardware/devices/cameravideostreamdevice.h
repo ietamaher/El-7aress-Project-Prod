@@ -50,6 +50,7 @@ struct FrameData {
     bool trackerInitialized = false;
     VPITrackingState trackingState = VPI_TRACKING_STATE_LOST;
     QRect trackingBbox = QRect(0, 0, 0, 0); // Use QRect for Qt integration
+     // tracking confidence 
     OperationalMode currentOpMode = OperationalMode::Idle;
     MotionMode motionMode = MotionMode::Manual;
     bool stabEnabled = false;
@@ -125,6 +126,8 @@ struct FrameData {
     float acquisitionBoxY_px = 0.0f;
     float acquisitionBoxW_px = 0.0f;
     float acquisitionBoxH_px = 0.0f;
+
+    bool stationAmmunitionLevel = false;
 };
 
 // --- Class Definition ---
@@ -343,6 +346,7 @@ private:
     int m_cropBottom;
     int m_cropLeft;
     int m_cropRight;    
+    bool m_currentAmmunitionLevel;
 };
 
 #endif // CAMERAVIDEOSTREAMDEVICE_H

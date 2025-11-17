@@ -42,7 +42,7 @@ MessagePtr Plc42ProtocolParser::parseDigitalInputsReply(const QModbusDataUnit& u
         m_data.stationLowerSensor  = (unit.value(1) != 0);
         m_data.emergencyStopActive = (unit.value(2) != 0);
         m_data.ammunitionLevel     = (unit.value(3) != 0);
-        m_data.stationInput1       = (unit.value(4) != 0);
+        m_data.hatchState       = (unit.value(4) != 0);
         m_data.stationInput2       = (unit.value(5) != 0);
         m_data.stationInput3       = (unit.value(6) != 0);
         m_data.solenoidActive      = (unit.value(7) != 0);

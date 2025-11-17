@@ -26,9 +26,9 @@ void LedController::onSystemStateChanged(const SystemStateData &data)
         m_plc21Device->setStationEnabledLed(data.stationEnabled);
     }
 
-    if (data.stationInput1 != m_cachedStationInput1) {
-        m_cachedStationInput1 = data.stationInput1;
-        m_plc21Device->setStationInput1Led(data.stationInput1);
+    if (data.hatchState != m_cachedhatchState) {
+        m_cachedhatchState = data.hatchState;
+        m_plc21Device->sethatchStateLed(data.hatchState);
     }
 
     bool panelBacklight = (data.osdColorStyle == ColorStyle::Red);

@@ -845,7 +845,7 @@ Item {
     Rectangle {
         id: startupBox
         x: parent.width/2 - width/2
-        y: parent.height/2 - 100
+        y: parent.height/2 - 180
         width: 420
         height: 50
         color: "#CC000000"
@@ -1073,25 +1073,65 @@ Item {
 
             // LRF RANGE
             Text {
-                text: viewModel ? viewModel.lrfText : "LRF: --- m"
+                text: viewModel ? viewModel.lrfText : " -- m"
                 font.pixelSize: 18
-                font.bold: true
-                font.family: primaryFont
-                color: accentColor
+                font.bold: viewModel.lrfText > 0
+                font.family: "Archivo Narrow"
+                color: viewModel.lrfText > 0 ? "yellow" : accentColor
                 anchors.verticalCenter: parent.verticalCenter
             }
 
             Rectangle { width: 2; height: 20; color: accentColor }
 
             // SYSTEM STATUS
-            Text {
+            /*Text {
                 text: viewModel ? viewModel.statusText : "SYS: --- SAF NRD"
                 font.pixelSize: 14
                 font.family: primaryFont
                 color: accentColor
                 anchors.verticalCenter: parent.verticalCenter
+            }*/
+
+            Rectangle { width: 2; height: 20; color: accentColor }
+            Rectangle {
+                width: 18
+                height: 18
+                radius: 9
+                color: viewModel.ammunitionLevel ? "#00FF00" : "#FF0000"
+                border.color: "white"
+                border.width: 2
+                anchors.verticalCenter: parent.verticalCenter
+            }
+            Text {
+                text: viewModel.ammunitionLevel ? "AMMO" : "EMPTY"
+                font.pixelSize: 12
+                font.bold: true
+                font.family: "Archivo Narrow"
+                color: viewModel.ammunitionLevel ? "#00FF00" : "#FF0000"
+                anchors.verticalCenter: parent.verticalCenter
+            }
+            Rectangle { width: 2; height: 20; color: accentColor }
+
+            // TRK
+            Text {
+                text: viewModel.isTrackingActive ? "TRK: ACTIVE" : "TRK: OFF"
+                font.pixelSize: 13
+                font.family: "Archivo Narrow"
+                color: viewModel.trackingActive ? "yellow" : accentColor
+                anchors.verticalCenter: parent.verticalCenter
+            }
+
+            Text {
+                text: "CONF: " + (viewModel.trackingConfidence * 100).toFixed(0) + "%"
+                font.pixelSize: 13
+                font.family: "Archivo Narrow"
+                color: viewModel.trackingActive ? "yellow" : accentColor
+                anchors.verticalCenter: parent.verticalCenter
             }
         }
+
+
+
     }
 
     // ========================================================================

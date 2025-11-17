@@ -186,7 +186,7 @@ void Plc42Device::mergePartialData(const Plc42Data& partialData) {
         partialData.stationLowerSensor != currentData->stationLowerSensor ||
         partialData.emergencyStopActive != currentData->emergencyStopActive ||
         partialData.ammunitionLevel != currentData->ammunitionLevel ||
-        partialData.stationInput1 != currentData->stationInput1 ||
+        partialData.hatchState != currentData->hatchState ||
         partialData.stationInput2 != currentData->stationInput2 ||
         partialData.stationInput3 != currentData->stationInput3 ||
         partialData.solenoidActive != currentData->solenoidActive) {
@@ -195,7 +195,7 @@ void Plc42Device::mergePartialData(const Plc42Data& partialData) {
         newData->stationLowerSensor = partialData.stationLowerSensor;
         newData->emergencyStopActive = partialData.emergencyStopActive;
         newData->ammunitionLevel = partialData.ammunitionLevel;
-        newData->stationInput1 = partialData.stationInput1;
+        newData->hatchState = partialData.hatchState;
         newData->stationInput2 = partialData.stationInput2;
         newData->stationInput3 = partialData.stationInput3;
         newData->solenoidActive = partialData.solenoidActive;

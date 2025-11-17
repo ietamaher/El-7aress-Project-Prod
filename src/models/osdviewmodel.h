@@ -49,6 +49,7 @@ class OsdViewModel : public QObject
     Q_PROPERTY(bool trackingBoxVisible READ trackingBoxVisible NOTIFY trackingBoxVisibleChanged)
     Q_PROPERTY(QColor trackingBoxColor READ trackingBoxColor NOTIFY trackingBoxColorChanged)
     Q_PROPERTY(bool trackingBoxDashed READ trackingBoxDashed NOTIFY trackingBoxDashedChanged)
+    Q_PROPERTY(bool isTrackingActive READ isTrackingActive NOTIFY isTrackingActiveChanged)
 
     // Acquisition box (for Tracking_Acquisition phase)
     Q_PROPERTY(QRectF acquisitionBox READ acquisitionBox NOTIFY acquisitionBoxChanged)
@@ -137,6 +138,7 @@ class OsdViewModel : public QObject
     Q_PROPERTY(bool plc21Connected READ plc21Connected NOTIFY plc21ConnectedChanged)
     Q_PROPERTY(bool plc42Connected READ plc42Connected NOTIFY plc42ConnectedChanged)
 
+    Q_PROPERTY(bool ammunitionLevel READ ammunitionLevel NOTIFY ammunitionLevelChanged)
 
 
 public:
@@ -168,6 +170,7 @@ public:
     bool trackingBoxVisible() const { return m_trackingBoxVisible; }
     QColor trackingBoxColor() const { return m_trackingBoxColor; }
     bool trackingBoxDashed() const { return m_trackingBoxDashed; }
+    bool isTrackingActive() const { return m_isTrackingActive; }
 
     QRectF acquisitionBox() const { return m_acquisitionBox; }
     bool acquisitionBoxVisible() const { return m_acquisitionBoxVisible; }
@@ -234,6 +237,8 @@ public:
     bool plc21Connected() const { return m_plc21Connected; }
     bool plc42Connected() const { return m_plc42Connected; }
 
+    bool ammunitionLevel() const { return m_ammunitionLevel; }
+
 public slots:
     // Setters
     void setAccentColor(const QColor& color);
@@ -257,6 +262,7 @@ public slots:
     void updateTrackingBox(float x, float y, float width, float height);
     void updateTrackingState(VPITrackingState state);
     void updateTrackingPhase(TrackingPhase phase, bool hasValidTarget, const QRectF& acquisitionBox);
+    void updateTrackingActive(bool active);
 
     void updateReticleType(ReticleType type);
     void updateReticleOffset(float x_px, float y_px);
@@ -288,7 +294,7 @@ public slots:
                            bool actuatorConnected, bool actuatorFault,
                            bool imuConnected,
                            bool plc21Connected, bool plc42Connected);
-
+        void updateAmmunitionLevel(bool level);
 
 
 signals:
@@ -318,6 +324,7 @@ signals:
     void trackingBoxVisibleChanged();
     void trackingBoxColorChanged();
     void trackingBoxDashedChanged();
+    void isTrackingActiveChanged();
 
     void acquisitionBoxChanged();
     void acquisitionBoxVisibleChanged();
@@ -382,6 +389,8 @@ signals:
     void plc21ConnectedChanged();
     void plc42ConnectedChanged();
 
+    void ammunitionLevelChanged();
+
 
 
 private:
@@ -412,6 +421,7 @@ private:
     bool m_trackingBoxVisible;
     QColor m_trackingBoxColor;
     bool m_trackingBoxDashed;
+    bool m_isTrackingActive;
 
     QRectF m_acquisitionBox;
     bool m_acquisitionBoxVisible;
@@ -487,6 +497,8 @@ private:
 
     bool m_plc21Connected;
     bool m_plc42Connected;
+
+    bool m_ammunitionLevel;
 
 
 };

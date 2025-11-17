@@ -249,7 +249,7 @@ void Plc21Device::setStationEnabledLed(bool on)
     writeDigitalOutput(1, on);
 }
 
-void Plc21Device::setStationInput1Led(bool on)
+void Plc21Device::sethatchStateLed(bool on)
 {
     writeDigitalOutput(2, on);
 }

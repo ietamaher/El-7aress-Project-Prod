@@ -340,12 +340,13 @@ void CameraVideoStreamDevice::onSystemStateChanged(const SystemStateData &newSta
     m_currentAcquisitionBoxW_px = newState.acquisitionBoxW_px;
     m_currentAcquisitionBoxH_px = newState.acquisitionBoxH_px;
 
-    m_currentLeadAngleStatus = newState.currentLeadAngleStatus;  // ⭐ ADD
-    m_currentLeadAngleOffsetAz = newState.leadAngleOffsetAz;     // ⭐ ADD
+    m_currentLeadAngleStatus = newState.currentLeadAngleStatus;   
+    m_currentLeadAngleOffsetAz = newState.leadAngleOffsetAz;      
     m_currentLeadAngleOffsetEl = newState.leadAngleOffsetEl;
-
-    // ⭐ UPDATE DETECTION STATE
+    m_currentAmmunitionLevel = newState.stationAmmunitionLevel;
+    
     m_detectionEnabled.store(newState.detectionEnabled);
+
 }
 
 
@@ -357,16 +358,6 @@ bool CameraVideoStreamDevice::initializeGStreamer()
         return true;
     }
     gst_init(nullptr, nullptr);
-
-    /*QString pipelineStr = QString(
-                              "v4l2src device=%1 do-timestamp=true ! "
-                              "video/x-raw,format=YUY2,width=%2,height=%3,framerate=30/1 ! "
-                              "aspectratiocrop aspect-ratio=4/3 ! "
-                              "videoscale  ! "
-                              "video/x-raw,width=1024,height=768 ! "
-                              "queue max-size-buffers=2 leaky=downstream ! "
-                              "appsink name=mysink emit-signals=true max-buffers=2 drop=true sync=false"
-                              ).arg(m_deviceName).arg(m_sourceWidth).arg(m_sourceHeight);*/
 
     QString pipelineStr = QString("v4l2src device=%1 do-timestamp=true ! "
         "video/x-raw,format=YUY2,width=%2,height=%3,framerate=30/1 ! "
@@ -857,9 +848,10 @@ bool CameraVideoStreamDevice::processFrame(GstBuffer *buffer)
         data.acquisitionBoxW_px = m_currentAcquisitionBoxW_px  ;
         data.acquisitionBoxH_px = m_currentAcquisitionBoxH_px  ;
         data.trackerHasValidTarget = true;
-        data.leadAngleStatus = m_currentLeadAngleStatus;           // ⭐ ADD
-        data.leadAngleOffsetAz_deg = m_currentLeadAngleOffsetAz;  // ⭐ ADD
-        data.leadAngleOffsetEl_deg = m_currentLeadAngleOffsetEl;  // ⭐ ADD
+        data.leadAngleStatus = m_currentLeadAngleStatus;          
+        data.leadAngleOffsetAz_deg = m_currentLeadAngleOffsetAz;  
+        data.leadAngleOffsetEl_deg = m_currentLeadAngleOffsetEl;  
+        data.stationAmmunitionLevel = m_currentAmmunitionLevel;
         // 7. Emit FrameData
         if (!data.baseImage.isNull()) emit frameDataReady(data);
 
@@ -873,50 +865,6 @@ bool CameraVideoStreamDevice::processFrame(GstBuffer *buffer)
     VPI_SAFE_DESTROY(vpiImageDestroy, vpiImgInput_wrapped);
     return true;
 }
-
-
-// initializeFirstTarget() method (No changes needed based on errors)
-/*bool CameraVideoStreamDevice::initializeFirstTarget(VPIImage vpiFrameInput)
-{
-    qInfo() << "Cam" << m_cameraIndex << ": Initializing first tracker target...";
-    try {
-        float boxW = std::min(100.0f, static_cast<float>(m_outputWidth * 0.2f));
-        float boxH = std::min(100.0f, static_cast<float>(m_outputHeight * 0.2f));
-        float boxX =   m_currentReticleAimpointImageX_px  - boxW / 2.0f;  // Use outputWidth
-        float boxY =    m_currentReticleAimpointImageY_px - boxH  / 2.0f; // Use outputHeight
-
-        VPIArrayData targetsData;
-        CHECK_VPI_STATUS(vpiArrayLockData(m_vpiInTargets, VPI_LOCK_WRITE, VPI_ARRAY_BUFFER_HOST_AOS, &targetsData));
-        if (targetsData.buffer.aos.capacity < 1) {
-             qCritical() << "Cam" << m_cameraIndex << ": VPI target array capacity is zero!";
-             vpiArrayUnlock(m_vpiInTargets); return false;
-        }
-        auto *pTarget = static_cast<VPIDCFTrackedBoundingBox *>(targetsData.buffer.aos.data);
-        pTarget->bbox.left   = static_cast<int32_t>(boxX);
-        pTarget->bbox.top    = static_cast<int32_t>(boxY);
-        pTarget->bbox.width  = static_cast<int32_t>(boxW);
-        pTarget->bbox.height = static_cast<int32_t>(boxH);
-        pTarget->state       = VPI_TRACKING_STATE_NEW;
-        pTarget->seqIndex    = 0;
-        pTarget->filterLR    = 0.075f;
-        pTarget->filterChannelWeightsLR = 0.1f;
-        pTarget->userData    = nullptr;
-        m_currentTarget = *pTarget;
-        *targetsData.buffer.aos.sizePointer = 1;
-        CHECK_VPI_STATUS(vpiArrayUnlock(m_vpiInTargets));
-
-        CHECK_VPI_STATUS(vpiSubmitConvertImageFormat(m_vpiStream, VPI_BACKEND_CUDA, vpiFrameInput, m_vpiFrameNV12, nullptr));
-        CHECK_VPI_STATUS(vpiSubmitCropScalerBatch(m_vpiStream, 0, m_cropScalePayload, &m_vpiFrameNV12,
-                                                  1, m_vpiInTargets, m_vpiTgtPatchSize, m_vpiTgtPatchSize, m_vpiTgtPatches));
-        CHECK_VPI_STATUS(vpiSubmitDCFTrackerUpdateBatch(m_vpiStream, 0, m_dcfPayload, nullptr, 0,
-                                                        nullptr, nullptr, m_vpiTgtPatches, m_vpiInTargets, nullptr));
-        CHECK_VPI_STATUS(vpiStreamSync(m_vpiStream));
-    } catch (const std::exception &e) {
-        qCritical() << "Cam" << m_cameraIndex << ": Failed init first target:" << e.what();
-        m_currentTarget.state = VPI_TRACKING_STATE_LOST; m_trackerInitialized = false; return false;
-    }
-    return true;
-}*/
 
 bool CameraVideoStreamDevice::initializeFirstTarget(VPIImage vpiFrameInput, float boxX, float boxY, float boxW, float boxH)
 {

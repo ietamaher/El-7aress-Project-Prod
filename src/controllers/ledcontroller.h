@@ -22,7 +22,7 @@ private:
     // Cache LED states to prevent flooding PLC21 with redundant writes
     bool m_cachedGunArmed = false;
     bool m_cachedStationEnabled = false;
-    bool m_cachedStationInput1 = false;
+    bool m_cachedhatchState = false;
     bool m_cachedPanelBacklight = false;
 };
 

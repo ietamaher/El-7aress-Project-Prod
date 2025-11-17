@@ -190,6 +190,12 @@ void OsdController::onFrameDataReady(const FrameData& frmdata)
     // === BASIC OSD DATA ===
     m_viewModel->updateMode(frmdata.currentOpMode);
     m_viewModel->updateMotionMode(frmdata.motionMode);
+    //check if motion mode is Tracking mode
+    if (frmdata.motionMode == MotionMode::AutoTrack) {
+        m_viewModel->updateTrackingActive(true);
+    } else {
+        m_viewModel->updateTrackingActive(false);
+    }
     m_viewModel->updateStabilization(frmdata.stabEnabled);
     m_viewModel->updateAzimuth(frmdata.azimuth);
     m_viewModel->updateElevation(frmdata.elevation);
@@ -370,6 +376,7 @@ void OsdController::onFrameDataReady(const FrameData& frmdata)
 
     // === SCAN NAME ===
     m_viewModel->updateCurrentScanName(frmdata.currentScanName);
+    m_viewModel->updateAmmunitionLevel(frmdata.stationAmmunitionLevel);
 }
 // ============================================================================
 // SHARED UPDATE LOGIC

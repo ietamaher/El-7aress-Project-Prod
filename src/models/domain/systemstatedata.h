@@ -491,7 +491,7 @@ struct SystemStateData {
     
     // Station Inputs
     bool stationAmmunitionLevel = false; ///< Station ammunition level sensor
-    bool stationInput1 = false;          ///< General station input 1
+    bool hatchState = false;          ///< General station input 1
     bool stationInput2 = false;          ///< General station input 2
     bool stationInput3 = false;          ///< General station input 3
     
@@ -788,7 +788,7 @@ struct SystemStateData {
                lowerLimitSensorActive == other.lowerLimitSensorActive &&
                emergencyStopActive == other.emergencyStopActive &&
                stationAmmunitionLevel == other.stationAmmunitionLevel &&
-               stationInput1 == other.stationInput1 &&
+               hatchState == other.hatchState &&
                stationInput2 == other.stationInput2 &&
                stationInput3 == other.stationInput3 &&
                panelTemperature == other.panelTemperature &&

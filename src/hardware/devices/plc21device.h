@@ -64,7 +64,7 @@ public:
     Q_INVOKABLE void writeDigitalOutput(int index, bool value);
     Q_INVOKABLE void setGunArmedLed(bool on);
     Q_INVOKABLE void setStationEnabledLed(bool on);
-    Q_INVOKABLE void setStationInput1Led(bool on);
+    Q_INVOKABLE void sethatchStateLed(bool on);
     Q_INVOKABLE void setPanelBacklight(bool on);
     // Configuration
     Q_INVOKABLE void setPollInterval(int intervalMs);

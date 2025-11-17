@@ -20,6 +20,7 @@ OsdViewModel::OsdViewModel(QObject *parent)
     , m_trackingBoxVisible(false)
     , m_trackingBoxColor(Qt::yellow)
     , m_trackingBoxDashed(false)
+    , m_isTrackingActive(false)
     , m_acquisitionBox(0, 0, 0, 0)
     , m_acquisitionBoxVisible(false)
     , m_reticleType(ReticleType::BoxCrosshair)
@@ -401,6 +402,13 @@ void OsdViewModel::updateTrackingPhase(TrackingPhase phase, bool hasValidTarget,
     }
 }
 
+void OsdViewModel::updateTrackingActive(bool active)
+{
+    if (m_isTrackingActive != active) {
+        m_isTrackingActive = active;
+        emit isTrackingActiveChanged();
+    }
+}
 // ============================================================================
 // RETICLE UPDATES
 // ============================================================================
@@ -817,4 +825,10 @@ void OsdViewModel::updateDeviceHealth(bool dayCamConnected, bool dayCamError,
     }
 }
 
-
+void OsdViewModel::updateAmmunitionLevel(bool level)
+{
+    if (m_ammunitionLevel != level) {
+        m_ammunitionLevel = level;
+        emit ammunitionLevelChanged();
+    }
+}
