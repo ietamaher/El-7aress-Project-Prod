@@ -5,6 +5,8 @@ WindageViewModel::WindageViewModel(QObject *parent)
     , m_visible(false)
     , m_showWindSpeed(false)
     , m_windSpeed(0.0f)
+    , m_showWindDirection(false)
+    , m_windDirection(0.0f)
 {
 }
 
@@ -60,6 +62,30 @@ void WindageViewModel::setWindSpeedLabel(const QString& label)
     if (m_windSpeedLabel != label) {
         m_windSpeedLabel = label;
         emit windSpeedLabelChanged();
+    }
+}
+
+void WindageViewModel::setShowWindDirection(bool show)
+{
+    if (m_showWindDirection != show) {
+        m_showWindDirection = show;
+        emit showWindDirectionChanged();
+    }
+}
+
+void WindageViewModel::setWindDirection(float direction)
+{
+    if (m_windDirection != direction) {
+        m_windDirection = direction;
+        emit windDirectionChanged();
+    }
+}
+
+void WindageViewModel::setWindDirectionLabel(const QString& label)
+{
+    if (m_windDirectionLabel != label) {
+        m_windDirectionLabel = label;
+        emit windDirectionLabelChanged();
     }
 }
 
