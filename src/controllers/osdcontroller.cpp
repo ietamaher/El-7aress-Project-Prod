@@ -130,19 +130,8 @@ void OsdController::onSystemStateChanged(const SystemStateData& data)
             data.environmentalAltitudeMeters
         );
 
-        // Update windage display (shows wind direction, speed, and calculated crosswind)
-        if (data.windageAppliedToBallistics && data.windageSpeedKnots > 0.001f) {
-            qDebug() << "[OsdController] Updating windage display:"
-                     << "Direction:" << data.windageDirectionDegrees << "°"
-                     << "Speed:" << data.windageSpeedKnots << "kts"
-                     << "Crosswind:" << data.calculatedCrosswindMS << "m/s";
-        }
-        m_viewModel->updateWindageDisplay(
-            data.windageAppliedToBallistics,
-            data.windageSpeedKnots,
-            data.windageDirectionDegrees,
-            data.calculatedCrosswindMS
-        );
+        // NOTE: Windage display is now updated from FrameData in onFrameDataReady()
+        // This ensures frame-synchronized display with other OSD elements
     }
 }
 
@@ -356,6 +345,14 @@ void OsdController::onFrameDataReady(const FrameData& frmdata)
         frmdata.zeroingAppliedToBallistics,
         frmdata.zeroingAzimuthOffset,
         frmdata.zeroingElevationOffset
+        );
+
+    // === WINDAGE ===
+    m_viewModel->updateWindageDisplay(
+        frmdata.windageAppliedToBallistics,
+        frmdata.windageSpeedKnots,
+        frmdata.windageDirectionDegrees,
+        frmdata.calculatedCrosswindMS
         );
 
     // === DETECTION ===
