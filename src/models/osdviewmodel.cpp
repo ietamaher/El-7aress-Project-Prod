@@ -434,6 +434,7 @@ void OsdViewModel::updateReticleOffset(float screen_x_px, float screen_y_px)
         qDebug() << "Reticle Absolute Position:" << screen_x_px << "," << screen_y_px;
         qDebug() << "Reticle Offset (from center):" << offsetX << "," << offsetY;
         qDebug() << "========================================";
+    }
 }
 
 void OsdViewModel::updateCcipPipper(float screen_x_px, float screen_y_px, bool visible, const QString& status)
