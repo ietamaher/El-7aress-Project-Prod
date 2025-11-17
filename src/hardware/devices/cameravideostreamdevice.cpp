@@ -63,7 +63,8 @@ CameraVideoStreamDevice::CameraVideoStreamDevice(int cameraIndex,
     m_velocityTimer(),          // QElapsedTimer
     m_lastTargetCenterX_px(0.0f),
     m_lastTargetCenterY_px(0.0f),
-    
+    m_currentConfidence(0.0f),  // Tracking confidence score
+
     // OpenCV Buffers
     m_yuy2_host_buffer(),       // cv::Mat
     
@@ -808,7 +809,8 @@ bool CameraVideoStreamDevice::processFrame(GstBuffer *buffer)
             // Call the model's update method (using the new name if you changed it)
             m_stateModel->updateTrackingResult(m_cameraIndex, trackerIsValidThisFrame,
                                                cX_px, cY_px, tW_px, tH_px,
-                                               velX_px_s, velY_px_s, m_currentTarget.state);
+                                               velX_px_s, velY_px_s, m_currentTarget.state,
+                                               m_currentConfidence);
         }
          // --- END OF SystemStateModel UPDATE ---
 
@@ -824,6 +826,7 @@ bool CameraVideoStreamDevice::processFrame(GstBuffer *buffer)
         //data.trackingEnabled = tracking_this_frame;
         data.trackerInitialized = m_trackerInitialized;
         data.trackingState = m_currentTarget.state; // VPITrackingState
+        data.trackingConfidence = m_currentConfidence;  // Tracking confidence score (0.0-1.0)
 
         // >>> *** Convert VPIRectI (m_currentTarget.bbox) to QRect (data.trackingBbox) ***
         data.trackingBbox = QRect(m_currentTarget.bbox.left,
@@ -987,6 +990,10 @@ bool CameraVideoStreamDevice::runTrackingCycle(VPIImage vpiFrameInput)
             VPIDCFTrackedBoundingBox *tempTarget = static_cast<VPIDCFTrackedBoundingBox *>(outTargetsData.buffer.aos.data);
             float currentConfidence = static_cast<float*>(confidenceData.buffer.aos.data)[0];
             qDebug() << "[CAM" << m_cameraIndex << "] VPI Localize Result: State=" << tempTarget->state << "Confidence=" << currentConfidence;
+
+            // Store confidence score for later use
+            m_currentConfidence = currentConfidence;
+
             // IMPORTANT: Copy the data to m_currentTarget
             m_currentTarget = *tempTarget;
 

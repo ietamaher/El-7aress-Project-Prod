@@ -1713,7 +1713,8 @@ void SystemStateModel::updateTrackingResult(
     float centerX_px, float centerY_px,
     float width_px, float height_px,
     float velocityX_px_s, float velocityY_px_s,
-    VPITrackingState trackerState)
+    VPITrackingState trackerState,
+    float confidence)
 {
     //QMutexLocker locker(&m_mutex); // Protect shared state
 
@@ -1740,6 +1741,7 @@ void SystemStateModel::updateTrackingResult(
     if (!qFuzzyCompare(data.trackedTargetVelocityX_px_s, velocityX_px_s)) { data.trackedTargetVelocityX_px_s = velocityX_px_s; stateDataChanged = true; }
     if (!qFuzzyCompare(data.trackedTargetVelocityY_px_s, velocityY_px_s)) { data.trackedTargetVelocityY_px_s = velocityY_px_s; stateDataChanged = true; }
     if (data.trackedTargetState != trackerState) { data.trackedTargetState = trackerState; stateDataChanged = true; }
+    if (!qFuzzyCompare(data.trackingConfidence, confidence)) { data.trackingConfidence = confidence; stateDataChanged = true; }
 
     // --- 2. REFINED High-Level TrackingPhase state machine ---
     TrackingPhase oldPhase = data.currentTrackingPhase;

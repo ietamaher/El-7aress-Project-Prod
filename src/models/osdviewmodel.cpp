@@ -50,6 +50,7 @@ OsdViewModel::OsdViewModel(QObject *parent)
     , m_lacActive(false)
     , m_rangeMeters(0.0f)
     , m_confidenceLevel(1.0f)
+    , m_trackingConfidence(0.0f)
     , m_startupMessageText("")
     , m_startupMessageVisible(false)
     , m_errorMessageText("")
@@ -407,6 +408,7 @@ void OsdViewModel::updateTrackingActive(bool active)
     if (m_isTrackingActive != active) {
         m_isTrackingActive = active;
         emit isTrackingActiveChanged();
+        emit trackingActiveChanged();  // Emit alias signal for QML compatibility
     }
 }
 // ============================================================================
@@ -682,6 +684,14 @@ void OsdViewModel::updateConfidenceLevel(float confidence)
     if (m_confidenceLevel != confidence) {
         m_confidenceLevel = confidence;
         emit confidenceLevelChanged();
+    }
+}
+
+void OsdViewModel::updateTrackingConfidence(float confidence)
+{
+    if (m_trackingConfidence != confidence) {
+        m_trackingConfidence = confidence;
+        emit trackingConfidenceChanged();
     }
 }
 
