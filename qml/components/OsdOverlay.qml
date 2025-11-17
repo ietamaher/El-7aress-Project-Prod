@@ -698,6 +698,40 @@ Item {
     }
 
     // ========================================================================
+    // DEBUG: Absolute position marker at 512x384
+    // ========================================================================
+    Rectangle {
+        id: debugCenterMarker
+        x: 512 - 15
+        y: 384 - 15
+        width: 30
+        height: 30
+        color: "transparent"
+        border.color: "magenta"
+        border.width: 3
+        visible: true
+        z: 500
+
+        Text {
+            anchors.top: parent.bottom
+            anchors.topMargin: 2
+            anchors.horizontalCenter: parent.horizontalCenter
+            text: "DEBUG\n512x384"
+            font.pixelSize: 10
+            color: "magenta"
+            horizontalAlignment: Text.AlignHCenter
+            style: Text.Outline
+            styleColor: "#000000"
+        }
+
+        Component.onCompleted: {
+            console.log("🔍 DEBUG MARKER: Positioned at absolute x=" + x + ", y=" + y
+                       + ", parent.width=" + parent.width + ", parent.height=" + parent.height
+                       + ", center should be at (" + (parent.width/2) + "," + (parent.height/2) + ")");
+        }
+    }
+
+    // ========================================================================
     // CENTER - CCIP PIPPER (Impact Prediction with Lead Angle)
     // ========================================================================
     CcipPipper {
@@ -710,6 +744,23 @@ Item {
         pipperEnabled: viewModel ? viewModel.ccipVisible : false
         status: viewModel ? viewModel.ccipStatus : "Off"
         accentColor: osdRoot.accentColor
+
+        // Debug logging
+        onXChanged: {
+            if (visible) {
+                console.log("🎯 CCIP QML: viewModel.ccipX=" + (viewModel ? viewModel.ccipX : "null")
+                           + ", width=" + width + ", calculated x=" + x
+                           + ", actual center X=" + (x + width/2));
+            }
+        }
+        onYChanged: {
+            if (visible) {
+                console.log("🎯 CCIP QML: viewModel.ccipY=" + (viewModel ? viewModel.ccipY : "null")
+                           + ", height=" + height + ", calculated y=" + y
+                           + ", actual center Y=" + (y + height/2)
+                           + ", parent.height=" + parent.height);
+            }
+        }
     }
 
     // ========================================================================
@@ -730,6 +781,7 @@ Item {
     // ACQUISITION BOX (For Tracking Phase)
     // ========================================================================
     Rectangle {
+        id: acquisitionBox
         visible: viewModel ? viewModel.acquisitionBoxVisible : false
         x: viewModel ? viewModel.acquisitionBox.x : 0
         y: viewModel ? viewModel.acquisitionBox.y : 0
@@ -739,6 +791,25 @@ Item {
         color: "transparent"
         border.color: "yellow"
         border.width: 2
+
+        // Debug logging
+        onXChanged: {
+            if (visible) {
+                console.log("📦 ACQ BOX QML: viewModel.acquisitionBox.x=" + (viewModel ? viewModel.acquisitionBox.x : "null")
+                           + ", calculated x=" + x
+                           + ", width=" + width
+                           + ", center X=" + (x + width/2));
+            }
+        }
+        onYChanged: {
+            if (visible) {
+                console.log("📦 ACQ BOX QML: viewModel.acquisitionBox.y=" + (viewModel ? viewModel.acquisitionBox.y : "null")
+                           + ", calculated y=" + y
+                           + ", height=" + height
+                           + ", center Y=" + (y + height/2)
+                           + ", parent.height=" + parent.height);
+            }
+        }
     }
 
     // ========================================================================

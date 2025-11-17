@@ -224,9 +224,10 @@ void WeaponController::onSystemStateChanged(const SystemStateData &newData)
             absoluteBearingChanged = true;
             ballisticsInputsChanged = true;
 
-            qDebug() << "[WeaponController] *** STATION AZIMUTH CHANGED (windage active):"
+            // Debug output commented to prevent app freeze (runs every gimbal move)
+            /*qDebug() << "[WeaponController] *** STATION AZIMUTH CHANGED (windage active):"
                      << m_oldState.azimuthDirection << "°" << "→" << newData.azimuthDirection << "°"
-                     << "| Crosswind will be recalculated for new gimbal position";
+                     << "| Crosswind will be recalculated for new gimbal position";*/
         }
     }
 
@@ -237,9 +238,10 @@ void WeaponController::onSystemStateChanged(const SystemStateData &newData)
             absoluteBearingChanged = true;
             ballisticsInputsChanged = true;
 
-            qDebug() << "[WeaponController] *** VEHICLE HEADING CHANGED (windage active):"
+            // Debug output commented to prevent app freeze (runs every vehicle rotation)
+            /*qDebug() << "[WeaponController] *** VEHICLE HEADING CHANGED (windage active):"
                      << m_oldState.imuYawDeg << "°" << "→" << newData.imuYawDeg << "°"
-                     << "| Crosswind will be recalculated for new vehicle orientation";
+                     << "| Crosswind will be recalculated for new vehicle orientation";*/
         }
     }
 
@@ -252,12 +254,13 @@ void WeaponController::onSystemStateChanged(const SystemStateData &newData)
     // OR if absolute bearing changed with windage active (crosswind component changes)
     // ========================================================================
     if (ballisticsInputsChanged || environmentalParamsChanged || windageParamsChanged) {
-        qDebug() << "[WeaponController] Triggering ballistics recalculation:"
+        // Debug output commented to prevent app freeze (runs frequently)
+        /*qDebug() << "[WeaponController] Triggering ballistics recalculation:"
                  << "InputsChanged=" << ballisticsInputsChanged
                  << "EnvChanged=" << environmentalParamsChanged
                  << "WindageChanged=" << windageParamsChanged
                  << "AbsoluteBearingChanged=" << absoluteBearingChanged
-                 << "LAC=" << newData.leadAngleCompensationActive;
+                 << "LAC=" << newData.leadAngleCompensationActive;*/
         updateFireControlSolution();
     }
 
@@ -402,14 +405,15 @@ void WeaponController::updateFireControlSolution() {
             sData = updatedData;  // Update local copy
         }
 
-        qDebug() << "[WeaponController] WINDAGE TO CROSSWIND CONVERSION:"
+        // Debug output commented to prevent app freeze (runs every frame)
+        /*qDebug() << "[WeaponController] WINDAGE TO CROSSWIND CONVERSION:"
                  << "Wind Dir:" << sData.windageDirectionDegrees << "° (FROM)"
                  << "| Wind Speed:" << sData.windageSpeedKnots << "knots (" << windSpeedMS << "m/s)"
                  << "| Vehicle Heading (IMU):" << sData.imuYawDeg << "°"
                  << "| Station Az:" << sData.azimuthDirection << "°"
                  << "| Absolute Gimbal Bearing:" << absoluteGimbalBearing << "°"
                  << "| Crosswind Component:" << currentCrosswind << "m/s"
-                 << (currentCrosswind > 0 ? "(right deflection)" : currentCrosswind < 0 ? "(left deflection)" : "(no crosswind)");
+                 << (currentCrosswind > 0 ? "(right deflection)" : currentCrosswind < 0 ? "(left deflection)" : "(no crosswind)");*/
     } else {
         // Clear crosswind when windage is not applied
         if (std::abs(sData.calculatedCrosswindMS) > 0.01f) {
@@ -479,10 +483,11 @@ void WeaponController::updateFireControlSolution() {
             currentCrosswind  // ✅ Apply windage-derived crosswind even if env corrections off
         );
 
-        if (sData.windageAppliedToBallistics && sData.windageSpeedKnots > 0.001f) {
+        // Debug output commented to prevent app freeze (runs every frame)
+        /*if (sData.windageAppliedToBallistics && sData.windageSpeedKnots > 0.001f) {
             qDebug() << "[WeaponController] Windage ACTIVE (env corrections OFF):"
                      << "Crosswind:" << currentCrosswind << "m/s";
-        }
+        }*/
     }
 
     LeadCalculationResult lead = m_ballisticsProcessor->calculateLeadAngle(
