@@ -114,12 +114,22 @@ void WindageController::onSelectButtonPressed()
     switch (m_currentState) {
     case WindageState::Instruct_AlignToWind:
     {
-        // Capture wind direction from current WS azimuth
+        // Capture wind direction from current absolute weapon bearing
+        // Wind direction is ABSOLUTE (relative to true North), not relative to vehicle!
+        // Therefore we must use: Absolute bearing = IMU yaw + Station azimuth
         const SystemStateData& data = m_stateModel->data();
-        float currentAzimuth = data.azimuthDirection; // Get current WS orientation
 
-        m_stateModel->captureWindageDirection(currentAzimuth);
-        qDebug() << "Wind direction captured at azimuth:" << currentAzimuth << "degrees";
+        // Calculate absolute gimbal bearing (where weapon points in world frame)
+        float absoluteBearing = static_cast<float>(data.imuYawDeg) + data.azimuthDirection;
+
+        // Normalize to 0-360 range
+        while (absoluteBearing >= 360.0f) absoluteBearing -= 360.0f;
+        while (absoluteBearing < 0.0f) absoluteBearing += 360.0f;
+
+        m_stateModel->captureWindageDirection(absoluteBearing);
+        qDebug() << "Wind direction captured - Vehicle Heading (IMU):" << data.imuYawDeg << "°"
+                 << "Station Az:" << data.azimuthDirection << "°"
+                 << "Absolute Bearing:" << absoluteBearing << "degrees (wind FROM this direction)";
 
         // Load current wind speed for editing
         m_currentWindSpeedEdit = data.windageSpeedKnots;
