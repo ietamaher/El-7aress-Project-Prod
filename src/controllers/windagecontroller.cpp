@@ -144,17 +144,30 @@ void WindageController::onSelectButtonPressed()
         // Therefore we must use: Absolute bearing = IMU yaw + Station azimuth
         const SystemStateData& data = m_stateModel->data();
 
-        // Calculate absolute gimbal bearing (where weapon points in world frame)
-        float absoluteBearing = static_cast<float>(data.imuYawDeg) + data.azimuthDirection;
+        float absoluteBearing;
 
-        // Normalize to 0-360 range
-        while (absoluteBearing >= 360.0f) absoluteBearing -= 360.0f;
-        while (absoluteBearing < 0.0f) absoluteBearing += 360.0f;
+        // Check if IMU is connected
+        if (!data.imuConnected) {
+            // ⚠️ WARNING: IMU not connected! Fallback to station azimuth only
+            // This is NOT correct for moving vehicles, but better than nothing
+            absoluteBearing = data.azimuthDirection;
+            qCritical() << "⚠️ WARNING: IMU NOT CONNECTED! Wind direction captured as station azimuth only:" << absoluteBearing << "°";
+            qCritical() << "Wind direction will be INCORRECT if vehicle rotates!";
+            qCritical() << "Please connect IMU for accurate windage.";
+        } else {
+            // ✅ IMU connected: Calculate correct absolute gimbal bearing
+            absoluteBearing = static_cast<float>(data.imuYawDeg) + data.azimuthDirection;
+
+            // Normalize to 0-360 range
+            while (absoluteBearing >= 360.0f) absoluteBearing -= 360.0f;
+            while (absoluteBearing < 0.0f) absoluteBearing += 360.0f;
+
+            qDebug() << "Wind direction captured - Vehicle Heading (IMU):" << data.imuYawDeg << "°"
+                     << "Station Az:" << data.azimuthDirection << "°"
+                     << "Absolute Bearing:" << absoluteBearing << "degrees (wind FROM this direction)";
+        }
 
         m_stateModel->captureWindageDirection(absoluteBearing);
-        qDebug() << "Wind direction captured - Vehicle Heading (IMU):" << data.imuYawDeg << "°"
-                 << "Station Az:" << data.azimuthDirection << "°"
-                 << "Absolute Bearing:" << absoluteBearing << "degrees (wind FROM this direction)";
 
         // Load current wind speed for editing
         m_currentWindSpeedEdit = data.windageSpeedKnots;
