@@ -98,6 +98,14 @@ Item {
 
 
                 }
+                Text {
+                    visible: viewModel ? viewModel.windageVisible : false
+                    text: viewModel ? viewModel.windageText : "WINDAGE"
+                    font.pixelSize: 12
+                    font.bold: true
+                    font.family: primaryFont
+                    color: accentColor
+                }
 
                 // DETECTION
                 Text {
@@ -145,29 +153,6 @@ Item {
         }
     }
 
-    // ========================================================================
-    // TOP LEFT - WINDAGE/CROSSWIND DISPLAY (Below Status Block)
-    // ========================================================================
-    Rectangle {
-        id: windageBox
-        x: 10
-        y: statusBlock.y + statusBlock.height + 8
-        width: 340
-        height: 32
-        visible: viewModel ? viewModel.windageVisible : false
-        color: "#99000000"
-        border.color: accentColor
-        border.width: 1
-
-        Text {
-            anchors.centerIn: parent
-            text: viewModel ? viewModel.windageText : ""
-            font.pixelSize: 13
-            font.bold: true
-            font.family: primaryFont
-            color: accentColor
-        }
-    }
 
     // ========================================================================
     // TOP RIGHT - AZIMUTH DISPLAY WITH CARDINAL DIRECTIONS
