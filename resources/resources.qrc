@@ -19,6 +19,8 @@
         <file>../qml/components/AboutDialog.qml</file>
         <file>../qml/components/SystemStatusOverlay.qml</file>
         <file>../config/devices.json</file>
+        <file>../config/motion_tuning.json</file>
+        <file>../config/zones.json</file>
         <file>ballistic/tables/m2_ball.json</file>
     </qresource>
 </RCC>
