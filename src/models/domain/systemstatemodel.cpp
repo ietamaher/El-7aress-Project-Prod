@@ -88,7 +88,8 @@ SystemStateModel::SystemStateModel(QObject *parent)
 void SystemStateModel::updateData(const SystemStateData &newState) {
 
     SystemStateData oldData = m_currentStateData;
-
+    static int count = 0;
+    if (++count % 100 == 0) qDebug() << "dataChanged signals:" << count;
     // Check if anything has actually changed to avoid unnecessary signals/updates
     if (oldData == newState) { // Assumes you have operator== for SystemStateData
         return;
