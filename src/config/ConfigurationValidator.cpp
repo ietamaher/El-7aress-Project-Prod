@@ -367,6 +367,12 @@ bool ConfigurationValidator::validatePortPath(const QString& port, const QString
 
 bool ConfigurationValidator::validateMotionTuning()
 {
+    // Skip validation if config wasn't loaded (will use defaults at runtime)
+    if (!MotionTuningConfig::isLoaded()) {
+        addWarning("Motion tuning config not loaded - using default values");
+        return true; // Not a critical error, defaults will work
+    }
+
     const auto& cfg = MotionTuningConfig::instance();
     bool valid = true;
 

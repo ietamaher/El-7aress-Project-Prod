@@ -91,6 +91,12 @@ public:
      */
     static const MotionTuningConfig& instance();
 
+    /**
+     * @brief Check if configuration has been successfully loaded
+     * @return true if load() was called and succeeded
+     */
+    static bool isLoaded();
+
     // ========================================================================
     // CONFIGURATION ACCESSORS
     // ========================================================================
