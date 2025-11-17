@@ -77,6 +77,8 @@ CameraVideoStreamDevice::CameraVideoStreamDevice(int cameraIndex,
     m_currentWindageModeActive(false),
     m_currentWindageApplied(false),
     m_currentWindageSpeed(0.0f),
+    m_currentWindageDirection(0.0f),
+    m_currentCalculatedCrosswind(0.0f),
     m_currentIsReticleInNoFireZone(false),
     m_currentGimbalStoppedAtNTZLimit(false),
     m_currentReticleAimpointImageX_px(0),
@@ -313,7 +315,9 @@ void CameraVideoStreamDevice::onSystemStateChanged(const SystemStateData &newSta
 
      m_currentWindageModeActive  = newState.windageModeActive;
      m_currentWindageApplied = newState.windageAppliedToBallistics;
-    m_currentWindageSpeed = newState.windageSpeedKnots; // Assuming this is the windage speed in knots  
+    m_currentWindageSpeed = newState.windageSpeedKnots; // Assuming this is the windage speed in knots
+    m_currentWindageDirection = newState.windageDirectionDegrees;
+    m_currentCalculatedCrosswind = newState.calculatedCrosswindMS;  
  
     m_currentIsReticleInNoFireZone  = newState.isReticleInNoFireZone; // Assuming this is the no-fire zone status
     // Update the gimbal stopped at NTZ limit status
@@ -836,6 +840,8 @@ bool CameraVideoStreamDevice::processFrame(GstBuffer *buffer)
         data.windageModeActive = m_currentWindageModeActive;
         data.windageAppliedToBallistics = m_currentWindageApplied;
         data.windageSpeedKnots = m_currentWindageSpeed;
+        data.windageDirectionDegrees = m_currentWindageDirection;
+        data.calculatedCrosswindMS = m_currentCalculatedCrosswind;
         data.isReticleInNoFireZone = m_currentIsReticleInNoFireZone;
         data.gimbalStoppedAtNTZLimit = m_currentGimbalStoppedAtNTZLimit;
         data.leadAngleActive = m_isLacActiveForReticle; // Assuming this is the LAC status
