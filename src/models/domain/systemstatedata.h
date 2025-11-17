@@ -837,6 +837,7 @@ struct SystemStateData {
                qFuzzyCompare(windageDirectionDegrees, other.windageDirectionDegrees) &&
                windageAppliedToBallistics == other.windageAppliedToBallistics &&
                windageDirectionCaptured == other.windageDirectionCaptured &&
+               qFuzzyCompare(calculatedCrosswindMS, other.calculatedCrosswindMS) &&
                environmentalModeActive == other.environmentalModeActive &&
                qFuzzyCompare(environmentalTemperatureCelsius, other.environmentalTemperatureCelsius) &&
                qFuzzyCompare(environmentalAltitudeMeters, other.environmentalAltitudeMeters) &&
@@ -849,7 +850,7 @@ struct SystemStateData {
                qFuzzyCompare(currentTargetAngularRateAz, other.currentTargetAngularRateAz) &&
                qFuzzyCompare(currentTargetAngularRateEl, other.currentTargetAngularRateEl) &&
                qFuzzyCompare(muzzleVelocityMPS, other.muzzleVelocityMPS) &&
-               
+
                // Status & Information Display
                weaponSystemStatus == other.weaponSystemStatus &&
                targetInformation == other.targetInformation &&
