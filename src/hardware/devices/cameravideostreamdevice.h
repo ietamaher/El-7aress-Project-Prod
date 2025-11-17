@@ -91,7 +91,9 @@ struct FrameData {
     // --- NEW: Windage Data from SystemStateData ---
     bool windageModeActive = false;
     float windageSpeedKnots = 0.0f;
+    float windageDirectionDegrees = 0.0f;
     bool windageAppliedToBallistics = false;
+    float calculatedCrosswindMS = 0.0f;
 
     bool isReticleInNoFireZone = false;
     bool gimbalStoppedAtNTZLimit = false;
@@ -304,6 +306,8 @@ private:
     bool m_currentWindageModeActive;
     bool m_currentWindageApplied;
     float m_currentWindageSpeed;
+    float m_currentWindageDirection;
+    float m_currentCalculatedCrosswind;
     bool m_currentIsReticleInNoFireZone;
     bool m_currentGimbalStoppedAtNTZLimit;
     int m_currentReticleAimpointImageX_px;     // Reticle: gun boresight with zeroing ONLY
