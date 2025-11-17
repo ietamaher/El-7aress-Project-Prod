@@ -39,6 +39,7 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QJsonArray>
+#include <QCoreApplication>  // For applicationDirPath()
 #include <algorithm> // For std::find_if, std::sort (if needed)
 #include <set>       // For getting unique page numbers
 
@@ -61,8 +62,38 @@ SystemStateModel::SystemStateModel(QObject *parent)
              << "at (" << m_currentStateData.reticleAimpointImageX_px << ","
              << m_currentStateData.reticleAimpointImageY_px << ")";
 
-    // Connect signals from sub-models to slots here (as was likely intended)
-    loadZonesFromFile("zones.json"); // Load initial zones from file if exists
+    // ========================================================================
+    // ZONES.JSON LOADING - FIRST-RUN TEMPLATE COPY
+    // If zones.json doesn't exist in filesystem, copy from embedded resource
+    // ========================================================================
+    QString zonesPath = QCoreApplication::applicationDirPath() + "/config/zones.json";
+
+    // First-run: copy template from embedded resource if file doesn't exist
+    if (!QFile::exists(zonesPath)) {
+        qInfo() << "zones.json not found, creating from embedded template";
+
+        // Copy from resource to filesystem
+        if (QFile::copy(":/config/zones.json", zonesPath)) {
+            // Make the file writable (resource files are read-only by default)
+            QFile::setPermissions(zonesPath, QFile::WriteOwner | QFile::ReadOwner | QFile::ReadGroup);
+            qInfo() << "Created default zones.json at:" << zonesPath;
+        } else {
+            qWarning() << "Failed to copy zones.json template from resources";
+            qWarning() << "Starting with empty zones - operator can define zones manually";
+            // Don't fail - operator can create zones during operation
+        }
+    }
+
+    // Load zones from filesystem (or start with empty zones if copy failed)
+    if (QFile::exists(zonesPath)) {
+        if (loadZonesFromFile(zonesPath)) {
+            qInfo() << "Loaded zones.json from:" << zonesPath;
+        } else {
+            qWarning() << "Failed to load zones.json - starting with empty zones";
+        }
+    } else {
+        qInfo() << "No zones file available - starting with empty zones";
+    }
 
     // --- POPULATE DUMMY RADAR DATA FOR TESTING ---
     QVector<SimpleRadarPlot> dummyPlots;
