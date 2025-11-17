@@ -33,6 +33,11 @@ const MotionTuningConfig& MotionTuningConfig::instance()
     return m_instance;
 }
 
+bool MotionTuningConfig::isLoaded()
+{
+    return m_loaded;
+}
+
 bool MotionTuningConfig::loadFromFile(const QString& filePath)
 {
     QFile file(filePath);
