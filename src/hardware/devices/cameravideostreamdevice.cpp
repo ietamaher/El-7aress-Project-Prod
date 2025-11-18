@@ -973,7 +973,7 @@ bool CameraVideoStreamDevice::runTrackingCycle(VPIImage vpiFrameInput)
         CHECK_VPI_STATUS(vpiSubmitConvertImageFormat(m_vpiStream, VPI_BACKEND_CUDA, vpiFrameInput, m_vpiFrameNV12, nullptr));
         CHECK_VPI_STATUS(vpiSubmitCropScalerBatch(m_vpiStream, 0, m_cropScalePayload, &m_vpiFrameNV12,
                                                   1, m_vpiInTargets, m_vpiTgtPatchSize, m_vpiTgtPatchSize, m_vpiTgtPatches));
-        CHECK_VPI_STATUS(vpiSubmitDCFTrackerLocalizeBatch(m_vpiStream, 0, m_dcfPayload, NULL, 0,
+        CHECK_VPI_STATUS(vpiSubmitDCFTrackerLocalizeBatch(m_vpiStream, m_vpiBackend, m_dcfPayload, NULL, 0,
                                                           NULL, m_vpiTgtPatches, m_vpiInTargets, m_vpiOutTargets,
                                                           NULL, m_vpiConfidenceScores, NULL));
         CHECK_VPI_STATUS(vpiStreamSync(m_vpiStream));
