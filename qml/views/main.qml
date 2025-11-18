@@ -132,10 +132,11 @@ Window {
 
     SystemStatusOverlay{
             id: systemStatusOverlay
-            anchors.top: parent.top
-            anchors.left: parent.left
-            anchors.topMargin: 150
-            anchors.leftMargin: 10
+            //anchors.top: parent.top
+            //anchors.left: parent.left
+            //anchors.topMargin: 150
+            //anchors.leftMargin: 10
+            anchors.fill: parent
             z: 100   // Above OSD
 
     }

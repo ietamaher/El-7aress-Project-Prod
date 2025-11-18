@@ -3,27 +3,34 @@ import QtQuick.Controls
 import QtQuick.Layouts
 import QtQuick.Effects
 
-
 Rectangle {
-    id: statusRoot
-    width: Math.min(parent.width - 20, 800)
-    height: Math.min(parent.height - 20, 600)
-    radius: 8
-    color: "#0A0A0A"
-    border.width: 1
-    border.color: "#1A1A1A"
+    id: statusroot
 
-    visible: viewModel ? viewModel.visible : false
     property var viewModel: systemStatusViewModel
     property color accentColor: viewModel ? viewModel.accentColor : "#46E2A5"
 
-    layer.enabled: true
-    layer.effect: MultiEffect {
-        shadowEnabled: true
-        shadowColor: "#80000000"
-        shadowBlur: 0.5
-        shadowVerticalOffset: 10
-    }
+    visible: viewModel ? viewModel.visible : false
+    color: Qt.rgba(0, 0, 0, 0.7)
+    anchors.fill: parent
+
+    // Main content container
+    Rectangle {
+        id: contentContainer
+        anchors.centerIn: parent
+        width: Math.min(parent.width - 20, 800)
+        height: Math.min(parent.height - 20, 600)
+        color: "#0A0A0A"
+        border.color: "#1A1A1A"
+        border.width: 1
+        radius: 8
+
+        layer.enabled: true
+        layer.effect: MultiEffect {
+            shadowEnabled: true
+            shadowColor: "#80000000"
+            shadowBlur: 0.5
+            shadowVerticalOffset: 10
+        }
 
     Column {
         anchors.fill: parent
@@ -636,4 +643,5 @@ Rectangle {
             color: valueColor
         }
     }
+}
 }
