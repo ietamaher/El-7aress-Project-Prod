@@ -294,6 +294,7 @@ private:
     float m_lastTargetCenterX_px;
     float m_lastTargetCenterY_px;
     float m_currentConfidence;      ///< Current tracking confidence score (0.0-1.0) from VPI tracker
+    float m_smoothedConfidence;     ///< Smoothed confidence for stable OSD display (exponential moving average)
 
 
     // OpenCV Buffers (if needed for intermediate steps)

@@ -67,6 +67,7 @@ CameraVideoStreamDevice::CameraVideoStreamDevice(int cameraIndex,
     m_lastTargetCenterX_px(0.0f),
     m_lastTargetCenterY_px(0.0f),
     m_currentConfidence(0.0f),  // Tracking confidence score
+    m_smoothedConfidence(0.0f), // Smoothed confidence for display
 
     // OpenCV Buffers
     m_yuy2_host_buffer(),       // cv::Mat
@@ -211,8 +212,9 @@ void CameraVideoStreamDevice::setTrackingEnabled(bool enabled)
 
     if (!enabled) {
         m_trackerInitialized = false;
-         qInfo() << "Cam" << m_cameraIndex << ": Tracking disabled, tracker marked for re-initialization.";
-         m_currentTarget.state = VPI_TRACKING_STATE_LOST;
+        m_smoothedConfidence = 0.0f;  // Reset smoothed confidence for fresh start
+        qInfo() << "Cam" << m_cameraIndex << ": Tracking disabled, tracker marked for re-initialization.";
+        m_currentTarget.state = VPI_TRACKING_STATE_LOST;
     }
 }
 
@@ -818,10 +820,11 @@ bool CameraVideoStreamDevice::processFrame(GstBuffer *buffer)
             }
             //qDebug() << "[CAM" << m_cameraIndex << " | processFrame] Reporting to model. trackerIsValidThisFrame:" << trackerIsValidThisFrame   << "m_currentTarget.state:" << static_cast<int>(m_currentTarget.state);
             // Call the model's update method (using the new name if you changed it)
+            // Use smoothed confidence for stable OSD display (reduces jitter)
             m_stateModel->updateTrackingResult(m_cameraIndex, trackerIsValidThisFrame,
                                                cX_px, cY_px, tW_px, tH_px,
                                                velX_px_s, velY_px_s, m_currentTarget.state,
-                                               m_currentConfidence);
+                                               m_smoothedConfidence);
         }
          // --- END OF SystemStateModel UPDATE ---
 
@@ -837,7 +840,7 @@ bool CameraVideoStreamDevice::processFrame(GstBuffer *buffer)
         //data.trackingEnabled = tracking_this_frame;
         data.trackerInitialized = m_trackerInitialized;
         data.trackingState = m_currentTarget.state; // VPITrackingState
-        data.trackingConfidence = m_currentConfidence;  // Tracking confidence score (0.0-1.0)
+        data.trackingConfidence = m_smoothedConfidence;  // Smoothed tracking confidence for stable display (0.0-1.0)
 
         // >>> *** Convert VPIRectI (m_currentTarget.bbox) to QRect (data.trackingBbox) ***
         data.trackingBbox = QRect(m_currentTarget.bbox.left,
@@ -1071,11 +1074,22 @@ bool CameraVideoStreamDevice::runTrackingCycle(VPIImage vpiFrameInput)
                 }
             }
 
+            // Apply exponential moving average filter for smooth OSD display
+            // alpha = 0.2 means ~5 frames to reach 90% of new value (reduces jitter)
+            const float alpha = 0.2f;
+            if (m_smoothedConfidence == 0.0f) {
+                // First frame, initialize with current value
+                m_smoothedConfidence = currentConfidence;
+            } else {
+                // Smooth updates: smoothed = alpha * new + (1-alpha) * old
+                m_smoothedConfidence = alpha * currentConfidence + (1.0f - alpha) * m_smoothedConfidence;
+            }
+
             qDebug() << "[CAM" << m_cameraIndex << "] VPI Localize Result: State=" << tempTarget->state
-                     << "Confidence=" << currentConfidence
+                     << "Confidence=" << currentConfidence << "Smoothed=" << m_smoothedConfidence
                      << "(VPI array size=" << *confidenceData.buffer.aos.sizePointer << ")";
 
-            // Store confidence score for later use
+            // Store confidence scores for later use
             m_currentConfidence = currentConfidence;
 
             // IMPORTANT: Copy the data to m_currentTarget
