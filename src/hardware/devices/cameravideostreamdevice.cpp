@@ -5,6 +5,7 @@
 #include <QElapsedTimer>
 #include <QtConcurrent/QtConcurrent>
 #include <stdexcept>
+#include <algorithm> // For std::min, std::max
 
 #include <opencv2/imgcodecs.hpp>
 #include <cuda_runtime.h>
@@ -1027,9 +1028,12 @@ bool CameraVideoStreamDevice::runTrackingCycle(VPIImage vpiFrameInput)
                             }
                         }
                     }
-                    currentConfidence = maxCorr;
-                    qDebug() << "[CAM" << m_cameraIndex << "] VPI correlation map confidence (method 2):" << currentConfidence
-                             << "map size:" << width << "x" << height;
+                    // Normalize DCF correlation response to 0-1 range
+                    // DCF correlation scores typically range from ~0 to ~8
+                    // Map: 0→0.0, 4→0.5, 8→1.0, >8→1.0 (clamped)
+                    currentConfidence = std::min(1.0f, std::max(0.0f, maxCorr / 8.0f));
+                    qDebug() << "[CAM" << m_cameraIndex << "] VPI correlation map confidence (method 2): raw=" << maxCorr
+                             << "normalized=" << currentConfidence << "(" << (int)(currentConfidence * 100) << "%) map size:" << width << "x" << height;
                     vpiImageUnlock(m_vpiCorrelationMap);
                 } else {
                     // METHOD 3: VPI didn't populate confidence array or correlation map - estimate from tracking state
