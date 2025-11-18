@@ -215,6 +215,10 @@ bool HardwareManager::connectModelsToSystemState()
     connect(m_joystickModel, &JoystickDataModel::hatMoved,
             m_systemStateModel, &SystemStateModel::onJoystickHatChanged);
 
+    // Connect joystick device data directly for connection status
+    connect(m_joystickDevice, &JoystickDevice::dataChanged,
+            m_systemStateModel, &SystemStateModel::onJoystickDataChanged);
+
     connect(m_lrfModel, &LrfDataModel::dataChanged,
             m_systemStateModel, &SystemStateModel::onLrfDataChanged);
 

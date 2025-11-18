@@ -253,7 +253,8 @@ Item {
                !viewModel.actuatorConnected || viewModel.actuatorFault ||
                !viewModel.imuConnected ||
                !viewModel.plc21Connected ||
-               !viewModel.plc42Connected;
+               !viewModel.plc42Connected ||
+               !viewModel.joystickConnected;
     }
 
     Column {
@@ -561,6 +562,26 @@ Item {
             Text {
                 anchors.centerIn: parent
                 text: "⚠ PLC42 DISC"
+                font.pixelSize: 11
+                font.bold: true
+                font.family: primaryFont
+                color: "white"
+            }
+        }
+
+        // Joystick warning
+        Rectangle {
+            visible: viewModel && !viewModel.joystickConnected
+            width: 140
+            height: 28
+            color: warningColor
+            border.color: "black"
+            border.width: 2
+            radius: 2
+
+            Text {
+                anchors.centerIn: parent
+                text: "⚠ JOYSTICK DISC"
                 font.pixelSize: 11
                 font.bold: true
                 font.family: primaryFont

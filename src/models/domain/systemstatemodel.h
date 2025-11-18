@@ -745,6 +745,12 @@ public slots:
      */
     void onJoystickHatChanged(int hat, int value);
 
+    /**
+     * @brief Handles joystick device data changes (including connection status).
+     * @param joyData The joystick device data.
+     */
+    void onJoystickDataChanged(std::shared_ptr<const JoystickData> joyData);
+
     // =================================
     // SYSTEM MODE CONTROL SLOTS
     // =================================
