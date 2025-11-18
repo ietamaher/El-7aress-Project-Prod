@@ -70,6 +70,7 @@ OsdViewModel::OsdViewModel(QObject *parent)
     , m_actuatorFault(false)
     , m_plc21Connected(false)
     , m_plc42Connected(false)
+    , m_joystickConnected(false)
 
 {
 }
@@ -752,7 +753,8 @@ void OsdViewModel::updateDeviceHealth(bool dayCamConnected, bool dayCamError,
                                       bool lrfConnected, bool lrfFault, bool lrfOverTemp,
                                       bool actuatorConnected, bool actuatorFault,
                                       bool imuConnected,
-                                      bool plc21Connected, bool plc42Connected)
+                                      bool plc21Connected, bool plc42Connected,
+                                      bool joystickConnected)
 {
     // Day Camera
     if (m_dayCameraConnected != dayCamConnected) {
@@ -832,6 +834,12 @@ void OsdViewModel::updateDeviceHealth(bool dayCamConnected, bool dayCamError,
     if (m_plc42Connected != plc42Connected) {
         m_plc42Connected = plc42Connected;
         emit plc42ConnectedChanged();
+    }
+
+    // Joystick
+    if (m_joystickConnected != joystickConnected) {
+        m_joystickConnected = joystickConnected;
+        emit joystickConnectedChanged();
     }
 }
 

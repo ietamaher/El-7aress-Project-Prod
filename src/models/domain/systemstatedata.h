@@ -455,6 +455,7 @@ struct SystemStateData {
     // =================================
     // JOYSTICK & MANUAL CONTROLS
     // =================================
+    bool joystickConnected = false;     ///< Joystick connection status
     bool deadManSwitchActive = false;   ///< Safety dead man switch status
     float joystickAzValue = 0.0f;       ///< Joystick azimuth axis value (-1.0 to 1.0)
     float joystickElValue = 0.0f;       ///< Joystick elevation axis value (-1.0 to 1.0)
@@ -761,6 +762,7 @@ struct SystemStateData {
                selectedRadarTrackId == other.selectedRadarTrackId &&
                
                // Joystick & Manual Controls
+               joystickConnected == other.joystickConnected &&
                deadManSwitchActive == other.deadManSwitchActive &&
                qFuzzyCompare(joystickAzValue, other.joystickAzValue) &&
                qFuzzyCompare(joystickElValue, other.joystickElValue) &&

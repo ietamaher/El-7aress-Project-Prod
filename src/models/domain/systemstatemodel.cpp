@@ -765,6 +765,16 @@ void SystemStateModel::onJoystickHatChanged(int hat, int direction)
     //LOG_TS_ELAPSED("SystemStateModel", "Processed model data");
 }
 
+void SystemStateModel::onJoystickDataChanged(std::shared_ptr<const JoystickData> joyData)
+{
+    if (!joyData) return;
+
+    SystemStateData newData = m_currentStateData;
+    newData.joystickConnected = joyData->isConnected;
+
+    updateData(newData);
+}
+
 
 void SystemStateModel::onLrfDataChanged(const LrfData &lrfData)
 {

@@ -121,7 +121,8 @@ void OsdController::onSystemStateChanged(const SystemStateData& data)
             data.actuatorFault,
             data.imuConnected,
             data.plc21Connected,
-            data.plc42Connected
+            data.plc42Connected,
+            data.joystickConnected
         );
 
         // Update environment display (not in FrameData, so updated here)

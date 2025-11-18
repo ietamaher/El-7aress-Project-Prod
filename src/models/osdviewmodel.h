@@ -140,6 +140,8 @@ class OsdViewModel : public QObject
     Q_PROPERTY(bool plc21Connected READ plc21Connected NOTIFY plc21ConnectedChanged)
     Q_PROPERTY(bool plc42Connected READ plc42Connected NOTIFY plc42ConnectedChanged)
 
+    Q_PROPERTY(bool joystickConnected READ joystickConnected NOTIFY joystickConnectedChanged)
+
     Q_PROPERTY(bool ammunitionLevel READ ammunitionLevel NOTIFY ammunitionLevelChanged)
 
 
@@ -241,6 +243,8 @@ public:
     bool plc21Connected() const { return m_plc21Connected; }
     bool plc42Connected() const { return m_plc42Connected; }
 
+    bool joystickConnected() const { return m_joystickConnected; }
+
     bool ammunitionLevel() const { return m_ammunitionLevel; }
 
 public slots:
@@ -298,7 +302,8 @@ public slots:
                            bool lrfConnected, bool lrfFault, bool lrfOverTemp,
                            bool actuatorConnected, bool actuatorFault,
                            bool imuConnected,
-                           bool plc21Connected, bool plc42Connected);
+                           bool plc21Connected, bool plc42Connected,
+                           bool joystickConnected);
         void updateAmmunitionLevel(bool level);
 
 
@@ -395,6 +400,8 @@ signals:
 
     void plc21ConnectedChanged();
     void plc42ConnectedChanged();
+
+    void joystickConnectedChanged();
 
     void ammunitionLevelChanged();
 
@@ -505,6 +512,8 @@ private:
 
     bool m_plc21Connected;
     bool m_plc42Connected;
+
+    bool m_joystickConnected;
 
     bool m_ammunitionLevel;
 
