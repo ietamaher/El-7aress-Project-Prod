@@ -988,8 +988,50 @@ bool CameraVideoStreamDevice::runTrackingCycle(VPIImage vpiFrameInput)
         bool target_found = false;
         if (*outTargetsData.buffer.aos.sizePointer > 0) {
             VPIDCFTrackedBoundingBox *tempTarget = static_cast<VPIDCFTrackedBoundingBox *>(outTargetsData.buffer.aos.data);
-            float currentConfidence = static_cast<float*>(confidenceData.buffer.aos.data)[0];
-            qDebug() << "[CAM" << m_cameraIndex << "] VPI Localize Result: State=" << tempTarget->state << "Confidence=" << currentConfidence;
+
+            // Read confidence if available from VPI
+            float currentConfidence = 0.0f;
+            if (*confidenceData.buffer.aos.sizePointer > 0) {
+                // VPI provided confidence scores
+                currentConfidence = static_cast<float*>(confidenceData.buffer.aos.data)[0];
+                qDebug() << "[CAM" << m_cameraIndex << "] VPI provided confidence:" << currentConfidence;
+            } else {
+                // VPI didn't populate confidence array - estimate from tracking state
+                // This is a fallback for VPI backends that don't support confidence scores
+                //
+                // VPI Tracking State Enum:
+                // 0 = VPI_TRACKING_STATE_NEW (initialization)
+                // 1 = VPI_TRACKING_STATE_TRACKED (object successfully found)
+                // 2 = VPI_TRACKING_STATE_LOST (object lost)
+                // 3 = VPI_TRACKING_STATE_SHADOW_TRACKED (tracked using prediction, partially obscured)
+                switch (tempTarget->state) {
+                    case 0:  // VPI_TRACKING_STATE_NEW
+                        currentConfidence = 0.50f;  // Medium confidence - new target, needs validation
+                        break;
+                    case 1:  // VPI_TRACKING_STATE_TRACKED
+                        currentConfidence = 0.90f;  // High confidence - actively tracked with visual confirmation
+                        break;
+                    case 2:  // VPI_TRACKING_STATE_LOST
+                        currentConfidence = 0.0f;   // No confidence - tracking lost
+                        break;
+                    case 3:  // VPI_TRACKING_STATE_SHADOW_TRACKED (if supported)
+                        currentConfidence = 0.65f;  // Medium-high confidence - using prediction/coasting
+                        break;
+                    default:
+                        currentConfidence = 0.30f;  // Low confidence - unknown state
+                        qWarning() << "[CAM" << m_cameraIndex << "] Unknown VPI tracking state:" << tempTarget->state;
+                        break;
+                }
+                static bool warningShown = false;
+                if (!warningShown) {
+                    qWarning() << "[CAM" << m_cameraIndex << "] VPI Confidence array is empty - using state-based estimation";
+                    warningShown = true;  // Only warn once
+                }
+            }
+
+            qDebug() << "[CAM" << m_cameraIndex << "] VPI Localize Result: State=" << tempTarget->state
+                     << "Confidence=" << currentConfidence
+                     << "(VPI array size=" << *confidenceData.buffer.aos.sizePointer << ")";
 
             // Store confidence score for later use
             m_currentConfidence = currentConfidence;
