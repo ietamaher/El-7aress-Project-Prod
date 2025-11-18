@@ -135,16 +135,17 @@ void JoystickDevice::pollJoystick()
 
         if (message && message->typeId() == Message::Type::JoystickDataType) {
             auto* joystickMsg = static_cast<JoystickDataMessage*>(message.get());
-            
-            // Update device data with the new state
+
+            // Update device data with the new state (axis/button values)
+            // Note: We do NOT emit dataChanged here because connection status hasn't changed
+            // dataChanged is only for connection status tracking, not for every axis/button update
             auto newData = std::make_shared<JoystickData>(joystickMsg->data());
             newData->isConnected = true;
             updateData(newData);
-            emit dataChanged(newData);
 
             dataUpdated = true;
 
-            // Emit backward-compatible signals
+            // Emit backward-compatible signals for axis/button events
             emitEventSignals(event);
         }
     }
