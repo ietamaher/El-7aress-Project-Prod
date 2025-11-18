@@ -998,18 +998,28 @@ bool CameraVideoStreamDevice::runTrackingCycle(VPIImage vpiFrameInput)
             } else {
                 // VPI didn't populate confidence array - estimate from tracking state
                 // This is a fallback for VPI backends that don't support confidence scores
+                //
+                // VPI Tracking State Enum:
+                // 0 = VPI_TRACKING_STATE_NEW (initialization)
+                // 1 = VPI_TRACKING_STATE_TRACKED (object successfully found)
+                // 2 = VPI_TRACKING_STATE_LOST (object lost)
+                // 3 = VPI_TRACKING_STATE_SHADOW_TRACKED (tracked using prediction, partially obscured)
                 switch (tempTarget->state) {
-                    case VPI_TRACKING_STATE_TRACKED:
-                        currentConfidence = 0.85f;  // High confidence - actively tracked
+                    case 0:  // VPI_TRACKING_STATE_NEW
+                        currentConfidence = 0.50f;  // Medium confidence - new target, needs validation
                         break;
-                    case VPI_TRACKING_STATE_NEW:
-                        currentConfidence = 0.50f;  // Medium confidence - new target
+                    case 1:  // VPI_TRACKING_STATE_TRACKED
+                        currentConfidence = 0.90f;  // High confidence - actively tracked with visual confirmation
                         break;
-                    case VPI_TRACKING_STATE_LOST:
-                        currentConfidence = 0.0f;   // No confidence - lost
+                    case 2:  // VPI_TRACKING_STATE_LOST
+                        currentConfidence = 0.0f;   // No confidence - tracking lost
+                        break;
+                    case 3:  // VPI_TRACKING_STATE_SHADOW_TRACKED (if supported)
+                        currentConfidence = 0.65f;  // Medium-high confidence - using prediction/coasting
                         break;
                     default:
                         currentConfidence = 0.30f;  // Low confidence - unknown state
+                        qWarning() << "[CAM" << m_cameraIndex << "] Unknown VPI tracking state:" << tempTarget->state;
                         break;
                 }
                 static bool warningShown = false;
