@@ -999,22 +999,23 @@ bool CameraVideoStreamDevice::runTrackingCycle(VPIImage vpiFrameInput)
                 // VPI didn't populate confidence array - estimate from tracking state
                 // This is a fallback for VPI backends that don't support confidence scores
                 //
-                // VPI Tracking State Enum:
+                // ACTUAL VPI Tracking State Enum (verified from runtime behavior):
                 // 0 = VPI_TRACKING_STATE_NEW (initialization)
-                // 1 = VPI_TRACKING_STATE_TRACKED (object successfully found)
-                // 2 = VPI_TRACKING_STATE_LOST (object lost)
+                // 1 = VPI_TRACKING_STATE_LOST (object lost) ← SWAPPED
+                // 2 = VPI_TRACKING_STATE_TRACKED (object successfully found) ← SWAPPED - MOST COMMON
                 // 3 = VPI_TRACKING_STATE_SHADOW_TRACKED (tracked using prediction, partially obscured)
+                // NOTE: States 1 and 2 are opposite of some VPI documentation!
                 switch (tempTarget->state) {
                     case 0:  // VPI_TRACKING_STATE_NEW
                         currentConfidence = 0.50f;  // Medium confidence - new target, needs validation
                         break;
-                    case 1:  // VPI_TRACKING_STATE_TRACKED
-                        currentConfidence = 0.90f;  // High confidence - actively tracked with visual confirmation
-                        break;
-                    case 2:  // VPI_TRACKING_STATE_LOST
+                    case 1:  // VPI_TRACKING_STATE_LOST (verified: means LOST, not TRACKED)
                         currentConfidence = 0.0f;   // No confidence - tracking lost
                         break;
-                    case 3:  // VPI_TRACKING_STATE_SHADOW_TRACKED (if supported)
+                    case 2:  // VPI_TRACKING_STATE_TRACKED (verified: means TRACKED, not LOST)
+                        currentConfidence = 0.90f;  // High confidence - actively tracked with visual confirmation
+                        break;
+                    case 3:  // VPI_TRACKING_STATE_SHADOW_TRACKED
                         currentConfidence = 0.65f;  // Medium-high confidence - using prediction/coasting
                         break;
                     default:
