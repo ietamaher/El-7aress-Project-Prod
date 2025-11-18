@@ -71,6 +71,12 @@ public:
 
 signals:
     /**
+     * @brief Emitted when joystick data changes (including connection status)
+     * @param newData Shared pointer to the new joystick data
+     */
+    void dataChanged(std::shared_ptr<const JoystickData> newData);
+
+    /**
      * @brief Emitted when an axis moves
      * @param axis Axis index (0 = X, 1 = Y, etc.)
      * @param value Normalized value (-1.0 to 1.0)

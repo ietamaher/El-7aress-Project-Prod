@@ -76,6 +76,7 @@ bool JoystickDevice::initialize()
     auto initialData = std::make_shared<JoystickData>();
     initialData->isConnected = true;
     updateData(initialData);
+    emit dataChanged(initialData);
 
     // Start polling
     m_pollTimer->start(m_pollInterval);
@@ -112,6 +113,7 @@ void JoystickDevice::shutdown()
     auto disconnectedData = std::make_shared<JoystickData>();
     disconnectedData->isConnected = false;
     updateData(disconnectedData);
+    emit dataChanged(disconnectedData);
 
     setState(DeviceState::Offline);
     qDebug() << "JoystickDevice: Shutdown complete";
@@ -138,7 +140,8 @@ void JoystickDevice::pollJoystick()
             auto newData = std::make_shared<JoystickData>(joystickMsg->data());
             newData->isConnected = true;
             updateData(newData);
-            
+            emit dataChanged(newData);
+
             dataUpdated = true;
 
             // Emit backward-compatible signals
