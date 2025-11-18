@@ -111,6 +111,7 @@ private:
     QString m_targetGUID;
     int m_pollInterval;
     bool m_sdlInitialized;
+    bool m_lastConnectionState;  // Track connection state to detect changes
 };
 
 #endif // JOYSTICKDEVICE_H

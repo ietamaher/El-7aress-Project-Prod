@@ -12,6 +12,7 @@ JoystickDevice::JoystickDevice(QObject* parent)
     , m_targetGUID("030000004f0400000204000011010000")  // Thrustmaster HOTAS Warthog
     , m_pollInterval(16)  // ~60Hz
     , m_sdlInitialized(false)
+    , m_lastConnectionState(false)
 {
     connect(m_pollTimer, &QTimer::timeout, this, &JoystickDevice::pollJoystick);
 }
@@ -76,6 +77,7 @@ bool JoystickDevice::initialize()
     auto initialData = std::make_shared<JoystickData>();
     initialData->isConnected = true;
     updateData(initialData);
+    m_lastConnectionState = true;
     emit dataChanged(initialData);
 
     // Start polling
@@ -113,6 +115,7 @@ void JoystickDevice::shutdown()
     auto disconnectedData = std::make_shared<JoystickData>();
     disconnectedData->isConnected = false;
     updateData(disconnectedData);
+    m_lastConnectionState = false;
     emit dataChanged(disconnectedData);
 
     setState(DeviceState::Offline);
@@ -125,8 +128,28 @@ void JoystickDevice::pollJoystick()
         return;
     }
 
+    // Check if joystick is still attached (detects cable unplug during runtime)
+    bool isCurrentlyAttached = SDL_JoystickGetAttached(m_joystick);
+
+    // Detect connection state change
+    if (isCurrentlyAttached != m_lastConnectionState) {
+        auto statusData = std::make_shared<JoystickData>();
+        statusData->isConnected = isCurrentlyAttached;
+        updateData(statusData);
+        m_lastConnectionState = isCurrentlyAttached;
+        emit dataChanged(statusData);
+
+        if (!isCurrentlyAttached) {
+            qWarning() << "JoystickDevice: Joystick disconnected during operation!";
+        }
+    }
+
+    // If disconnected, don't process events
+    if (!isCurrentlyAttached) {
+        return;
+    }
+
     SDL_Event event;
-    bool dataUpdated = false;
 
     // Process all pending SDL events
     while (SDL_PollEvent(&event)) {
@@ -135,16 +158,15 @@ void JoystickDevice::pollJoystick()
 
         if (message && message->typeId() == Message::Type::JoystickDataType) {
             auto* joystickMsg = static_cast<JoystickDataMessage*>(message.get());
-            
-            // Update device data with the new state
+
+            // Update device data with the new state (axis/button values)
+            // Note: We do NOT emit dataChanged here because connection status hasn't changed
+            // dataChanged is only for connection status tracking, not for every axis/button update
             auto newData = std::make_shared<JoystickData>(joystickMsg->data());
             newData->isConnected = true;
             updateData(newData);
-            emit dataChanged(newData);
 
-            dataUpdated = true;
-
-            // Emit backward-compatible signals
+            // Emit backward-compatible signals for axis/button events
             emitEventSignals(event);
         }
     }
