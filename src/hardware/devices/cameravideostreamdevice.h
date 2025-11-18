@@ -285,7 +285,8 @@ private:
     VPIImage m_vpiTgtPatches;   // VPI Image for tracker target patches
     VPIArray m_vpiInTargets;    // VPI Array for input bounding boxes
     VPIArray m_vpiOutTargets;   // VPI Array for output tracked bounding boxes
-    VPIArray m_vpiConfidenceScores; // VPI Array for confidence scores
+    VPIArray m_vpiConfidenceScores; // VPI Array for confidence scores (per-object max)
+    VPIImage m_vpiCorrelationMap;   // VPI Image for full correlation response map (fallback)
     int m_vpiTgtPatchSize;      // Size of the target patches
     VPIDCFTrackedBoundingBox m_currentTarget; // Internal tracker state (uses VPIRectI)
     QElapsedTimer m_velocityTimer; // To measure time between frames
