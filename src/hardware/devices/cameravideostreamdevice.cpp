@@ -951,7 +951,7 @@ bool CameraVideoStreamDevice::initializeFirstTarget(VPIImage vpiFrameInput, floa
         CHECK_VPI_STATUS(vpiSubmitConvertImageFormat(m_vpiStream, VPI_BACKEND_CUDA, vpiFrameInput, m_vpiFrameNV12, nullptr));
         CHECK_VPI_STATUS(vpiSubmitCropScalerBatch(m_vpiStream, 0, m_cropScalePayload, &m_vpiFrameNV12,
                                                   1, m_vpiInTargets, m_vpiTgtPatchSize, m_vpiTgtPatchSize, m_vpiTgtPatches));
-        CHECK_VPI_STATUS(vpiSubmitDCFTrackerUpdateBatch(m_vpiStream, 0, m_dcfPayload, nullptr, 0,
+        CHECK_VPI_STATUS(vpiSubmitDCFTrackerUpdateBatch(m_vpiStream, m_vpiBackend, m_dcfPayload, nullptr, 0,
                                                         nullptr, nullptr, m_vpiTgtPatches, m_vpiInTargets, nullptr));
         CHECK_VPI_STATUS(vpiStreamSync(m_vpiStream));
     } catch (const std::exception &e) {
@@ -1078,7 +1078,7 @@ bool CameraVideoStreamDevice::runTrackingCycle(VPIImage vpiFrameInput)
             *inTargetsData.buffer.aos.sizePointer = 1;
             CHECK_VPI_STATUS(vpiArrayUnlock(m_vpiInTargets));
 
-            CHECK_VPI_STATUS(vpiSubmitDCFTrackerUpdateBatch(m_vpiStream, 0, m_dcfPayload, nullptr, 0,
+            CHECK_VPI_STATUS(vpiSubmitDCFTrackerUpdateBatch(m_vpiStream, m_vpiBackend, m_dcfPayload, nullptr, 0,
                                                             nullptr, nullptr, m_vpiTgtPatches, m_vpiInTargets, nullptr));
             CHECK_VPI_STATUS(vpiStreamSync(m_vpiStream)); // Sync after update
 
