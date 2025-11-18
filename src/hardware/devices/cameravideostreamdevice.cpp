@@ -58,6 +58,7 @@ CameraVideoStreamDevice::CameraVideoStreamDevice(int cameraIndex,
     m_vpiInTargets(nullptr),
     m_vpiOutTargets(nullptr),
     m_vpiConfidenceScores(nullptr),
+    m_vpiCorrelationMap(nullptr),
     m_vpiTgtPatchSize(0),
     m_currentTarget(),          // VPIDCFTrackedBoundingBox
     m_velocityTimer(),          // QElapsedTimer
@@ -545,8 +546,14 @@ bool CameraVideoStreamDevice::initializeVPI()
         CHECK_VPI_STATUS(vpiImageCreate(m_vpiTgtPatchSize, m_vpiTgtPatchSize * m_maxTrackedTargets, patchFormat, 0, &m_vpiTgtPatches));
         CHECK_VPI_STATUS(vpiArrayCreate(m_maxTrackedTargets, VPI_ARRAY_TYPE_DCF_TRACKED_BOUNDING_BOX, 0, &m_vpiInTargets));
         CHECK_VPI_STATUS(vpiArrayCreate(m_maxTrackedTargets, VPI_ARRAY_TYPE_DCF_TRACKED_BOUNDING_BOX, 0, &m_vpiOutTargets));
-        // Create an array to hold the confidence scores.
+        // Create an array to hold the confidence scores (per-object max correlation response)
         CHECK_VPI_STATUS(vpiArrayCreate(m_maxTrackedTargets, VPI_ARRAY_TYPE_F32, 0, &m_vpiConfidenceScores));
+        // Create an image to hold the full correlation response map (fallback method)
+        // Correlation map size matches the search region output from DCF tracker
+        int correlationMapSize = m_vpiTgtPatchSize;
+        CHECK_VPI_STATUS(vpiImageCreate(correlationMapSize, correlationMapSize * m_maxTrackedTargets,
+                                       VPI_IMAGE_FORMAT_F32, 0, &m_vpiCorrelationMap));
+        qInfo() << "Cam" << m_cameraIndex << ": Created correlation map" << correlationMapSize << "x" << (correlationMapSize * m_maxTrackedTargets);
     } catch (const std::exception &e) {
         qCritical() << "Cam" << m_cameraIndex << ": VPI Initialization failed:" << e.what();
         cleanupVPI(); return false;
@@ -574,6 +581,7 @@ void CameraVideoStreamDevice::cleanupVPI()
     VPI_SAFE_DESTROY(vpiImageDestroy, m_vpiFrameNV12);
     VPI_SAFE_DESTROY(vpiStreamDestroy, m_vpiStream);
     VPI_SAFE_DESTROY(vpiArrayDestroy, m_vpiConfidenceScores);
+    VPI_SAFE_DESTROY(vpiImageDestroy, m_vpiCorrelationMap);
 
     // CUDA context cleanup
     cudaError_t cudaStatus = cudaDeviceSynchronize();
@@ -973,9 +981,10 @@ bool CameraVideoStreamDevice::runTrackingCycle(VPIImage vpiFrameInput)
         CHECK_VPI_STATUS(vpiSubmitConvertImageFormat(m_vpiStream, VPI_BACKEND_CUDA, vpiFrameInput, m_vpiFrameNV12, nullptr));
         CHECK_VPI_STATUS(vpiSubmitCropScalerBatch(m_vpiStream, 0, m_cropScalePayload, &m_vpiFrameNV12,
                                                   1, m_vpiInTargets, m_vpiTgtPatchSize, m_vpiTgtPatchSize, m_vpiTgtPatches));
+        // Request BOTH correlation map AND max correlation scores for fallback
         CHECK_VPI_STATUS(vpiSubmitDCFTrackerLocalizeBatch(m_vpiStream, m_vpiBackend, m_dcfPayload, NULL, 0,
                                                           NULL, m_vpiTgtPatches, m_vpiInTargets, m_vpiOutTargets,
-                                                          NULL, m_vpiConfidenceScores, NULL));
+                                                          m_vpiCorrelationMap, m_vpiConfidenceScores, NULL));
         CHECK_VPI_STATUS(vpiStreamSync(m_vpiStream));
 
         VPIArrayData outTargetsData;
@@ -992,41 +1001,67 @@ bool CameraVideoStreamDevice::runTrackingCycle(VPIImage vpiFrameInput)
             // Read confidence if available from VPI
             float currentConfidence = 0.0f;
             if (*confidenceData.buffer.aos.sizePointer > 0) {
-                // VPI provided confidence scores
+                // METHOD 1: VPI provided per-object max correlation scores
                 currentConfidence = static_cast<float*>(confidenceData.buffer.aos.data)[0];
-                qDebug() << "[CAM" << m_cameraIndex << "] VPI provided confidence:" << currentConfidence;
+                qDebug() << "[CAM" << m_cameraIndex << "] VPI provided confidence (method 1):" << currentConfidence;
             } else {
-                // VPI didn't populate confidence array - estimate from tracking state
-                // This is a fallback for VPI backends that don't support confidence scores
-                //
-                // ACTUAL VPI Tracking State Enum (verified from runtime behavior):
-                // 0 = VPI_TRACKING_STATE_NEW (initialization)
-                // 1 = VPI_TRACKING_STATE_LOST (object lost) ← SWAPPED
-                // 2 = VPI_TRACKING_STATE_TRACKED (object successfully found) ← SWAPPED - MOST COMMON
-                // 3 = VPI_TRACKING_STATE_SHADOW_TRACKED (tracked using prediction, partially obscured)
-                // NOTE: States 1 and 2 are opposite of some VPI documentation!
-                switch (tempTarget->state) {
-                    case 0:  // VPI_TRACKING_STATE_NEW
-                        currentConfidence = 0.50f;  // Medium confidence - new target, needs validation
-                        break;
-                    case 1:  // VPI_TRACKING_STATE_LOST (verified: means LOST, not TRACKED)
-                        currentConfidence = 0.0f;   // No confidence - tracking lost
-                        break;
-                    case 2:  // VPI_TRACKING_STATE_TRACKED (verified: means TRACKED, not LOST)
-                        currentConfidence = 0.90f;  // High confidence - actively tracked with visual confirmation
-                        break;
-                    case 3:  // VPI_TRACKING_STATE_SHADOW_TRACKED
-                        currentConfidence = 0.65f;  // Medium-high confidence - using prediction/coasting
-                        break;
-                    default:
-                        currentConfidence = 0.30f;  // Low confidence - unknown state
-                        qWarning() << "[CAM" << m_cameraIndex << "] Unknown VPI tracking state:" << tempTarget->state;
-                        break;
-                }
-                static bool warningShown = false;
-                if (!warningShown) {
-                    qWarning() << "[CAM" << m_cameraIndex << "] VPI Confidence array is empty - using state-based estimation";
-                    warningShown = true;  // Only warn once
+                // METHOD 2: Try reading from full correlation response map
+                VPIImageData correlationImgData;
+                VPIStatus lockStatus = vpiImageLockData(m_vpiCorrelationMap, VPI_LOCK_READ, VPI_IMAGE_BUFFER_HOST_PITCH_LINEAR, &correlationImgData);
+
+                if (lockStatus == VPI_SUCCESS && correlationImgData.buffer.pitch.planes[0].data != nullptr) {
+                    // Successfully locked correlation map, find maximum value
+                    int width = correlationImgData.buffer.pitch.planes[0].width;
+                    int height = correlationImgData.buffer.pitch.planes[0].height;
+                    int32_t pitchBytes = correlationImgData.buffer.pitch.planes[0].pitchBytes;
+                    const uint8_t *basePtr = static_cast<const uint8_t*>(correlationImgData.buffer.pitch.planes[0].data);
+
+                    float maxCorr = -1e9f;
+                    for (int y = 0; y < height; ++y) {
+                        const float *rowPtr = reinterpret_cast<const float*>(basePtr + y * pitchBytes);
+                        for (int x = 0; x < width; ++x) {
+                            if (rowPtr[x] > maxCorr) {
+                                maxCorr = rowPtr[x];
+                            }
+                        }
+                    }
+                    currentConfidence = maxCorr;
+                    qDebug() << "[CAM" << m_cameraIndex << "] VPI correlation map confidence (method 2):" << currentConfidence
+                             << "map size:" << width << "x" << height;
+                    vpiImageUnlock(m_vpiCorrelationMap);
+                } else {
+                    // METHOD 3: VPI didn't populate confidence array or correlation map - estimate from tracking state
+                    // This is a fallback for VPI backends that don't support confidence scores
+                    //
+                    // ACTUAL VPI Tracking State Enum (verified from runtime behavior):
+                    // 0 = VPI_TRACKING_STATE_NEW (initialization)
+                    // 1 = VPI_TRACKING_STATE_LOST (object lost) ← SWAPPED
+                    // 2 = VPI_TRACKING_STATE_TRACKED (object successfully found) ← SWAPPED - MOST COMMON
+                    // 3 = VPI_TRACKING_STATE_SHADOW_TRACKED (tracked using prediction, partially obscured)
+                    // NOTE: States 1 and 2 are opposite of some VPI documentation!
+                    switch (tempTarget->state) {
+                        case 0:  // VPI_TRACKING_STATE_NEW
+                            currentConfidence = 0.50f;  // Medium confidence - new target, needs validation
+                            break;
+                        case 1:  // VPI_TRACKING_STATE_LOST (verified: means LOST, not TRACKED)
+                            currentConfidence = 0.0f;   // No confidence - tracking lost
+                            break;
+                        case 2:  // VPI_TRACKING_STATE_TRACKED (verified: means TRACKED, not LOST)
+                            currentConfidence = 0.90f;  // High confidence - actively tracked with visual confirmation
+                            break;
+                        case 3:  // VPI_TRACKING_STATE_SHADOW_TRACKED
+                            currentConfidence = 0.65f;  // Medium-high confidence - using prediction/coasting
+                            break;
+                        default:
+                            currentConfidence = 0.30f;  // Low confidence - unknown state
+                            qWarning() << "[CAM" << m_cameraIndex << "] Unknown VPI tracking state:" << tempTarget->state;
+                            break;
+                    }
+                    static bool warningShown = false;
+                    if (!warningShown) {
+                        qWarning() << "[CAM" << m_cameraIndex << "] VPI confidence unavailable (methods 1 & 2 failed) - using state-based estimation (method 3)";
+                        warningShown = true;  // Only warn once
+                    }
                 }
             }
 
