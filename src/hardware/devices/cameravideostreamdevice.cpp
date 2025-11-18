@@ -60,6 +60,7 @@ CameraVideoStreamDevice::CameraVideoStreamDevice(int cameraIndex,
     m_vpiConfidenceScores(nullptr),
     m_vpiCorrelationMap(nullptr),
     m_vpiTgtPatchSize(0),
+    m_vpiFeaturePatchSize(0),
     m_currentTarget(),          // VPIDCFTrackedBoundingBox
     m_velocityTimer(),          // QElapsedTimer
     m_lastTargetCenterX_px(0.0f),
@@ -540,7 +541,8 @@ bool CameraVideoStreamDevice::initializeVPI()
         CHECK_VPI_STATUS(vpiCreateCropScaler(m_vpiBackend, 1, m_maxTrackedTargets, &m_cropScalePayload));
         VPIDCFTrackerCreationParams dcfParams;
         CHECK_VPI_STATUS(vpiInitDCFTrackerCreationParams(&dcfParams));
-        m_vpiTgtPatchSize = dcfParams.featurePatchSize * dcfParams.hogCellSize;
+        m_vpiFeaturePatchSize = dcfParams.featurePatchSize;  // Store feature patch size (24)
+        m_vpiTgtPatchSize = dcfParams.featurePatchSize * dcfParams.hogCellSize;  // Target patch size (96)
         CHECK_VPI_STATUS(vpiCreateDCFTracker(m_vpiBackend, 1, m_maxTrackedTargets, &dcfParams, &m_dcfPayload));
         VPIImageFormat patchFormat = (m_vpiBackend == VPI_BACKEND_PVA) ? VPI_IMAGE_FORMAT_RGB8p : VPI_IMAGE_FORMAT_RGBA8;
         CHECK_VPI_STATUS(vpiImageCreate(m_vpiTgtPatchSize, m_vpiTgtPatchSize * m_maxTrackedTargets, patchFormat, 0, &m_vpiTgtPatches));
@@ -549,11 +551,11 @@ bool CameraVideoStreamDevice::initializeVPI()
         // Create an array to hold the confidence scores (per-object max correlation response)
         CHECK_VPI_STATUS(vpiArrayCreate(m_maxTrackedTargets, VPI_ARRAY_TYPE_F32, 0, &m_vpiConfidenceScores));
         // Create an image to hold the full correlation response map (fallback method)
-        // Correlation map size matches the search region output from DCF tracker
-        int correlationMapSize = m_vpiTgtPatchSize;
-        CHECK_VPI_STATUS(vpiImageCreate(correlationMapSize, correlationMapSize * m_maxTrackedTargets,
+        // Correlation map size MUST be featurePatchSize (not featurePatchSize * hogCellSize)
+        CHECK_VPI_STATUS(vpiImageCreate(m_vpiFeaturePatchSize, m_vpiFeaturePatchSize * m_maxTrackedTargets,
                                        VPI_IMAGE_FORMAT_F32, 0, &m_vpiCorrelationMap));
-        qInfo() << "Cam" << m_cameraIndex << ": Created correlation map" << correlationMapSize << "x" << (correlationMapSize * m_maxTrackedTargets);
+        qInfo() << "Cam" << m_cameraIndex << ": Created correlation map" << m_vpiFeaturePatchSize << "x" << (m_vpiFeaturePatchSize * m_maxTrackedTargets)
+                << "(featurePatchSize=" << m_vpiFeaturePatchSize << ", tgtPatchSize=" << m_vpiTgtPatchSize << ")";
     } catch (const std::exception &e) {
         qCritical() << "Cam" << m_cameraIndex << ": VPI Initialization failed:" << e.what();
         cleanupVPI(); return false;
