@@ -1,12 +1,16 @@
-#ifndef    CAMERAVIDEOSTREAMDEVICE_H
+#ifndef CAMERAVIDEOSTREAMDEVICE_H
 #define CAMERAVIDEOSTREAMDEVICE_H
 
-// --- Standard Library Includes ---
+// ============================================================================
+// INCLUDES
+// ============================================================================
+
+// Standard Library
 #include <atomic>
 #include <string>
-#include <vector> // For FrameData::detections
+#include <vector>
 
-// --- Qt Includes ---
+// Qt Framework
 #include <QThread>
 #include <QImage>
 #include <QMutex>
@@ -15,354 +19,350 @@
 #include <QObject>
 #include <QString>
 
-// --- GStreamer Includes ---
+// GStreamer
 #include <gst/gst.h>
 #include <gst/app/gstappsink.h>
 
-// --- VPI Includes ---
-#include <vpi/Types.h>          // VPIImage, VPIStream, VPIPayload, etc.
+// NVIDIA VPI (Vision Programming Interface)
+#include <vpi/Types.h>
 #include <vpi/Array.h>
 #include <vpi/Image.h>
 #include <vpi/Stream.h>
 #include <vpi/algo/ConvertImageFormat.h>
 #include <vpi/algo/CropScaler.h>
-#include <vpi/algo/DCFTracker.h> // VPITrackingState, VPIDCFTrackedBoundingBox
+#include <vpi/algo/DCFTracker.h>
 #include <vpi/OpenCVInterop.hpp>
 
-// --- OpenCV Includes ---
+// OpenCV
 #include <opencv2/core.hpp>
-#include <opencv2/imgproc.hpp> // For cv::Mat conversions if needed in header
+#include <opencv2/imgproc.hpp>
 
-// --- Project Includes ---
-//#include "osdrenderer.h" // For OperationalMode, MotionMode, FireMode, ReticleType
-#include "utils/inference.h" // For Detection struct used in FrameData
-#include "models/domain/systemstatemodel.h" // For SystemStateData used in onSystemStateChanged slot
+// Project
+#include "utils/inference.h"
+#include "models/domain/systemstatemodel.h"
 
-// --- Data Structure Definition ---
+// ============================================================================
+// DATA STRUCTURES
+// ============================================================================
 
 /**
- * @brief Holds the processed frame data and associated metadata to be emitted.
+ * @brief Frame data structure containing processed video and all system metadata
+ *
+ * This structure combines the video frame with all relevant system state data
+ * including tracking, ballistics, sensors, and weapon system status. It is
+ * emitted from the video processing thread to the OSD renderer.
  */
 struct FrameData {
+    // Camera & Image Data
     int cameraIndex = -1;
     QImage baseImage;
+    float cameraFOV = 0.0f;
+
+    // VPI Tracking Data
     bool trackingEnabled = false;
     bool trackerInitialized = false;
     VPITrackingState trackingState = VPI_TRACKING_STATE_LOST;
-    QRect trackingBbox = QRect(0, 0, 0, 0); // Use QRect for Qt integration
-    float trackingConfidence = 0.0f;  ///< Tracking confidence score (0.0-1.0) from VPI DCF tracker
+    QRect trackingBbox = QRect(0, 0, 0, 0);
+    float trackingConfidence = 0.0f;
+    TrackingPhase currentTrackingPhase = TrackingPhase::Off;
+    bool trackerHasValidTarget = false;
+    float acquisitionBoxX_px = 0.0f;
+    float acquisitionBoxY_px = 0.0f;
+    float acquisitionBoxW_px = 0.0f;
+    float acquisitionBoxH_px = 0.0f;
+
+    // YOLO Object Detection
+    bool detectionEnabled = false;
+    std::vector<YoloDetection> detections;
+
+    // Gimbal State
     OperationalMode currentOpMode = OperationalMode::Idle;
     MotionMode motionMode = MotionMode::Manual;
     bool stabEnabled = false;
     float azimuth = 0.0f;
     float elevation = 0.0f;
-
-    bool imuConnected = false;        // IMU connection status
-    double imuRollDeg;              // Roll angle in degrees
-    double imuPitchDeg;             // Pitch angle in degrees
-    double imuYawDeg;               // Yaw/Heading angle in degrees (0-360, 0=North)
-    double imuTemp;                 // IMU temperature in Celsius
-    
-    // Gyro rates (optional for OSD, but available if needed)
-    double gyroX;                   // deg/s
-    double gyroY;                   // deg/s
-    double gyroZ;                   // deg/s
-    
-    // Accelerometer (optional for OSD)
-    double accelX;                  // G
-    double accelY;                  // G
-    double accelZ;                  // G
-    float cameraFOV = 0.0f;
     float speed = 0.0f;
+
+    // IMU Sensor Data
+    bool imuConnected = false;
+    double imuRollDeg;
+    double imuPitchDeg;
+    double imuYawDeg;
+    double imuTemp;
+    double gyroX;
+    double gyroY;
+    double gyroZ;
+    double accelX;
+    double accelY;
+    double accelZ;
+
+    // Laser Range Finder
     float lrfDistance = 0.0f;
+
+    // Weapon System Status
     bool sysCharged = false;
     bool gunArmed = false;
     bool sysReady = false;
     FireMode fireMode = FireMode::SingleShot;
-    ReticleType reticleType = ReticleType::BoxCrosshair;
-    QColor colorStyle = QColor(70, 226, 165);
-    std::vector<YoloDetection> detections;
-    bool detectionEnabled = false;
-        // --- NEW: Zeroing Data from SystemStateData ---
+    bool stationAmmunitionLevel = false;
+
+    // Ballistics - Zeroing
     bool zeroingModeActive = false;
     float zeroingAzimuthOffset = 0.0f;
     float zeroingElevationOffset = 0.0f;
     bool zeroingAppliedToBallistics = false;
 
-    // --- NEW: Windage Data from SystemStateData ---
+    // Ballistics - Windage
     bool windageModeActive = false;
     float windageSpeedKnots = 0.0f;
     float windageDirectionDegrees = 0.0f;
     bool windageAppliedToBallistics = false;
     float calculatedCrosswindMS = 0.0f;
 
+    // Ballistics - Lead Angle Compensation
+    bool leadAngleActive = false;
+    LeadAngleStatus leadAngleStatus;
+    float leadAngleOffsetAz_deg;
+    float leadAngleOffsetEl_deg;
+    QString leadStatusText;
+
+    // Fire Control - Aiming Points
+    int reticleAimpointImageX_px;      // Gun boresight with zeroing ONLY
+    int reticleAimpointImageY_px;      // Gun boresight with zeroing ONLY
+    float ccipImpactImageX_px = 0.0f;  // CCIP: bullet impact with zeroing + lead
+    float ccipImpactImageY_px = 0.0f;  // CCIP: bullet impact with zeroing + lead
+
+    // Safety Zones
     bool isReticleInNoFireZone = false;
     bool gimbalStoppedAtNTZLimit = false;
 
-
-    bool leadAngleActive = false; // Indicates if lead angle calculation is active
-    LeadAngleStatus leadAngleStatus;
-    int reticleAimpointImageX_px;  // Gun boresight with zeroing ONLY
-    int reticleAimpointImageY_px;  // Gun boresight with zeroing ONLY
-
-    // ✅ CCIP (Continuously Computed Impact Point) coordinates
-    // Bullet impact prediction with zeroing + lead angle
-    float ccipImpactImageX_px = 0.0f;
-    float ccipImpactImageY_px = 0.0f;
-
-    // Optional but helpful:
-    float leadAngleOffsetAz_deg;
-    float leadAngleOffsetEl_deg;
-
-    // Pass pre-formatted status texts
-    QString leadStatusText;
+    // OSD Display
+    ReticleType reticleType = ReticleType::BoxCrosshair;
+    QColor colorStyle = QColor(70, 226, 165);
     QString currentScanName = "";
-
-
-    TrackingPhase currentTrackingPhase = TrackingPhase::Off;
-    bool trackerHasValidTarget = false;
-    // Bounding box for the acquisition gate
-    float acquisitionBoxX_px = 0.0f;
-    float acquisitionBoxY_px = 0.0f;
-    float acquisitionBoxW_px = 0.0f;
-    float acquisitionBoxH_px = 0.0f;
-
-    bool stationAmmunitionLevel = false;
 };
 
-// --- Class Definition ---
+// ============================================================================
+// CLASS DEFINITION
+// ============================================================================
 
 /**
- * @brief Processes video frames from a GStreamer pipeline using VPI for tracking/detection.
+ * @brief Video stream processor with VPI tracking and YOLO detection
  *
- * This class runs in a separate thread to avoid blocking the main GUI thread.
- * It receives video frames, performs VPI operations (like tracking), gathers system state,
- * and emits the combined data in a FrameData struct.
+ * This class runs in a dedicated thread and processes video frames from a
+ * GStreamer pipeline. It performs:
+ * - VPI-accelerated object tracking (DCF tracker on CUDA)
+ * - YOLO object detection (async on GPU)
+ * - Frame format conversion (YUY2 → BGRA)
+ * - System state synchronization
+ * - OSD metadata preparation
+ *
+ * Architecture:
+ * - GStreamer: Video capture and preprocessing
+ * - VPI (CUDA): High-performance tracking
+ * - YOLO (CUDA): Object detection
+ * - Qt Signals: Thread-safe communication
  */
 class CameraVideoStreamDevice : public QThread
 {
     Q_OBJECT
 
 public:
-    // --- Constructor & Destructor ---
+    // ========================================================================
+    // PUBLIC INTERFACE
+    // ========================================================================
+
     explicit CameraVideoStreamDevice(int cameraIndex,
-                            const QString &deviceName,
-                            int sourceWidth, // Output width expected after processing (e.g., crop/scale)
-                            int sourceHeight, // Output height expected
-                            SystemStateModel* stateModel,
-                            QObject *parent = nullptr);
+                                     const QString &deviceName,
+                                     int sourceWidth,
+                                     int sourceHeight,
+                                     SystemStateModel* stateModel,
+                                     QObject *parent = nullptr);
     ~CameraVideoStreamDevice() override;
 
-    // --- Public Methods ---
-    /**
-     * @brief Signals the processing thread to stop gracefully.
-     */
     void stop();
 
 public slots:
-    // --- Public Slots ---
-    /**
-     * @brief Enables or disables the VPI tracker.
-     * @param enabled True to enable tracking, false to disable.
-     */
     void setTrackingEnabled(bool enabled);
-
-    /**
-     * @brief Enables or disables object detection.
-     * @param enabled True to enable detection, false to disable.
-     */
     void setDetectionEnabled(bool enabled);
-
-    /**
-     * @brief Updates the internal state based on system-wide changes.
-     * @param newState The latest system state data.
-     */
     void onSystemStateChanged(const SystemStateData &newState);
 
 signals:
-    // --- Signals ---
-    /**
-     * @brief Emitted when a new frame has been processed and its data is ready.
-     * @param data The structure containing the image and associated metadata.
-     */
     void frameDataReady(const FrameData &data);
-
-    /**
-     * @brief Emitted when a processing error occurs.
-     * @param cameraIndex The index of the camera where the error occurred.
-     * @param errorMessage A description of the error.
-     */
     void processingError(int cameraIndex, const QString &errorMessage);
-
-    /**
-     * @brief Emitted to provide status updates from the processing thread.
-     * @param cameraIndex The index of the camera providing the update.
-     * @param statusMessage The status message.
-     */
     void statusUpdate(int cameraIndex, const QString &statusMessage);
 
 protected:
-    // --- QThread Reimplementation ---
-    /**
-     * @brief The main entry point for the thread's execution.
-     * Contains the GStreamer main loop and frame processing logic.
-     */
+    // ========================================================================
+    // THREAD EXECUTION
+    // ========================================================================
+
     void run() override;
 
-private slots:
-               // --- Private Slots ---
-               // (None currently defined, add internal slots here if needed)
-
 private:
-    // --- Private Helper Methods ---
+    // ========================================================================
+    // PRIVATE METHODS
+    // ========================================================================
 
-    // GStreamer Management
+    // GStreamer Pipeline
     bool initializeGStreamer();
     void cleanupGStreamer();
     static GstFlowReturn on_new_sample_from_sink(GstAppSink *sink, gpointer user_data);
     GstFlowReturn handleNewSample(GstAppSink *sink);
 
-    // VPI Management & Processing
+    // VPI Processing
     bool initializeVPI();
     void cleanupVPI();
     bool processFrame(GstBuffer *buffer);
     bool initializeFirstTarget(VPIImage vpiFrameInput, float boxX, float boxY, float boxW, float boxH);
     bool runTrackingCycle(VPIImage vpiFrameInput);
 
-    // Utility Methods
+    // Utilities
     QImage cvMatToQImage(const cv::Mat &inMat);
 
-    // --- Member Variables ---
+    // ========================================================================
+    // MEMBER VARIABLES
+    // ========================================================================
 
-    // Thread Control
-
-    // Configuration & Identification
-    int m_cameraIndex;          // Identifier for this processor instance
-    QString m_deviceName;       // e.g., /dev/video0
-    int m_sourceWidth;          // Width from the GStreamer source (e.g., v4l2src)
-    int m_sourceHeight;         // Height from the GStreamer source
-    int m_outputWidth;          // Target width after VPI processing (e.g., crop/scale)
-    int m_outputHeight;         // Target height after VPI processing
+    // --- Configuration & Identification ---
+    const int m_cameraIndex;
+    const QString m_deviceName;
+    const int m_sourceWidth;
+    const int m_sourceHeight;
+    int m_outputWidth;
+    int m_outputHeight;
     SystemStateModel* m_stateModel;
-    const int m_maxTrackedTargets; // Max targets for VPI arrays
-    std::atomic<bool> m_abortRequest; // Flag to signal thread termination
+    const int m_maxTrackedTargets;
+    std::atomic<bool> m_abortRequest;
 
+    // --- GStreamer Components ---
+    GstElement *m_pipeline;
+    GstElement *m_appSink;
+    GMainLoop *m_gstLoop;
 
+    // --- VPI Components ---
+    VPIBackend m_vpiBackend;
+    VPIStream m_vpiStream;
+    VPIPayload m_dcfPayload;
+    VPIPayload m_cropScalePayload;
+    VPIImage m_vpiFrameNV12;
+    VPIImage m_vpiTgtPatches;
+    VPIArray m_vpiInTargets;
+    VPIArray m_vpiOutTargets;
+    VPIArray m_vpiConfidenceScores;
+    VPIImage m_vpiCorrelationMap;
+    int m_vpiTgtPatchSize;
+    int m_vpiFeaturePatchSize;
+
+    // --- VPI Tracking State ---
+    VPIDCFTrackedBoundingBox m_currentTarget;
+    std::atomic<bool> m_trackingEnabled;
+    bool m_trackerInitialized;
+    QElapsedTimer m_velocityTimer;
+    float m_lastTargetCenterX_px;
+    float m_lastTargetCenterY_px;
+    float m_currentConfidence;
+    float m_smoothedConfidence;
+
+    // --- YOLO Detection (Async) ---
+    YoloInference m_inference;
+    std::atomic<bool> m_detectionEnabled;
+    QMutex m_detectionMutex;
+    std::vector<YoloDetection> m_latestDetections;
+    QElapsedTimer m_lastDetectionTime;
+    bool m_detectionInProgress;
+    cv::Mat m_detectionFrame;
+
+    // --- OpenCV Buffers ---
+    cv::Mat m_yuy2_host_buffer;
+
+    // --- Cropping Configuration ---
+    int m_cropTop;
+    int m_cropBottom;
+    int m_cropLeft;
+    int m_cropRight;
+
+    // --- System State (Thread-Safe with Mutex) ---
+    QMutex m_stateMutex;
+
+    // Gimbal State
+    OperationalMode m_currentMode;
+    MotionMode m_motionMode;
     bool m_stabEnabled;
     float m_currentAzimuth;
     float m_currentElevation;
+    float m_speed;
 
+    // IMU Data
     bool m_imuConnected;
     double m_imuRollDeg;
     double m_imuPitchDeg;
-    double m_imuYawDeg;      // Vehicle heading (0-360°, 0=North)
+    double m_imuYawDeg;
     double m_imuTemp;
     double m_gyroX, m_gyroY, m_gyroZ;
-    double m_accelX, m_accelY, m_accelZ;    
+    double m_accelX, m_accelY, m_accelZ;
 
+    // Sensors
     float m_cameraFOV;
     float m_lrfDistance;
 
-
+    // Weapon System
     bool m_sysCharged;
     bool m_sysArmed;
     bool m_sysReady;
-    float m_speed;
-    std::atomic<bool> m_trackingEnabled; // Control flag for enabling/disabling tracking
-    bool m_trackerInitialized;  // Flag indicating if the tracker has an initial target
-    std::atomic<bool> m_detectionEnabled; // Control flag for enabling/disabling detection
-    // GStreamer Components
-    GstElement *m_pipeline;     // The GStreamer pipeline
-    GstElement *m_appSink;      // Sink element to grab frames from
-    GMainLoop *m_gstLoop;       // GStreamer main loop for event handling
+    bool m_currentAmmunitionLevel;
+    FireMode m_fireMode;
 
-    // VPI Components & State
-    VPIBackend m_vpiBackend;    // VPI backend (e.g., VPI_BACKEND_CUDA)
-    VPIStream m_vpiStream;      // VPI processing stream
-    VPIPayload m_dcfPayload;    // Payload for DCF tracker algorithm
-    VPIPayload m_cropScalePayload; // Payload for Crop/Scaler algorithm
-    VPIImage m_vpiFrameNV12;    // VPI Image buffer for NV12 format
-    VPIImage m_vpiTgtPatches;   // VPI Image for tracker target patches
-    VPIArray m_vpiInTargets;    // VPI Array for input bounding boxes
-    VPIArray m_vpiOutTargets;   // VPI Array for output tracked bounding boxes
-    VPIArray m_vpiConfidenceScores; // VPI Array for confidence scores (per-object max)
-    VPIImage m_vpiCorrelationMap;   // VPI Image for full correlation response map (fallback)
-    int m_vpiTgtPatchSize;      // Size of the target patches (featurePatchSize * hogCellSize)
-    int m_vpiFeaturePatchSize;  // Size of correlation response output (featurePatchSize only)
-    VPIDCFTrackedBoundingBox m_currentTarget; // Internal tracker state (uses VPIRectI)
-    QElapsedTimer m_velocityTimer; // To measure time between frames
-    float m_lastTargetCenterX_px;
-    float m_lastTargetCenterY_px;
-    float m_currentConfidence;      ///< Current tracking confidence score (0.0-1.0) from VPI tracker
-    float m_smoothedConfidence;     ///< Smoothed confidence for stable OSD display (exponential moving average)
-
-
-    // OpenCV Buffers (if needed for intermediate steps)
-    cv::Mat m_yuy2_host_buffer; // Example buffer for format conversion
-
-    // State Variables (synchronized via mutex or atomic where needed)
-    QMutex m_stateMutex;        // Mutex to protect access to shared state variables below
-    OperationalMode m_currentMode;
-    MotionMode m_motionMode;
-    bool m_currentZeroingModeActive;  
+    // Ballistics - Zeroing
+    bool m_currentZeroingModeActive;
     bool m_currentZeroingApplied;
     float m_currentZeroingAzOffset;
     float m_currentZeroingElOffset;
-    //TrackingPhase m_currentTrackingState; // Current tracking state (e.g., VPI_TRACKING_STATE_LOST)
 
+    // Ballistics - Windage
     bool m_currentWindageModeActive;
     bool m_currentWindageApplied;
     float m_currentWindageSpeed;
     float m_currentWindageDirection;
     float m_currentCalculatedCrosswind;
+
+    // Ballistics - Lead Angle
+    bool m_isLacActiveForReticle;
+    LeadAngleStatus m_currentLeadAngleStatus;
+    float m_currentLeadAngleOffsetAz;
+    float m_currentLeadAngleOffsetEl;
+    QString m_currentLeadStatusText;
+
+    // Fire Control
+    int m_currentReticleAimpointImageX_px;
+    int m_currentReticleAimpointImageY_px;
+    float m_currentCcipImpactImageX_px;
+    float m_currentCcipImpactImageY_px;
+
+    // Safety Zones
     bool m_currentIsReticleInNoFireZone;
     bool m_currentGimbalStoppedAtNTZLimit;
-    int m_currentReticleAimpointImageX_px;     // Reticle: gun boresight with zeroing ONLY
-    int m_currentReticleAimpointImageY_px;     // Reticle: gun boresight with zeroing ONLY
-    float m_currentCcipImpactImageX_px = 0.0f; // ✅ CCIP: bullet impact with zeroing + lead
-    float m_currentCcipImpactImageY_px = 0.0f; // ✅ CCIP: bullet impact with zeroing + lead
-    QString m_currentLeadStatusText; 
-    QString m_currentScanName; // Name of the current scan (if applicable)
-    TrackingPhase m_currentTrackingPhase; // Current tracking phase (e.g., acquisition, tracking)
+
+    // Tracking Phase Management
+    TrackingPhase m_currentTrackingPhase;
     bool m_trackerHasValidTarget;
-    int m_currentAcquisitionBoxX_px; // X position of the acquisition box in pixels
-    int m_currentAcquisitionBoxY_px; // Y position of the acquisition box in pixels
-    int m_currentAcquisitionBoxW_px; // Width of the acquisition box in pixels
-    int m_currentAcquisitionBoxH_px; // Height of the acquisition box in pixels
-    bool m_currentActiveCameraIsDay; // Flag indicating if the active camera is a day camera
+    int m_currentAcquisitionBoxX_px;
+    int m_currentAcquisitionBoxY_px;
+    int m_currentAcquisitionBoxW_px;
+    int m_currentAcquisitionBoxH_px;
+    bool m_currentActiveCameraIsDay;
 
-    LeadAngleStatus m_currentLeadAngleStatus;  // ⭐ ADD
-    float m_currentLeadAngleOffsetAz;          // ⭐ ADD
-    float m_currentLeadAngleOffsetEl;
-
-    FireMode m_fireMode;
+    // OSD Display
     ReticleType m_reticleType;
     QColor m_colorStyle;
-    bool m_isLacActiveForReticle; // Flag for LAC reticle mode
+    QString m_currentScanName;
 
-    // YoloInference Engine
-    YoloInference m_inference;      // Object detection inference handler
-
-    // --- Async Detection Members ---
-    QMutex m_detectionMutex;
-    std::vector<YoloDetection> m_latestDetections;
-    QElapsedTimer m_lastDetectionTime;
-    bool m_detectionInProgress;
-    cv::Mat m_detectionFrame; // Buffer for async detection
-
-    // --- Latency Measurement ---
+    // --- Performance Metrics ---
     QElapsedTimer m_latencyTimer;
     qint64 m_frameArrivalTime;
     qint64 m_totalLatency_ms;
     qint64 m_frameProcessedCount;
-
-    int m_frameCount = 0;
-
-    int m_cropTop;
-    int m_cropBottom;
-    int m_cropLeft;
-    int m_cropRight;
-    bool m_currentAmmunitionLevel;
+    int m_frameCount;
 };
 
 #endif // CAMERAVIDEOSTREAMDEVICE_H
