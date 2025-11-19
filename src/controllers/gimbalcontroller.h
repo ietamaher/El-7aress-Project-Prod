@@ -1,114 +1,99 @@
 #ifndef GIMBALCONTROLLER_H
 #define GIMBALCONTROLLER_H
 
-/**
- * @file gimbalcontroller.h
- * @brief The GimbalController class manages motion modes for a gimbal, driving servo and PLC devices.
- */
+// ============================================================================
+// INCLUDES
+// ============================================================================
 
+// Qt Framework
 #include <QObject>
 #include <QTimer>
+
+// Standard Library
 #include <memory>
+
+// Project
 #include "motion_modes/gimbalmotionmodebase.h"
 #include "models/domain/systemstatemodel.h"
-//#include "../TimestampLogger.h"
 
-
+// ============================================================================
+// FORWARD DECLARATIONS
+// ============================================================================
 
 class ServoDriverDevice;
 class Plc42Device;
 
+// ============================================================================
+// CLASS DEFINITION
+// ============================================================================
+
 /**
- * @class GimbalController
- * @brief Coordinates gimbal motion by selecting and managing different MotionMode behaviors.
+ * @brief Gimbal motion mode coordinator and servo controller
+ *
+ * This class manages gimbal motion by coordinating different motion modes
+ * (Manual, AutoTrack, Scanning, etc.) and controlling azimuth/elevation servos
+ * through a PLC42 device. It provides:
+ * - Dynamic motion mode switching
+ * - Thread-safe tracking target updates
+ * - Periodic servo command updates
+ * - Safety condition monitoring
+ * - Alarm management
+ *
+ * Architecture:
+ * - Strategy Pattern: Motion modes are pluggable GimbalMotionModeBase subclasses
+ * - Observer Pattern: Reacts to SystemStateModel changes
+ * - Timer-based update loop (50ms / 20Hz)
  */
 class GimbalController : public QObject
 {
     Q_OBJECT
+
 public:
-    /**
-     * @brief Constructs a GimbalController.
-     * @param azServo Pointer to the azimuth servo driver device.
-     * @param elServo Pointer to the elevation servo driver device.
-     * @param plc42 Pointer to a PLC42 device controlling additional I/O.
-     * @param stateModel Pointer to the system state model.
-     * @param parent Optional parent.
-     */
+    // ========================================================================
+    // PUBLIC INTERFACE
+    // ========================================================================
+
     explicit GimbalController(ServoDriverDevice* azServo,
                               ServoDriverDevice* elServo,
                               Plc42Device* plc42,
                               SystemStateModel* stateModel,
                               QObject* parent = nullptr);
-
-    /**
-     * @brief Destructor.
-     */
     ~GimbalController();
 
-    /**
-     * @brief Periodically updates the current motion mode.
-     * Calls m_currentMode->update(this) if a mode is active.
-     */
+    // --- Motion Control ---
     void update();
-
-    /**
-     * @brief Changes the gimbal motion mode.
-     * @param newMode The new MotionMode.
-     */
     void setMotionMode(MotionMode newMode);
-
-    /**
-     * @brief Returns the current motion mode.
-     */
     MotionMode currentMotionModeType() const { return m_currentMotionModeType; }
 
-    /**
-     * @brief Accessor for the azimuth servo driver.
-     * @return Pointer to the azimuth servo.
-     */
+    // --- Device Accessors ---
     ServoDriverDevice* azimuthServo() const { return m_azServo; }
-
-    /**
-     * @brief Accessor for the elevation servo driver.
-     * @return Pointer to the elevation servo.
-     */
     ServoDriverDevice* elevationServo() const { return m_elServo; }
-
-    /**
-     * @brief Accessor for the PLC42 device.
-     * @return Pointer to the PLC42 device.
-     */
     Plc42Device* plc42() const { return m_plc42; }
-
-    /**
-     * @brief Accessor for the system state model.
-     * @return Pointer to the SystemStateModel.
-     */
     SystemStateModel* systemStateModel() const { return m_stateModel; }
-    
+
+    // --- Alarm Management ---
     void readAlarms();
     void clearAlarms();
 
 signals:
-    // ✅ CRITICAL FIX: Queued signal for thread-safe target updates (Expert Review)
-    // This signal is emitted from vision thread and connected with Qt::QueuedConnection
-    // to eliminate race conditions between vision updates and motion mode reads
+    // --- Tracking Updates ---
+    // Thread-safe tracking target update signal (Qt::QueuedConnection)
+    // Emitted from vision thread to motion mode slot, eliminating race conditions
     void trackingTargetUpdated(double azDeg, double elDeg,
-                              double azVel_dps, double elVel_dps,
-                              bool valid);
+                               double azVel_dps, double elVel_dps,
+                               bool valid);
 
+    // --- Alarm Notifications ---
     void azAlarmDetected(uint16_t alarmCode, const QString &description);
     void azAlarmCleared();
     void elAlarmDetected(uint16_t alarmCode, const QString &description);
     void elAlarmCleared();
 
-
 private slots:
-    /**
-     * @brief Reacts to changes in the system state.
-     * @param newData Updated system state.
-     */
+    // --- State Management ---
     void onSystemStateChanged(const SystemStateData &newData);
+
+    // --- Alarm Handlers ---
     void onAzAlarmDetected(uint16_t alarmCode, const QString &description);
     void onAzAlarmCleared();
     void onElAlarmDetected(uint16_t alarmCode, const QString &description);
@@ -116,24 +101,31 @@ private slots:
 
 
 private:
-    /**
-     * @brief Cleans up the current motion mode.
-     */
+    // ========================================================================
+    // PRIVATE METHODS
+    // ========================================================================
+
     void shutdown();
 
-    ServoDriverDevice* m_azServo = nullptr; ///< Pointer to azimuth servo device.
-    ServoDriverDevice* m_elServo = nullptr; ///< Pointer to elevation servo device.
-    Plc42Device*       m_plc42   = nullptr; ///< Pointer to PLC42 device.
-    SystemStateModel*  m_stateModel = nullptr; ///< Pointer to system state model.
+    // ========================================================================
+    // MEMBER VARIABLES
+    // ========================================================================
 
-    SystemStateData m_oldState; ///< Previous system state, used for detecting changes.
+    // --- Hardware Devices ---
+    ServoDriverDevice* m_azServo = nullptr;
+    ServoDriverDevice* m_elServo = nullptr;
+    Plc42Device* m_plc42 = nullptr;
 
-    std::unique_ptr<GimbalMotionModeBase> m_currentMode; ///< Active motion mode.
-    MotionMode m_currentMotionModeType = MotionMode::Manual; ///< Current motion mode type.
+    // --- System State ---
+    SystemStateModel* m_stateModel = nullptr;
+    SystemStateData m_oldState;
 
-    QTimer* m_updateTimer = nullptr; ///< Timer for periodic updates.
+    // --- Motion Mode Management ---
+    std::unique_ptr<GimbalMotionModeBase> m_currentMode;
+    MotionMode m_currentMotionModeType = MotionMode::Manual;
 
-    
+    // --- Update Timer ---
+    QTimer* m_updateTimer = nullptr;
 };
 
 #endif // GIMBALCONTROLLER_H
