@@ -61,14 +61,11 @@ public:
 
     // Public API - Control methods
     Q_INVOKABLE void setSolenoidMode(uint16_t mode);
-    Q_INVOKABLE void setGimbalMotionMode(uint16_t mode);
-    Q_INVOKABLE void setAzimuthSpeedHolding(uint32_t speed);
-    Q_INVOKABLE void setElevationSpeedHolding(uint32_t speed);
-    Q_INVOKABLE void setAzimuthDirection(uint16_t direction);
-    Q_INVOKABLE void setElevationDirection(uint16_t direction);
     Q_INVOKABLE void setSolenoidState(uint16_t state);
     Q_INVOKABLE void setResetAlarm(uint16_t alarm);
-
+    Q_INVOKABLE void setHomePosition();
+    Q_INVOKABLE void setStopGimbal();
+    Q_INVOKABLE void setManualMode();
     // Configuration
     Q_INVOKABLE void setPollInterval(int intervalMs);
 

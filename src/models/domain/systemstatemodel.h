@@ -852,6 +852,9 @@ private:
      * @param newData New system state data (may be modified).
      */
     void processStateTransitions(const SystemStateData& oldData, SystemStateData& newData);
+    void processHomingStateMachine(const SystemStateData& oldData,  SystemStateData& newData);
+
+
 };
 
 #endif // SYSTEMSTATEMODEL_H

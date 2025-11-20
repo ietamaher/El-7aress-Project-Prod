@@ -309,40 +309,70 @@ struct Plc21PanelData {
 };
 
 /**
- * @brief PLC42 data structure
+ * @brief PLC42 data structure - UPDATED FOR HOME POSITION DETECTION
+ * 
+ * HARDWARE MAPPING (MDUINO 42+ Station Control):
+ * Digital Inputs (8 total):
+ *   DI0 (I0_0) → stationUpperSensor (Upper limit)
+ *   DI1 (I0_1) → stationLowerSensor (Lower limit)
+ *   DI2 (I0_2) → hatchState (Hatch position)
+ *   DI3 (I0_3) → freeGimbalState (FREE toggle switch - LOCAL CONTROL)
+ *   DI4 (I0_4) → ammunitionLevel (Ammo sensor)
+ *   DI5 (I0_5) → Reserved (future E-STOP button)
+ *   DI6 (I0_6) → azimuthHomeComplete ⭐ NEW (Az HOME-END from Oriental Motor)
+ *   DI7 (I0_7) → elevationHomeComplete ⭐ NEW (El HOME-END from Oriental Motor)
+ * 
+ * Holding Registers (10 total):
+ *   HR0: solenoidMode (1=Single, 2=Burst, 3=Continuous)
+ *   HR1: gimbalOpMode (0=Manual, 1=Stop, 3=Home, 4=Free)
+ *   HR2-3: azimuthSpeed (32-bit)
+ *   HR4-5: elevationSpeed (32-bit)
+ *   HR6: azimuthDirection
+ *   HR7: elevationDirection
+ *   HR8: solenoidState (0=OFF, 1=ON)
+ *   HR9: resetAlarm (0=Normal, 1=Reset)
  */
 struct Plc42Data {
     bool isConnected = false;
 
-    // Discrete inputs
-    bool stationUpperSensor = false;
-    bool stationLowerSensor = false;
-    bool emergencyStopActive = false;
-    bool ammunitionLevel = false;
-    bool hatchState = false;
-    bool stationInput2 = false;
-    bool stationInput3 = false;
-    bool solenoidActive = false;
+    // =========================================================================
+    // DISCRETE INPUTS (8 inputs)
+    // =========================================================================
+    bool stationUpperSensor = false;       ///< DI0: Upper limit sensor
+    bool stationLowerSensor = false;       ///< DI1: Lower limit sensor
+    bool hatchState = false;               ///< DI2: Hatch state
+    bool freeGimbalState = false;          ///< DI3: FREE mode toggle (LOCAL)
+    bool ammunitionLevel = false;          ///< DI4: Ammunition level
+    // DI5: Reserved (future E-STOP button)
+    bool azimuthHomeComplete = false;      ///< DI6: Az HOME-END signal ⭐ NEW
+    bool elevationHomeComplete = false;    ///< DI7: El HOME-END signal ⭐ NEW
+    
+    // Derived values (computed in parser)
+    bool emergencyStopActive = false;      ///< Derived: gimbalOpMode == 1
+    bool solenoidActive = false;           ///< Derived: solenoidState != 0
 
-    // Holding registers
-    uint16_t solenoidMode = 0;
-    uint16_t gimbalOpMode = 0;
-    uint32_t azimuthSpeed = 0;
-    uint32_t elevationSpeed = 0;
-    uint16_t azimuthDirection = 0;
-    uint16_t elevationDirection = 0;
-    uint16_t solenoidState = 0;
-    uint16_t resetAlarm = 0;
+    // =========================================================================
+    // HOLDING REGISTERS (10 registers)
+    // =========================================================================
+    uint16_t solenoidMode = 0;          ///< HR0: Fire mode
+    uint16_t gimbalOpMode = 0;          ///< HR1: Gimbal operation mode
+    uint32_t azimuthSpeed = 0;          ///< HR2-3: Azimuth speed (32-bit)
+    uint32_t elevationSpeed = 0;        ///< HR4-5: Elevation speed (32-bit)
+    uint16_t azimuthDirection = 0;      ///< HR6: Azimuth direction
+    uint16_t elevationDirection = 0;    ///< HR7: Elevation direction
+    uint16_t solenoidState = 0;         ///< HR8: Trigger command
+    uint16_t resetAlarm = 0;            ///< HR9: Error reset
 
     bool operator!=(const Plc42Data &other) const {
         return (isConnected != other.isConnected ||
                 stationUpperSensor != other.stationUpperSensor ||
                 stationLowerSensor != other.stationLowerSensor ||
-                emergencyStopActive != other.emergencyStopActive ||
-                ammunitionLevel != other.ammunitionLevel ||
                 hatchState != other.hatchState ||
-                stationInput2 != other.stationInput2 ||
-                stationInput3 != other.stationInput3 ||
+                freeGimbalState != other.freeGimbalState ||
+                ammunitionLevel != other.ammunitionLevel ||
+                azimuthHomeComplete != other.azimuthHomeComplete ||      // ⭐ NEW
+                elevationHomeComplete != other.elevationHomeComplete ||  // ⭐ NEW
+                emergencyStopActive != other.emergencyStopActive ||
                 solenoidActive != other.solenoidActive ||
                 solenoidMode != other.solenoidMode ||
                 gimbalOpMode != other.gimbalOpMode ||

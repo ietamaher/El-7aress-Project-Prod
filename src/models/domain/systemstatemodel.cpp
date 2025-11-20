@@ -850,28 +850,29 @@ void SystemStateModel::onPlc21DataChanged(const Plc21PanelData &pData)
     newData.menuDown = pData.menuDownSW;
     newData.menuVal = pData.menuValSw;
 
-    newData.stationEnabled =  pData.enableStationSW;
+    newData.stationEnabled = pData.enableStationSW;
     newData.gunArmed = pData.armGunSW;
-    newData.gotoHomePosition = pData.homePositionSW;
+    newData.gotoHomePosition = pData.homePositionSW;  // ✓ Home button
     newData.ammoLoaded = pData.loadAmmunitionSW;
 
     newData.authorized = pData.authorizeSw;
     newData.enableStabilization = pData.enableStabilizationSW;
-    // DON'T set activeCameraIsDay here - let setActiveCameraIsDay() handle it!
-    newData.emergencyStopActive = pData.authorizeSw;
+    
+    // ⭐ CRITICAL: authorizeSw FALSE = Emergency Stop!
+    newData.emergencyStopActive = !pData.authorizeSw;
 
     switch (pData.fireMode) {
     case 0:
-        newData.fireMode =FireMode::SingleShot;
+        newData.fireMode = FireMode::SingleShot;
         break;
     case 1:
-        newData.fireMode =FireMode::ShortBurst;
+        newData.fireMode = FireMode::ShortBurst;
         break;
     case 2:
-        newData.fireMode =FireMode::LongBurst;
+        newData.fireMode = FireMode::LongBurst;
         break;
     default:
-        newData.fireMode =FireMode::Unknown;
+        newData.fireMode = FireMode::Unknown;
         break;
     }
 
@@ -880,46 +881,76 @@ void SystemStateModel::onPlc21DataChanged(const Plc21PanelData &pData)
 
     // Auto-disable detection when switching to night camera
     if (!pData.switchCameraSW && m_currentStateData.activeCameraIsDay) {
-        // Switching from day to night camera
         newData.detectionEnabled = false;
         qInfo() << "SystemStateModel: Night camera activated - Detection auto-disabled";
     }
 
     updateData(newData);
-
-    // ✅ Use setActiveCameraIsDay() - it checks if changed and triggers CCIP recalculation!
     setActiveCameraIsDay(pData.switchCameraSW);
 }
+
+// ============================================================================
+// UPDATE onPlc42DataChanged() METHOD
+// ============================================================================
 
 void SystemStateModel::onPlc42DataChanged(const Plc42Data &pData)
 {
     SystemStateData newData = m_currentStateData;
-    newData.upperLimitSensorActive = pData.stationUpperSensor;        // DataModel::m_stationUpperSensor
-    newData.lowerLimitSensorActive = pData.stationLowerSensor;        // DataModel::m_stationLowerSensor
+    
+    // Limit sensors
+    newData.upperLimitSensorActive = pData.stationUpperSensor;
+    newData.lowerLimitSensorActive = pData.stationLowerSensor;
 
-    // Additional station inputs (if needed)
-    newData.stationAmmunitionLevel = pData.ammunitionLevel;        // DataModel::m_stationAmmunitionLevel
-    newData.hatchState = pData.hatchState;                 // DataModel::m_hatchState
-    newData.stationInput2 = pData.stationInput2;                 // DataModel::m_stationInput2
-    newData.stationInput3 = pData.stationInput3;                 // DataModel::m_stationInput3
+    // Station inputs
+    newData.stationAmmunitionLevel = pData.ammunitionLevel;
+    newData.hatchState = pData.hatchState;
+    newData.freeGimbalState = pData.freeGimbalState;  // ✓ FREE toggle
+    
+    // HOME-END signals (one per axis) ⭐ NEW
+    newData.azimuthHomeComplete = pData.azimuthHomeComplete;
+    newData.elevationHomeComplete = pData.elevationHomeComplete;
 
-    newData.solenoidMode     = pData.solenoidMode;
-    newData.gimbalOpMode     = pData.gimbalOpMode;
-    newData.azimuthSpeed     = pData.azimuthSpeed;
-    newData.elevationSpeed   = pData.elevationSpeed;
+    // Control states
+    newData.solenoidMode = pData.solenoidMode;
+    newData.gimbalOpMode = pData.gimbalOpMode;
+    newData.azimuthSpeed = pData.azimuthSpeed;
+    newData.elevationSpeed = pData.elevationSpeed;
     newData.azimuthDirection = pData.azimuthDirection;
     newData.elevationDirection = pData.elevationDirection;
-    newData.solenoidState     = pData.solenoidState;
-
-
     newData.solenoidState = pData.solenoidState;
     newData.resetAlarm = pData.resetAlarm;
-
     newData.plc42Connected = pData.isConnected;
+
+    // ========================================================================
+    // FREE MODE AUTONOMOUS CONTROL (local toggle has priority)
+    // ========================================================================
+    // The physical FREE toggle switch at the station controls this
+    // MDUINO 42+ monitors I0_3 and autonomously switches gimbalOpMode
+    // We just track the state changes here
+    
+    // Rising edge: FREE toggle turned ON
+    if (pData.freeGimbalState && !m_currentStateData.freeGimbalState) {
+        qInfo() << "[SystemStateModel] FREE toggle activated - entering MotionFree";
+        newData.previousMotionMode = m_currentStateData.motionMode;
+        newData.motionMode = MotionMode::MotionFree;
+    }
+    // Falling edge: FREE toggle turned OFF
+    else if (!pData.freeGimbalState && m_currentStateData.freeGimbalState) {
+        qInfo() << "[SystemStateModel] FREE toggle deactivated - restoring previous mode";
+        newData.motionMode = newData.previousMotionMode;
+    }
+
+    // ========================================================================
+    // EMERGENCY STOP FROM GIMBAL OP MODE
+    // ========================================================================
+    // If PLC42 gimbalOpMode == 1, emergency stop is active via hardware
+    if (pData.gimbalOpMode == 1 && !m_currentStateData.emergencyStopActive) {
+        qCritical() << "[SystemStateModel] Emergency stop detected from PLC42";
+        newData.emergencyStopActive = true;
+    }
 
     updateData(newData);
 }
-
 
 void SystemStateModel::onServoActuatorDataChanged(const ServoActuatorData &actuatorData)
 {
@@ -1539,22 +1570,20 @@ void SystemStateModel::selectPreviousTRPLocationPage() {
     emit dataChanged(data);
 }
 
-void SystemStateModel::processStateTransitions(const SystemStateData& oldData, SystemStateData& newData)
+ 
+void SystemStateModel::processStateTransitions(const SystemStateData& oldData, 
+                                                SystemStateData& newData)
 {
-    // This function takes newData by reference, so it can modify it directly.
-
-    // PRIORITY 1: Emergency Stop Check
-    // If the E-Stop has just been activated
+    // ========================================================================
+    // PRIORITY 1: Emergency Stop Check (HIGHEST PRIORITY!)
+    // ========================================================================
     if (newData.emergencyStopActive && !oldData.emergencyStopActive) {
-        // We pass the reference 'newData' to be modified
-        enterEmergencyStopMode(); // Modify enterEmergencyStopMode to take a reference
-        return; // E-Stop overrides all other transitions
+        enterEmergencyStopMode();
+        return;  // E-Stop overrides all other transitions
     }
 
-    // If E-Stop has been released
     if (!newData.emergencyStopActive && oldData.emergencyStopActive) {
-        // Go to a safe, idle state. Operator must re-enable the station.
-        enterIdleMode(); // Modify enterIdleMode to take a reference
+        enterIdleMode();
         return;
     }
 
@@ -1563,15 +1592,20 @@ void SystemStateModel::processStateTransitions(const SystemStateData& oldData, S
         return;
     }
 
-    // PRIORITY 2: Station Power Check
-    // If station was just disabled
+    // ========================================================================
+    // PRIORITY 2: HOMING SEQUENCE MANAGEMENT
+    // ========================================================================
+    processHomingStateMachine(oldData, newData);
+
+    // ========================================================================
+    // PRIORITY 3: Station Power Check
+    // ========================================================================
     if (!newData.stationEnabled && oldData.stationEnabled) {
         enterIdleMode();
         return;
     }
-    // If station was just enabled
+    
     if (newData.stationEnabled && !oldData.stationEnabled) {
-        // If we were Idle, transition to Surveillance
         if (newData.opMode == OperationalMode::Idle) {
             enterSurveillanceMode();
         }
@@ -1631,27 +1665,98 @@ void SystemStateModel::commandEngagement(bool start) {
     emit dataChanged(m_currentStateData);
 }
 
- 
+void SystemStateModel::processHomingStateMachine(const SystemStateData& oldData,
+                                                  SystemStateData& newData)
+{
+    // ========================================================================
+    // HOMING BUTTON PRESSED (rising edge)
+    // ========================================================================
+    if (newData.gotoHomePosition && !oldData.gotoHomePosition) {
+        // Home button just pressed
+        if (newData.homingState == HomingState::Idle) {
+            qInfo() << "[SystemStateModel] Home button pressed - initiating homing";
+            newData.homingState = HomingState::Requested;
+            newData.motionMode = MotionMode::Idle;  // Suspend motion during homing
+            // GimbalController will send HOME command in next cycle
+        }
+    }
+
+    // ========================================================================
+    // HOMING IN PROGRESS → CHECK FOR COMPLETION (REQUIRE BOTH AXES)
+    // ========================================================================
+    if (newData.homingState == HomingState::InProgress) {
+        // Check if BOTH HOME-END signals received
+        // We need both azimuth AND elevation to complete homing
+        bool azHomeDone = newData.azimuthHomeComplete;
+        bool elHomeDone = newData.elevationHomeComplete;
+        
+        // Log individual axis completion
+        if (azHomeDone && !oldData.azimuthHomeComplete) {
+            qInfo() << "[SystemStateModel] ✓ Azimuth HOME-END received";
+        }
+        if (elHomeDone && !oldData.elevationHomeComplete) {
+            qInfo() << "[SystemStateModel] ✓ Elevation HOME-END received";
+        }
+        
+        // Complete homing only when BOTH axes report HOME-END
+        if (azHomeDone && elHomeDone &&
+            (!oldData.azimuthHomeComplete || !oldData.elevationHomeComplete)) {
+            qInfo() << "[SystemStateModel] ✓✓ BOTH axes homed - homing complete";
+            newData.homingState = HomingState::Completed;
+            // GimbalController will restore motion mode
+        }
+    }
+
+    // ========================================================================
+    // HOMING COMPLETED → AUTO-CLEAR FLAGS
+    // ========================================================================
+    if (newData.homingState == HomingState::Completed &&
+        oldData.homingState == HomingState::InProgress) {
+        // Homing just completed - clear flags after one cycle
+        qDebug() << "[SystemStateModel] Clearing homing flags";
+        newData.gotoHomePosition = false;
+        newData.azimuthHomeComplete = false;
+        newData.elevationHomeComplete = false;
+        // Will transition to Idle on next cycle
+    }
+
+    // ========================================================================
+    // AUTO-TRANSITION COMPLETED/FAILED/ABORTED → IDLE
+    // ========================================================================
+    if ((newData.homingState == HomingState::Completed ||
+         newData.homingState == HomingState::Failed ||
+         newData.homingState == HomingState::Aborted) &&
+        !newData.gotoHomePosition) {
+        // Flags cleared, transition back to idle
+        newData.homingState = HomingState::Idle;
+    }
+}
+
+// ============================================================================
+// UPDATE enterEmergencyStopMode() - ADD HOMING ABORT
+// ============================================================================
 
 void SystemStateModel::enterEmergencyStopMode() {
     SystemStateData& data = m_currentStateData;
-    if (data.opMode == OperationalMode::EmergencyStop) return; // Already in this state
+    if (data.opMode == OperationalMode::EmergencyStop) return;
 
     qCritical() << "[MODEL] ENTERING EMERGENCY STOP MODE!";
 
-    // Set the high-level operational mode
+    // Abort homing if in progress
+    if (data.homingState == HomingState::InProgress ||
+        data.homingState == HomingState::Requested) {
+        qWarning() << "[MODEL] Aborting in-progress homing sequence";
+        data.homingState = HomingState::Aborted;
+        data.gotoHomePosition = false;
+    }
+
     data.opMode = OperationalMode::EmergencyStop;
-    // Set the gimbal motion mode to Idle to ensure no commands are being calculated
     data.motionMode = MotionMode::Idle;
-    // Set all "action" flags to false
-    data.trackingActive = false; // Use the old one if still present, or better:
+    data.trackingActive = false;
     data.currentTrackingPhase = TrackingPhase::Off;
     data.trackerHasValidTarget = false;
     data.leadAngleCompensationActive = false;
-    // Do NOT clear zeroing/windage settings, as they might be needed after reset.
-    // The E-Stop is about stopping motion and firing, not erasing calibration.
 
-    // Emit the state change so all components react
     emit dataChanged(m_currentStateData);
 }
 

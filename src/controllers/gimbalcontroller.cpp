@@ -104,6 +104,15 @@ GimbalController::GimbalController(ServoDriverDevice* azServo,
     m_updateTimer = new QTimer(this);
     connect(m_updateTimer, &QTimer::timeout, this, &GimbalController::update);
     m_updateTimer->start(50);
+
+    // Initialize homing timeout timer
+    m_homingTimeoutTimer = new QTimer(this);
+    m_homingTimeoutTimer->setSingleShot(true);
+    connect(m_homingTimeoutTimer, &QTimer::timeout, 
+            this, &GimbalController::onHomingTimeout);
+
+    qDebug() << "[GimbalController] Homing system initialized (timeout:" << HOMING_TIMEOUT_MS << "ms)";
+
 }
 
 GimbalController::~GimbalController()
@@ -149,6 +158,37 @@ void GimbalController::update()
 
 void GimbalController::onSystemStateChanged(const SystemStateData &newData)
 {
+     // ========================================================================
+    // PRIORITY 1: EMERGENCY STOP (highest priority!)
+    // ========================================================================
+    // Emergency stop must be processed first to immediately halt all operations
+    processEmergencyStop(newData);
+    
+    // If emergency stop active, skip all other processing
+    if (newData.emergencyStopActive) {
+        m_oldState = newData;
+        return;  // Exit immediately - no motion commands during E-STOP
+    }
+    
+    // ========================================================================
+    // PRIORITY 2: HOMING SEQUENCE
+    // ========================================================================
+    // Homing has second priority - tracks multi-step homing operation
+    processHomingSequence(newData);
+    
+    // If homing in progress, skip motion mode changes to avoid interference
+    if (newData.homingState == HomingState::InProgress ||
+        newData.homingState == HomingState::Requested) {
+        m_oldState = newData;
+        return;  // Exit - homing controls the gimbal exclusively
+    }
+    
+    // ========================================================================
+    // PRIORITY 3: FREE MODE MONITORING
+    // ========================================================================
+    // Free mode is third priority - monitors local toggle switch state
+    processFreeMode(newData);
+ 
     // Detect motion mode type change
     bool motionModeTypeChanged = (m_oldState.motionMode != newData.motionMode);
     bool scanParametersChanged = false;
@@ -306,6 +346,16 @@ void GimbalController::setMotionMode(MotionMode newMode)
         break;
     }
 
+    case MotionMode::MotionFree:
+    {
+        // Free mode - no active control, brakes released
+        // This mode is activated by the physical FREE toggle switch at station
+        // No motion mode object needed - servos are held in FREE by PLC42
+        m_currentMode = nullptr;
+        qInfo() << "[GimbalController] Motion mode set to FREE (no active control)";
+        break;
+    }
+
     default:
         qWarning() << "GimbalController: Unknown motion mode" << int(newMode);
         m_currentMode = nullptr;
@@ -365,4 +415,287 @@ void GimbalController::onElAlarmDetected(uint16_t alarmCode, const QString &desc
 void GimbalController::onElAlarmCleared()
 {
     emit elAlarmCleared();
+}
+
+// ============================================================================
+// HOMING STATE MACHINE IMPLEMENTATION
+// ============================================================================
+
+// ============================================================================
+// HOMING STATE MACHINE IMPLEMENTATION
+// ============================================================================
+
+void GimbalController::processHomingSequence(const SystemStateData& data)
+{
+    switch (data.homingState) {
+    case HomingState::Idle:
+        // Check if home button pressed (rising edge detection)
+        if (data.gotoHomePosition && !m_oldState.gotoHomePosition) {
+            qInfo() << "[GimbalController] 🏠 Home button pressed";
+            startHomingSequence();
+        }
+        break;
+
+    case HomingState::Requested:
+    {  // ⭐ Braces for scope
+        // Send HOME command to PLC42
+        if (m_plc42 && m_plc42->data()->isConnected) {
+            qInfo() << "[GimbalController] ▶ Starting HOME sequence";
+
+            // Store current mode to restore after homing completes
+            m_modeBeforeHoming = data.motionMode;
+            qDebug() << "[GimbalController] Stored current mode:" << int(m_modeBeforeHoming);
+
+            // Send HOME command to Oriental Motor via PLC42
+            m_plc42->setHomePosition();  // Sets gimbalOpMode = 3 → Q1_1 HIGH (ZHOME)
+
+            // Update state to InProgress
+            m_currentHomingState = HomingState::InProgress;
+
+            // Start timeout timer (30 seconds)
+            m_homingTimeoutTimer->start(HOMING_TIMEOUT_MS);
+
+            qInfo() << "[GimbalController] HOME command sent, waiting for HOME-END signals...";
+
+        } else {
+            qCritical() << "[GimbalController] ✗ Cannot start homing - PLC42 not connected";
+            abortHomingSequence("PLC42 not connected");
+        }
+        break;
+    }
+
+    case HomingState::InProgress:
+    {  // ⭐ Braces for scope - THIS IS CRITICAL!
+        // Check if BOTH HOME-END signals received
+        bool azHomeDone = data.azimuthHomeComplete;
+        bool elHomeDone = data.elevationHomeComplete;
+
+        // Log individual axis completion (rising edge detection)
+        if (azHomeDone && !m_oldState.azimuthHomeComplete) {
+            qInfo() << "[GimbalController] ✓ Azimuth axis homed (HOME-END received)";
+        }
+        if (elHomeDone && !m_oldState.elevationHomeComplete) {
+            qInfo() << "[GimbalController] ✓ Elevation axis homed (HOME-END received)";
+        }
+
+        // Complete homing only when BOTH axes report HOME-END
+        if (azHomeDone && elHomeDone &&
+            (!m_oldState.azimuthHomeComplete || !m_oldState.elevationHomeComplete)) {
+            qInfo() << "[GimbalController] ✓✓ BOTH axes at home position";
+            completeHomingSequence();
+        }
+
+        // Check for emergency stop during homing
+        if (data.emergencyStopActive) {
+            qWarning() << "[GimbalController] ⚠ Homing aborted by emergency stop";
+            abortHomingSequence("Emergency stop activated");
+        }
+        break;
+    }
+
+    case HomingState::Completed:
+        // Auto-clear completed state after one cycle
+        if (m_currentHomingState == HomingState::Completed) {
+            qDebug() << "[GimbalController] Clearing completed homing state";
+            m_currentHomingState = HomingState::Idle;
+        }
+        break;
+
+    case HomingState::Failed:
+    case HomingState::Aborted:
+        // Auto-clear failed/aborted state after one cycle
+        if (m_currentHomingState != HomingState::Idle) {
+            qDebug() << "[GimbalController] Clearing failed/aborted homing state";
+            m_currentHomingState = HomingState::Idle;
+        }
+        break;
+    }
+}
+
+void GimbalController::startHomingSequence()
+{
+    // This method is called when home button first pressed
+    // It signals SystemStateModel to transition to HomingState::Requested
+    // SystemStateModel will update the state, which triggers processHomingSequence
+    
+    m_currentHomingState = HomingState::Requested;
+    
+    qInfo() << "[GimbalController] Homing sequence initiated";
+    qInfo() << "[GimbalController] → Will send HOME command to Oriental Motor";
+}
+
+void GimbalController::completeHomingSequence()
+{
+    // Stop timeout timer
+    m_homingTimeoutTimer->stop();
+    
+    // Return PLC42 to manual mode (gimbalOpMode = 0)
+    if (m_plc42) {
+        m_plc42->setManualMode();  // Clears HOME output (Q1_1 LOW)
+        qDebug() << "[GimbalController] PLC42 returned to MANUAL mode";
+    }
+    
+    // Mark as completed
+    m_currentHomingState = HomingState::Completed;
+    
+    qInfo() << "[GimbalController] ✓ HOME sequence completed successfully";
+    qInfo() << "[GimbalController] Gimbal at home position, ready for operation";
+    qInfo() << "[GimbalController] Will restore motion mode:" << int(m_modeBeforeHoming);
+    
+    // SystemStateModel will handle:
+    // 1. Setting homingState = Completed
+    // 2. Restoring motionMode = m_modeBeforeHoming
+    // 3. Clearing gotoHomePosition and homePositionReached flags
+}
+
+void GimbalController::abortHomingSequence(const QString& reason)
+{
+    // Stop timeout timer
+    m_homingTimeoutTimer->stop();
+    
+    // Return PLC42 to manual mode
+    if (m_plc42) {
+        m_plc42->setManualMode();
+        qDebug() << "[GimbalController] PLC42 returned to MANUAL mode after abort";
+    }
+    
+    // Mark as aborted
+    m_currentHomingState = HomingState::Aborted;
+    
+    qCritical() << "[GimbalController] ✗ HOME sequence aborted:" << reason;
+    qWarning() << "[GimbalController] Gimbal position may be uncertain";
+    qWarning() << "[GimbalController] Will restore motion mode:" << int(m_modeBeforeHoming);
+    
+    // SystemStateModel will handle flag clearing and mode restoration
+}
+
+void GimbalController::onHomingTimeout()
+{
+    qCritical() << "[GimbalController] ✗ HOME sequence TIMEOUT after" 
+                << HOMING_TIMEOUT_MS << "ms";
+    qCritical() << "[GimbalController] HOME-END signal was NOT received";
+    qCritical() << "[GimbalController] Possible causes:";
+    qCritical() << "[GimbalController]   - Wiring issue (I0_7 not connected)";
+    qCritical() << "[GimbalController]   - Oriental Motor fault";
+    qCritical() << "[GimbalController]   - Mechanical obstruction";
+    
+    // Mark as failed
+    m_currentHomingState = HomingState::Failed;
+    
+    // Return PLC42 to manual mode
+    if (m_plc42) {
+        m_plc42->setManualMode();
+    }
+    
+    // SystemStateModel will be notified of failure state
+}
+
+// ============================================================================
+// EMERGENCY STOP HANDLER
+// ============================================================================
+
+void GimbalController::processEmergencyStop(const SystemStateData& data)
+{
+    bool emergencyActive = data.emergencyStopActive;
+    
+    // Detect rising edge (emergency stop activation)
+    if (emergencyActive && !m_wasInEmergencyStop) {
+        qCritical() << "";
+        qCritical() << "========================================";
+        qCritical() << "⚠️  EMERGENCY STOP ACTIVATED  ⚠️";
+        qCritical() << "========================================";
+        qCritical() << "";
+        
+        // Send STOP command to PLC42
+        if (m_plc42 && m_plc42->data()->isConnected) {
+            m_plc42->setStopGimbal();  // Sets gimbalOpMode = 1 → Q1_4 HIGH (STOP)
+            qCritical() << "[GimbalController] STOP command sent to Oriental Motor";
+        } else {
+            qCritical() << "[GimbalController] ✗ PLC42 not connected - cannot send STOP";
+        }
+        
+        // Abort homing if in progress
+        if (m_currentHomingState == HomingState::InProgress ||
+            m_currentHomingState == HomingState::Requested) {
+            qWarning() << "[GimbalController] Aborting in-progress homing sequence";
+            abortHomingSequence("Emergency stop activated");
+        }
+        
+        // Stop current motion mode servos
+        if (m_currentMode) {
+            m_currentMode->stopServos(this);
+            qCritical() << "[GimbalController] All servo motion halted";
+        }
+        
+        qCritical() << "[GimbalController] System halted - awaiting E-STOP release";
+        
+        m_wasInEmergencyStop = true;
+        
+    } 
+    // Detect falling edge (emergency stop release)
+    else if (!emergencyActive && m_wasInEmergencyStop) {
+        qInfo() << "";
+        qInfo() << "========================================";
+        qInfo() << "✓ Emergency stop CLEARED";
+        qInfo() << "========================================";
+        qInfo() << "";
+        
+        // Return to manual mode
+        if (m_plc42 && m_plc42->data()->isConnected) {
+            m_plc42->setManualMode();  // Sets gimbalOpMode = 0 → Q1_4 LOW
+            qInfo() << "[GimbalController] PLC42 returned to MANUAL mode";
+        }
+        
+        qInfo() << "[GimbalController] System ready - operator may resume operations";
+        qInfo() << "[GimbalController] Previous motion mode will be restored";
+        
+        m_wasInEmergencyStop = false;
+    }
+}
+
+// ============================================================================
+// FREE MODE HANDLER
+// ============================================================================
+
+void GimbalController::processFreeMode(const SystemStateData& data)
+{
+    bool freeActive = data.freeGimbalState;
+    
+    // Detect rising edge (FREE mode activation)
+    if (freeActive && !m_wasInFreeMode) {
+        qInfo() << "";
+        qInfo() << "========================================";
+        qInfo() << "🔓 FREE MODE ACTIVATED";
+        qInfo() << "========================================";
+        qInfo() << "";
+        qInfo() << "[GimbalController] Local FREE toggle switch turned ON";
+        qInfo() << "[GimbalController] Gimbal brakes RELEASED";
+        qInfo() << "[GimbalController] Manual positioning enabled";
+        qInfo() << "[GimbalController] No servo commands will be sent";
+        qInfo() << "";
+        qInfo() << "⚠️  CAUTION: Gimbal can be moved manually";
+        qInfo() << "⚠️  Ensure area is clear before positioning";
+        
+        // Motion mode will be set to MotionFree by SystemStateModel
+        // This handler just logs for operator awareness
+        
+        m_wasInFreeMode = true;
+        
+    } 
+    // Detect falling edge (FREE mode deactivation)
+    else if (!freeActive && m_wasInFreeMode) {
+        qInfo() << "";
+        qInfo() << "========================================";
+        qInfo() << "🔒 FREE MODE DEACTIVATED";
+        qInfo() << "========================================";
+        qInfo() << "";
+        qInfo() << "[GimbalController] Local FREE toggle switch turned OFF";
+        qInfo() << "[GimbalController] Gimbal brakes ENGAGED";
+        qInfo() << "[GimbalController] Returning to powered control";
+        qInfo() << "[GimbalController] Previous motion mode will be restored";
+        
+        // Motion mode will be restored by SystemStateModel
+        
+        m_wasInFreeMode = false;
+    }
 }

@@ -98,7 +98,7 @@ private slots:
     void onAzAlarmCleared();
     void onElAlarmDetected(uint16_t alarmCode, const QString &description);
     void onElAlarmCleared();
-
+    void onHomingTimeout();
 
 private:
     // ========================================================================
@@ -106,7 +106,23 @@ private:
     // ========================================================================
 
     void shutdown();
-
+    // ========================================================================
+    // HOMING STATE MACHINE METHODS
+    // ========================================================================
+    void processHomingSequence(const SystemStateData& data);
+    void startHomingSequence();
+    void completeHomingSequence();
+    void abortHomingSequence(const QString& reason);
+    
+    // ========================================================================
+    // EMERGENCY STOP HANDLER
+    // ========================================================================
+    void processEmergencyStop(const SystemStateData& data);
+    
+    // ========================================================================
+    // FREE MODE HANDLER
+    // ========================================================================
+    void processFreeMode(const SystemStateData& data);
     // ========================================================================
     // MEMBER VARIABLES
     // ========================================================================
@@ -126,6 +142,21 @@ private:
 
     // --- Update Timer ---
     QTimer* m_updateTimer = nullptr;
+
+    // ========================================================================
+    // HOMING STATE MACHINE
+    // ========================================================================
+    QTimer* m_homingTimeoutTimer = nullptr;
+    HomingState m_currentHomingState = HomingState::Idle;
+    MotionMode m_modeBeforeHoming = MotionMode::Idle;  // Store mode to restore after homing
+    
+    static constexpr int HOMING_TIMEOUT_MS = 30000;  // 30 seconds timeout for homing
+    
+    // ========================================================================
+    // STATE TRACKING
+    // ========================================================================
+    bool m_wasInFreeMode = false;
+    bool m_wasInEmergencyStop = false;    
 };
 
 #endif // GIMBALCONTROLLER_H

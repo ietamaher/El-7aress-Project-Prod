@@ -111,7 +111,24 @@ enum class MotionMode {
     Idle,          ///< No motion, idle state
     AutoSectorScan,///< Automatic sector scanning
     TRPScan,        ///< Target Reference Point scanning
-    RadarSlew
+    RadarSlew,
+    MotionFree  ///< Gimbal free movement mode
+};
+
+/**
+ * @brief Homing sequence state machine states
+ * 
+ * Tracks the complete homing operation from button press to completion.
+ * The homing process sends a HOME command to Oriental Motor servo drives,
+ * which move to their mechanical home position and send a HOME-END signal.
+ */
+enum class HomingState {
+    Idle,        ///< No homing operation in progress
+    Requested,   ///< Home button pressed, preparing to send command
+    InProgress,  ///< HOME command sent to PLC42, waiting for HOME-END signal
+    Completed,   ///< HOME-END received, homing successful
+    Failed,      ///< Homing failed due to timeout
+    Aborted      ///< Homing aborted by emergency stop or other condition
 };
 
 enum class TrackingPhase {
@@ -493,9 +510,10 @@ struct SystemStateData {
     // Station Inputs
     bool stationAmmunitionLevel = false; ///< Station ammunition level sensor
     bool hatchState = false;          ///< General station input 1
-    bool stationInput2 = false;          ///< General station input 2
+    bool freeGimbalState = false;          ///< General station input 2
     bool stationInput3 = false;          ///< General station input 3
-    
+     bool azimuthHomeComplete = false;      ///< Az HOME-END signal from Oriental Motor (DI6/I0_6)
+    bool elevationHomeComplete = false;    ///< El HOME-END signal from Oriental Motor (DI7/I0_7)   
     // Environmental Monitoring
     int panelTemperature = 0;            ///< Control panel temperature in Celsius
     int stationTemperature = 0;          ///< Station ambient temperature in Celsius
@@ -510,7 +528,11 @@ struct SystemStateData {
     uint16_t elevationDirection = 0;     ///< Elevation movement direction
     uint16_t solenoidState = 0;          ///< Current solenoid state
     uint16_t resetAlarm = 0;             ///< Alarm reset control
-    
+    uint16_t homePosition= 0;    ///< Home position command
+    uint16_t stopGimbal = 0;      ///< Stop gimbal command
+
+   // In "OPERATIONAL STATE & MODES" section, ADD:
+    HomingState homingState = HomingState::Idle;  ///< Current homing sequence state
     // =================================
     // TRACKING SYSTEM
     // =================================
@@ -792,7 +814,7 @@ struct SystemStateData {
                emergencyStopActive == other.emergencyStopActive &&
                stationAmmunitionLevel == other.stationAmmunitionLevel &&
                hatchState == other.hatchState &&
-               stationInput2 == other.stationInput2 &&
+               freeGimbalState == other.freeGimbalState &&
                stationInput3 == other.stationInput3 &&
                panelTemperature == other.panelTemperature &&
                stationTemperature == other.stationTemperature &&
@@ -805,7 +827,9 @@ struct SystemStateData {
                elevationDirection == other.elevationDirection &&
                solenoidState == other.solenoidState &&
                resetAlarm == other.resetAlarm &&
-               
+              azimuthHomeComplete == other.azimuthHomeComplete &&
+              elevationHomeComplete == other.elevationHomeComplete &&
+               homingState == other.homingState &&
                // Tracking System
                upTrack == other.upTrack &&
                downTrack == other.downTrack &&

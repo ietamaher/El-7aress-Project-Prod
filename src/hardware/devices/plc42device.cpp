@@ -96,7 +96,7 @@ void Plc42Device::startPollCycle() {
 
     // Start the request sequence: first read digital inputs
     sendReadRequest(Plc42Registers::DIGITAL_INPUTS_START_ADDR,
-                    7,  // Read 7 discrete inputs
+                    8,  // Read 8 discrete inputs
                     true);
 }
 
@@ -181,14 +181,17 @@ void Plc42Device::mergePartialData(const Plc42Data& partialData) {
 
     bool dataChanged = false;
 
-    // Merge discrete inputs
+    // ========================================================================
+    // Merge discrete inputs (8 total - includes dual HOME-END)
+    // ========================================================================
     if (partialData.stationUpperSensor != currentData->stationUpperSensor ||
         partialData.stationLowerSensor != currentData->stationLowerSensor ||
         partialData.emergencyStopActive != currentData->emergencyStopActive ||
         partialData.ammunitionLevel != currentData->ammunitionLevel ||
         partialData.hatchState != currentData->hatchState ||
-        partialData.stationInput2 != currentData->stationInput2 ||
-        partialData.stationInput3 != currentData->stationInput3 ||
+        partialData.freeGimbalState != currentData->freeGimbalState ||
+        partialData.azimuthHomeComplete != currentData->azimuthHomeComplete ||    // ⭐ NEW
+        partialData.elevationHomeComplete != currentData->elevationHomeComplete || // ⭐ NEW
         partialData.solenoidActive != currentData->solenoidActive) {
 
         newData->stationUpperSensor = partialData.stationUpperSensor;
@@ -196,13 +199,16 @@ void Plc42Device::mergePartialData(const Plc42Data& partialData) {
         newData->emergencyStopActive = partialData.emergencyStopActive;
         newData->ammunitionLevel = partialData.ammunitionLevel;
         newData->hatchState = partialData.hatchState;
-        newData->stationInput2 = partialData.stationInput2;
-        newData->stationInput3 = partialData.stationInput3;
+        newData->freeGimbalState = partialData.freeGimbalState;
+        newData->azimuthHomeComplete = partialData.azimuthHomeComplete;      // ⭐ NEW
+        newData->elevationHomeComplete = partialData.elevationHomeComplete;  // ⭐ NEW
         newData->solenoidActive = partialData.solenoidActive;
         dataChanged = true;
     }
 
-    // Merge holding registers
+    // ========================================================================
+    // Merge holding registers (unchanged)
+    // ========================================================================
     if (partialData.solenoidMode != currentData->solenoidMode ||
         partialData.gimbalOpMode != currentData->gimbalOpMode ||
         partialData.azimuthSpeed != currentData->azimuthSpeed ||
@@ -241,46 +247,6 @@ void Plc42Device::setSolenoidMode(uint16_t mode) {
     sendWriteHoldingRegisters();
 }
 
-void Plc42Device::setGimbalMotionMode(uint16_t mode) {
-    auto newData = std::make_shared<Plc42Data>(*data());
-    newData->gimbalOpMode = mode;
-    updateData(newData);
-    m_hasPendingWrites = true;
-    sendWriteHoldingRegisters();
-}
-
-void Plc42Device::setAzimuthSpeedHolding(uint32_t speed) {
-    auto newData = std::make_shared<Plc42Data>(*data());
-    newData->azimuthSpeed = speed;
-    updateData(newData);
-    m_hasPendingWrites = true;
-    sendWriteHoldingRegisters();
-}
-
-void Plc42Device::setElevationSpeedHolding(uint32_t speed) {
-    auto newData = std::make_shared<Plc42Data>(*data());
-    newData->elevationSpeed = speed;
-    updateData(newData);
-    m_hasPendingWrites = true;
-    sendWriteHoldingRegisters();
-}
-
-void Plc42Device::setAzimuthDirection(uint16_t direction) {
-    auto newData = std::make_shared<Plc42Data>(*data());
-    newData->azimuthDirection = direction;
-    updateData(newData);
-    m_hasPendingWrites = true;
-    sendWriteHoldingRegisters();
-}
-
-void Plc42Device::setElevationDirection(uint16_t direction) {
-    auto newData = std::make_shared<Plc42Data>(*data());
-    newData->elevationDirection = direction;
-    updateData(newData);
-    m_hasPendingWrites = true;
-    sendWriteHoldingRegisters();
-}
-
 void Plc42Device::setSolenoidState(uint16_t state) {
     auto newData = std::make_shared<Plc42Data>(*data());
     newData->solenoidState = state;
@@ -295,6 +261,32 @@ void Plc42Device::setResetAlarm(uint16_t alarm) {
     updateData(newData);
     m_hasPendingWrites = true;
     sendWriteHoldingRegisters();
+}
+// setHome position, method
+void  Plc42Device::setHomePosition() {
+    auto newData = std::make_shared<Plc42Data>(*data());
+    newData->gimbalOpMode = 3; // Assuming '3' is the code for 'Home Position' mode
+    updateData(newData);
+    m_hasPendingWrites = true;
+    sendWriteHoldingRegisters();
+}
+
+//  setStop gimbal methods
+void Plc42Device::setStopGimbal() {
+    auto newData = std::make_shared<Plc42Data>(*data());
+    newData->gimbalOpMode = 1; // Assuming '1' is the code for 'Stop' mode
+    updateData(newData);
+    m_hasPendingWrites = true;
+    sendWriteHoldingRegisters();
+}
+
+void Plc42Device::setManualMode() {
+    auto newData = std::make_shared<Plc42Data>(*data());
+    newData->gimbalOpMode = 0; // GIMBAL_MANUAL mode
+    updateData(newData);
+    m_hasPendingWrites = true;
+    sendWriteHoldingRegisters();
+    qDebug() << m_identifier << "Returning to MANUAL mode (gimbalOpMode = 0)";
 }
 
 void Plc42Device::sendWriteHoldingRegisters() {
