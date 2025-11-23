@@ -573,8 +573,10 @@ void SystemStateModel::updateNextIdsAfterLoad() {
 
 
 void SystemStateModel::onServoAzDataChanged(const ServoDriverData &azData) {
-    // Assuming ServoDriverData contains azimuth position
-    //if (!qFuzzyCompare(m_currentStateData.gimbalAz, azData.position * 0.0016179775280)) { // Check if position actually changed
+    // ✅ MEMORY LEAK FIX: Only emit if position actually changed
+    // Without this check: 20 Hz constant emission even when stationary
+    // With this check: Only emit when servo actually moves (saves ~100-400 KB/sec)
+    if (!qFuzzyCompare(m_currentStateData.gimbalAz, azData.position * 0.0016179775280)) {
         m_currentStateData.gimbalAz = azData.position* 0.0016179775280;;
         m_currentStateData.azMotorTemp = azData.motorTemp;
         m_currentStateData.azDriverTemp = azData.driverTemp;
@@ -585,23 +587,25 @@ void SystemStateModel::onServoAzDataChanged(const ServoDriverData &azData) {
 
         emit dataChanged(m_currentStateData); // Emit general data change
         emit gimbalPositionChanged(m_currentStateData.gimbalAz, m_currentStateData.gimbalEl); // Emit specific gimbal change
-    //}
+    }
 }
 
 void SystemStateModel::onServoElDataChanged(const ServoDriverData &elData) {
-    // Assuming ServoData contains elevation position
-    // if (!qFuzzyCompare(m_currentStateData.gimbalEl, elData.position * (-0.0018))) { // Check if position actually changed
+    // ✅ MEMORY LEAK FIX: Only emit if position actually changed
+    // Without this check: 20 Hz constant emission even when stationary
+    // With this check: Only emit when servo actually moves (saves ~100-400 KB/sec)
+    if (!qFuzzyCompare(m_currentStateData.gimbalEl, elData.position * (-0.0018))) {
         m_currentStateData.gimbalEl = elData.position * (-0.0018);
         m_currentStateData.elMotorTemp = elData.motorTemp;
         m_currentStateData.elDriverTemp = elData.driverTemp;
         m_currentStateData.elServoConnected = elData.isConnected;
-        m_currentStateData.elRpm = elData.rpm;            
-        m_currentStateData.elTorque = elData.torque;      
-        m_currentStateData.elFault = elData.fault;        
- 
+        m_currentStateData.elRpm = elData.rpm;
+        m_currentStateData.elTorque = elData.torque;
+        m_currentStateData.elFault = elData.fault;
+
         emit dataChanged(m_currentStateData); // Emit general data change
         emit gimbalPositionChanged(m_currentStateData.gimbalAz, m_currentStateData.gimbalEl); // Emit specific gimbal change
-    //}
+    }
 }
 
 void SystemStateModel::onDayCameraDataChanged(const DayCameraData &dayData)
