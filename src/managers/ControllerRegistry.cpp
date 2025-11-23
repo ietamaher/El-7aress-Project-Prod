@@ -279,11 +279,20 @@ bool ControllerRegistry::connectVideoToOsd()
 
     qInfo() << "=== ControllerRegistry: Connecting Video to OSD ===";
 
+    // ✅ MEMORY LEAK FIX: OSD doesn't use baseImage - strip it to prevent 3.1 MB copies
+    // Each frame with baseImage = 3.1 MB × 60fps (both cameras) = 186 MB/sec in copies!
+    // OsdController only needs metadata, not the raw video frame.
+
     // Connect day camera
     if (m_hardwareManager->dayVideoProcessor()) {
         connect(m_hardwareManager->dayVideoProcessor(), &CameraVideoStreamDevice::frameDataReady,
-                m_osdController, &OsdController::onFrameDataReady);
-        qInfo() << "  ✓ Day camera → OSD controller connected";
+                m_osdController, [this](const FrameData& data) {
+                    // Create lightweight copy without the 3.1 MB QImage
+                    FrameData osdData = data;
+                    osdData.baseImage = QImage();  // Clear image (OSD doesn't use it)
+                    m_osdController->onFrameDataReady(osdData);
+                });
+        qInfo() << "  ✓ Day camera → OSD controller connected (image-free for memory efficiency)";
     } else {
         qWarning() << "  ⚠ Day camera not available for OSD connection";
     }
@@ -291,8 +300,13 @@ bool ControllerRegistry::connectVideoToOsd()
     // Connect night camera
     if (m_hardwareManager->nightVideoProcessor()) {
         connect(m_hardwareManager->nightVideoProcessor(), &CameraVideoStreamDevice::frameDataReady,
-                m_osdController, &OsdController::onFrameDataReady);
-        qInfo() << "  ✓ Night camera → OSD controller connected";
+                m_osdController, [this](const FrameData& data) {
+                    // Create lightweight copy without the 3.1 MB QImage
+                    FrameData osdData = data;
+                    osdData.baseImage = QImage();  // Clear image (OSD doesn't use it)
+                    m_osdController->onFrameDataReady(osdData);
+                });
+        qInfo() << "  ✓ Night camera → OSD controller connected (image-free for memory efficiency)";
     } else {
         qWarning() << "  ⚠ Night camera not available for OSD connection";
     }

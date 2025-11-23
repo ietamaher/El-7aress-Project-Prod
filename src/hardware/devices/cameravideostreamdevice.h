@@ -18,6 +18,7 @@
 #include <QColor>
 #include <QObject>
 #include <QString>
+#include <QFuture>  // ✅ For tracking async detection tasks
 
 // GStreamer
 #include <gst/gst.h>
@@ -272,6 +273,7 @@ private:
     QElapsedTimer m_lastDetectionTime;
     bool m_detectionInProgress;
     cv::Mat m_detectionFrame;
+    QFuture<void> m_detectionFuture;  // ✅ MEMORY LEAK FIX: Track async task to prevent accumulation
 
     // --- OpenCV Buffers ---
     cv::Mat m_yuy2_host_buffer;
