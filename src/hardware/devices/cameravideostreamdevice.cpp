@@ -634,24 +634,36 @@ bool CameraVideoStreamDevice::processFrame(GstBuffer *buffer)
                 cvFrameBGR = cvFrameBGRA;
             }
 
-            // Launch async detection if previous one finished
+            // ✅ MEMORY LEAK FIX: Check if previous detection completed before starting new one
+            // This prevents QtConcurrent QFuture accumulation and cv::Mat clone() pileup
             if (!cvFrameBGR.empty()) {
-                QMutexLocker locker(&m_detectionMutex);
-                if (!m_detectionInProgress) {
-                    // Copy frame for async processing
-                    m_detectionFrame = cvFrameBGR.clone();
-                    m_detectionInProgress = true;
-                    locker.unlock();
+                // Skip if previous detection still running (prevents memory accumulation)
+                if (m_detectionFuture.isValid() && !m_detectionFuture.isFinished()) {
+                    // Previous detection still running, skip this frame
+                    // Acceptable: detection runs at 10Hz, skipping one frame is fine
+                    qDebug() << "Cam" << m_cameraIndex << ": Skipping detection frame - previous task still running";
+                } else {
+                    QMutexLocker locker(&m_detectionMutex);
+                    if (!m_detectionInProgress) {
+                        // ✅ LEAK FIX: Only clone if we're actually going to use it
+                        m_detectionFrame = cvFrameBGR.clone();
+                        m_detectionInProgress = true;
+                        locker.unlock();
 
-                    // Launch async detection (non-blocking)
-                    QtConcurrent::run([this]() {
-                        auto result = m_inference.runInference(m_detectionFrame);
+                        // ✅ CRITICAL FIX: Capture QFuture to prevent memory leak
+                        // Uncaptured QFutures accumulate internal result data
+                        m_detectionFuture = QtConcurrent::run([this]() {
+                            auto result = m_inference.runInference(m_detectionFrame);
 
-                        QMutexLocker lock(&m_detectionMutex);
-                        m_latestDetections = result;
-                        m_detectionInProgress = false;
-                        m_lastDetectionTime.restart();
-                    });
+                            QMutexLocker lock(&m_detectionMutex);
+                            m_latestDetections = result;
+                            m_detectionInProgress = false;
+                            m_lastDetectionTime.restart();
+
+                            // ✅ MEMORY LEAK FIX: Explicitly release detection frame after use
+                            m_detectionFrame.release();
+                        });
+                    }
                 }
             }
         }

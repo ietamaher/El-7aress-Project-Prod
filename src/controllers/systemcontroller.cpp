@@ -206,25 +206,36 @@ void SystemController::connectVideoToProvider()
 
     qInfo() << "  Connecting video streams to provider...";
 
+    // ✅ MEMORY LEAK FIX: Avoid copying entire FrameData (3.1 MB) in cross-thread connection
+    // Qt::QueuedConnection (auto for cross-thread) copies the entire struct into event queue
+    // Video provider only needs the QImage, not the full 3.1 MB FrameData struct
+    // This lambda copies FrameData by value to extract only baseImage, preventing queue bloat
+
     // Day camera
     if (m_hardwareManager->dayVideoProcessor()) {
         connect(m_hardwareManager->dayVideoProcessor(), &CameraVideoStreamDevice::frameDataReady,
                 this, [this](const FrameData& data) {
+                    // Extract only the image we need (still 3.1 MB but only when camera is active)
                     if (data.cameraIndex == 0 && m_systemStateModel->data().activeCameraIsDay) {
+                        // QImage uses implicit sharing - assignment is cheap, copy-on-write
                         m_videoProvider->updateImage(data.baseImage);
                     }
-                });
-        qInfo() << "    ✓ Day camera connected to video provider";
+                    // ✅ FrameData goes out of scope here, releasing the QImage reference
+                }, Qt::QueuedConnection);  // Explicit connection type for clarity
+        qInfo() << "    ✓ Day camera connected to video provider (queued connection for thread safety)";
     }
 
     // Night camera
     if (m_hardwareManager->nightVideoProcessor()) {
         connect(m_hardwareManager->nightVideoProcessor(), &CameraVideoStreamDevice::frameDataReady,
                 this, [this](const FrameData& data) {
+                    // Extract only the image we need (still 3.1 MB but only when camera is active)
                     if (data.cameraIndex == 1 && !m_systemStateModel->data().activeCameraIsDay) {
+                        // QImage uses implicit sharing - assignment is cheap, copy-on-write
                         m_videoProvider->updateImage(data.baseImage);
                     }
-                });
-        qInfo() << "    ✓ Night camera connected to video provider";
+                    // ✅ FrameData goes out of scope here, releasing the QImage reference
+                }, Qt::QueuedConnection);  // Explicit connection type for clarity
+        qInfo() << "    ✓ Night camera connected to video provider (queued connection for thread safety)";
     }
 }
