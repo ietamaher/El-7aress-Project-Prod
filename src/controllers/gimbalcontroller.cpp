@@ -160,7 +160,7 @@ void GimbalController::update()
 // STATE MANAGEMENT
 // ============================================================================
 
-void GimbalController::onSystemStateChanged(const SystemStateData &newData)
+void GimbalController::onSystemStateChanged(std::shared_ptr<const SystemStateData> newData)
 {
     // ========================================================================
     // ✅ PERFORMANCE OPTIMIZATION: Early exit checks
@@ -170,93 +170,93 @@ void GimbalController::onSystemStateChanged(const SystemStateData &newData)
 
     // PRIORITY 1: EMERGENCY STOP (highest priority!)
     // Only process if emergency state changed
-    if (newData.emergencyStopActive != m_oldState.emergencyStopActive) {
+    if (newData->emergencyStopActive != m_oldState.emergencyStopActive) {
         processEmergencyStop(newData);
     }
 
     // If emergency stop active, skip all other processing
-    if (newData.emergencyStopActive) {
-        m_oldState = newData;
+    if (newData->emergencyStopActive) {
+        m_oldState = *newData;
         return;  // Exit immediately - no motion commands during E-STOP
     }
 
     // PRIORITY 2: HOMING SEQUENCE
     // Only process if homing state or button changed
-    if (newData.homingState != m_oldState.homingState ||
-        newData.gotoHomePosition != m_oldState.gotoHomePosition) {
+    if (newData->homingState != m_oldState.homingState ||
+        newData->gotoHomePosition != m_oldState.gotoHomePosition) {
         processHomingSequence(newData);
     }
 
     // If homing in progress, skip motion mode changes to avoid interference
-    if (newData.homingState == HomingState::InProgress ||
-        newData.homingState == HomingState::Requested) {
-        m_oldState = newData;
+    if (newData->homingState == HomingState::InProgress ||
+        newData->homingState == HomingState::Requested) {
+        m_oldState = *newData;
         return;  // Exit - homing controls the gimbal exclusively
     }
 
     // PRIORITY 3: FREE MODE MONITORING
     // Only process if free mode state changed
-    if (newData.freeGimbalState != m_oldState.freeGimbalState) {
+    if (newData->freeGimbalState != m_oldState.freeGimbalState) {
         processFreeMode(newData);
     }
 
     // Detect motion mode type change
-    bool motionModeTypeChanged = (m_oldState.motionMode != newData.motionMode);
+    bool motionModeTypeChanged = (m_oldState.motionMode != newData->motionMode);
     bool scanParametersChanged = false;
 
     // Check for scan parameter changes (only if mode type unchanged)
     if (!motionModeTypeChanged) {
-        if (newData.motionMode == MotionMode::AutoSectorScan &&
-            m_oldState.activeAutoSectorScanZoneId != newData.activeAutoSectorScanZoneId) {
-            qDebug() << "GimbalController: AutoSectorScanZone changed to" << newData.activeAutoSectorScanZoneId;
+        if (newData->motionMode == MotionMode::AutoSectorScan &&
+            m_oldState.activeAutoSectorScanZoneId != newData->activeAutoSectorScanZoneId) {
+            qDebug() << "GimbalController: AutoSectorScanZone changed to" << newData->activeAutoSectorScanZoneId;
             scanParametersChanged = true;
-        } else if (newData.motionMode == MotionMode::TRPScan &&
-                   m_oldState.activeTRPLocationPage != newData.activeTRPLocationPage) {
-            qDebug() << "GimbalController: TRPLocationPage changed to" << newData.activeTRPLocationPage;
+        } else if (newData->motionMode == MotionMode::TRPScan &&
+                   m_oldState.activeTRPLocationPage != newData->activeTRPLocationPage) {
+            qDebug() << "GimbalController: TRPLocationPage changed to" << newData->activeTRPLocationPage;
             scanParametersChanged = true;
         }
     }
 
     // ✅ PERFORMANCE: Only update tracking if in AutoTrack mode AND tracking data changed
-    if (newData.motionMode == MotionMode::AutoTrack && m_currentMode) {
+    if (newData->motionMode == MotionMode::AutoTrack && m_currentMode) {
         if (dynamic_cast<TrackingMotionMode*>(m_currentMode.get())) {
             // Check if tracking data actually changed (avoid expensive trigonometry!)
             bool trackingDataChanged = (
-                newData.trackerHasValidTarget != m_oldState.trackerHasValidTarget ||
-                newData.trackedTargetCenterX_px != m_oldState.trackedTargetCenterX_px ||
-                newData.trackedTargetCenterY_px != m_oldState.trackedTargetCenterY_px ||
-                newData.trackedTargetVelocityX_px_s != m_oldState.trackedTargetVelocityX_px_s ||
-                newData.trackedTargetVelocityY_px_s != m_oldState.trackedTargetVelocityY_px_s
+                newData->trackerHasValidTarget != m_oldState.trackerHasValidTarget ||
+                newData->trackedTargetCenterX_px != m_oldState.trackedTargetCenterX_px ||
+                newData->trackedTargetCenterY_px != m_oldState.trackedTargetCenterY_px ||
+                newData->trackedTargetVelocityX_px_s != m_oldState.trackedTargetVelocityX_px_s ||
+                newData->trackedTargetVelocityY_px_s != m_oldState.trackedTargetVelocityY_px_s
             );
 
             if (trackingDataChanged) {
-                if (newData.trackerHasValidTarget) {
-                    float screenCenterX_px = newData.currentImageWidthPx / 2.0f;
-                    float screenCenterY_px = newData.currentImageHeightPx / 2.0f;
+                if (newData->trackerHasValidTarget) {
+                    float screenCenterX_px = newData->currentImageWidthPx / 2.0f;
+                    float screenCenterY_px = newData->currentImageHeightPx / 2.0f;
 
-                    double errorPxX = newData.trackedTargetCenterX_px - screenCenterX_px;
-                    double errorPxY = newData.trackedTargetCenterY_px - screenCenterY_px;
+                    double errorPxX = newData->trackedTargetCenterX_px - screenCenterX_px;
+                    double errorPxY = newData->trackedTargetCenterY_px - screenCenterY_px;
 
                     // Get active camera FOV
-                    float activeHfov = newData.activeCameraIsDay ?
-                                       static_cast<float>(newData.dayCurrentHFOV) :
-                                       static_cast<float>(newData.nightCurrentHFOV);
+                    float activeHfov = newData->activeCameraIsDay ?
+                                       static_cast<float>(newData->dayCurrentHFOV) :
+                                       static_cast<float>(newData->nightCurrentHFOV);
 
                     QPointF angularOffset = GimbalUtils::calculateAngularOffsetFromPixelError(
                         errorPxX, errorPxY,
-                        newData.currentImageWidthPx, newData.currentImageHeightPx, activeHfov
+                        newData->currentImageWidthPx, newData->currentImageHeightPx, activeHfov
                     );
 
                     // The desired target gimbal position is current gimbal position + this offset
                     // (because the offset tells us how far to move FROM current to get target to center)
-                    double targetGimbalAz = newData.gimbalAz + angularOffset.x();
-                    double targetGimbalEl = newData.gimbalEl + angularOffset.y();
+                    double targetGimbalAz = newData->gimbalAz + angularOffset.x();
+                    double targetGimbalEl = newData->gimbalEl + angularOffset.y();
 
                     QPointF angularVelocity = GimbalUtils::calculateAngularOffsetFromPixelError(
-                        newData.trackedTargetVelocityX_px_s, // Use velocity in pixels/sec
-                        newData.trackedTargetVelocityY_px_s,
-                        newData.currentImageWidthPx,
-                        newData.currentImageHeightPx,
+                        newData->trackedTargetVelocityX_px_s, // Use velocity in pixels/sec
+                        newData->trackedTargetVelocityY_px_s,
+                        newData->currentImageWidthPx,
+                        newData->currentImageHeightPx,
                         activeHfov
                     );
                     double targetAngularVelAz_dps = angularVelocity.x();
@@ -278,16 +278,16 @@ void GimbalController::onSystemStateChanged(const SystemStateData &newData)
 
     // Reconfigure motion mode if type or parameters changed
     if (motionModeTypeChanged || scanParametersChanged) {
-        setMotionMode(newData.motionMode);
+        setMotionMode(newData->motionMode);
     }
 
     // Update no-traverse zone status
-    bool inNTZ = m_stateModel->isPointInNoTraverseZone(newData.gimbalAz, newData.gimbalEl);
-    if (newData.isReticleInNoTraverseZone != inNTZ) {
+    bool inNTZ = m_stateModel->isPointInNoTraverseZone(newData->gimbalAz, newData->gimbalEl);
+    if (newData->isReticleInNoTraverseZone != inNTZ) {
         m_stateModel->setPointInNoTraverseZone(inNTZ);
     }
 
-    m_oldState = newData;
+    m_oldState = *newData;
 }
 
 // ============================================================================
@@ -447,12 +447,12 @@ void GimbalController::onElAlarmCleared()
 // HOMING STATE MACHINE IMPLEMENTATION
 // ============================================================================
 
-void GimbalController::processHomingSequence(const SystemStateData& data)
+void GimbalController::processHomingSequence(std::shared_ptr<const SystemStateData> data)
 {
-    switch (data.homingState) {
+    switch (data->homingState) {
     case HomingState::Idle:
         // Check if home button pressed (rising edge detection)
-        if (data.gotoHomePosition && !m_oldState.gotoHomePosition) {
+        if (data->gotoHomePosition && !m_oldState.gotoHomePosition) {
             qInfo() << "[GimbalController] 🏠 Home button pressed";
             startHomingSequence();
         }
@@ -465,7 +465,7 @@ void GimbalController::processHomingSequence(const SystemStateData& data)
             qInfo() << "[GimbalController] ▶ Starting HOME sequence";
 
             // Store current mode to restore after homing completes
-            m_modeBeforeHoming = data.motionMode;
+            m_modeBeforeHoming = data->motionMode;
             qDebug() << "[GimbalController] Stored current mode:" << int(m_modeBeforeHoming);
 
             // Send HOME command to Oriental Motor via PLC42
@@ -489,8 +489,8 @@ void GimbalController::processHomingSequence(const SystemStateData& data)
     case HomingState::InProgress:
     {  // ⭐ Braces for scope - THIS IS CRITICAL!
         // Check if BOTH HOME-END signals received
-        bool azHomeDone = data.azimuthHomeComplete;
-        bool elHomeDone = data.elevationHomeComplete;
+        bool azHomeDone = data->azimuthHomeComplete;
+        bool elHomeDone = data->elevationHomeComplete;
 
         // Log individual axis completion (rising edge detection)
         if (azHomeDone && !m_oldState.azimuthHomeComplete) {
@@ -508,7 +508,7 @@ void GimbalController::processHomingSequence(const SystemStateData& data)
         }
 
         // Check for emergency stop during homing
-        if (data.emergencyStopActive) {
+        if (data->emergencyStopActive) {
             qWarning() << "[GimbalController] ⚠ Homing aborted by emergency stop";
             abortHomingSequence("Emergency stop activated");
         }
@@ -616,9 +616,9 @@ void GimbalController::onHomingTimeout()
 // EMERGENCY STOP HANDLER
 // ============================================================================
 
-void GimbalController::processEmergencyStop(const SystemStateData& data)
+void GimbalController::processEmergencyStop(std::shared_ptr<const SystemStateData> data)
 {
-    bool emergencyActive = data.emergencyStopActive;
+    bool emergencyActive = data->emergencyStopActive;
     
     // Detect rising edge (emergency stop activation)
     if (emergencyActive && !m_wasInEmergencyStop) {
@@ -679,9 +679,9 @@ void GimbalController::processEmergencyStop(const SystemStateData& data)
 // FREE MODE HANDLER
 // ============================================================================
 
-void GimbalController::processFreeMode(const SystemStateData& data)
+void GimbalController::processFreeMode(std::shared_ptr<const SystemStateData> data)
 {
-    bool freeActive = data.freeGimbalState;
+    bool freeActive = data->freeGimbalState;
     
     // Detect rising edge (FREE mode activation)
     if (freeActive && !m_wasInFreeMode) {

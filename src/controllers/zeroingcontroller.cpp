@@ -22,11 +22,11 @@ void ZeroingController::initialize()
     // REPLACE THIS ENTIRE CONNECT BLOCK:
     // ✅ LATENCY FIX: Queued connection prevents menu processing from blocking device I/O
     connect(m_stateModel, &SystemStateModel::dataChanged,
-            this, [this](const SystemStateData& data) {
-                // OLD: if (!data.zeroingModeActive && m_currentState != ZeroingState::Idle && m_currentState != ZeroingState::Completed)
+            this, [this](std::shared_ptr<const SystemStateData> data) {
+                // OLD: if (!data->zeroingModeActive && m_currentState != ZeroingState::Idle && m_currentState != ZeroingState::Completed)
 
                 // NEW: Only check for Instruct state specifically
-                if (!data.zeroingModeActive && m_currentState == ZeroingState::Instruct_MoveReticleToImpact) {
+                if (!data->zeroingModeActive && m_currentState == ZeroingState::Instruct_MoveReticleToImpact) {
                     qDebug() << "Zeroing cancelled externally during instruction phase";
                     hide();
                     emit zeroingFinished();

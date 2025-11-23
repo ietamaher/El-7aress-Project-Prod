@@ -39,7 +39,7 @@ public:
 
 public slots:
     // PHASE 1: Direct from SystemStateModel (Active NOW)
-    void onSystemStateChanged(const SystemStateData& data);
+    void onSystemStateChanged(std::shared_ptr<const SystemStateData> data);
 
     // PHASE 2: From CameraVideoStreamDevice (Uncomment when ready)
     void onFrameDataReady(std::shared_ptr<const FrameData> frmdata);
@@ -47,7 +47,7 @@ public slots:
 private slots:
     void onColorStyleChanged(const QColor& color);
     void advanceStartupSequence();
-    void onStartupSystemStateChanged(const SystemStateData& data);
+    void onStartupSystemStateChanged(std::shared_ptr<const SystemStateData> data);
     void onStaticDetectionTimerExpired();
 
 private:
@@ -64,9 +64,9 @@ private:
     };
 
     void updateStartupMessage(StartupState state);
-    void checkDevicesAndAdvance(const SystemStateData& data);
-    bool areCriticalDevicesConnected(const SystemStateData& data) const;
-    void checkForCriticalErrors(const SystemStateData& data);
+    void checkDevicesAndAdvance(std::shared_ptr<const SystemStateData> data);
+    bool areCriticalDevicesConnected(std::shared_ptr<const SystemStateData> data) const;
+    void checkForCriticalErrors(std::shared_ptr<const SystemStateData> data);
 
     // Shared update logic
     //void updateViewModelFromSystemState(const SystemStateData& data);

@@ -48,7 +48,7 @@ signals:
 private slots:
     void handleMenuOptionSelected(const QString& option);
     void onColorStyleChanged(const QColor& color);
-    void onSystemStateChanged(const SystemStateData& newData);
+    void onSystemStateChanged(std::shared_ptr<const SystemStateData> newData);
 
 private:
     MenuViewModel* m_viewModel;

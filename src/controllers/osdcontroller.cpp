@@ -89,10 +89,10 @@ void OsdController::initialize()
 }
 
 
-void OsdController::onSystemStateChanged(const SystemStateData& data)
+void OsdController::onSystemStateChanged(std::shared_ptr<const SystemStateData> data)
 {
     // Update active camera index when it changes
-    int newActiveCameraIndex = data.activeCameraIsDay ? 0 : 1;
+    int newActiveCameraIndex = data->activeCameraIsDay ? 0 : 1;
 
     if (m_activeCameraIndex != newActiveCameraIndex) {
         m_activeCameraIndex = newActiveCameraIndex;
@@ -108,29 +108,29 @@ void OsdController::onSystemStateChanged(const SystemStateData& data)
     // Update device health status for warning displays
     if (m_viewModel) {
         m_viewModel->updateDeviceHealth(
-            data.dayCameraConnected,
-            data.dayCameraError,
-            data.nightCameraConnected,
-            data.nightCameraError,
-            data.azServoConnected,
-            data.azFault,
-            data.elServoConnected,
-            data.elFault,
-            data.lrfConnected,
-            data.lrfFault,
-            data.lrfOverTemp,
-            data.actuatorConnected,
-            data.actuatorFault,
-            data.imuConnected,
-            data.plc21Connected,
-            data.plc42Connected,
-            data.joystickConnected
+            data->dayCameraConnected,
+            data->dayCameraError,
+            data->nightCameraConnected,
+            data->nightCameraError,
+            data->azServoConnected,
+            data->azFault,
+            data->elServoConnected,
+            data->elFault,
+            data->lrfConnected,
+            data->lrfFault,
+            data->lrfOverTemp,
+            data->actuatorConnected,
+            data->actuatorFault,
+            data->imuConnected,
+            data->plc21Connected,
+            data->plc42Connected,
+            data->joystickConnected
         );
 
         // Update environment display (not in FrameData, so updated here)
         m_viewModel->updateEnvironmentDisplay(
-            data.environmentalTemperatureCelsius,
-            data.environmentalAltitudeMeters
+            data->environmentalTemperatureCelsius,
+            data->environmentalAltitudeMeters
         );
 
         // NOTE: Windage display is now updated from FrameData in onFrameDataReady()
@@ -138,39 +138,39 @@ void OsdController::onSystemStateChanged(const SystemStateData& data)
     }
 }
 
-void OsdController::checkForCriticalErrors(const SystemStateData& data)
+void OsdController::checkForCriticalErrors(std::shared_ptr<const SystemStateData> data)
 {
     if (!m_viewModel) return;
 
     // Priority 1: Critical device disconnections
-    if (!data.imuConnected) {
+    if (!data->imuConnected) {
         //showErrorMessage("IMU DISCONNECTED - Platform stabilization unavailable");
         return;
     }
 
-    if (!data.azServoConnected) {
+    if (!data->azServoConnected) {
         //showErrorMessage("AZIMUTH SERVO DISCONNECTED - Cannot slew horizontally");
         return;
     }
 
-    if (!data.elServoConnected) {
+    if (!data->elServoConnected) {
         //showErrorMessage("ELEVATION SERVO DISCONNECTED - Cannot slew vertically");
         return;
     }
 
     // Priority 2: Critical device faults
-    if (data.azFault) {
+    if (data->azFault) {
         //showErrorMessage("AZIMUTH SERVO FAULT - Check motor and driver");
         return;
     }
 
-    if (data.elFault) {
+    if (data->elFault) {
         //showErrorMessage("ELEVATION SERVO FAULT - Check motor and driver");
         return;
     }
 
     // Priority 3: LRF critical errors
-    if (data.lrfConnected && data.lrfFault) {
+    if (data->lrfConnected && data->lrfFault) {
         //showErrorMessage("LASER RANGEFINDER FAULT - Ranging unavailable");
         return;
     }
@@ -541,20 +541,20 @@ void OsdController::advanceStartupSequence()
     }
 }
 
-void OsdController::onStartupSystemStateChanged(const SystemStateData& data)
+void OsdController::onStartupSystemStateChanged(std::shared_ptr<const SystemStateData> data)
 {
     if (!m_startupSequenceActive) return;
 
     checkDevicesAndAdvance(data);
 }
 
-void OsdController::checkDevicesAndAdvance(const SystemStateData& data)
+void OsdController::checkDevicesAndAdvance(std::shared_ptr<const SystemStateData> data)
 {
     if (!m_viewModel || !m_startupSequenceActive) return;
 
     // Track IMU connection
     // IMU becomes connected AFTER gyro bias capture completes and data starts flowing
-    if (data.imuConnected && !m_imuConnected) {
+    if (data->imuConnected && !m_imuConnected) {
         m_imuConnected = true;
         qDebug() << "[OsdController] IMU connected - gyro bias capture complete, data flowing";
     }
@@ -610,17 +610,17 @@ void OsdController::onStaticDetectionTimerExpired()
 
     // Check if we should advance (need both timer complete AND IMU connected)
     if (m_stateModel) {
-        checkDevicesAndAdvance(m_stateModel->data());
+        checkDevicesAndAdvance(std::make_shared<const SystemStateData>(m_stateModel->data()));
     }
 }
 
-bool OsdController::areCriticalDevicesConnected(const SystemStateData& data) const
+bool OsdController::areCriticalDevicesConnected(std::shared_ptr<const SystemStateData> data) const
 {
     // Critical devices: IMU, Azimuth servo, Elevation servo
     // Cameras are not critical for basic operation
-    bool critical = data.imuConnected; // &&
-                 //  data.azServoConnected &&
-                  // data.elServoConnected;
+    bool critical = data->imuConnected; // &&
+                 //  data->azServoConnected &&
+                  // data->elServoConnected;
 
     if (critical) {
         qDebug() << "[OsdController] All critical devices connected";

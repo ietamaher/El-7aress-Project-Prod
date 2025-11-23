@@ -98,7 +98,7 @@ private slots:
 
 private slots:
     // Monitor button state changes from hardware
-    void onSystemStateChanged(const SystemStateData& newState);
+    void onSystemStateChanged(std::shared_ptr<const SystemStateData> newState);
 
 private:
     void setMenuState(MenuState state);

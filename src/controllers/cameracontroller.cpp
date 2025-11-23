@@ -107,26 +107,26 @@ bool CameraController::isDayCameraActive() const
 
 
 // Slot to react to the central state model changes
-void CameraController::onSystemStateChanged(const SystemStateData &newData)
+void CameraController::onSystemStateChanged(std::shared_ptr<const SystemStateData> newData)
 {
     QMutexLocker locker(&m_mutex); // Lock if modifying shared member data
 
-    bool cameraChanged = (m_cachedState.activeCameraIsDay != newData.activeCameraIsDay);
-    //bool trackingChanged = (m_cachedState.trackingActive != newData.trackingActive);
-    //bool opModeChanged = (m_cachedState.opMode != newData.opMode);
+    bool cameraChanged = (m_cachedState.activeCameraIsDay != newData->activeCameraIsDay);
+    //bool trackingChanged = (m_cachedState.trackingActive != newData->trackingActive);
+    //bool opModeChanged = (m_cachedState.opMode != newData->opMode);
     // ... check other relevant state changes using m_cachedState vs newData ...
 
     // Keep previous state temporarily *before* updating the cache
     SystemStateData oldStateBeforeUpdate = m_cachedState;
 
     // Update the internal cached state AFTER comparisons
-    m_cachedState = newData;
+    m_cachedState = *newData;
 
     // --- React to Changes ---
 
     // 1. Active Camera Changed
     if (cameraChanged) {
-        setActiveCamera(newData.activeCameraIsDay); // Update internal flag AND handle side effects
+        setActiveCamera(newData->activeCameraIsDay); // Update internal flag AND handle side effects
 
         // Stop tracking on the camera that just became *inactive*
         CameraVideoStreamDevice* oldProcessor = oldStateBeforeUpdate.activeCameraIsDay ? m_dayProcessor : m_nightProcessor;

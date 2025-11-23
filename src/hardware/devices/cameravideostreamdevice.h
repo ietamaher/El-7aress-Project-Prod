@@ -186,7 +186,7 @@ public:
 public slots:
     void setTrackingEnabled(bool enabled);
     void setDetectionEnabled(bool enabled);
-    void onSystemStateChanged(const SystemStateData &newState);
+    void onSystemStateChanged(std::shared_ptr<const SystemStateData> newState);
 
 signals:
     void frameDataReady(std::shared_ptr<const FrameData> data);

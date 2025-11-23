@@ -190,15 +190,15 @@ void MainMenuController::onColorStyleChanged(const QColor& color)
     m_viewModel->setAccentColor(color);
 }
 
-void MainMenuController::onSystemStateChanged(const SystemStateData& newData)
+void MainMenuController::onSystemStateChanged(std::shared_ptr<const SystemStateData> newData)
 {
     // Only update if menu is visible and camera changed
     if (!m_viewModel->visible()) return;
 
     // Check if camera type changed
-    if (newData.activeCameraIsDay != m_previousCameraIsDay) {
+    if (newData->activeCameraIsDay != m_previousCameraIsDay) {
         qDebug() << "MainMenuController: Camera changed while menu open - rebuilding options";
-        m_previousCameraIsDay = newData.activeCameraIsDay;
+        m_previousCameraIsDay = newData->activeCameraIsDay;
 
         // Save current selection
         int currentIndex = m_viewModel->currentIndex();
@@ -214,8 +214,8 @@ void MainMenuController::onSystemStateChanged(const SystemStateData& newData)
     }
 
     // Also update if detection state changes while day camera is active
-    if (newData.activeCameraIsDay && newData.detectionEnabled != m_previousDetectionEnabled) {
-        m_previousDetectionEnabled = newData.detectionEnabled;
+    if (newData->activeCameraIsDay && newData->detectionEnabled != m_previousDetectionEnabled) {
+        m_previousDetectionEnabled = newData->detectionEnabled;
 
         // Save current selection
         int currentIndex = m_viewModel->currentIndex();

@@ -38,21 +38,21 @@ WeaponController::WeaponController(SystemStateModel* m_stateModel,
     }
 }
 
-void WeaponController::onSystemStateChanged(const SystemStateData &newData)
+void WeaponController::onSystemStateChanged(std::shared_ptr<const SystemStateData> newData)
 {
     // Assume that newData includes an 'ammoLoadRequested' flag indicating the ammo load button press.
     // This is a cleaner trigger than comparing a boolean that represents "ammo loaded".
-    /*if (newData.ammoLoaded && m_ammoState == AmmoState::Idle) {
+    /*if (newData->ammoLoaded && m_ammoState == AmmoState::Idle) {
         // Begin the ammo-loading sequence.
         m_ammoState = AmmoState::LoadingFirstCycleForward;
         m_servoActuator->moveToPosition(100);
         qDebug() << "Ammo loading started: moving forward (first cycle)";
     }*/
 
-    if (m_oldState.ammoLoaded != newData.ammoLoaded) {
+    if (m_oldState.ammoLoaded != newData->ammoLoaded) {
         // Begin the ammo-loading sequence.
         m_ammoState = AmmoState::Loaded;
-        if (newData.ammoLoaded) {
+        if (newData->ammoLoaded) {
                     m_servoActuator->moveToPosition(63000);
                     qDebug() << "Ammo loading started: moving to extended position";
         } else {
@@ -62,13 +62,13 @@ void WeaponController::onSystemStateChanged(const SystemStateData &newData)
  
     }
     // Update fire readiness based on the dead-man switch.
-    if (m_oldState.deadManSwitchActive != newData.deadManSwitchActive) {
-        m_fireReady = newData.deadManSwitchActive;
+    if (m_oldState.deadManSwitchActive != newData->deadManSwitchActive) {
+        m_fireReady = newData->deadManSwitchActive;
     }
 
-    if (m_oldState.fireMode != newData.fireMode) {
+    if (m_oldState.fireMode != newData->fireMode) {
 
-        switch (newData.fireMode) {
+        switch (newData->fireMode) {
             case FireMode::SingleShot:
                 m_plc42->setSolenoidMode(1);
                 break;
@@ -85,8 +85,8 @@ void WeaponController::onSystemStateChanged(const SystemStateData &newData)
     }
 
     // Verify that all conditions are met for arming the system.
-    if (newData.opMode == OperationalMode::Engagement &&
-        newData.gunArmed &&
+    if (newData->opMode == OperationalMode::Engagement &&
+        newData->gunArmed &&
         m_fireReady )//&&         (m_ammoState == AmmoState::Loaded))
     {
         m_systemArmed = true;
@@ -103,62 +103,62 @@ void WeaponController::onSystemStateChanged(const SystemStateData &newData)
     bool ballisticsInputsChanged = false;
 
     // LAC activation/deactivation
-    if (m_oldState.leadAngleCompensationActive != newData.leadAngleCompensationActive) {
+    if (m_oldState.leadAngleCompensationActive != newData->leadAngleCompensationActive) {
         ballisticsInputsChanged = true;
         qDebug() << "[WeaponController] LAC state changed:"
-                 << m_oldState.leadAngleCompensationActive << "→" << newData.leadAngleCompensationActive;
+                 << m_oldState.leadAngleCompensationActive << "→" << newData->leadAngleCompensationActive;
     }
 
     // Camera switching (Day ↔ Night) - affects which FOV is used
-    if (m_oldState.activeCameraIsDay != newData.activeCameraIsDay) {
+    if (m_oldState.activeCameraIsDay != newData->activeCameraIsDay) {
         ballisticsInputsChanged = true;
         QString oldCam = m_oldState.activeCameraIsDay ? "DAY" : "NIGHT";
-        QString newCam = newData.activeCameraIsDay ? "DAY" : "NIGHT";
+        QString newCam = newData->activeCameraIsDay ? "DAY" : "NIGHT";
         float oldFov = m_oldState.activeCameraIsDay ? m_oldState.dayCurrentHFOV : m_oldState.nightCurrentHFOV;
-        float newFov = newData.activeCameraIsDay ? newData.dayCurrentHFOV : newData.nightCurrentHFOV;
+        float newFov = newData->activeCameraIsDay ? newData->dayCurrentHFOV : newData->nightCurrentHFOV;
         qDebug() << "[WeaponController] *** CAMERA SWITCHED:" << oldCam << "→" << newCam
                  << "| Active FOV:" << oldFov << "°" << "→" << newFov << "°";
     }
 
     // FOV changes (zoom in/out) - affects ZoomOut status
     // Check both HFOV and VFOV (cameras are NOT square)
-    if (!qFuzzyCompare(m_oldState.dayCurrentHFOV, newData.dayCurrentHFOV) ||
-        !qFuzzyCompare(m_oldState.dayCurrentVFOV, newData.dayCurrentVFOV) ||
-        !qFuzzyCompare(m_oldState.nightCurrentHFOV, newData.nightCurrentHFOV) ||
-        !qFuzzyCompare(m_oldState.nightCurrentVFOV, newData.nightCurrentVFOV)) {
+    if (!qFuzzyCompare(m_oldState.dayCurrentHFOV, newData->dayCurrentHFOV) ||
+        !qFuzzyCompare(m_oldState.dayCurrentVFOV, newData->dayCurrentVFOV) ||
+        !qFuzzyCompare(m_oldState.nightCurrentHFOV, newData->nightCurrentHFOV) ||
+        !qFuzzyCompare(m_oldState.nightCurrentVFOV, newData->nightCurrentVFOV)) {
         ballisticsInputsChanged = true;
 
         // Determine which camera's FOV actually changed
-        if (!qFuzzyCompare(m_oldState.dayCurrentHFOV, newData.dayCurrentHFOV) ||
-            !qFuzzyCompare(m_oldState.dayCurrentVFOV, newData.dayCurrentVFOV)) {
+        if (!qFuzzyCompare(m_oldState.dayCurrentHFOV, newData->dayCurrentHFOV) ||
+            !qFuzzyCompare(m_oldState.dayCurrentVFOV, newData->dayCurrentVFOV)) {
             qDebug() << "[WeaponController] Day camera ZOOM:"
                      << m_oldState.dayCurrentHFOV << "×" << m_oldState.dayCurrentVFOV << "° →"
-                     << newData.dayCurrentHFOV << "×" << newData.dayCurrentVFOV << "°"
-                     << (newData.activeCameraIsDay ? "(ACTIVE)" : "(inactive)");
+                     << newData->dayCurrentHFOV << "×" << newData->dayCurrentVFOV << "°"
+                     << (newData->activeCameraIsDay ? "(ACTIVE)" : "(inactive)");
         }
-        if (!qFuzzyCompare(m_oldState.nightCurrentHFOV, newData.nightCurrentHFOV) ||
-            !qFuzzyCompare(m_oldState.nightCurrentVFOV, newData.nightCurrentVFOV)) {
+        if (!qFuzzyCompare(m_oldState.nightCurrentHFOV, newData->nightCurrentHFOV) ||
+            !qFuzzyCompare(m_oldState.nightCurrentVFOV, newData->nightCurrentVFOV)) {
             qDebug() << "[WeaponController] Night camera ZOOM:"
                      << m_oldState.nightCurrentHFOV << "×" << m_oldState.nightCurrentVFOV << "° →"
-                     << newData.nightCurrentHFOV << "×" << newData.nightCurrentVFOV << "°"
-                     << (!newData.activeCameraIsDay ? "(ACTIVE)" : "(inactive)");
+                     << newData->nightCurrentHFOV << "×" << newData->nightCurrentVFOV << "°"
+                     << (!newData->activeCameraIsDay ? "(ACTIVE)" : "(inactive)");
         }
     }
 
     // Target range changes (LRF measurement)
-    if (!qFuzzyCompare(m_oldState.currentTargetRange, newData.currentTargetRange)) {
+    if (!qFuzzyCompare(m_oldState.currentTargetRange, newData->currentTargetRange)) {
         ballisticsInputsChanged = true;
         qDebug() << "[WeaponController] Target range changed:"
-                 << m_oldState.currentTargetRange << "→" << newData.currentTargetRange << "m";
+                 << m_oldState.currentTargetRange << "→" << newData->currentTargetRange << "m";
     }
 
     // Target angular rates (tracking motion)
-    if (!qFuzzyCompare(m_oldState.currentTargetAngularRateAz, newData.currentTargetAngularRateAz) ||
-        !qFuzzyCompare(m_oldState.currentTargetAngularRateEl, newData.currentTargetAngularRateEl)) {
+    if (!qFuzzyCompare(m_oldState.currentTargetAngularRateAz, newData->currentTargetAngularRateAz) ||
+        !qFuzzyCompare(m_oldState.currentTargetAngularRateEl, newData->currentTargetAngularRateEl)) {
         ballisticsInputsChanged = true;
         qDebug() << "[WeaponController] Target angular rates changed: Az:"
-                 << m_oldState.currentTargetAngularRateAz << "→" << newData.currentTargetAngularRateAz
-                 << "El:" << m_oldState.currentTargetAngularRateEl << "→" << newData.currentTargetAngularRateEl;
+                 << m_oldState.currentTargetAngularRateAz << "→" << newData->currentTargetAngularRateAz
+                 << "El:" << m_oldState.currentTargetAngularRateEl << "→" << newData->currentTargetAngularRateEl;
     }
 
     // ========================================================================
@@ -170,16 +170,16 @@ void WeaponController::onSystemStateChanged(const SystemStateData &newData)
     // ========================================================================
     bool environmentalParamsChanged = false;
 
-    if (!qFuzzyCompare(m_oldState.environmentalTemperatureCelsius, newData.environmentalTemperatureCelsius) ||
-        !qFuzzyCompare(m_oldState.environmentalAltitudeMeters, newData.environmentalAltitudeMeters) ||
-        m_oldState.environmentalAppliedToBallistics != newData.environmentalAppliedToBallistics)
+    if (!qFuzzyCompare(m_oldState.environmentalTemperatureCelsius, newData->environmentalTemperatureCelsius) ||
+        !qFuzzyCompare(m_oldState.environmentalAltitudeMeters, newData->environmentalAltitudeMeters) ||
+        m_oldState.environmentalAppliedToBallistics != newData->environmentalAppliedToBallistics)
     {
         environmentalParamsChanged = true;
 
         qDebug() << "[WeaponController] Environmental parameters changed:"
-                 << "Temp:" << m_oldState.environmentalTemperatureCelsius << "→" << newData.environmentalTemperatureCelsius
-                 << "Alt:" << m_oldState.environmentalAltitudeMeters << "→" << newData.environmentalAltitudeMeters
-                 << "Applied:" << m_oldState.environmentalAppliedToBallistics << "→" << newData.environmentalAppliedToBallistics;
+                 << "Temp:" << m_oldState.environmentalTemperatureCelsius << "→" << newData->environmentalTemperatureCelsius
+                 << "Alt:" << m_oldState.environmentalAltitudeMeters << "→" << newData->environmentalAltitudeMeters
+                 << "Applied:" << m_oldState.environmentalAppliedToBallistics << "→" << newData->environmentalAppliedToBallistics;
     }
 
     // ========================================================================
@@ -190,16 +190,16 @@ void WeaponController::onSystemStateChanged(const SystemStateData &newData)
     // ========================================================================
     bool windageParamsChanged = false;
 
-    if (!qFuzzyCompare(m_oldState.windageSpeedKnots, newData.windageSpeedKnots) ||
-        !qFuzzyCompare(m_oldState.windageDirectionDegrees, newData.windageDirectionDegrees) ||
-        m_oldState.windageAppliedToBallistics != newData.windageAppliedToBallistics)
+    if (!qFuzzyCompare(m_oldState.windageSpeedKnots, newData->windageSpeedKnots) ||
+        !qFuzzyCompare(m_oldState.windageDirectionDegrees, newData->windageDirectionDegrees) ||
+        m_oldState.windageAppliedToBallistics != newData->windageAppliedToBallistics)
     {
         windageParamsChanged = true;
 
         qDebug() << "[WeaponController] Windage parameters changed:"
-                 << "Speed:" << m_oldState.windageSpeedKnots << "→" << newData.windageSpeedKnots << "knots"
-                 << "Direction:" << m_oldState.windageDirectionDegrees << "→" << newData.windageDirectionDegrees << "°"
-                 << "Applied:" << m_oldState.windageAppliedToBallistics << "→" << newData.windageAppliedToBallistics;
+                 << "Speed:" << m_oldState.windageSpeedKnots << "→" << newData->windageSpeedKnots << "knots"
+                 << "Direction:" << m_oldState.windageDirectionDegrees << "→" << newData->windageDirectionDegrees << "°"
+                 << "Applied:" << m_oldState.windageAppliedToBallistics << "→" << newData->windageAppliedToBallistics;
     }
 
     // ========================================================================
@@ -220,29 +220,29 @@ void WeaponController::onSystemStateChanged(const SystemStateData &newData)
     bool absoluteBearingChanged = false;
 
     // Check station azimuth change
-    if (m_oldState.azimuthDirection != newData.azimuthDirection) {
+    if (m_oldState.azimuthDirection != newData->azimuthDirection) {
         // Only flag as change if windage is actually applied
-        if (newData.windageAppliedToBallistics && newData.windageSpeedKnots > 0.001f) {
+        if (newData->windageAppliedToBallistics && newData->windageSpeedKnots > 0.001f) {
             absoluteBearingChanged = true;
             ballisticsInputsChanged = true;
 
             // Debug output commented to prevent app freeze (runs every gimbal move)
             /*qDebug() << "[WeaponController] *** STATION AZIMUTH CHANGED (windage active):"
-                     << m_oldState.azimuthDirection << "°" << "→" << newData.azimuthDirection << "°"
+                     << m_oldState.azimuthDirection << "°" << "→" << newData->azimuthDirection << "°"
                      << "| Crosswind will be recalculated for new gimbal position";*/
         }
     }
 
     // Check IMU yaw change (vehicle rotation)
-    if (!qFuzzyCompare(m_oldState.imuYawDeg, newData.imuYawDeg)) {
+    if (!qFuzzyCompare(m_oldState.imuYawDeg, newData->imuYawDeg)) {
         // Only flag as change if windage is actually applied
-        if (newData.windageAppliedToBallistics && newData.windageSpeedKnots > 0.001f) {
+        if (newData->windageAppliedToBallistics && newData->windageSpeedKnots > 0.001f) {
             absoluteBearingChanged = true;
             ballisticsInputsChanged = true;
 
             // Debug output commented to prevent app freeze (runs every vehicle rotation)
             /*qDebug() << "[WeaponController] *** VEHICLE HEADING CHANGED (windage active):"
-                     << m_oldState.imuYawDeg << "°" << "→" << newData.imuYawDeg << "°"
+                     << m_oldState.imuYawDeg << "°" << "→" << newData->imuYawDeg << "°"
                      << "| Crosswind will be recalculated for new vehicle orientation";*/
         }
     }
@@ -262,11 +262,11 @@ void WeaponController::onSystemStateChanged(const SystemStateData &newData)
                  << "EnvChanged=" << environmentalParamsChanged
                  << "WindageChanged=" << windageParamsChanged
                  << "AbsoluteBearingChanged=" << absoluteBearingChanged
-                 << "LAC=" << newData.leadAngleCompensationActive;*/
+                 << "LAC=" << newData->leadAngleCompensationActive;*/
         updateFireControlSolution();
     }
 
-    m_oldState = newData;
+    m_oldState = *newData;
 }
 
 void WeaponController::onActuatorPositionReached()

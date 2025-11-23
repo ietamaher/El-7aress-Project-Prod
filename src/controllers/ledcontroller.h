@@ -13,7 +13,7 @@ public:
     explicit LedController(SystemStateModel* systemStateModel, Plc21Device* plc21Device, QObject *parent = nullptr);
 
 private slots:
-    void onSystemStateChanged(const SystemStateData& data);
+    void onSystemStateChanged(std::shared_ptr<const SystemStateData> data);
 
 private:
     SystemStateModel* m_systemStateModel;

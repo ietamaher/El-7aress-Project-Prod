@@ -296,74 +296,74 @@ void CameraVideoStreamDevice::run()
 // SYSTEM STATE SYNCHRONIZATION
 // ============================================================================
 
-void CameraVideoStreamDevice::onSystemStateChanged(const SystemStateData &newState)
+void CameraVideoStreamDevice::onSystemStateChanged(std::shared_ptr<const SystemStateData> newState)
 {
     QMutexLocker locker(&m_stateMutex);
 
     // Update members based on the new state data
-    m_currentMode = newState.opMode;
-    m_motionMode = newState.motionMode;
-    m_stabEnabled = newState.enableStabilization;
-    m_currentAzimuth = newState.gimbalAz;         // Assuming gimbalAz is the display value
-    m_currentElevation = newState.gimbalEl;       // Assuming gimbalEl is the display value
-    m_imuConnected = newState.imuConnected;
-    m_imuRollDeg = newState.imuRollDeg;
-    m_imuPitchDeg = newState.imuPitchDeg;
-    m_imuYawDeg = newState.imuYawDeg;       // Vehicle heading
-    m_imuTemp = newState.imuTemp;
-    m_gyroX = newState.GyroX;
-    m_gyroY = newState.GyroY;
-    m_gyroZ = newState.GyroZ;
-    m_accelX = newState.AccelX;
-    m_accelY = newState.AccelY;
-    m_accelZ = newState.AccelZ;
-    m_lrfDistance = newState.currentTargetRange;
-    m_sysCharged = newState.ammoLoaded; // Map SystemStateData fields to your OSD needs
-    m_sysArmed = newState.gunArmed;
-    m_sysReady = newState.isReady();      // Use the helper function? Or specific flags
-    m_cameraFOV = newState.activeCameraIsDay ? newState.dayCurrentHFOV : newState.nightCurrentHFOV; // Example: Get FOV based on active cam
-    m_speed = newState.gimbalSpeed; // Assuming gimbalSpeed is the speed value
-    m_fireMode = newState.fireMode; // Assuming fireMode is the rate mode
-    m_reticleType = newState.reticleType; // Assuming reticleType is the type
-    m_colorStyle = newState.colorStyle; // Assuming colorStyle is the color style
-     m_currentZeroingModeActive  = newState.zeroingModeActive  ;  
-     m_currentZeroingApplied = newState.zeroingAppliedToBallistics;
-     m_currentZeroingAzOffset = newState.zeroingAzimuthOffset;
-     m_currentZeroingElOffset = newState.zeroingElevationOffset;   
+    m_currentMode = newState->opMode;
+    m_motionMode = newState->motionMode;
+    m_stabEnabled = newState->enableStabilization;
+    m_currentAzimuth = newState->gimbalAz;         // Assuming gimbalAz is the display value
+    m_currentElevation = newState->gimbalEl;       // Assuming gimbalEl is the display value
+    m_imuConnected = newState->imuConnected;
+    m_imuRollDeg = newState->imuRollDeg;
+    m_imuPitchDeg = newState->imuPitchDeg;
+    m_imuYawDeg = newState->imuYawDeg;       // Vehicle heading
+    m_imuTemp = newState->imuTemp;
+    m_gyroX = newState->GyroX;
+    m_gyroY = newState->GyroY;
+    m_gyroZ = newState->GyroZ;
+    m_accelX = newState->AccelX;
+    m_accelY = newState->AccelY;
+    m_accelZ = newState->AccelZ;
+    m_lrfDistance = newState->currentTargetRange;
+    m_sysCharged = newState->ammoLoaded; // Map SystemStateData fields to your OSD needs
+    m_sysArmed = newState->gunArmed;
+    m_sysReady = newState->isReady();      // Use the helper function? Or specific flags
+    m_cameraFOV = newState->activeCameraIsDay ? newState->dayCurrentHFOV : newState->nightCurrentHFOV; // Example: Get FOV based on active cam
+    m_speed = newState->gimbalSpeed; // Assuming gimbalSpeed is the speed value
+    m_fireMode = newState->fireMode; // Assuming fireMode is the rate mode
+    m_reticleType = newState->reticleType; // Assuming reticleType is the type
+    m_colorStyle = newState->colorStyle; // Assuming colorStyle is the color style
+     m_currentZeroingModeActive  = newState->zeroingModeActive  ;
+     m_currentZeroingApplied = newState->zeroingAppliedToBallistics;
+     m_currentZeroingAzOffset = newState->zeroingAzimuthOffset;
+     m_currentZeroingElOffset = newState->zeroingElevationOffset;
 
-     m_currentWindageModeActive  = newState.windageModeActive;
-     m_currentWindageApplied = newState.windageAppliedToBallistics;
-    m_currentWindageSpeed = newState.windageSpeedKnots; // Assuming this is the windage speed in knots
-    m_currentWindageDirection = newState.windageDirectionDegrees;
-    m_currentCalculatedCrosswind = newState.calculatedCrosswindMS;  
+     m_currentWindageModeActive  = newState->windageModeActive;
+     m_currentWindageApplied = newState->windageAppliedToBallistics;
+    m_currentWindageSpeed = newState->windageSpeedKnots; // Assuming this is the windage speed in knots
+    m_currentWindageDirection = newState->windageDirectionDegrees;
+    m_currentCalculatedCrosswind = newState->calculatedCrosswindMS;
  
-    m_currentIsReticleInNoFireZone  = newState.isReticleInNoFireZone; // Assuming this is the no-fire zone status
+    m_currentIsReticleInNoFireZone  = newState->isReticleInNoFireZone; // Assuming this is the no-fire zone status
     // Update the gimbal stopped at NTZ limit status
-    m_currentGimbalStoppedAtNTZLimit = newState.isReticleInNoTraverseZone; // Assuming this is the NTZ limit status
-    m_isLacActiveForReticle = newState.leadAngleCompensationActive; // Assuming this is the LAC status
-    m_currentReticleAimpointImageX_px= newState.reticleAimpointImageX_px; // Reticle: gun boresight with zeroing ONLY
-    m_currentReticleAimpointImageY_px= newState.reticleAimpointImageY_px; // Reticle: gun boresight with zeroing ONLY
-    m_currentCcipImpactImageX_px = newState.ccipImpactImageX_px; // ✅ CCIP: bullet impact with zeroing + lead
-    m_currentCcipImpactImageY_px = newState.ccipImpactImageY_px; // ✅ CCIP: bullet impact with zeroing + lead
-     m_currentLeadStatusText= newState.leadStatusText; // Assuming this is the lead status text
-    m_currentScanName = newState.currentScanName; // Assuming this is the current scan name
-    // Note: Don't update m_trackingEnabled here directly from newState.trackingActive.
+    m_currentGimbalStoppedAtNTZLimit = newState->isReticleInNoTraverseZone; // Assuming this is the NTZ limit status
+    m_isLacActiveForReticle = newState->leadAngleCompensationActive; // Assuming this is the LAC status
+    m_currentReticleAimpointImageX_px= newState->reticleAimpointImageX_px; // Reticle: gun boresight with zeroing ONLY
+    m_currentReticleAimpointImageY_px= newState->reticleAimpointImageY_px; // Reticle: gun boresight with zeroing ONLY
+    m_currentCcipImpactImageX_px = newState->ccipImpactImageX_px; // ✅ CCIP: bullet impact with zeroing + lead
+    m_currentCcipImpactImageY_px = newState->ccipImpactImageY_px; // ✅ CCIP: bullet impact with zeroing + lead
+     m_currentLeadStatusText= newState->leadStatusText; // Assuming this is the lead status text
+    m_currentScanName = newState->currentScanName; // Assuming this is the current scan name
+    // Note: Don't update m_trackingEnabled here directly from newState->trackingActive.
     // m_trackingEnabled is the *command* given via setTrackingEnabled slot.
-    // The actual tracking status displayed on OSD should come from newState.trackingActive
+    // The actual tracking status displayed on OSD should come from newState->trackingActive
     // which will be put into FrameData inside processFrame.
-    m_currentActiveCameraIsDay = newState.activeCameraIsDay;
-    m_currentTrackingPhase = newState.currentTrackingPhase;
-    m_currentAcquisitionBoxX_px = newState.acquisitionBoxX_px;
-    m_currentAcquisitionBoxY_px = newState.acquisitionBoxY_px;
-    m_currentAcquisitionBoxW_px = newState.acquisitionBoxW_px;
-    m_currentAcquisitionBoxH_px = newState.acquisitionBoxH_px;
+    m_currentActiveCameraIsDay = newState->activeCameraIsDay;
+    m_currentTrackingPhase = newState->currentTrackingPhase;
+    m_currentAcquisitionBoxX_px = newState->acquisitionBoxX_px;
+    m_currentAcquisitionBoxY_px = newState->acquisitionBoxY_px;
+    m_currentAcquisitionBoxW_px = newState->acquisitionBoxW_px;
+    m_currentAcquisitionBoxH_px = newState->acquisitionBoxH_px;
 
-    m_currentLeadAngleStatus = newState.currentLeadAngleStatus;   
-    m_currentLeadAngleOffsetAz = newState.leadAngleOffsetAz;      
-    m_currentLeadAngleOffsetEl = newState.leadAngleOffsetEl;
-    m_currentAmmunitionLevel = newState.stationAmmunitionLevel;
+    m_currentLeadAngleStatus = newState->currentLeadAngleStatus;
+    m_currentLeadAngleOffsetAz = newState->leadAngleOffsetAz;
+    m_currentLeadAngleOffsetEl = newState->leadAngleOffsetEl;
+    m_currentAmmunitionLevel = newState->stationAmmunitionLevel;
     
-    m_detectionEnabled.store(newState.detectionEnabled);
+    m_detectionEnabled.store(newState->detectionEnabled);
 }
 
 // ============================================================================
