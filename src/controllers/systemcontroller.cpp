@@ -214,11 +214,11 @@ void SystemController::connectVideoToProvider()
     // Day camera
     if (m_hardwareManager->dayVideoProcessor()) {
         connect(m_hardwareManager->dayVideoProcessor(), &CameraVideoStreamDevice::frameDataReady,
-                this, [this](const FrameData& data) {
+                this, [this](std::shared_ptr<const FrameData> data) {
                     // Extract only the image we need (still 3.1 MB but only when camera is active)
-                    if (data.cameraIndex == 0 && m_systemStateModel->data().activeCameraIsDay) {
+                    if (data->cameraIndex == 0 && m_systemStateModel->data().activeCameraIsDay) {
                         // QImage uses implicit sharing - assignment is cheap, copy-on-write
-                        m_videoProvider->updateImage(data.baseImage);
+                        m_videoProvider->updateImage(data->baseImage);
                     }
                     // ✅ FrameData goes out of scope here, releasing the QImage reference
                 }, Qt::QueuedConnection);  // Explicit connection type for clarity
@@ -228,11 +228,11 @@ void SystemController::connectVideoToProvider()
     // Night camera
     if (m_hardwareManager->nightVideoProcessor()) {
         connect(m_hardwareManager->nightVideoProcessor(), &CameraVideoStreamDevice::frameDataReady,
-                this, [this](const FrameData& data) {
+                this, [this](std::shared_ptr<const FrameData> data) {
                     // Extract only the image we need (still 3.1 MB but only when camera is active)
-                    if (data.cameraIndex == 1 && !m_systemStateModel->data().activeCameraIsDay) {
+                    if (data->cameraIndex == 1 && !m_systemStateModel->data().activeCameraIsDay) {
                         // QImage uses implicit sharing - assignment is cheap, copy-on-write
-                        m_videoProvider->updateImage(data.baseImage);
+                        m_videoProvider->updateImage(data->baseImage);
                     }
                     // ✅ FrameData goes out of scope here, releasing the QImage reference
                 }, Qt::QueuedConnection);  // Explicit connection type for clarity

@@ -286,10 +286,12 @@ bool ControllerRegistry::connectVideoToOsd()
     // Connect day camera
     if (m_hardwareManager->dayVideoProcessor()) {
         connect(m_hardwareManager->dayVideoProcessor(), &CameraVideoStreamDevice::frameDataReady,
-                m_osdController, [this](const FrameData& data) {
-                    // Create lightweight copy without the 3.1 MB QImage
-                    FrameData osdData = data;
-                    osdData.baseImage = QImage();  // Clear image (OSD doesn't use it)
+                m_osdController, [this](std::shared_ptr<const FrameData> data) {
+                    // Create a mutable copy of the data struct
+                    auto osdData = std::make_shared<FrameData>(*data);
+                    // Clear the image to free memory; this won't affect other slots
+                    osdData->baseImage = QImage();
+                    // Pass the new, lightweight data object to the OSD controller
                     m_osdController->onFrameDataReady(osdData);
                 });
         qInfo() << "  ✓ Day camera → OSD controller connected (image-free for memory efficiency)";
@@ -300,10 +302,12 @@ bool ControllerRegistry::connectVideoToOsd()
     // Connect night camera
     if (m_hardwareManager->nightVideoProcessor()) {
         connect(m_hardwareManager->nightVideoProcessor(), &CameraVideoStreamDevice::frameDataReady,
-                m_osdController, [this](const FrameData& data) {
-                    // Create lightweight copy without the 3.1 MB QImage
-                    FrameData osdData = data;
-                    osdData.baseImage = QImage();  // Clear image (OSD doesn't use it)
+                m_osdController, [this](std::shared_ptr<const FrameData> data) {
+                    // Create a mutable copy of the data struct
+                    auto osdData = std::make_shared<FrameData>(*data);
+                    // Clear the image to free memory; this won't affect other slots
+                    osdData->baseImage = QImage();
+                    // Pass the new, lightweight data object to the OSD controller
                     m_osdController->onFrameDataReady(osdData);
                 });
         qInfo() << "  ✓ Night camera → OSD controller connected (image-free for memory efficiency)";

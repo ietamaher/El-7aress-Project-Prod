@@ -4,7 +4,7 @@
 #include <QObject>
 #include <QMutex>
 #include <QPointer> // Use QPointer for robustness if models/devices can be deleted
-#include "models/domain/systemstatemodel.h"
+#include "models/domain/systemstatedata.h"
 #include "models/domain/systemstatemodel.h"
 // Forward Declarations
 class DayCameraControlDevice;
@@ -12,7 +12,6 @@ class NightCameraControlDevice;
 class CameraVideoStreamDevice; // Replaces pipeline devices
 class SystemStateModel;
 class LRFDevice;
- 
 
 class CameraController : public QObject
 {
@@ -67,7 +66,7 @@ signals:
 
 public slots:
     // React to changes in the central state model
-    void onSystemStateChanged(const SystemStateData &newData);
+    void onSystemStateChanged(std::shared_ptr<const SystemStateData> newData);
 
 private:
     void updateStatus(const QString& message);

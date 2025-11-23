@@ -21,9 +21,9 @@ void EnvironmentalController::initialize()
     // Connect to model changes
     // ✅ LATENCY FIX: Queued connection prevents menu processing from blocking device I/O
     connect(m_stateModel, &SystemStateModel::dataChanged,
-            this, [this](const SystemStateData& data) {
+            this, [this](std::shared_ptr<const SystemStateData> data) {
                 // If environmental mode is externally cancelled
-                if (!data.environmentalModeActive && m_currentState != EnvironmentalState::Idle) {
+                if (!data->environmentalModeActive && m_currentState != EnvironmentalState::Idle) {
                     qDebug() << "Environmental mode became inactive externally.";
                 }
             }, Qt::QueuedConnection);  // Non-blocking signal delivery

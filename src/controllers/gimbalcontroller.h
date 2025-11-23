@@ -91,7 +91,7 @@ signals:
 
 private slots:
     // --- State Management ---
-    void onSystemStateChanged(const SystemStateData &newData);
+    void onSystemStateChanged(std::shared_ptr<const SystemStateData> newData);
 
     // --- Alarm Handlers ---
     void onAzAlarmDetected(uint16_t alarmCode, const QString &description);
@@ -109,7 +109,7 @@ private:
     // ========================================================================
     // HOMING STATE MACHINE METHODS
     // ========================================================================
-    void processHomingSequence(const SystemStateData& data);
+    void processHomingSequence(std::shared_ptr<const SystemStateData> data);
     void startHomingSequence();
     void completeHomingSequence();
     void abortHomingSequence(const QString& reason);
@@ -117,12 +117,12 @@ private:
     // ========================================================================
     // EMERGENCY STOP HANDLER
     // ========================================================================
-    void processEmergencyStop(const SystemStateData& data);
+    void processEmergencyStop(std::shared_ptr<const SystemStateData> data);
     
     // ========================================================================
     // FREE MODE HANDLER
     // ========================================================================
-    void processFreeMode(const SystemStateData& data);
+    void processFreeMode(std::shared_ptr<const SystemStateData> data);
     // ========================================================================
     // MEMBER VARIABLES
     // ========================================================================

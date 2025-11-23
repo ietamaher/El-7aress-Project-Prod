@@ -49,7 +49,7 @@ signals:
 private slots:
     //void onPlc21DataChanged(const Plc21PanelData &data);
 
-    void onSystemStateChanged(const SystemStateData &newData);
+    void onSystemStateChanged(std::shared_ptr<const SystemStateData> newData);
     void onActuatorPositionReached();
 
 private:

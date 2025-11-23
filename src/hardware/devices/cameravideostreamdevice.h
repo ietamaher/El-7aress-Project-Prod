@@ -186,10 +186,10 @@ public:
 public slots:
     void setTrackingEnabled(bool enabled);
     void setDetectionEnabled(bool enabled);
-    void onSystemStateChanged(const SystemStateData &newState);
+    void onSystemStateChanged(std::shared_ptr<const SystemStateData> newState);
 
 signals:
-    void frameDataReady(const FrameData &data);
+    void frameDataReady(std::shared_ptr<const FrameData> data);
     void processingError(int cameraIndex, const QString &errorMessage);
     void statusUpdate(int cameraIndex, const QString &statusMessage);
 

@@ -20,9 +20,9 @@ void WindageController::initialize()
     // Connect to model changes
     // ✅ LATENCY FIX: Queued connection prevents menu processing from blocking device I/O
     connect(m_stateModel, &SystemStateModel::dataChanged,
-            this, [this](const SystemStateData& data) {
+            this, [this](std::shared_ptr<const SystemStateData> data) {
                 // If windage is externally cancelled
-                if (!data.windageModeActive && m_currentState != WindageState::Idle) {
+                if (!data->windageModeActive && m_currentState != WindageState::Idle) {
                     qDebug() << "Windage mode became inactive externally.";
                 }
 

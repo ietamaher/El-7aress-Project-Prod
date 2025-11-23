@@ -132,7 +132,7 @@ void SystemStateModel::updateData(const SystemStateData &newState) {
 
         m_currentStateData = newState;
         processStateTransitions(oldData, m_currentStateData);
-        emit dataChanged(m_currentStateData);
+        emit dataChanged(std::make_shared<const SystemStateData>(m_currentStateData));
 
         // Emit gimbal position change if it occurred
         if (gimbalChanged) {
@@ -167,11 +167,11 @@ void SystemStateModel::setReticleStyle(const ReticleType &type)
     emit reticleStyleChanged(type);
 }
 
-void SystemStateModel::setDeadManSwitch(bool pressed) { if(m_currentStateData.deadManSwitchActive != pressed) { m_currentStateData.deadManSwitchActive = pressed; emit dataChanged(m_currentStateData); } }
-void SystemStateModel::setDownTrack(bool pressed) { if(m_currentStateData.downTrack != pressed) { m_currentStateData.downTrack = pressed; emit dataChanged(m_currentStateData); } }
-void SystemStateModel::setDownSw(bool pressed) { if(m_currentStateData.menuDown != pressed) { m_currentStateData.menuDown = pressed; emit dataChanged(m_currentStateData); } }
-void SystemStateModel::setUpTrack(bool pressed) { if(m_currentStateData.upTrack != pressed) { m_currentStateData.upTrack = pressed; emit dataChanged(m_currentStateData); } }
-void SystemStateModel::setUpSw(bool pressed) { if(m_currentStateData.menuUp != pressed) { m_currentStateData.menuUp = pressed; emit dataChanged(m_currentStateData); } }
+void SystemStateModel::setDeadManSwitch(bool pressed) { if(m_currentStateData.deadManSwitchActive != pressed) { m_currentStateData.deadManSwitchActive = pressed; emit dataChanged(std::make_shared<const SystemStateData>(m_currentStateData)); } }
+void SystemStateModel::setDownTrack(bool pressed) { if(m_currentStateData.downTrack != pressed) { m_currentStateData.downTrack = pressed; emit dataChanged(std::make_shared<const SystemStateData>(m_currentStateData)); } }
+void SystemStateModel::setDownSw(bool pressed) { if(m_currentStateData.menuDown != pressed) { m_currentStateData.menuDown = pressed; emit dataChanged(std::make_shared<const SystemStateData>(m_currentStateData)); } }
+void SystemStateModel::setUpTrack(bool pressed) { if(m_currentStateData.upTrack != pressed) { m_currentStateData.upTrack = pressed; emit dataChanged(std::make_shared<const SystemStateData>(m_currentStateData)); } }
+void SystemStateModel::setUpSw(bool pressed) { if(m_currentStateData.menuUp != pressed) { m_currentStateData.menuUp = pressed; emit dataChanged(std::make_shared<const SystemStateData>(m_currentStateData)); } }
 
 void SystemStateModel::setActiveCameraIsDay(bool isDay) {
     // ========================================================================
@@ -185,7 +185,7 @@ void SystemStateModel::setActiveCameraIsDay(bool isDay) {
         qDebug() << "✓ [FIX UC5] Active camera switched to" << (isDay ? "DAY" : "NIGHT")
                  << "- Recalculating reticle for new camera FOV";
         recalculateDerivedAimpointData();  // ← FIX: Trigger reticle recalc on camera switch
-        emit dataChanged(m_currentStateData);
+        emit dataChanged(std::make_shared<const SystemStateData>(m_currentStateData));
     }
 }
 
@@ -201,7 +201,7 @@ void SystemStateModel::setDetectionEnabled(bool enabled)
 
     if (m_currentStateData.detectionEnabled != enabled) {
         m_currentStateData.detectionEnabled = enabled;
-        emit dataChanged(m_currentStateData);
+        emit dataChanged(std::make_shared<const SystemStateData>(m_currentStateData));
         qInfo() << "SystemStateModel: Detection" << (enabled ? "ENABLED" : "DISABLED");
     }
 }
@@ -585,7 +585,7 @@ void SystemStateModel::onServoAzDataChanged(const ServoDriverData &azData) {
         m_currentStateData.azTorque = azData.torque;
         m_currentStateData.azFault = azData.fault;
 
-        emit dataChanged(m_currentStateData); // Emit general data change
+        emit dataChanged(std::make_shared<const SystemStateData>(m_currentStateData)); // Emit general data change
         emit gimbalPositionChanged(m_currentStateData.gimbalAz, m_currentStateData.gimbalEl); // Emit specific gimbal change
     }
 }
@@ -603,7 +603,7 @@ void SystemStateModel::onServoElDataChanged(const ServoDriverData &elData) {
         m_currentStateData.elTorque = elData.torque;
         m_currentStateData.elFault = elData.fault;
 
-        emit dataChanged(m_currentStateData); // Emit general data change
+        emit dataChanged(std::make_shared<const SystemStateData>(m_currentStateData)); // Emit general data change
         emit gimbalPositionChanged(m_currentStateData.gimbalAz, m_currentStateData.gimbalEl); // Emit specific gimbal change
     }
 }
@@ -643,7 +643,7 @@ void SystemStateModel::onDayCameraDataChanged(const DayCameraData &dayData)
 
         m_currentStateData = newData;  // Update state first so recalc uses new FOV
         recalculateDerivedAimpointData();  // ← FIX: Trigger reticle recalculation
-        emit dataChanged(m_currentStateData);
+        emit dataChanged(std::make_shared<const SystemStateData>(m_currentStateData));
     } else {
         updateData(newData);
     }
@@ -659,15 +659,15 @@ void SystemStateModel::setMotionMode(MotionMode newMode) {
         }
         m_currentStateData.motionMode = newMode;
 
-        emit dataChanged(m_currentStateData);
+        emit dataChanged(std::make_shared<const SystemStateData>(m_currentStateData));
          if (newMode == MotionMode::AutoSectorScan || newMode == MotionMode::TRPScan) {
             updateCurrentScanName(); // Ensure name is updated when entering these modes
         }
     }
 }
-void SystemStateModel::setOpMode(OperationalMode newOpMode) { if(m_currentStateData.opMode != newOpMode) { m_currentStateData.previousOpMode = m_currentStateData.opMode; m_currentStateData.opMode = newOpMode; emit dataChanged(m_currentStateData); } }
-void SystemStateModel::setTrackingRestartRequested(bool restart) { if(m_currentStateData.requestTrackingRestart != restart) { m_currentStateData.requestTrackingRestart = restart; emit dataChanged(m_currentStateData); } }
-void SystemStateModel::setTrackingStarted(bool start) { if(m_currentStateData.startTracking != start) { m_currentStateData.startTracking = start; emit dataChanged(m_currentStateData); } }
+void SystemStateModel::setOpMode(OperationalMode newOpMode) { if(m_currentStateData.opMode != newOpMode) { m_currentStateData.previousOpMode = m_currentStateData.opMode; m_currentStateData.opMode = newOpMode; emit dataChanged(std::make_shared<const SystemStateData>(m_currentStateData)); } }
+void SystemStateModel::setTrackingRestartRequested(bool restart) { if(m_currentStateData.requestTrackingRestart != restart) { m_currentStateData.requestTrackingRestart = restart; emit dataChanged(std::make_shared<const SystemStateData>(m_currentStateData)); } }
+void SystemStateModel::setTrackingStarted(bool start) { if(m_currentStateData.startTracking != start) { m_currentStateData.startTracking = start; emit dataChanged(std::make_shared<const SystemStateData>(m_currentStateData)); } }
 
 // TODO Implement other slots similarly, updating relevant parts of m_currentStateData and emitting dataChanged
 void SystemStateModel::onGyroDataChanged(const ImuData &gyroData)
@@ -840,7 +840,7 @@ void SystemStateModel::onNightCameraDataChanged(const NightCameraData &nightData
 
         m_currentStateData = newData;  // Update state first so recalc uses new FOV
         recalculateDerivedAimpointData();  // ← FIX: Trigger reticle recalculation
-        emit dataChanged(m_currentStateData);
+        emit dataChanged(std::make_shared<const SystemStateData>(m_currentStateData));
     } else {
         updateData(newData);
     }
@@ -1643,7 +1643,7 @@ void SystemStateModel::enterIdleMode() {
     }
     // Note: stopTracking will emit dataChanged, so we might not need another emit here.
     // It's safer to ensure one is called.
-    emit dataChanged(m_currentStateData);
+    emit dataChanged(std::make_shared<const SystemStateData>(m_currentStateData));
 }
 
 void SystemStateModel::commandEngagement(bool start) {
@@ -1666,7 +1666,7 @@ void SystemStateModel::commandEngagement(bool start) {
         data.opMode = data.previousOpMode;
         data.motionMode = data.previousMotionMode;
     }
-    emit dataChanged(m_currentStateData);
+    emit dataChanged(std::make_shared<const SystemStateData>(m_currentStateData));
 }
 
 void SystemStateModel::processHomingStateMachine(const SystemStateData& oldData,
@@ -1761,7 +1761,7 @@ void SystemStateModel::enterEmergencyStopMode() {
     data.trackerHasValidTarget = false;
     data.leadAngleCompensationActive = false;
 
-    emit dataChanged(m_currentStateData);
+    emit dataChanged(std::make_shared<const SystemStateData>(m_currentStateData));
 }
 
 /*void SystemStateModel::updateTrackedTargetInfo(int cameraIndex, bool isValid, float centerX_px, float centerY_px,
@@ -1975,7 +1975,7 @@ void SystemStateModel::updateTrackingResult(
                  << "Valid Target:" << data.trackerHasValidTarget;
          qDebug() << "trackedTarget_position: (" << data.trackedTargetCenterX_px << ", " << data.trackedTargetCenterY_px << ")";
          
-        emit dataChanged(m_currentStateData);
+        emit dataChanged(std::make_shared<const SystemStateData>(m_currentStateData));
     }
 }
 
@@ -2078,7 +2078,7 @@ void SystemStateModel::startTrackingAcquisition() {
         data.opMode = OperationalMode::Surveillance;
         data.motionMode = MotionMode::Manual;
 
-        emit dataChanged(m_currentStateData);
+        emit dataChanged(std::make_shared<const SystemStateData>(m_currentStateData));
     }
 }
 
@@ -2088,7 +2088,7 @@ void SystemStateModel::requestTrackerLockOn() {
         data.currentTrackingPhase = TrackingPhase::Tracking_LockPending;
         // Motion mode is still Manual here. GimbalController will switch it to AutoTrack
         // only AFTER CameraVideoStreamDevice confirms a lock via updateTrackingResult.
-        emit dataChanged(m_currentStateData);
+        emit dataChanged(std::make_shared<const SystemStateData>(m_currentStateData));
     }
 }
 
@@ -2100,7 +2100,7 @@ void SystemStateModel::stopTracking() {
         // Revert to Surveillance/Manual modes
         data.opMode = OperationalMode::Surveillance;
         data.motionMode = MotionMode::Manual;
-        emit dataChanged(m_currentStateData);
+        emit dataChanged(std::make_shared<const SystemStateData>(m_currentStateData));
     }
 }
 
@@ -2162,7 +2162,7 @@ void SystemStateModel::adjustAcquisitionBoxSize(float dW, float dH) {
                  << data.acquisitionBoxW_px << "x" << data.acquisitionBoxH_px
                  << "at [" << data.acquisitionBoxX_px << "," << data.acquisitionBoxY_px << "]";
 
-        emit dataChanged(m_currentStateData);
+        emit dataChanged(std::make_shared<const SystemStateData>(m_currentStateData));
     }
 }
 
@@ -2206,7 +2206,7 @@ void SystemStateModel::selectNextRadarTrack() {
         data.selectedRadarTrackId = (*std::next(it)).id;
     }
     qDebug() << "[MODEL] Selected Radar Track ID:" << data.selectedRadarTrackId;
-    emit dataChanged(data);
+    emit dataChanged(std::make_shared<const SystemStateData>(data));
 }
 
 void SystemStateModel::selectPreviousRadarTrack() {
@@ -2228,7 +2228,7 @@ void SystemStateModel::selectPreviousRadarTrack() {
         data.selectedRadarTrackId = (*std::prev(it)).id;
     }
     qDebug() << "[MODEL] Selected Radar Track ID:" << data.selectedRadarTrackId;
-    emit dataChanged(data);
+    emit dataChanged(std::make_shared<const SystemStateData>(data));
 }
 
 void SystemStateModel::commandSlewToSelectedRadarTrack() {
@@ -2241,6 +2241,6 @@ void SystemStateModel::commandSlewToSelectedRadarTrack() {
         // The responsibility of moving the gimbal is NOT here.
         // We set the MOTION mode. The GimbalController will react to it.
         //data.motionMode = MotionMode::RadarSlew; // << NEW MOTION MODE
-        emit dataChanged(data);
+        emit dataChanged(std::make_shared<const SystemStateData>(data));
     }
 }

@@ -34,12 +34,12 @@ signals:
     void clearAlarmsSignal();
 
 private slots:
-    void onSystemStateChanged(const SystemStateData& data);
+    void onSystemStateChanged(std::shared_ptr<const SystemStateData> data);
     void onClearAlarmsRequested();
     void onColorStyleChanged(const QColor& color);
 
 private:
-    QStringList buildAlarmsList(const SystemStateData& data);
+    QStringList buildAlarmsList(std::shared_ptr<const SystemStateData> data);
     void updateUI();
 
     SystemStatusViewModel* m_viewModel;

@@ -594,7 +594,7 @@ signals:
      * @brief Emitted when system state data changes.
      * @param newState The new system state data.
      */
-    void dataChanged(const SystemStateData &newState);
+    void dataChanged(std::shared_ptr<const SystemStateData> newState);
     
     /**
      * @brief Emitted when UI color style changes.
