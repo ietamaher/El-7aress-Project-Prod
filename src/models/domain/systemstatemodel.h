@@ -48,6 +48,7 @@
 #include <QIODevice>
 #include <QElapsedTimer>
 #include <QDateTime>
+#include <QTimer>  // ✅ For emission throttling
 #include <cmath>
 #include <algorithm>
 #include <limits>
@@ -785,6 +786,12 @@ private:
     // =================================
     
     SystemStateData m_currentStateData; ///< Central data store for all system state
+
+    // ✅ MEMORY LEAK FIX: Emission throttling to prevent event queue saturation
+    // Without throttling: 90 Hz × 10 controllers × 5 KB = 4.5 MB/sec queued
+    // With 30 Hz throttling: 30 Hz × 10 × 5 KB = 1.5 MB/sec (67% reduction)
+    QTimer* m_emissionThrottleTimer; ///< Timer to batch dataChanged emissions at 30 Hz
+    bool m_stateDirty;               ///< Flag indicating state changed since last emission
 
     // ID Counters for zones
     int m_nextAreaZoneId;       ///< Counter for assigning unique area zone IDs
