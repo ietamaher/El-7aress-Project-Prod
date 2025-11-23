@@ -209,8 +209,10 @@ void ApplicationController::initialize()
     // =========================================================================
     // HARDWARE BUTTON MONITORING (PLC21 switches)
     // =========================================================================
+    // ✅ LATENCY FIX: Queued connection prevents button monitoring from blocking device I/O
     connect(m_systemStateModel, &SystemStateModel::dataChanged,
-            this, &ApplicationController::onSystemStateChanged);
+            this, &ApplicationController::onSystemStateChanged,
+            Qt::QueuedConnection);  // Non-blocking signal delivery
     qDebug() << "ApplicationController: SystemStateModel button monitoring connected";
 
     qDebug() << "ApplicationController: All signal connections established";

@@ -25,8 +25,10 @@ void MainMenuController::initialize()
                 this, &MainMenuController::onColorStyleChanged);
 
         // Listen for camera changes to update menu options dynamically
+        // ✅ LATENCY FIX: Queued connection prevents menu updates from blocking device I/O
         connect(m_stateModel, &SystemStateModel::dataChanged,
-                this, &MainMenuController::onSystemStateChanged);
+                this, &MainMenuController::onSystemStateChanged,
+                Qt::QueuedConnection);  // Non-blocking signal delivery
 
         // Set initial color
         const auto& data = m_stateModel->data();

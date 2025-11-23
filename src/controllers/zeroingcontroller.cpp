@@ -20,6 +20,7 @@ void ZeroingController::initialize()
     Q_ASSERT(m_stateModel);
 
     // REPLACE THIS ENTIRE CONNECT BLOCK:
+    // ✅ LATENCY FIX: Queued connection prevents menu processing from blocking device I/O
     connect(m_stateModel, &SystemStateModel::dataChanged,
             this, [this](const SystemStateData& data) {
                 // OLD: if (!data.zeroingModeActive && m_currentState != ZeroingState::Idle && m_currentState != ZeroingState::Completed)
@@ -30,7 +31,7 @@ void ZeroingController::initialize()
                     hide();
                     emit zeroingFinished();
                 }
-            });
+            }, Qt::QueuedConnection);  // Non-blocking signal delivery
     connect(m_stateModel, &SystemStateModel::colorStyleChanged,
             this, &ZeroingController::onColorStyleChanged);
     

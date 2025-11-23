@@ -18,6 +18,7 @@ void WindageController::initialize()
     Q_ASSERT(m_stateModel);
 
     // Connect to model changes
+    // ✅ LATENCY FIX: Queued connection prevents menu processing from blocking device I/O
     connect(m_stateModel, &SystemStateModel::dataChanged,
             this, [this](const SystemStateData& data) {
                 // If windage is externally cancelled
@@ -27,7 +28,7 @@ void WindageController::initialize()
 
                 // Note: We do NOT sync m_currentWindSpeedEdit from the model during editing.
                 // The controller maintains its own edit value independently until SELECT confirms it.
-            });
+            }, Qt::QueuedConnection);  // Non-blocking signal delivery
 
     connect(m_stateModel, &SystemStateModel::colorStyleChanged,
             this, &WindageController::onColorStyleChanged);

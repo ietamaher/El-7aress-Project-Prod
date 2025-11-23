@@ -55,8 +55,10 @@ void OsdController::initialize()
     m_activeCameraIndex = initialData.activeCameraIsDay ? 0 : 1;
 
     // Connect to state changes to track camera switching
+    // ✅ LATENCY FIX: Queued connection prevents OSD updates from blocking device I/O
     connect(m_stateModel, &SystemStateModel::dataChanged,
-            this, &OsdController::onSystemStateChanged);
+            this, &OsdController::onSystemStateChanged,
+            Qt::QueuedConnection);  // Non-blocking signal delivery
 
     // Connect to color changes
     connect(m_stateModel, &SystemStateModel::colorStyleChanged,

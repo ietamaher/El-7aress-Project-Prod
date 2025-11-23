@@ -6,7 +6,10 @@ LedController::LedController(SystemStateModel* systemStateModel, Plc21Device* pl
     m_systemStateModel(systemStateModel),
     m_plc21Device(plc21Device)
 {
-    connect(m_systemStateModel, &SystemStateModel::dataChanged, this, &LedController::onSystemStateChanged);
+    // ✅ LATENCY FIX: Queued connection prevents LED updates from blocking device I/O
+    connect(m_systemStateModel, &SystemStateModel::dataChanged,
+            this, &LedController::onSystemStateChanged,
+            Qt::QueuedConnection);  // Non-blocking signal delivery
 }
 
 void LedController::onSystemStateChanged(const SystemStateData &data)

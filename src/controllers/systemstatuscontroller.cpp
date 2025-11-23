@@ -39,8 +39,10 @@ void SystemStatusController::initialize()
     }
 
     // Connect to SystemStateModel updates
+    // ✅ LATENCY FIX: Queued connection prevents status aggregation from blocking device I/O
     connect(m_stateModel, &SystemStateModel::dataChanged,
-            this, &SystemStatusController::onSystemStateChanged);
+            this, &SystemStatusController::onSystemStateChanged,
+            Qt::QueuedConnection);  // Non-blocking signal delivery
 
     // Connect ViewModel actions to controller
     connect(m_viewModel, &SystemStatusViewModel::clearAlarmsRequested,

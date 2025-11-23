@@ -89,9 +89,13 @@ GimbalController::GimbalController(ServoDriverDevice* azServo,
     setMotionMode(MotionMode::Idle);
 
     // Connect to system state changes
+    // ✅ CRITICAL FIX: Qt::QueuedConnection prevents blocking device updates
+    // Device I/O is already async (QModbus/QSerial internal threading)
+    // This prevents GimbalController processing from blocking SystemStateModel updates
     if (m_stateModel) {
         connect(m_stateModel, &SystemStateModel::dataChanged,
-                this, &GimbalController::onSystemStateChanged);
+                this, &GimbalController::onSystemStateChanged,
+                Qt::QueuedConnection);  // Non-blocking signal delivery
     }
 
     // Connect alarm signals
@@ -158,37 +162,44 @@ void GimbalController::update()
 
 void GimbalController::onSystemStateChanged(const SystemStateData &newData)
 {
-     // ========================================================================
-    // PRIORITY 1: EMERGENCY STOP (highest priority!)
     // ========================================================================
-    // Emergency stop must be processed first to immediately halt all operations
-    processEmergencyStop(newData);
-    
+    // ✅ PERFORMANCE OPTIMIZATION: Early exit checks
+    // Only process expensive operations if relevant state has changed
+    // This prevents wasting CPU on servo position updates (110 Hz!)
+    // ========================================================================
+
+    // PRIORITY 1: EMERGENCY STOP (highest priority!)
+    // Only process if emergency state changed
+    if (newData.emergencyStopActive != m_oldState.emergencyStopActive) {
+        processEmergencyStop(newData);
+    }
+
     // If emergency stop active, skip all other processing
     if (newData.emergencyStopActive) {
         m_oldState = newData;
         return;  // Exit immediately - no motion commands during E-STOP
     }
-    
-    // ========================================================================
+
     // PRIORITY 2: HOMING SEQUENCE
-    // ========================================================================
-    // Homing has second priority - tracks multi-step homing operation
-    processHomingSequence(newData);
-    
+    // Only process if homing state or button changed
+    if (newData.homingState != m_oldState.homingState ||
+        newData.gotoHomePosition != m_oldState.gotoHomePosition) {
+        processHomingSequence(newData);
+    }
+
     // If homing in progress, skip motion mode changes to avoid interference
     if (newData.homingState == HomingState::InProgress ||
         newData.homingState == HomingState::Requested) {
         m_oldState = newData;
         return;  // Exit - homing controls the gimbal exclusively
     }
-    
-    // ========================================================================
+
     // PRIORITY 3: FREE MODE MONITORING
-    // ========================================================================
-    // Free mode is third priority - monitors local toggle switch state
-    processFreeMode(newData);
- 
+    // Only process if free mode state changed
+    if (newData.freeGimbalState != m_oldState.freeGimbalState) {
+        processFreeMode(newData);
+    }
+
     // Detect motion mode type change
     bool motionModeTypeChanged = (m_oldState.motionMode != newData.motionMode);
     bool scanParametersChanged = false;
@@ -206,50 +217,61 @@ void GimbalController::onSystemStateChanged(const SystemStateData &newData)
         }
     }
 
-    // Update tracking target (thread-safe via queued signal)
+    // ✅ PERFORMANCE: Only update tracking if in AutoTrack mode AND tracking data changed
     if (newData.motionMode == MotionMode::AutoTrack && m_currentMode) {
         if (dynamic_cast<TrackingMotionMode*>(m_currentMode.get())) {
-            if (newData.trackerHasValidTarget) {
-                float screenCenterX_px = newData.currentImageWidthPx / 2.0f;
-                float screenCenterY_px = newData.currentImageHeightPx / 2.0f;
+            // Check if tracking data actually changed (avoid expensive trigonometry!)
+            bool trackingDataChanged = (
+                newData.trackerHasValidTarget != m_oldState.trackerHasValidTarget ||
+                newData.trackedTargetCenterX_px != m_oldState.trackedTargetCenterX_px ||
+                newData.trackedTargetCenterY_px != m_oldState.trackedTargetCenterY_px ||
+                newData.trackedTargetVelocityX_px_s != m_oldState.trackedTargetVelocityX_px_s ||
+                newData.trackedTargetVelocityY_px_s != m_oldState.trackedTargetVelocityY_px_s
+            );
 
-                double errorPxX = newData.trackedTargetCenterX_px - screenCenterX_px;
-                double errorPxY = newData.trackedTargetCenterY_px - screenCenterY_px;
+            if (trackingDataChanged) {
+                if (newData.trackerHasValidTarget) {
+                    float screenCenterX_px = newData.currentImageWidthPx / 2.0f;
+                    float screenCenterY_px = newData.currentImageHeightPx / 2.0f;
 
-                // Get active camera FOV
-                float activeHfov = newData.activeCameraIsDay ?
-                                   static_cast<float>(newData.dayCurrentHFOV) :
-                                   static_cast<float>(newData.nightCurrentHFOV);
+                    double errorPxX = newData.trackedTargetCenterX_px - screenCenterX_px;
+                    double errorPxY = newData.trackedTargetCenterY_px - screenCenterY_px;
 
-                QPointF angularOffset = GimbalUtils::calculateAngularOffsetFromPixelError(
-                    errorPxX, errorPxY,
-                    newData.currentImageWidthPx, newData.currentImageHeightPx, activeHfov
-                );
+                    // Get active camera FOV
+                    float activeHfov = newData.activeCameraIsDay ?
+                                       static_cast<float>(newData.dayCurrentHFOV) :
+                                       static_cast<float>(newData.nightCurrentHFOV);
 
-                // The desired target gimbal position is current gimbal position + this offset
-                // (because the offset tells us how far to move FROM current to get target to center)
-                double targetGimbalAz = newData.gimbalAz + angularOffset.x();
-                double targetGimbalEl = newData.gimbalEl + angularOffset.y();
+                    QPointF angularOffset = GimbalUtils::calculateAngularOffsetFromPixelError(
+                        errorPxX, errorPxY,
+                        newData.currentImageWidthPx, newData.currentImageHeightPx, activeHfov
+                    );
 
-                QPointF angularVelocity = GimbalUtils::calculateAngularOffsetFromPixelError(
-                    newData.trackedTargetVelocityX_px_s, // Use velocity in pixels/sec
-                    newData.trackedTargetVelocityY_px_s,
-                    newData.currentImageWidthPx,
-                    newData.currentImageHeightPx,
-                    activeHfov
-                );
-                double targetAngularVelAz_dps = angularVelocity.x();
-                double targetAngularVelEl_dps = angularVelocity.y();
+                    // The desired target gimbal position is current gimbal position + this offset
+                    // (because the offset tells us how far to move FROM current to get target to center)
+                    double targetGimbalAz = newData.gimbalAz + angularOffset.x();
+                    double targetGimbalEl = newData.gimbalEl + angularOffset.y();
 
-                // Emit queued signal (thread-safe, prevents race conditions)
-                emit trackingTargetUpdated(
-                    targetGimbalAz, targetGimbalEl,
-                    targetAngularVelAz_dps, targetAngularVelEl_dps,
-                    true
-                );
-            } else {
-                // Target lost - emit invalid signal
-                emit trackingTargetUpdated(0, 0, 0, 0, false);
+                    QPointF angularVelocity = GimbalUtils::calculateAngularOffsetFromPixelError(
+                        newData.trackedTargetVelocityX_px_s, // Use velocity in pixels/sec
+                        newData.trackedTargetVelocityY_px_s,
+                        newData.currentImageWidthPx,
+                        newData.currentImageHeightPx,
+                        activeHfov
+                    );
+                    double targetAngularVelAz_dps = angularVelocity.x();
+                    double targetAngularVelEl_dps = angularVelocity.y();
+
+                    // Emit queued signal (thread-safe, prevents race conditions)
+                    emit trackingTargetUpdated(
+                        targetGimbalAz, targetGimbalEl,
+                        targetAngularVelAz_dps, targetAngularVelEl_dps,
+                        true
+                    );
+                } else {
+                    // Target lost - emit invalid signal
+                    emit trackingTargetUpdated(0, 0, 0, 0, false);
+                }
             }
         }
     }
