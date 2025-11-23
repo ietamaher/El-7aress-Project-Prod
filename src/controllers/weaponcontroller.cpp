@@ -15,8 +15,10 @@ WeaponController::WeaponController(SystemStateModel* m_stateModel,
     m_plc42(plc42)
 {
     if (m_stateModel) {
+        // ✅ LATENCY FIX: Queued connection prevents ballistics calculations from blocking device I/O
         connect(m_stateModel, &SystemStateModel::dataChanged,
-                this, &WeaponController::onSystemStateChanged);
+                this, &WeaponController::onSystemStateChanged,
+                Qt::QueuedConnection);  // Non-blocking signal delivery
     }
 
     // ========================================================================
