@@ -919,8 +919,9 @@ bool CameraVideoStreamDevice::processFrame(GstBuffer *buffer)
         }
 
         // 7. Emit FrameData
-        if (!data.baseImage.isNull()) emit frameDataReady(data);
-
+        if (!data.baseImage.isNull()) {
+            emit frameDataReady(std::make_shared<const FrameData>(data));
+        }
     } catch (const std::exception &e) {
         qCritical() << "Cam" << m_cameraIndex << ": Exception in processFrame loop:" << e.what();
         emit processingError(m_cameraIndex, QString("Frame Loop Error: %1").arg(e.what()));

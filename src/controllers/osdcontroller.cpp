@@ -180,62 +180,62 @@ void OsdController::checkForCriticalErrors(const SystemStateData& data)
 }
 
 
-void OsdController::onFrameDataReady(const FrameData& frmdata)
+void OsdController::onFrameDataReady(std::shared_ptr<const FrameData> frmdata)
 {
     if (!m_viewModel) return;
 
     // ⭐ CRITICAL FIX: Only process frames from the ACTIVE camera!
-    if (frmdata.cameraIndex != m_activeCameraIndex) {
+    if (frmdata->cameraIndex != m_activeCameraIndex) {
         // Ignore frames from inactive camera
         return;
     }
 
     // === BASIC OSD DATA ===
-    m_viewModel->updateMode(frmdata.currentOpMode);
-    m_viewModel->updateMotionMode(frmdata.motionMode);
+    m_viewModel->updateMode(frmdata->currentOpMode);
+    m_viewModel->updateMotionMode(frmdata->motionMode);
     //check if motion mode is Tracking mode
-    if (frmdata.motionMode == MotionMode::AutoTrack) {
+    if (frmdata->motionMode == MotionMode::AutoTrack) {
         m_viewModel->updateTrackingActive(true);
     } else {
         m_viewModel->updateTrackingActive(false);
     }
-    m_viewModel->updateStabilization(frmdata.stabEnabled);
-    m_viewModel->updateAzimuth(frmdata.azimuth);
-    m_viewModel->updateElevation(frmdata.elevation);
+    m_viewModel->updateStabilization(frmdata->stabEnabled);
+    m_viewModel->updateAzimuth(frmdata->azimuth);
+    m_viewModel->updateElevation(frmdata->elevation);
     m_viewModel->updateImuData(
-        frmdata.imuConnected,
-        frmdata.imuYawDeg,      // Vehicle heading
-        frmdata.imuPitchDeg,
-        frmdata.imuRollDeg,
-        frmdata.imuTemp
+        frmdata->imuConnected,
+        frmdata->imuYawDeg,      // Vehicle heading
+        frmdata->imuPitchDeg,
+        frmdata->imuRollDeg,
+        frmdata->imuTemp
     );
-    m_viewModel->updateSpeed(frmdata.speed);
-    m_viewModel->updateFov(frmdata.cameraFOV);
+    m_viewModel->updateSpeed(frmdata->speed);
+    m_viewModel->updateFov(frmdata->cameraFOV);
 
     // Camera type
-    QString cameraType = (frmdata.cameraIndex == 0) ? "DAY" : "THERMAL";
+    QString cameraType = (frmdata->cameraIndex == 0) ? "DAY" : "THERMAL";
     m_viewModel->updateCameraType(cameraType);
 
     // === SYSTEM STATUS ===
-    m_viewModel->updateSystemStatus(frmdata.sysCharged, frmdata.gunArmed, frmdata.sysReady);
-    m_viewModel->updateFiringMode(frmdata.fireMode);
-    m_viewModel->updateLrfDistance(frmdata.lrfDistance);
+    m_viewModel->updateSystemStatus(frmdata->sysCharged, frmdata->gunArmed, frmdata->sysReady);
+    m_viewModel->updateFiringMode(frmdata->fireMode);
+    m_viewModel->updateLrfDistance(frmdata->lrfDistance);
 
     // ========================================================================
     // === RETICLE   ===
     // ========================================================================
-    m_viewModel->updateReticleType(frmdata.reticleType);
+    m_viewModel->updateReticleType(frmdata->reticleType);
     // ⭐ CRITICAL: Verify that pixel position is correct based on LAC status!
     // SystemStateModel SHOULD have already calculated correct position,
     // but let's verify the logic here as a safety check.
 
-    float finalReticleX = frmdata.reticleAimpointImageX_px;
-    float finalReticleY = frmdata.reticleAimpointImageY_px;
+    float finalReticleX = frmdata->reticleAimpointImageX_px;
+    float finalReticleY = frmdata->reticleAimpointImageY_px;
 
     // ⭐ SAFETY CHECK: If LAC is active but status is ZoomOut,
     // the reticle should be at zero offset (just zeroing applied)
     // This should already be handled by SystemStateModel, but verify:
-    if (frmdata.leadAngleActive && frmdata.leadAngleStatus == LeadAngleStatus::ZoomOut) {
+    if (frmdata->leadAngleActive && frmdata->leadAngleStatus == LeadAngleStatus::ZoomOut) {
         qWarning() << "OsdController: LAC active but ZoomOut status!"
                    << "Reticle offsets should not include lead."
                    << "Current position: X=" << finalReticleX << "Y=" << finalReticleY;
@@ -244,9 +244,9 @@ void OsdController::onFrameDataReady(const FrameData& frmdata)
     }
 
     // ⭐ DEBUG: Log reticle position when LAC is active
-    if (frmdata.leadAngleActive) {
+    if (frmdata->leadAngleActive) {
         qDebug() << "OsdController: LAC active"
-                 << "Status =" << static_cast<int>(frmdata.leadAngleStatus)
+                 << "Status =" << static_cast<int>(frmdata->leadAngleStatus)
                  << "ReticlePos: X=" << finalReticleX << "Y=" << finalReticleY;
     }
 
@@ -264,9 +264,9 @@ void OsdController::onFrameDataReady(const FrameData& frmdata)
     QString ccipStatus = "Off";
     bool ccipVisible = false;
 
-    if (frmdata.leadAngleActive) {
+    if (frmdata->leadAngleActive) {
         ccipVisible = true;
-        switch (frmdata.leadAngleStatus) {
+        switch (frmdata->leadAngleStatus) {
             case LeadAngleStatus::On:
                 ccipStatus = "On";
                 break;
@@ -295,8 +295,8 @@ void OsdController::onFrameDataReady(const FrameData& frmdata)
     // ========================================================================
 
     m_viewModel->updateCcipPipper(
-        frmdata.ccipImpactImageX_px,    // ✅ PROPER FIX: Read from FrameData (frame-synchronized)
-        frmdata.ccipImpactImageY_px,    // ✅ PROPER FIX: Read from FrameData (frame-synchronized)
+        frmdata->ccipImpactImageX_px,    // ✅ PROPER FIX: Read from FrameData (frame-synchronized)
+        frmdata->ccipImpactImageY_px,    // ✅ PROPER FIX: Read from FrameData (frame-synchronized)
         ccipVisible,
         ccipStatus
     );
@@ -306,17 +306,17 @@ void OsdController::onFrameDataReady(const FrameData& frmdata)
     // ========================================================================
 
     // Determine if LAC is "effectively active" (On or Lag, not ZoomOut)
-    bool lacEffectivelyActive = frmdata.leadAngleActive &&
-                                (frmdata.leadAngleStatus == LeadAngleStatus::On ||
-                                 frmdata.leadAngleStatus == LeadAngleStatus::Lag);
+    bool lacEffectivelyActive = frmdata->leadAngleActive &&
+                                (frmdata->leadAngleStatus == LeadAngleStatus::On ||
+                                 frmdata->leadAngleStatus == LeadAngleStatus::Lag);
 
     m_viewModel->updateLacActive(lacEffectivelyActive);
-    m_viewModel->updateRangeMeters(frmdata.lrfDistance);
+    m_viewModel->updateRangeMeters(frmdata->lrfDistance);
 
     // LAC Confidence level based on lead angle status
     float lacConfidence = 1.0f;
-    if (frmdata.leadAngleActive) {
-        switch (frmdata.leadAngleStatus) {
+    if (frmdata->leadAngleActive) {
+        switch (frmdata->leadAngleStatus) {
         case LeadAngleStatus::On:
             lacConfidence = 1.0f;
             break;
@@ -334,55 +334,55 @@ void OsdController::onFrameDataReady(const FrameData& frmdata)
     m_viewModel->updateConfidenceLevel(lacConfidence);  // LAC confidence
 
     // VPI Tracking confidence (separate from LAC)
-    m_viewModel->updateTrackingConfidence(frmdata.trackingConfidence);
+    m_viewModel->updateTrackingConfidence(frmdata->trackingConfidence);
 
     // === TRACKING BOX ===
     m_viewModel->updateTrackingBox(
-        frmdata.trackingBbox.x(), frmdata.trackingBbox.y(),
-        frmdata.trackingBbox.width(), frmdata.trackingBbox.height()
+        frmdata->trackingBbox.x(), frmdata->trackingBbox.y(),
+        frmdata->trackingBbox.width(), frmdata->trackingBbox.height()
         );
-    m_viewModel->updateTrackingState(frmdata.trackingState);
+    m_viewModel->updateTrackingState(frmdata->trackingState);
 
     // === TRACKING PHASE ===
     m_viewModel->updateTrackingPhase(
-        frmdata.currentTrackingPhase,
-        frmdata.trackerHasValidTarget,
-        QRectF(frmdata.acquisitionBoxX_px, frmdata.acquisitionBoxY_px,
-               frmdata.acquisitionBoxW_px, frmdata.acquisitionBoxH_px)
+        frmdata->currentTrackingPhase,
+        frmdata->trackerHasValidTarget,
+        QRectF(frmdata->acquisitionBoxX_px, frmdata->acquisitionBoxY_px,
+               frmdata->acquisitionBoxW_px, frmdata->acquisitionBoxH_px)
         );
 
     // === ZEROING ===
     m_viewModel->updateZeroingDisplay(
-        frmdata.zeroingModeActive,
-        frmdata.zeroingAppliedToBallistics,
-        frmdata.zeroingAzimuthOffset,
-        frmdata.zeroingElevationOffset
+        frmdata->zeroingModeActive,
+        frmdata->zeroingAppliedToBallistics,
+        frmdata->zeroingAzimuthOffset,
+        frmdata->zeroingElevationOffset
         );
 
     // === WINDAGE ===
     m_viewModel->updateWindageDisplay(
-        frmdata.windageAppliedToBallistics,
-        frmdata.windageSpeedKnots,
-        frmdata.windageDirectionDegrees,
-        frmdata.calculatedCrosswindMS
+        frmdata->windageAppliedToBallistics,
+        frmdata->windageSpeedKnots,
+        frmdata->windageDirectionDegrees,
+        frmdata->calculatedCrosswindMS
         );
 
     // === DETECTION ===
-    m_viewModel->updateDetectionDisplay(frmdata.detectionEnabled);
-    m_viewModel->updateDetectionBoxes(frmdata.detections);
+    m_viewModel->updateDetectionDisplay(frmdata->detectionEnabled);
+    m_viewModel->updateDetectionBoxes(frmdata->detections);
 
     // === ZONE WARNINGS ===
     m_viewModel->updateZoneWarning(
-        frmdata.isReticleInNoFireZone,
-        frmdata.gimbalStoppedAtNTZLimit
+        frmdata->isReticleInNoFireZone,
+        frmdata->gimbalStoppedAtNTZLimit
         );
 
     // === LEAD ANGLE STATUS TEXT ===
-    m_viewModel->updateLeadAngleDisplay(frmdata.leadStatusText);
+    m_viewModel->updateLeadAngleDisplay(frmdata->leadStatusText);
 
     // === SCAN NAME ===
-    m_viewModel->updateCurrentScanName(frmdata.currentScanName);
-    m_viewModel->updateAmmunitionLevel(frmdata.stationAmmunitionLevel);
+    m_viewModel->updateCurrentScanName(frmdata->currentScanName);
+    m_viewModel->updateAmmunitionLevel(frmdata->stationAmmunitionLevel);
 }
 // ============================================================================
 // SHARED UPDATE LOGIC

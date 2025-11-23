@@ -189,7 +189,7 @@ public slots:
     void onSystemStateChanged(const SystemStateData &newState);
 
 signals:
-    void frameDataReady(const FrameData &data);
+    void frameDataReady(std::shared_ptr<const FrameData> data);
     void processingError(int cameraIndex, const QString &errorMessage);
     void statusUpdate(int cameraIndex, const QString &statusMessage);
 
