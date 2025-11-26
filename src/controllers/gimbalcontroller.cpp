@@ -89,13 +89,11 @@ GimbalController::GimbalController(ServoDriverDevice* azServo,
     setMotionMode(MotionMode::Idle);
 
     // Connect to system state changes
-    // ✅ CRITICAL FIX: Qt::QueuedConnection prevents blocking device updates
-    // Device I/O is already async (QModbus/QSerial internal threading)
-    // This prevents GimbalController processing from blocking SystemStateModel updates
+    // Direct connection (Qt::AutoConnection) - all components in main thread due to QModbus
+    // Previous Qt::QueuedConnection was causing event queue saturation and latency issues
     if (m_stateModel) {
         connect(m_stateModel, &SystemStateModel::dataChanged,
-                this, &GimbalController::onSystemStateChanged,
-                Qt::QueuedConnection);  // Non-blocking signal delivery
+                this, &GimbalController::onSystemStateChanged);
     }
 
     // Connect alarm signals
@@ -310,10 +308,9 @@ void GimbalController::setMotionMode(MotionMode newMode)
     case MotionMode::ManualTrack:
     {
         auto trackingMode = std::make_unique<TrackingMotionMode>();
-        // Connect with queued signal for thread-safe target updates
+        // Direct connection - motion mode runs in same thread as GimbalController
         connect(this, &GimbalController::trackingTargetUpdated,
-                trackingMode.get(), &TrackingMotionMode::onTargetPositionUpdated,
-                Qt::QueuedConnection);
+                trackingMode.get(), &TrackingMotionMode::onTargetPositionUpdated);
         m_currentMode = std::move(trackingMode);
         break;
     }

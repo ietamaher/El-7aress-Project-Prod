@@ -27,6 +27,12 @@ ServoDriverDevice::~ServoDriverDevice() {
     m_pollTimer->stop();
     m_temperatureTimer->stop();
     m_communicationWatchdog->stop();
+
+    if (m_transport) {
+        QMetaObject::invokeMethod(m_transport, "close", Qt::QueuedConnection);
+    }
+
+    setState(DeviceState::Offline);
 }
 
 void ServoDriverDevice::setDependencies(Transport* transport,
@@ -69,7 +75,11 @@ bool ServoDriverDevice::initialize() {
     m_pollTimer->start(pollInterval);
     m_temperatureTimer->setInterval(tempInterval);
     if (m_temperatureEnabled) {
-        m_temperatureTimer->start();
+        // Start temperature timer with offset to avoid collision with position poll
+        // Delay by half the poll interval to stagger the reads
+        QTimer::singleShot(pollInterval / 2, this, [this]() {
+            m_temperatureTimer->start();
+        });
     }
 
     qDebug() << m_identifier << "initialized successfully with poll interval:" << pollInterval << "ms";

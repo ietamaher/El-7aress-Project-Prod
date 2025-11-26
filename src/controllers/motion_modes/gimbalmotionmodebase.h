@@ -6,6 +6,7 @@
 #include <QElapsedTimer>
 #include <cmath>
 #include <cstdint>
+#include <limits>
 #include "models/domain/systemstatedata.h" // Include for SystemStateData
 #include "config/MotionTuningConfig.h"      // Include for runtime-configurable parameters
 
@@ -252,7 +253,8 @@ protected:
      */
     void writeVelocityCommand(class ServoDriverDevice* driverInterface,
                               double finalVelocity,
-                              double scalingFactor);
+                              double scalingFactor,
+                              qint32& lastSpeedHz);
     // --- COMMON CONSTANTS ---
     // Servo Control
     static constexpr quint32 DEFAULT_ACCELERATION = 100000;
@@ -339,6 +341,10 @@ private:
     double m_gyroBiasX = 0.0;
     double m_gyroBiasY = 0.0;
     double m_gyroBiasZ = 0.0;
+
+    // Last servo command tracking for change detection (prevents redundant Modbus writes)
+    qint32 m_lastAzSpeedHz = std::numeric_limits<qint32>::max(); // Initialize to invalid value
+    qint32 m_lastElSpeedHz = std::numeric_limits<qint32>::max();
 
     /**
      * @brief Calculates required gimbal angles to point at a world-frame target.

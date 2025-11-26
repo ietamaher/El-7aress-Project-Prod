@@ -1392,9 +1392,12 @@ bool SystemStateModel::isPointInNoTraverseZone(float targetAz, float currentEl) 
     return false;
 }
 void SystemStateModel::setPointInNoTraverseZone(bool inZone) {
-    // Similar to No Fire Zone, this can be used to track if the current azimuth is in a No Traverse Zone
-    m_currentStateData.isReticleInNoTraverseZone = inZone;
-    emit dataChanged(m_currentStateData);
+    // ✅ CRITICAL FIX: Only emit if value actually changed
+    // This prevents signal feedback loop that was causing event queue saturation
+    if (m_currentStateData.isReticleInNoTraverseZone != inZone) {
+        m_currentStateData.isReticleInNoTraverseZone = inZone;
+        emit dataChanged(m_currentStateData);
+    }
 }
 
 void SystemStateModel::updateCurrentScanName() {
