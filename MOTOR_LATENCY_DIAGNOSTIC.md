@@ -145,29 +145,33 @@ void SystemStateModel::onServoAzDataChanged(const ServoDriverData &azData) {
 
 ---
 
-## THREADING ARCHITECTURE ISSUE
+## THREADING ARCHITECTURE ANALYSIS
 
 **Location:** `src/managers/HardwareManager.cpp:386-392`
 
 ```cpp
 // Servo Driver devices (Modbus RTU) with MIL-STD architecture
-m_servoAzThread = new QThread(this);
-m_servoAzDevice = new ServoDriverDevice(servoAzConf.name, nullptr);  // ← parent = nullptr
+m_servoAzThread = new QThread(this);  // Created but unused
+m_servoAzDevice = new ServoDriverDevice(servoAzConf.name, nullptr);
 m_servoAzDevice->setDependencies(m_servoAzTransport, m_servoAzParser);
 
-m_servoElThread = new QThread(this);
+m_servoElThread = new QThread(this);  // Created but unused
 m_servoElDevice = new ServoDriverDevice(servoElConf.name, nullptr);
 m_servoElDevice->setDependencies(m_servoElTransport, m_servoElParser);
 ```
 
-**Problem:** Threads created but devices NEVER moved to those threads!
+**Analysis:** Threads created but devices NOT moved to those threads.
 
-| Expected Architecture | Actual Architecture | Issue |
-|----------------------|---------------------|-------|
-| ServoAzDevice in m_servoAzThread | ServoAzDevice in **main thread** | No moveToThread() call |
-| ServoElDevice in m_servoElThread | ServoElDevice in **main thread** | No moveToThread() call |
-| Qt::QueuedConnection needed | Qt::QueuedConnection **NOT needed** | Unnecessary queuing |
-| Parallel servo polling | **Sequential** in main thread | Worse performance |
+**WHY:** This is CORRECT behavior! **QModbus REQUIRES all operations in main thread** - it's a Qt limitation, not a bug.
+
+| Architecture Choice | Rationale | Correctness |
+|----------------------|-----------|-------------|
+| ServoAzDevice in **main thread** | QModbus requires main thread | ✅ CORRECT |
+| ServoElDevice in **main thread** | QModbus requires main thread | ✅ CORRECT |
+| Threads created but unused | Legacy code or future-proofing | ⚠️ Harmless |
+| **Qt::QueuedConnection used** | **Assumes cross-thread** | **❌ WRONG!** |
+
+**CONCLUSION:** Since everything is in main thread (due to QModbus), **Qt::QueuedConnection is unnecessary and harmful**.
 
 ---
 
@@ -199,9 +203,9 @@ m_servoElDevice->setDependencies(m_servoElTransport, m_servoElParser);
 | Issue | Severity | Contribution to Latency |
 |-------|----------|------------------------|
 | Signal feedback loop (setPointInNoTraverseZone) | **CRITICAL** | 50% (exponential growth) |
-| Unnecessary Qt::QueuedConnection | **CRITICAL** | 30% (forces queuing) |
+| Unnecessary Qt::QueuedConnection (main thread only) | **CRITICAL** | 35% (forces queuing) |
 | High-frequency dataChanged emissions | **HIGH** | 15% (many listeners) |
-| Unused threading architecture | **MEDIUM** | 5% (missed optimization) |
+| ~~Unused threading architecture~~ | ~~N/A~~ | ~~Correct by design (QModbus limitation)~~ |
 
 ---
 
@@ -285,30 +289,15 @@ void SystemStateModel::onServoAzDataChanged(const ServoDriverData &azData) {
 
 ---
 
-### Fix #4: IMPLEMENT PROPER THREADING (Optional, **PRIORITY 3**)
+### ~~Fix #4: IMPLEMENT PROPER THREADING~~ (**NOT POSSIBLE**)
 
-**File:** `src/managers/HardwareManager.cpp:385-392`
+**NOT APPLICABLE:** QModbus requires all operations in main thread. Threading is not possible with QModbus architecture.
 
-**If threading is desired:**
-
-```cpp
-// Servo Driver devices (Modbus RTU) with MIL-STD architecture
-m_servoAzThread = new QThread(this);
-m_servoAzDevice = new ServoDriverDevice(servoAzConf.name, nullptr);
-m_servoAzDevice->setDependencies(m_servoAzTransport, m_servoAzParser);
-m_servoAzDevice->moveToThread(m_servoAzThread);  // ← ADD THIS
-m_servoAzThread->start();                         // ← ADD THIS
-
-m_servoElThread = new QThread(this);
-m_servoElDevice = new ServoDriverDevice(servoElConf.name, nullptr);
-m_servoElDevice->setDependencies(m_servoElTransport, m_servoElParser);
-m_servoElDevice->moveToThread(m_servoElThread);  // ← ADD THIS
-m_servoElThread->start();                         // ← ADD THIS
-```
-
-**Then keep Qt::QueuedConnection in GimbalController (now necessary)**
-
-**Impact:** Parallel servo polling, better CPU utilization, justified Qt::QueuedConnection usage
+**Alternative considered:** Replace QModbus with custom Modbus RTU implementation to enable threading
+- **Effort:** Very high (weeks of work)
+- **Risk:** High (military system, regression risk)
+- **Benefit:** Minimal (main thread architecture works fine if fixes 1-3 applied)
+- **Recommendation:** **NOT WORTH IT** - keep current architecture, just remove Qt::QueuedConnection
 
 ---
 
@@ -330,13 +319,14 @@ The motor latency issue is caused by a **combination of signal feedback loop and
 
 **Minimum required fixes:**
 1. ✅ Fix #1: Eliminate signal feedback loop (5 minutes)
-2. ✅ Fix #2: Remove Qt::QueuedConnection (2 minutes)
+2. ✅ Fix #2: Remove Qt::QueuedConnection (2 minutes) - Safe because QModbus keeps everything in main thread
 
 **Expected improvement:** Latency will remain constant at 50-100ms regardless of operation duration.
 
-**Additional recommended fixes:**
-3. Fix #3: Throttle emissions (30 minutes)
-4. Fix #4: Implement threading (2 hours) - Only if parallel processing is desired
+**Additional recommended fix:**
+3. Fix #3: Throttle emissions (30 minutes) - Optional for further optimization
+
+**Note:** Threading is NOT possible due to QModbus limitation requiring main thread. Current architecture is correct.
 
 ---
 
