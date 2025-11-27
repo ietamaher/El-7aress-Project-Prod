@@ -167,11 +167,44 @@ void SystemStateModel::setReticleStyle(const ReticleType &type)
     emit reticleStyleChanged(type);
 }
 
-void SystemStateModel::setDeadManSwitch(bool pressed) { if(m_currentStateData.deadManSwitchActive != pressed) { m_currentStateData.deadManSwitchActive = pressed; emit dataChanged(m_currentStateData); } }
-void SystemStateModel::setDownTrack(bool pressed) { if(m_currentStateData.downTrack != pressed) { m_currentStateData.downTrack = pressed; emit dataChanged(m_currentStateData); } }
-void SystemStateModel::setDownSw(bool pressed) { if(m_currentStateData.menuDown != pressed) { m_currentStateData.menuDown = pressed; emit dataChanged(m_currentStateData); } }
-void SystemStateModel::setUpTrack(bool pressed) { if(m_currentStateData.upTrack != pressed) { m_currentStateData.upTrack = pressed; emit dataChanged(m_currentStateData); } }
-void SystemStateModel::setUpSw(bool pressed) { if(m_currentStateData.menuUp != pressed) { m_currentStateData.menuUp = pressed; emit dataChanged(m_currentStateData); } }
+void SystemStateModel::setDeadManSwitch(bool pressed) {
+    if(m_currentStateData.deadManSwitchActive != pressed) {
+        m_currentStateData.deadManSwitchActive = pressed;
+        emit dataChanged(m_currentStateData);
+    }
+}
+
+void SystemStateModel::setDownTrack(bool pressed) {
+    if(m_currentStateData.downTrack != pressed) {
+        m_currentStateData.downTrack = pressed;
+        emit dataChanged(m_currentStateData);
+    }
+}
+
+void SystemStateModel::setDownSw(bool pressed) {
+    if(m_currentStateData.menuDown != pressed) {
+        m_currentStateData.menuDown = pressed;
+        // ✅ LATENCY FIX: Emit dedicated button signal
+        emit buttonStateChanged(m_currentStateData.menuUp, m_currentStateData.menuDown, m_currentStateData.menuVal);
+        emit dataChanged(m_currentStateData);
+    }
+}
+
+void SystemStateModel::setUpTrack(bool pressed) {
+    if(m_currentStateData.upTrack != pressed) {
+        m_currentStateData.upTrack = pressed;
+        emit dataChanged(m_currentStateData);
+    }
+}
+
+void SystemStateModel::setUpSw(bool pressed) {
+    if(m_currentStateData.menuUp != pressed) {
+        m_currentStateData.menuUp = pressed;
+        // ✅ LATENCY FIX: Emit dedicated button signal
+        emit buttonStateChanged(m_currentStateData.menuUp, m_currentStateData.menuDown, m_currentStateData.menuVal);
+        emit dataChanged(m_currentStateData);
+    }
+}
 
 void SystemStateModel::setActiveCameraIsDay(bool isDay) {
     // ========================================================================
@@ -922,6 +955,14 @@ void SystemStateModel::onPlc21DataChanged(const Plc21PanelData &pData)
     if (!pData.switchCameraSW && m_currentStateData.activeCameraIsDay) {
         newData.detectionEnabled = false;
         qInfo() << "SystemStateModel: Night camera activated - Detection auto-disabled";
+    }
+
+    // ✅ LATENCY FIX: Emit dedicated button signal ONLY when buttons actually change
+    // This prevents ApplicationController from processing 20Hz updates just to monitor buttons
+    if (m_currentStateData.menuUp != newData.menuUp ||
+        m_currentStateData.menuDown != newData.menuDown ||
+        m_currentStateData.menuVal != newData.menuVal) {
+        emit buttonStateChanged(newData.menuUp, newData.menuDown, newData.menuVal);
     }
 
     updateData(newData);
