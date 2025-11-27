@@ -608,6 +608,16 @@ signals:
      */
     void reticleStyleChanged(const ReticleType &type);
 
+    /**
+     * @brief Emitted when PLC21 button states change (menuUp, menuDown, menuVal).
+     * This signal is emitted ONLY when button states actually change, not on every 50ms update.
+     * Designed to reduce event queue congestion from 20Hz polling.
+     * @param menuUp Current state of the menu up button
+     * @param menuDown Current state of the menu down button
+     * @param menuVal Current state of the menu validation button
+     */
+    void buttonStateChanged(bool menuUp, bool menuDown, bool menuVal);
+
     // =================================
     // ZONE MANAGEMENT SIGNALS
     // =================================

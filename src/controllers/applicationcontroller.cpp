@@ -209,11 +209,12 @@ void ApplicationController::initialize()
     // =========================================================================
     // HARDWARE BUTTON MONITORING (PLC21 switches)
     // =========================================================================
-    // ✅ LATENCY FIX: Queued connection prevents button monitoring from blocking device I/O
-    connect(m_systemStateModel, &SystemStateModel::dataChanged,
-            this, &ApplicationController::onSystemStateChanged,
+    // ✅ LATENCY FIX: Use dedicated buttonStateChanged signal instead of dataChanged
+    // Reduces event load from 1,200/min (20Hz) to ~10-20/min (only on actual button presses)
+    connect(m_systemStateModel, &SystemStateModel::buttonStateChanged,
+            this, &ApplicationController::onButtonStateChanged,
             Qt::QueuedConnection);  // Non-blocking signal delivery
-    qDebug() << "ApplicationController: SystemStateModel button monitoring connected";
+    qDebug() << "ApplicationController: PLC21 button monitoring connected (optimized)";
 
     qDebug() << "ApplicationController: All signal connections established";
 }
@@ -643,32 +644,35 @@ void ApplicationController::handleReturnToMainMenu()
 }
 
 // ============================================================================
-// HARDWARE BUTTON MONITORING
+// HARDWARE BUTTON MONITORING (PLC21 Panel)
 // ============================================================================
 
-void ApplicationController::onSystemStateChanged(const SystemStateData& newState)
+void ApplicationController::onButtonStateChanged(bool menuUp, bool menuDown, bool menuVal)
 {
+    // ✅ LATENCY FIX: This slot is now called ONLY when buttons change, not every 50ms!
+    // Event load reduced from 1,200 events/min → ~10-20 events/min (95% reduction)
+
     // Rising edge detection for menuUp button (false → true = button press)
-    if (newState.menuUp && !m_previousMenuUpState) {
+    if (menuUp && !m_previousMenuUpState) {
         m_previousMenuUpState = true; // Update BEFORE calling handler to prevent re-entrancy
         onUpButtonPressed();
     } else {
-        m_previousMenuUpState = newState.menuUp;
+        m_previousMenuUpState = menuUp;
     }
 
     // Rising edge detection for menuDown button (false → true = button press)
-    if (newState.menuDown && !m_previousMenuDownState) {
+    if (menuDown && !m_previousMenuDownState) {
         m_previousMenuDownState = true; // Update BEFORE calling handler to prevent re-entrancy
         onDownButtonPressed();
     } else {
-        m_previousMenuDownState = newState.menuDown;
+        m_previousMenuDownState = menuDown;
     }
 
     // Rising edge detection for menuVal button (false → true = button press)
-    if (newState.menuVal && !m_previousMenuValState) {
+    if (menuVal && !m_previousMenuValState) {
         m_previousMenuValState = true; // Update BEFORE calling handler to prevent re-entrancy
         onMenuValButtonPressed();
     } else {
-        m_previousMenuValState = newState.menuVal;
+        m_previousMenuValState = menuVal;
     }
 }

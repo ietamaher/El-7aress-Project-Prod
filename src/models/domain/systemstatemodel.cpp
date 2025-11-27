@@ -943,6 +943,15 @@ void SystemStateModel::onPlc21DataChanged(const Plc21PanelData &pData)
         qInfo() << "SystemStateModel: Night camera activated - Detection auto-disabled";
     }
 
+    // ✅ LATENCY FIX: Emit dedicated button signal ONLY when buttons actually change
+    // PLC21 polls at 20Hz, but buttons change maybe 1-2 times per second
+    // This prevents ApplicationController from processing 1,200 events/minute just for button monitoring
+    if (m_currentStateData.menuUp != newData.menuUp ||
+        m_currentStateData.menuDown != newData.menuDown ||
+        m_currentStateData.menuVal != newData.menuVal) {
+        emit buttonStateChanged(newData.menuUp, newData.menuDown, newData.menuVal);
+    }
+
     updateData(newData);
     setActiveCameraIsDay(pData.switchCameraSW);
 }
