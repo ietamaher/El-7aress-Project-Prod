@@ -97,9 +97,8 @@ private slots:
     void handleReturnToMainMenu();
 
 private slots:
-    // Monitor button state changes from hardware (PLC21)
-    // ✅ LATENCY FIX: Dedicated slot for button changes only (not 20Hz updates)
-    void onButtonStateChanged(bool menuUp, bool menuDown, bool menuVal);
+    // Monitor button state changes from hardware
+    void onSystemStateChanged(const SystemStateData& newState);
 
 private:
     void setMenuState(MenuState state);
