@@ -1,5 +1,21 @@
 QT += quick serialbus serialport dbus
 
+# =================================
+# LATENCY FIX: Disable debug logging in release builds
+# =================================
+# qDebug() statements block the Qt event loop causing massive jitter
+# During device disconnections, 12+ log statements can freeze the loop for 2.5 seconds
+# This disables qDebug/qInfo in release builds while keeping qWarning/qCritical
+CONFIG(release, debug|release) {
+    DEFINES += QT_NO_DEBUG_OUTPUT
+    DEFINES += QT_NO_INFO_OUTPUT
+    message("Release build: Debug logging disabled for optimal performance")
+}
+
+CONFIG(debug, debug|release) {
+    message("Debug build: All logging enabled")
+}
+
 #LIBS += -L/usr/lib/x86_64-linux-gnu/gstreamer-1.0 -lgstxvimagesink
 INCLUDEPATH += "/usr/include/gstreamer-1.0"
 INCLUDEPATH += src

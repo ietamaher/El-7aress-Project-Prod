@@ -48,7 +48,8 @@ signals:
 private slots:
     void handleMenuOptionSelected(const QString& option);
     void onColorStyleChanged(const QColor& color);
-    void onSystemStateChanged(const SystemStateData& newData);
+    void onCameraChanged(bool isDayCamera);
+    void onDetectionChanged(bool enabled);
 
 private:
     MenuViewModel* m_viewModel;

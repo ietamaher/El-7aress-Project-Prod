@@ -642,6 +642,22 @@ signals:
      */
     void environmentalModeChanged(bool active);
 
+    /**
+     * @brief Emitted when active camera type changes (day/night).
+     * This signal is emitted ONLY when activeCameraIsDay flag actually changes, not on every 50ms update.
+     * Designed to reduce event queue congestion for MainMenuController.
+     * @param isDayCamera True if day camera is now active, false for night camera
+     */
+    void activeCameraChanged(bool isDayCamera);
+
+    /**
+     * @brief Emitted when object detection state changes.
+     * This signal is emitted ONLY when detectionEnabled flag actually changes, not on every 50ms update.
+     * Designed to reduce event queue congestion for MainMenuController.
+     * @param enabled True if detection is now enabled, false otherwise
+     */
+    void detectionStateChanged(bool enabled);
+
     // =================================
     // ZONE MANAGEMENT SIGNALS
     // =================================

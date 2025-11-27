@@ -205,6 +205,8 @@ void SystemStateModel::setActiveCameraIsDay(bool isDay) {
                  << "- Recalculating reticle for new camera FOV";
         recalculateDerivedAimpointData();  // ← FIX: Trigger reticle recalc on camera switch
         emit dataChanged(m_currentStateData);
+        // ✅ LATENCY FIX: Dedicated signal for MainMenuController to reduce event queue load
+        emit activeCameraChanged(isDay);
     }
 }
 
@@ -222,6 +224,8 @@ void SystemStateModel::setDetectionEnabled(bool enabled)
         m_currentStateData.detectionEnabled = enabled;
         emit dataChanged(m_currentStateData);
         qInfo() << "SystemStateModel: Detection" << (enabled ? "ENABLED" : "DISABLED");
+        // ✅ LATENCY FIX: Dedicated signal for MainMenuController to reduce event queue load
+        emit detectionStateChanged(enabled);
     }
 }
 
@@ -939,8 +943,13 @@ void SystemStateModel::onPlc21DataChanged(const Plc21PanelData &pData)
 
     // Auto-disable detection when switching to night camera
     if (!pData.switchCameraSW && m_currentStateData.activeCameraIsDay) {
+        bool wasDetectionEnabled = m_currentStateData.detectionEnabled;
         newData.detectionEnabled = false;
         qInfo() << "SystemStateModel: Night camera activated - Detection auto-disabled";
+        // ✅ LATENCY FIX: Emit signal only if detection was actually enabled
+        if (wasDetectionEnabled) {
+            emit detectionStateChanged(false);
+        }
     }
 
     // ✅ LATENCY FIX: Emit dedicated button signal ONLY when buttons actually change
@@ -1372,15 +1381,24 @@ void SystemStateModel::recalculateDerivedAimpointData() {
 
 void SystemStateModel::updateCameraOpticsAndActivity(int width, int height, float dayHfov, float nightHfov, bool isDayActive) {
     bool changed = false;
+    bool cameraChanged = false;
     if (m_currentStateData.currentImageWidthPx != width)   { m_currentStateData.currentImageWidthPx = width; changed=true; }
     if (m_currentStateData.currentImageHeightPx != height) { m_currentStateData.currentImageHeightPx = height; changed=true; }
     if (!qFuzzyCompare(static_cast<float>(m_currentStateData.dayCurrentHFOV), dayHfov)) { m_currentStateData.dayCurrentHFOV = dayHfov; changed=true; }
     if (!qFuzzyCompare(static_cast<float>(m_currentStateData.nightCurrentHFOV), nightHfov)) { m_currentStateData.nightCurrentHFOV = nightHfov; changed=true; }
-    if (m_currentStateData.activeCameraIsDay != isDayActive) {m_currentStateData.activeCameraIsDay = isDayActive; changed=true;}
+    if (m_currentStateData.activeCameraIsDay != isDayActive) {
+        m_currentStateData.activeCameraIsDay = isDayActive;
+        changed=true;
+        cameraChanged=true;
+    }
 
     if(changed){
         recalculateDerivedAimpointData();
         emit dataChanged(m_currentStateData);
+        // ✅ LATENCY FIX: Emit dedicated signal only if camera actually changed
+        if (cameraChanged) {
+            emit activeCameraChanged(isDayActive);
+        }
     }
 }
 
