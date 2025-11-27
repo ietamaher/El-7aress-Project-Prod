@@ -1041,6 +1041,8 @@ void SystemStateModel::startZeroingProcedure() {
         qDebug() << "Zeroing procedure started.";
         emit dataChanged(m_currentStateData);
         emit zeroingStateChanged(true, m_currentStateData.zeroingAzimuthOffset, m_currentStateData.zeroingElevationOffset);
+        // ✅ LATENCY FIX: Dedicated signal for ZeroingController to reduce event queue load
+        emit zeroingModeChanged(true);
     }
 }
 
@@ -1075,6 +1077,8 @@ void SystemStateModel::finalizeZeroing() {
                  << "El:" << m_currentStateData.zeroingElevationOffset;
         emit dataChanged(m_currentStateData);
         emit zeroingStateChanged(false, m_currentStateData.zeroingAzimuthOffset, m_currentStateData.zeroingElevationOffset);
+        // ✅ LATENCY FIX: Dedicated signal for ZeroingController to reduce event queue load
+        emit zeroingModeChanged(false);
     }
 }
 
@@ -1086,6 +1090,8 @@ void SystemStateModel::clearZeroing() { // Called on power down, or manually
     qDebug() << "Zeroing cleared.";
     emit dataChanged(m_currentStateData);
     emit zeroingStateChanged(false, 0.0f, 0.0f);
+    // ✅ LATENCY FIX: Dedicated signal for ZeroingController to reduce event queue load
+    emit zeroingModeChanged(false);
 }
 
 void SystemStateModel::startWindageProcedure() {
@@ -1096,9 +1102,11 @@ void SystemStateModel::startWindageProcedure() {
         // Note: We don't clear existing values here - they persist from previous session
         qDebug() << "Windage procedure started.";
         emit dataChanged(m_currentStateData);
-        emit windageStateChanged(true, 
+        emit windageStateChanged(true,
                                  m_currentStateData.windageSpeedKnots,
                                  m_currentStateData.windageDirectionDegrees);
+        // ✅ LATENCY FIX: Dedicated signal for WindageController to reduce event queue load
+        emit windageModeChanged(true);
     }
 }
 
@@ -1140,6 +1148,8 @@ void SystemStateModel::finalizeWindage() {
         emit windageStateChanged(false,
                                  m_currentStateData.windageSpeedKnots,
                                  m_currentStateData.windageDirectionDegrees);
+        // ✅ LATENCY FIX: Dedicated signal for WindageController to reduce event queue load
+        emit windageModeChanged(false);
     }
 }
 
@@ -1154,6 +1164,8 @@ void SystemStateModel::clearWindage() {
     qDebug() << "Windage cleared.";
     emit dataChanged(m_currentStateData);
     emit windageStateChanged(false, 0.0f, 0.0f);
+    // ✅ LATENCY FIX: Dedicated signal for WindageController to reduce event queue load
+    emit windageModeChanged(false);
 }
 
 // =================================
@@ -1165,6 +1177,8 @@ void SystemStateModel::startEnvironmentalProcedure() {
         m_currentStateData.environmentalModeActive = true;
         qDebug() << "Environmental procedure started.";
         emit dataChanged(m_currentStateData);
+        // ✅ LATENCY FIX: Dedicated signal for EnvironmentalController to reduce event queue load
+        emit environmentalModeChanged(true);
     }
 }
 
@@ -1194,6 +1208,8 @@ void SystemStateModel::finalizeEnvironmental() {
                  << "Applied:" << m_currentStateData.environmentalAppliedToBallistics
                  << "| NOTE: Crosswind calculated from windage, not environmental menu";
         emit dataChanged(m_currentStateData);
+        // ✅ LATENCY FIX: Dedicated signal for EnvironmentalController to reduce event queue load
+        emit environmentalModeChanged(false);
     }
 }
 
@@ -1207,6 +1223,8 @@ void SystemStateModel::clearEnvironmental() {
     qDebug() << "Environmental settings cleared (ISA standard atmosphere)."
              << "| NOTE: Use windage menu to set wind conditions";
     emit dataChanged(m_currentStateData);
+    // ✅ LATENCY FIX: Dedicated signal for EnvironmentalController to reduce event queue load
+    emit environmentalModeChanged(false);
 }
 
 void SystemStateModel::setLeadAngleCompensationActive(bool active) {
