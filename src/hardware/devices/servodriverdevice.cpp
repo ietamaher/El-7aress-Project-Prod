@@ -306,14 +306,42 @@ void ServoDriverDevice::setTemperatureInterval(int intervalMs) {
 void ServoDriverDevice::sendWriteRequest(int startAddress, const QVector<quint16>& values) {
     if (state() != DeviceState::Online || !m_transport) return;
 
+    // ✅ LATENCY PROFILING: Start timing the Modbus write operation
+    m_modbusWriteTimer.start();
+
     QModbusDataUnit writeUnit(QModbusDataUnit::HoldingRegisters, startAddress, values);
-    
+
     QModbusReply* reply = nullptr;
     QMetaObject::invokeMethod(m_transport, "sendWriteRequest",
                               Qt::DirectConnection,
                               Q_RETURN_ARG(QModbusReply*, reply),
                               Q_ARG(QModbusDataUnit, writeUnit));
-    
+
+    // ✅ LATENCY PROFILING: Measure how long the write took (nanosecond precision)
+    qint64 elapsedNs = m_modbusWriteTimer.nsecsElapsed();
+    m_modbusWriteCount++;
+    m_modbusWriteTotalNs += elapsedNs;
+    m_modbusWriteMaxNs = qMax(m_modbusWriteMaxNs, elapsedNs);
+    m_modbusWriteMinNs = qMin(m_modbusWriteMinNs, elapsedNs);
+
+    // Log statistics every 100 writes to detect event queue blocking
+    if (m_modbusWriteCount % 100 == 0) {
+        double avgMs = (m_modbusWriteTotalNs / (double)m_modbusWriteCount) / 1000000.0;
+        double maxMs = m_modbusWriteMaxNs / 1000000.0;
+        double minMs = m_modbusWriteMinNs / 1000000.0;
+        qDebug() << "⚙️ [MODBUS WRITE]" << m_identifier << "100 writes |"
+                 << "Avg:" << QString::number(avgMs, 'f', 3) << "ms"
+                 << "Min:" << QString::number(minMs, 'f', 3) << "ms"
+                 << "Max:" << QString::number(maxMs, 'f', 3) << "ms"
+                 << "| Total:" << m_modbusWriteCount;
+
+        // Reset for next batch
+        m_modbusWriteTotalNs = 0;
+        m_modbusWriteMaxNs = 0;
+        m_modbusWriteMinNs = 999999999;
+        m_modbusWriteCount = 0;
+    }
+
     if (reply) {
         connect(reply, &QModbusReply::finished, reply, &QModbusReply::deleteLater);
     }

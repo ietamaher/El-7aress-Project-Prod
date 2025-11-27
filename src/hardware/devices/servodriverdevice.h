@@ -28,6 +28,7 @@
 #include "../devices/TemplatedDevice.h"
 #include "../data/DataTypes.h"
 #include <QTimer>
+#include <QElapsedTimer>
 
 class Transport;
 class ServoDriverProtocolParser;
@@ -105,6 +106,13 @@ private:
     bool m_temperatureEnabled = true;
 
     static constexpr int COMMUNICATION_TIMEOUT_MS = 3000;  // 3 seconds without data = disconnected
+
+    // ✅ LATENCY PROFILING: Track Modbus write timing to detect event queue blocking
+    QElapsedTimer m_modbusWriteTimer;
+    int m_modbusWriteCount = 0;
+    qint64 m_modbusWriteTotalNs = 0;
+    qint64 m_modbusWriteMaxNs = 0;
+    qint64 m_modbusWriteMinNs = 999999999;
 };
 
 #endif // SERVODRIVERDEVICE_H
