@@ -904,7 +904,7 @@ bool CameraVideoStreamDevice::processFrame(GstBuffer *buffer)
         // ====================================================================
         // LATENCY MEASUREMENT: Calculate glass-to-glass latency
         // ====================================================================
-        qint64 frameCompleteTime = m_latencyTimer.elapsed();
+        /*qint64 frameCompleteTime = m_latencyTimer.elapsed();
         qint64 frameLatency_ms = frameCompleteTime - m_frameArrivalTime;
         m_totalLatency_ms += frameLatency_ms;
         m_frameProcessedCount++;
@@ -916,7 +916,7 @@ bool CameraVideoStreamDevice::processFrame(GstBuffer *buffer)
                     << "Current=" << frameLatency_ms << "ms"
                     << "| Average=" << avgLatency << "ms"
                     << "| Frames=" << m_frameProcessedCount;
-        }
+        }*/
 
         // 7. Emit FrameData
         if (!data.baseImage.isNull()) emit frameDataReady(data);

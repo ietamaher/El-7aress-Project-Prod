@@ -733,8 +733,43 @@ void SystemStateModel::updateStationaryStatus(SystemStateData& data)
 
 void SystemStateModel::onJoystickAxisChanged(int axis, float normalizedValue)
 {
-    //START_TS_TIMER("SystemStateModel");
+ //START_TS_TIMER("SystemStateModel");
     SystemStateData newData = m_currentStateData;
+
+    const float CHANGE_THRESHOLD = 0.05f;
+     static int count = 0;
+    static auto lastLog = std::chrono::high_resolution_clock::now();
+       
+    float oldX = m_currentStateData.joystickAzValue;
+    float oldY = m_currentStateData.joystickElValue;
+    
+    // Update axis value
+    if (axis == 0) {
+        newData.joystickAzValue = normalizedValue;
+    } else if (axis == 1){
+        newData.joystickElValue = normalizedValue;
+    }
+    
+    // Check if change is significant
+    float deltaX = std::abs(newData.joystickAzValue - oldX);
+    float deltaY = std::abs(newData.joystickElValue - oldY);
+    
+    if (deltaX > CHANGE_THRESHOLD || deltaY > CHANGE_THRESHOLD) {
+        // ✅ Emit SPECIFIC signal for immediate motor response
+        updateData(newData);
+                if (++count % 100 == 0) {
+            auto now = std::chrono::high_resolution_clock::now();
+            auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - lastLog).count();
+            qDebug() << "🕹️ [Joystick] 100 emits in" << elapsed << "ms ="
+                     << (100000.0 / elapsed) << "Hz";
+            lastLog = now;
+        }
+    }
+ 
+
+
+    //START_TS_TIMER("SystemStateModel");
+  /*  SystemStateData newData = m_currentStateData;
 
     if (axis == 0){
         newData.joystickAzValue = normalizedValue;
@@ -742,7 +777,7 @@ void SystemStateModel::onJoystickAxisChanged(int axis, float normalizedValue)
         newData.joystickElValue = normalizedValue;
     }
 
-    updateData(newData);
+    updateData(newData);*/
     //LOG_TS_ELAPSED("SystemStateModel", "Processed model data");
 }
 

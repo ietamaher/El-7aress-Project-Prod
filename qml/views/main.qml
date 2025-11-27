@@ -130,7 +130,7 @@ Window {
         // Already bound in ZoneDefinitionOverlay.qml
     }
 
-    SystemStatusOverlay{
+   /* SystemStatusOverlay{
             id: systemStatusOverlay
             //anchors.top: parent.top
             //anchors.left: parent.left
@@ -139,7 +139,7 @@ Window {
             anchors.fill: parent
             z: 100   // Above OSD
 
-    }
+    }*/
 
     AboutDialog{
         id: aboutDialog

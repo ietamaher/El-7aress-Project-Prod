@@ -138,6 +138,35 @@ void GimbalController::shutdown()
 
 void GimbalController::update()
 {
+    // ✅ MEASURE UPDATE LOOP TIMING
+    static auto lastUpdateTime = std::chrono::high_resolution_clock::now();
+    static std::vector<long long> updateIntervals;
+    static int updateCount = 0;
+    
+    auto now = std::chrono::high_resolution_clock::now();
+    auto interval = std::chrono::duration_cast<std::chrono::microseconds>(now - lastUpdateTime).count();
+    
+    updateIntervals.push_back(interval);
+    if (updateIntervals.size() > 100) updateIntervals.erase(updateIntervals.begin());
+    
+    if (++updateCount % 50 == 0) {
+        long long minInterval = *std::min_element(updateIntervals.begin(), updateIntervals.end());
+        long long maxInterval = *std::max_element(updateIntervals.begin(), updateIntervals.end());
+        long long avgInterval = std::accumulate(updateIntervals.begin(), updateIntervals.end(), 0LL) / updateIntervals.size();
+        double jitter = (maxInterval - minInterval) / 1000.0;
+        
+        qDebug() << "🔄 [UPDATE LOOP] 50 cycles |"
+                 << "Target: 50.0ms |"
+                 << "Actual avg:" << (avgInterval / 1000.0) << "ms |"
+                 << "Min:" << (minInterval / 1000.0) << "ms |"
+                 << "Max:" << (maxInterval / 1000.0) << "ms |"
+                 << "Jitter:" << jitter << "ms"
+                 << (jitter > 10 ? "⚠️" : "✅");
+    }
+    
+    lastUpdateTime = now;
+
+
     if (!m_currentMode) {
         return;
     }
@@ -180,17 +209,17 @@ void GimbalController::onSystemStateChanged(const SystemStateData &newData)
 
     // PRIORITY 2: HOMING SEQUENCE
     // Only process if homing state or button changed
-    if (newData.homingState != m_oldState.homingState ||
+    /*if (newData.homingState != m_oldState.homingState ||
         newData.gotoHomePosition != m_oldState.gotoHomePosition) {
         processHomingSequence(newData);
-    }
+    }*/
 
     // If homing in progress, skip motion mode changes to avoid interference
-    if (newData.homingState == HomingState::InProgress ||
+    /*if (newData.homingState == HomingState::InProgress ||
         newData.homingState == HomingState::Requested) {
         m_oldState = newData;
         return;  // Exit - homing controls the gimbal exclusively
-    }
+    }*/
 
     // PRIORITY 3: FREE MODE MONITORING
     // Only process if free mode state changed
