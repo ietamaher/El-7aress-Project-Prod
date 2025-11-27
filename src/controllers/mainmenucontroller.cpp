@@ -63,7 +63,7 @@ QStringList MainMenuController::buildMainMenuOptions() const
             << "Clear Environmental Settings"
             << "--- SYSTEM ---"
             << "Zone Definitions"
-            << "System Status"
+            // << "System Status"  // DISABLED
             << detectionOption
             << "Shutdown System"
             << "--- INFO ---"
@@ -150,10 +150,10 @@ void MainMenuController::handleMenuOptionSelected(const QString& option)
         emit zoneDefinitionsRequested();
         // ❌ DON'T emit menuFinished() - zone definition is a procedure
     }
-    else if (option == "System Status") {
-        emit systemStatusRequested();
-       // emit menuFinished();
-    }
+    // else if (option == "System Status") {  // DISABLED
+    //     emit systemStatusRequested();  // DISABLED
+    //    // emit menuFinished();  // DISABLED
+    // }  // DISABLED
     else if (option.startsWith("Detection")) {
         if (option.contains("Unavailable")) {
             qDebug() << "Detection unavailable - Night camera is active";

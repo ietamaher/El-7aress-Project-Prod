@@ -6,7 +6,7 @@
 #include "controllers/windagecontroller.h"
 #include "controllers/environmentalcontroller.h"
 #include "controllers/zonedefinitioncontroller.h"
-#include "controllers/systemstatuscontroller.h"
+// #include "controllers/systemstatuscontroller.h"  // DISABLED
 #include "controllers/aboutcontroller.h"
 #include "models/domain/systemstatemodel.h"
 #include <QDebug>
@@ -67,10 +67,10 @@ void ApplicationController::setZoneDefinitionController(ZoneDefinitionController
     m_zoneDefinitionController = controller;
 }
 
-void ApplicationController::setSystemStatusController(SystemStatusController* controller)
-{
-    m_systemStatusController = controller;
-}
+// void ApplicationController::setSystemStatusController(SystemStatusController* controller)  // DISABLED
+// {  // DISABLED
+//     m_systemStatusController = controller;  // DISABLED
+// }  // DISABLED
 
 void ApplicationController::setAboutController(AboutController* controller)
 {
@@ -98,7 +98,7 @@ void ApplicationController::initialize()
     Q_ASSERT(m_windageController);
     Q_ASSERT(m_environmentalController);
     Q_ASSERT(m_zoneDefinitionController);
-    Q_ASSERT(m_systemStatusController);
+    // Q_ASSERT(m_systemStatusController);  // DISABLED
     Q_ASSERT(m_aboutController);
     Q_ASSERT(m_systemStateModel);
 
@@ -123,8 +123,8 @@ void ApplicationController::initialize()
             this, &ApplicationController::handleClearEnvironmental);
     connect(m_mainMenuController, &MainMenuController::zoneDefinitionsRequested,
             this, &ApplicationController::handleZoneDefinitions);
-    connect(m_mainMenuController, &MainMenuController::systemStatusRequested,
-            this, &ApplicationController::handleSystemStatus);
+    // connect(m_mainMenuController, &MainMenuController::systemStatusRequested,  // DISABLED
+    //         this, &ApplicationController::handleSystemStatus);  // DISABLED
     connect(m_mainMenuController, &MainMenuController::toggleDetectionRequested,
             this, &ApplicationController::handleToggleDetection);
     connect(m_mainMenuController, &MainMenuController::shutdownSystemRequested,
@@ -187,13 +187,13 @@ void ApplicationController::initialize()
     // ========================================================================
     // CONNECT SYSTEM STATUS CONTROLLER
     // ========================================================================
-    if (m_systemStatusController) {
-        connect(m_systemStatusController, &SystemStatusController::menuFinished,
-                this, &ApplicationController::handleSystemStatusFinished);
-        connect(m_systemStatusController, &SystemStatusController::returnToMainMenu,
-                this, &ApplicationController::handleReturnToMainMenu);
-        qDebug() << "ApplicationController: SystemStatusController signals connected";
-    }
+    // if (m_systemStatusController) {  // DISABLED
+    //     connect(m_systemStatusController, &SystemStatusController::menuFinished,  // DISABLED
+    //             this, &ApplicationController::handleSystemStatusFinished);  // DISABLED
+    //     connect(m_systemStatusController, &SystemStatusController::returnToMainMenu,  // DISABLED
+    //             this, &ApplicationController::handleReturnToMainMenu);  // DISABLED
+    //     qDebug() << "ApplicationController: SystemStatusController signals connected";  // DISABLED
+    // }  // DISABLED
 
     // ========================================================================
     // CONNECT ABOUT CONTROLLER
@@ -245,7 +245,7 @@ void ApplicationController::hideAllMenus()
     m_windageController->hide();
     m_environmentalController->hide();
     m_zoneDefinitionController->hide();
-    m_systemStatusController->hide();
+    // m_systemStatusController->hide();  // DISABLED
     m_aboutController->hide();
 }
 
@@ -264,7 +264,8 @@ void ApplicationController::onMenuValButtonPressed()
         m_currentMenuState == MenuState::EnvironmentalProcedure ||
         m_currentMenuState == MenuState::ZoneDefinition     ||
         m_currentMenuState == MenuState::HelpAbout ||
-        m_currentMenuState == MenuState::SystemStatus  ) {
+        // m_currentMenuState == MenuState::SystemStatus  ||  // DISABLED
+        false) {
         handleMenuValInProcedure();
         return;
     }
@@ -341,9 +342,9 @@ void ApplicationController::handleMenuValInProcedure()
     case MenuState::ZoneDefinition:
         m_zoneDefinitionController->onMenuValButtonPressed();
         break;
-    case MenuState::SystemStatus:
-        if (m_systemStatusController) m_systemStatusController->onSelectButtonPressed();
-        break;
+    // case MenuState::SystemStatus:  // DISABLED
+    //     if (m_systemStatusController) m_systemStatusController->onSelectButtonPressed();  // DISABLED
+    //     break;  // DISABLED
     case MenuState::HelpAbout:
         if (m_aboutController) m_aboutController->onSelectButtonPressed();
         break;
@@ -378,9 +379,9 @@ void ApplicationController::onUpButtonPressed()
     case MenuState::ZoneDefinition:
         m_zoneDefinitionController->onUpButtonPressed();
         break;
-    case MenuState::SystemStatus:
-        if (m_systemStatusController) m_systemStatusController->onUpButtonPressed();
-        break;
+    // case MenuState::SystemStatus:  // DISABLED
+    //     if (m_systemStatusController) m_systemStatusController->onUpButtonPressed();  // DISABLED
+    //     break;  // DISABLED
     case MenuState::HelpAbout:
         if (m_aboutController) m_aboutController->onUpButtonPressed();
         break;
@@ -417,9 +418,9 @@ void ApplicationController::onDownButtonPressed()
     case MenuState::ZoneDefinition:
         m_zoneDefinitionController->onDownButtonPressed();
         break;
-    case MenuState::SystemStatus:
-        if (m_systemStatusController) m_systemStatusController->onDownButtonPressed();
-        break;
+    // case MenuState::SystemStatus:  // DISABLED
+    //     if (m_systemStatusController) m_systemStatusController->onDownButtonPressed();  // DISABLED
+    //     break;  // DISABLED
     case MenuState::HelpAbout:
         if (m_aboutController) m_aboutController->onDownButtonPressed();
         break;
@@ -508,13 +509,13 @@ void ApplicationController::handleZoneDefinitions()
     setMenuState(MenuState::ZoneDefinition);
 }
 
-void ApplicationController::handleSystemStatus()
-{
-    qDebug() << "ApplicationController: System Status requested";
-    hideAllMenus();
-    m_systemStatusController->show();
-    setMenuState(MenuState::SystemStatus);
-}
+// void ApplicationController::handleSystemStatus()  // DISABLED
+// {  // DISABLED
+//     qDebug() << "ApplicationController: System Status requested";  // DISABLED
+//     hideAllMenus();  // DISABLED
+//     m_systemStatusController->show();  // DISABLED
+//     setMenuState(MenuState::SystemStatus);  // DISABLED
+// }  // DISABLED
 
 void ApplicationController::handleToggleDetection()
 {
@@ -620,10 +621,10 @@ void ApplicationController::handleZoneDefinitionFinished()
     qDebug() << "ApplicationController: Zone Definition finished";
 }
 
-void ApplicationController::handleSystemStatusFinished()
-{
-    qDebug() << "ApplicationController: System Status finished";
-}
+// void ApplicationController::handleSystemStatusFinished()  // DISABLED
+// {  // DISABLED
+//     qDebug() << "ApplicationController: System Status finished";  // DISABLED
+// }  // DISABLED
 
 void ApplicationController::handleAboutFinished()
 {
