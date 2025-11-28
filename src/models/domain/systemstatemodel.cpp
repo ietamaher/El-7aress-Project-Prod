@@ -1282,39 +1282,46 @@ void SystemStateModel::recalculateDerivedAimpointData() {
     float activeHfov = data.activeCameraIsDay ? static_cast<float>(data.dayCurrentHFOV) : static_cast<float>(data.nightCurrentHFOV);
 
     // ========================================================================
-    // CALCULATION 1: RETICLE Position (Zeroing ONLY)
+    // CALCULATION 1: RETICLE Position (Zeroing + Ballistic Drop)
     // ========================================================================
-    // Main reticle shows gun boresight with zeroing correction
-    // NO lead angle applied - this is pure gun pointing direction
+    // Main reticle shows gun boresight with zeroing + AUTO ballistic drop
+    // Ballistic drop (gravity + wind) auto-applies when LRF range is valid
+    // NO motion lead - this is Kongsberg/Rafael professional FCS behavior
     // ========================================================================
     QPointF newReticlePosPx = ReticleAimpointCalculator::calculateReticleImagePositionPx(
         data.zeroingAzimuthOffset,        // Zeroing correction
         data.zeroingElevationOffset,      // Zeroing correction
         data.zeroingAppliedToBallistics,  // Apply zeroing?
-        0.0f,                             // ← NO LEAD ANGLE for reticle!
-        0.0f,                             // ← NO LEAD ANGLE for reticle!
-        false,                            // ← LAC not applied to reticle
-        LeadAngleStatus::Off,             // ← Status irrelevant for reticle
+        data.ballisticDropOffsetAz,       // ← AUTO ballistic drop (wind deflection)
+        data.ballisticDropOffsetEl,       // ← AUTO ballistic drop (gravity compensation)
+        data.ballisticDropActive,         // ← Active when LRF range valid
+        LeadAngleStatus::On,              // ← Force apply when active (ignore status checks)
         activeHfov,
         data.currentImageWidthPx,
         data.currentImageHeightPx
     );
 
     // ========================================================================
-    // CALCULATION 2: CCIP Position (Zeroing + Lead)
+    // CALCULATION 2: CCIP Position (Zeroing + Ballistic Drop + Motion Lead)
     // ========================================================================
-    // CCIP pipper shows bullet impact point with full ballistic compensation
-    // Includes BOTH zeroing AND lead angle
-    // Only visible when LAC is active
+    // CCIP pipper shows bullet impact point with FULL ballistic compensation:
+    // 1. Ballistic drop (gravity + wind) - auto when range valid
+    // 2. Motion lead (target velocity) - only when LAC active
+    // Professional FCS: CCIP = where bullet will actually hit
     // ========================================================================
+    // Combine ballistic drop + motion lead for total CCIP offset
+    float ccipTotalAz = data.ballisticDropOffsetAz + data.motionLeadOffsetAz;
+    float ccipTotalEl = data.ballisticDropOffsetEl + data.motionLeadOffsetEl;
+    bool ccipActive = data.ballisticDropActive || data.leadAngleCompensationActive;
+
     QPointF newCcipPosPx = ReticleAimpointCalculator::calculateReticleImagePositionPx(
         data.zeroingAzimuthOffset,        // Zeroing correction
         data.zeroingElevationOffset,      // Zeroing correction
         data.zeroingAppliedToBallistics,  // Apply zeroing?
-        data.leadAngleOffsetAz,           // ← WITH lead angle!
-        data.leadAngleOffsetEl,           // ← WITH lead angle!
-        data.leadAngleCompensationActive, // ← LAC applied to CCIP
-        data.currentLeadAngleStatus,      // ← Status matters for CCIP
+        ccipTotalAz,                      // ← Ballistic drop + motion lead combined
+        ccipTotalEl,                      // ← Ballistic drop + motion lead combined
+        ccipActive,                       // ← Active when drop OR motion lead active
+        data.currentLeadAngleStatus,      // ← Status for motion lead component
         activeHfov,
         data.currentImageWidthPx,
         data.currentImageHeightPx
