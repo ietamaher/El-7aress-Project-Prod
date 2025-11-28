@@ -130,8 +130,28 @@ void SystemStateModel::updateData(const SystemStateData &newState) {
         bool gimbalChanged = !qFuzzyCompare(m_currentStateData.gimbalAz, newState.gimbalAz) ||
                              !qFuzzyCompare(m_currentStateData.gimbalEl, newState.gimbalEl);
 
+        // ========================================================================
+        // CRITICAL: Detect ballistic drop offset changes (from WeaponController)
+        // ========================================================================
+        // When gimbal moves, WeaponController recalculates crosswind and ballistic drop.
+        // We MUST recalculate reticle position to reflect the new drop offsets!
+        // This fixes the bug where reticle only updates on camera switch.
+        // ========================================================================
+        bool ballisticOffsetsChanged =
+            !qFuzzyCompare(m_currentStateData.ballisticDropOffsetAz, newState.ballisticDropOffsetAz) ||
+            !qFuzzyCompare(m_currentStateData.ballisticDropOffsetEl, newState.ballisticDropOffsetEl) ||
+            (m_currentStateData.ballisticDropActive != newState.ballisticDropActive) ||
+            !qFuzzyCompare(m_currentStateData.motionLeadOffsetAz, newState.motionLeadOffsetAz) ||
+            !qFuzzyCompare(m_currentStateData.motionLeadOffsetEl, newState.motionLeadOffsetEl);
+
         m_currentStateData = newState;
         processStateTransitions(oldData, m_currentStateData);
+
+        // Recalculate reticle position if ballistic offsets changed
+        if (ballisticOffsetsChanged) {
+            recalculateDerivedAimpointData();
+        }
+
         emit dataChanged(m_currentStateData);
 
         // Emit gimbal position change if it occurred
