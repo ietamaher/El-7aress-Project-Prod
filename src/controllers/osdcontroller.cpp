@@ -689,6 +689,6 @@ void OsdController::hideErrorMessage()
 {
     if (!m_viewModel) return;
 
-    qDebug() << "[OsdController] Hiding error message";
+   // qDebug() << "[OsdController] Hiding error message";
     m_viewModel->updateErrorMessage("", false);
 }

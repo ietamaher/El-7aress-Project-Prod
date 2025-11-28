@@ -167,10 +167,29 @@ void SystemStateModel::setReticleStyle(const ReticleType &type)
     emit reticleStyleChanged(type);
 }
 
-void SystemStateModel::setDeadManSwitch(bool pressed) { if(m_currentStateData.deadManSwitchActive != pressed) { m_currentStateData.deadManSwitchActive = pressed; emit dataChanged(m_currentStateData); } }
-void SystemStateModel::setDownTrack(bool pressed) { if(m_currentStateData.downTrack != pressed) { m_currentStateData.downTrack = pressed; emit dataChanged(m_currentStateData); } }
+void SystemStateModel::setDeadManSwitch(bool pressed) {
+    if(m_currentStateData.deadManSwitchActive != pressed) {
+        m_currentStateData.deadManSwitchActive = pressed;
+        emit dataChanged(m_currentStateData);
+    }
+}
+
+void SystemStateModel::setDownTrack(bool pressed) {
+    if(m_currentStateData.downTrack != pressed) {
+        m_currentStateData.downTrack = pressed;
+        emit dataChanged(m_currentStateData);
+    }
+}
+
 void SystemStateModel::setDownSw(bool pressed) { if(m_currentStateData.menuDown != pressed) { m_currentStateData.menuDown = pressed; emit dataChanged(m_currentStateData); } }
-void SystemStateModel::setUpTrack(bool pressed) { if(m_currentStateData.upTrack != pressed) { m_currentStateData.upTrack = pressed; emit dataChanged(m_currentStateData); } }
+
+void SystemStateModel::setUpTrack(bool pressed) {
+    if(m_currentStateData.upTrack != pressed) {
+        m_currentStateData.upTrack = pressed;
+        emit dataChanged(m_currentStateData);
+    }
+}
+
 void SystemStateModel::setUpSw(bool pressed) { if(m_currentStateData.menuUp != pressed) { m_currentStateData.menuUp = pressed; emit dataChanged(m_currentStateData); } }
 
 void SystemStateModel::setActiveCameraIsDay(bool isDay) {
@@ -186,6 +205,8 @@ void SystemStateModel::setActiveCameraIsDay(bool isDay) {
                  << "- Recalculating reticle for new camera FOV";
         recalculateDerivedAimpointData();  // ← FIX: Trigger reticle recalc on camera switch
         emit dataChanged(m_currentStateData);
+        // ✅ LATENCY FIX: Dedicated signal for MainMenuController to reduce event queue load
+        emit activeCameraChanged(isDay);
     }
 }
 
@@ -203,6 +224,8 @@ void SystemStateModel::setDetectionEnabled(bool enabled)
         m_currentStateData.detectionEnabled = enabled;
         emit dataChanged(m_currentStateData);
         qInfo() << "SystemStateModel: Detection" << (enabled ? "ENABLED" : "DISABLED");
+        // ✅ LATENCY FIX: Dedicated signal for MainMenuController to reduce event queue load
+        emit detectionStateChanged(enabled);
     }
 }
 
@@ -733,8 +756,43 @@ void SystemStateModel::updateStationaryStatus(SystemStateData& data)
 
 void SystemStateModel::onJoystickAxisChanged(int axis, float normalizedValue)
 {
-    //START_TS_TIMER("SystemStateModel");
+ //START_TS_TIMER("SystemStateModel");
     SystemStateData newData = m_currentStateData;
+
+    const float CHANGE_THRESHOLD = 0.05f;
+     static int count = 0;
+    static auto lastLog = std::chrono::high_resolution_clock::now();
+       
+    float oldX = m_currentStateData.joystickAzValue;
+    float oldY = m_currentStateData.joystickElValue;
+    
+    // Update axis value
+    if (axis == 0) {
+        newData.joystickAzValue = normalizedValue;
+    } else if (axis == 1){
+        newData.joystickElValue = normalizedValue;
+    }
+    
+    // Check if change is significant
+    float deltaX = std::abs(newData.joystickAzValue - oldX);
+    float deltaY = std::abs(newData.joystickElValue - oldY);
+    
+    if (deltaX > CHANGE_THRESHOLD || deltaY > CHANGE_THRESHOLD) {
+        // ✅ Emit SPECIFIC signal for immediate motor response
+        updateData(newData);
+                if (++count % 100 == 0) {
+            auto now = std::chrono::high_resolution_clock::now();
+            auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - lastLog).count();
+            qDebug() << "🕹️ [Joystick] 100 emits in" << elapsed << "ms ="
+                     << (100000.0 / elapsed) << "Hz";
+            lastLog = now;
+        }
+    }
+ 
+
+
+    //START_TS_TIMER("SystemStateModel");
+  /*  SystemStateData newData = m_currentStateData;
 
     if (axis == 0){
         newData.joystickAzValue = normalizedValue;
@@ -742,7 +800,7 @@ void SystemStateModel::onJoystickAxisChanged(int axis, float normalizedValue)
         newData.joystickElValue = normalizedValue;
     }
 
-    updateData(newData);
+    updateData(newData);*/
     //LOG_TS_ELAPSED("SystemStateModel", "Processed model data");
 }
 
@@ -885,8 +943,22 @@ void SystemStateModel::onPlc21DataChanged(const Plc21PanelData &pData)
 
     // Auto-disable detection when switching to night camera
     if (!pData.switchCameraSW && m_currentStateData.activeCameraIsDay) {
+        bool wasDetectionEnabled = m_currentStateData.detectionEnabled;
         newData.detectionEnabled = false;
         qInfo() << "SystemStateModel: Night camera activated - Detection auto-disabled";
+        // ✅ LATENCY FIX: Emit signal only if detection was actually enabled
+        if (wasDetectionEnabled) {
+            emit detectionStateChanged(false);
+        }
+    }
+
+    // ✅ LATENCY FIX: Emit dedicated button signal ONLY when buttons actually change
+    // PLC21 polls at 20Hz, but buttons change maybe 1-2 times per second
+    // This prevents ApplicationController from processing 1,200 events/minute just for button monitoring
+    if (m_currentStateData.menuUp != newData.menuUp ||
+        m_currentStateData.menuDown != newData.menuDown ||
+        m_currentStateData.menuVal != newData.menuVal) {
+        emit buttonStateChanged(newData.menuUp, newData.menuDown, newData.menuVal);
     }
 
     updateData(newData);
@@ -978,6 +1050,8 @@ void SystemStateModel::startZeroingProcedure() {
         qDebug() << "Zeroing procedure started.";
         emit dataChanged(m_currentStateData);
         emit zeroingStateChanged(true, m_currentStateData.zeroingAzimuthOffset, m_currentStateData.zeroingElevationOffset);
+        // ✅ LATENCY FIX: Dedicated signal for ZeroingController to reduce event queue load
+        emit zeroingModeChanged(true);
     }
 }
 
@@ -1012,6 +1086,8 @@ void SystemStateModel::finalizeZeroing() {
                  << "El:" << m_currentStateData.zeroingElevationOffset;
         emit dataChanged(m_currentStateData);
         emit zeroingStateChanged(false, m_currentStateData.zeroingAzimuthOffset, m_currentStateData.zeroingElevationOffset);
+        // ✅ LATENCY FIX: Dedicated signal for ZeroingController to reduce event queue load
+        emit zeroingModeChanged(false);
     }
 }
 
@@ -1023,6 +1099,8 @@ void SystemStateModel::clearZeroing() { // Called on power down, or manually
     qDebug() << "Zeroing cleared.";
     emit dataChanged(m_currentStateData);
     emit zeroingStateChanged(false, 0.0f, 0.0f);
+    // ✅ LATENCY FIX: Dedicated signal for ZeroingController to reduce event queue load
+    emit zeroingModeChanged(false);
 }
 
 void SystemStateModel::startWindageProcedure() {
@@ -1033,9 +1111,11 @@ void SystemStateModel::startWindageProcedure() {
         // Note: We don't clear existing values here - they persist from previous session
         qDebug() << "Windage procedure started.";
         emit dataChanged(m_currentStateData);
-        emit windageStateChanged(true, 
+        emit windageStateChanged(true,
                                  m_currentStateData.windageSpeedKnots,
                                  m_currentStateData.windageDirectionDegrees);
+        // ✅ LATENCY FIX: Dedicated signal for WindageController to reduce event queue load
+        emit windageModeChanged(true);
     }
 }
 
@@ -1077,6 +1157,8 @@ void SystemStateModel::finalizeWindage() {
         emit windageStateChanged(false,
                                  m_currentStateData.windageSpeedKnots,
                                  m_currentStateData.windageDirectionDegrees);
+        // ✅ LATENCY FIX: Dedicated signal for WindageController to reduce event queue load
+        emit windageModeChanged(false);
     }
 }
 
@@ -1091,6 +1173,8 @@ void SystemStateModel::clearWindage() {
     qDebug() << "Windage cleared.";
     emit dataChanged(m_currentStateData);
     emit windageStateChanged(false, 0.0f, 0.0f);
+    // ✅ LATENCY FIX: Dedicated signal for WindageController to reduce event queue load
+    emit windageModeChanged(false);
 }
 
 // =================================
@@ -1102,6 +1186,8 @@ void SystemStateModel::startEnvironmentalProcedure() {
         m_currentStateData.environmentalModeActive = true;
         qDebug() << "Environmental procedure started.";
         emit dataChanged(m_currentStateData);
+        // ✅ LATENCY FIX: Dedicated signal for EnvironmentalController to reduce event queue load
+        emit environmentalModeChanged(true);
     }
 }
 
@@ -1131,6 +1217,8 @@ void SystemStateModel::finalizeEnvironmental() {
                  << "Applied:" << m_currentStateData.environmentalAppliedToBallistics
                  << "| NOTE: Crosswind calculated from windage, not environmental menu";
         emit dataChanged(m_currentStateData);
+        // ✅ LATENCY FIX: Dedicated signal for EnvironmentalController to reduce event queue load
+        emit environmentalModeChanged(false);
     }
 }
 
@@ -1144,6 +1232,8 @@ void SystemStateModel::clearEnvironmental() {
     qDebug() << "Environmental settings cleared (ISA standard atmosphere)."
              << "| NOTE: Use windage menu to set wind conditions";
     emit dataChanged(m_currentStateData);
+    // ✅ LATENCY FIX: Dedicated signal for EnvironmentalController to reduce event queue load
+    emit environmentalModeChanged(false);
 }
 
 void SystemStateModel::setLeadAngleCompensationActive(bool active) {
@@ -1291,15 +1381,24 @@ void SystemStateModel::recalculateDerivedAimpointData() {
 
 void SystemStateModel::updateCameraOpticsAndActivity(int width, int height, float dayHfov, float nightHfov, bool isDayActive) {
     bool changed = false;
+    bool cameraChanged = false;
     if (m_currentStateData.currentImageWidthPx != width)   { m_currentStateData.currentImageWidthPx = width; changed=true; }
     if (m_currentStateData.currentImageHeightPx != height) { m_currentStateData.currentImageHeightPx = height; changed=true; }
     if (!qFuzzyCompare(static_cast<float>(m_currentStateData.dayCurrentHFOV), dayHfov)) { m_currentStateData.dayCurrentHFOV = dayHfov; changed=true; }
     if (!qFuzzyCompare(static_cast<float>(m_currentStateData.nightCurrentHFOV), nightHfov)) { m_currentStateData.nightCurrentHFOV = nightHfov; changed=true; }
-    if (m_currentStateData.activeCameraIsDay != isDayActive) {m_currentStateData.activeCameraIsDay = isDayActive; changed=true;}
+    if (m_currentStateData.activeCameraIsDay != isDayActive) {
+        m_currentStateData.activeCameraIsDay = isDayActive;
+        changed=true;
+        cameraChanged=true;
+    }
 
     if(changed){
         recalculateDerivedAimpointData();
         emit dataChanged(m_currentStateData);
+        // ✅ LATENCY FIX: Emit dedicated signal only if camera actually changed
+        if (cameraChanged) {
+            emit activeCameraChanged(isDayActive);
+        }
     }
 }
 
@@ -1392,9 +1491,12 @@ bool SystemStateModel::isPointInNoTraverseZone(float targetAz, float currentEl) 
     return false;
 }
 void SystemStateModel::setPointInNoTraverseZone(bool inZone) {
-    // Similar to No Fire Zone, this can be used to track if the current azimuth is in a No Traverse Zone
-    m_currentStateData.isReticleInNoTraverseZone = inZone;
-    emit dataChanged(m_currentStateData);
+    // ✅ CRITICAL FIX: Only emit if value actually changed
+    // This prevents signal feedback loop that was causing event queue saturation
+    if (m_currentStateData.isReticleInNoTraverseZone != inZone) {
+        m_currentStateData.isReticleInNoTraverseZone = inZone;
+        emit dataChanged(m_currentStateData);
+    }
 }
 
 void SystemStateModel::updateCurrentScanName() {

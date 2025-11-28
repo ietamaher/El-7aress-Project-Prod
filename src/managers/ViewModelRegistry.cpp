@@ -11,7 +11,7 @@
 #include "models/zeroingviewmodel.h"
 #include "models/windageviewmodel.h"
 #include "models/environmentalviewmodel.h"
-#include "models/systemstatusviewmodel.h"
+// #include "models/systemstatusviewmodel.h"  // DISABLED
 #include "models/aboutviewmodel.h"
 
 #include <QQmlContext>
@@ -53,7 +53,7 @@ bool ViewModelRegistry::createViewModels()
         m_environmentalViewModel = new EnvironmentalViewModel(this);
 
         // System Info ViewModels
-        m_systemStatusViewModel = new SystemStatusViewModel(this);
+        // m_systemStatusViewModel = new SystemStatusViewModel(this);  // DISABLED
         m_aboutViewModel = new AboutViewModel(this);
 
         qInfo() << "  ✓ All ViewModels created";
@@ -96,7 +96,7 @@ bool ViewModelRegistry::registerWithQml(QQmlContext* context)
     context->setContextProperty("environmentalViewModel", m_environmentalViewModel);
 
     // System Info
-    context->setContextProperty("systemStatusViewModel", m_systemStatusViewModel);
+    // context->setContextProperty("systemStatusViewModel", m_systemStatusViewModel);  // DISABLED
     context->setContextProperty("aboutViewModel", m_aboutViewModel);
 
     qInfo() << "  ✓ All ViewModels registered with QML context";

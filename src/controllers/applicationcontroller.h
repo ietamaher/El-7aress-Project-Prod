@@ -12,7 +12,7 @@ class ZeroingController;
 class WindageController;
 class EnvironmentalController;
 class ZoneDefinitionController;
-class SystemStatusController;
+// class SystemStatusController;  // DISABLED
 class AboutController;
 class SystemStateModel;
 
@@ -37,7 +37,7 @@ public:
     void setWindageController(WindageController* controller);
     void setEnvironmentalController(EnvironmentalController* controller);
     void setZoneDefinitionController(ZoneDefinitionController* controller);
-    void setSystemStatusController(SystemStatusController* controller);
+    // void setSystemStatusController(SystemStatusController* controller);  // DISABLED
     void setAboutController(AboutController* controller);
     void setSystemStateModel(SystemStateModel* model);
 
@@ -54,7 +54,7 @@ public:
         WindageProcedure,
         EnvironmentalProcedure,
         ZoneDefinition,
-        SystemStatus,
+        // SystemStatus,  // DISABLED
         RadarTargets,
         HelpAbout
     };
@@ -77,7 +77,7 @@ private slots:
     void handleEnvironmental();
     void handleClearEnvironmental();
     void handleZoneDefinitions();
-    void handleSystemStatus();
+    // void handleSystemStatus();  // DISABLED
     void handleToggleDetection();
     void handleShutdown();
     void handleRadarTargetList();
@@ -91,14 +91,15 @@ private slots:
     void handleWindageFinished();
     void handleEnvironmentalFinished();
     void handleZoneDefinitionFinished();
-    void handleSystemStatusFinished();
+    // void handleSystemStatusFinished();  // DISABLED
     void handleAboutFinished();
 
     void handleReturnToMainMenu();
 
 private slots:
-    // Monitor button state changes from hardware
-    void onSystemStateChanged(const SystemStateData& newState);
+    // Monitor button state changes from PLC21 panel
+    // ✅ LATENCY FIX: Dedicated slot for button changes only (not 20Hz full state updates)
+    void onButtonStateChanged(bool menuUp, bool menuDown, bool menuVal);
 
 private:
     void setMenuState(MenuState state);
@@ -125,7 +126,7 @@ private:
     WindageController* m_windageController;
     EnvironmentalController* m_environmentalController;
     ZoneDefinitionController* m_zoneDefinitionController;
-    SystemStatusController* m_systemStatusController;
+    // SystemStatusController* m_systemStatusController;  // DISABLED
     AboutController* m_aboutController;
     SystemStateModel* m_systemStateModel;
 };

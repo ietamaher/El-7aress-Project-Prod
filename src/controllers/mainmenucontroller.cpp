@@ -24,10 +24,15 @@ void MainMenuController::initialize()
         connect(m_stateModel, &SystemStateModel::colorStyleChanged,
                 this, &MainMenuController::onColorStyleChanged);
 
-        // Listen for camera changes to update menu options dynamically
-        // ✅ LATENCY FIX: Queued connection prevents menu updates from blocking device I/O
-        connect(m_stateModel, &SystemStateModel::dataChanged,
-                this, &MainMenuController::onSystemStateChanged,
+        // ✅ LATENCY FIX: Use dedicated signals to reduce event queue load
+        // Only processes events when camera/detection actually changes (2-5 times per session)
+        // instead of 1,200 events/min from dataChanged signal
+        connect(m_stateModel, &SystemStateModel::activeCameraChanged,
+                this, &MainMenuController::onCameraChanged,
+                Qt::QueuedConnection);  // Non-blocking signal delivery
+
+        connect(m_stateModel, &SystemStateModel::detectionStateChanged,
+                this, &MainMenuController::onDetectionChanged,
                 Qt::QueuedConnection);  // Non-blocking signal delivery
 
         // Set initial color
@@ -63,7 +68,7 @@ QStringList MainMenuController::buildMainMenuOptions() const
             << "Clear Environmental Settings"
             << "--- SYSTEM ---"
             << "Zone Definitions"
-            << "System Status"
+            // << "System Status"  // DISABLED
             << detectionOption
             << "Shutdown System"
             << "--- INFO ---"
@@ -150,10 +155,10 @@ void MainMenuController::handleMenuOptionSelected(const QString& option)
         emit zoneDefinitionsRequested();
         // ❌ DON'T emit menuFinished() - zone definition is a procedure
     }
-    else if (option == "System Status") {
-        emit systemStatusRequested();
-       // emit menuFinished();
-    }
+    // else if (option == "System Status") {  // DISABLED
+    //     emit systemStatusRequested();  // DISABLED
+    //    // emit menuFinished();  // DISABLED
+    // }  // DISABLED
     else if (option.startsWith("Detection")) {
         if (option.contains("Unavailable")) {
             qDebug() << "Detection unavailable - Night camera is active";
@@ -190,44 +195,44 @@ void MainMenuController::onColorStyleChanged(const QColor& color)
     m_viewModel->setAccentColor(color);
 }
 
-void MainMenuController::onSystemStateChanged(const SystemStateData& newData)
+void MainMenuController::onCameraChanged(bool isDayCamera)
 {
-    // Only update if menu is visible and camera changed
+    // Only update if menu is visible
     if (!m_viewModel->visible()) return;
 
-    // Check if camera type changed
-    if (newData.activeCameraIsDay != m_previousCameraIsDay) {
-        qDebug() << "MainMenuController: Camera changed while menu open - rebuilding options";
-        m_previousCameraIsDay = newData.activeCameraIsDay;
+    qDebug() << "MainMenuController: Camera changed while menu open - rebuilding options";
+    m_previousCameraIsDay = isDayCamera;
 
-        // Save current selection
-        int currentIndex = m_viewModel->currentIndex();
+    // Save current selection
+    int currentIndex = m_viewModel->currentIndex();
 
-        // Rebuild menu with updated options
-        QStringList menuOptions = buildMainMenuOptions();
-        m_viewModel->optionsModel()->setStringList(menuOptions);
+    // Rebuild menu with updated options
+    QStringList menuOptions = buildMainMenuOptions();
+    m_viewModel->optionsModel()->setStringList(menuOptions);
 
-        // Restore selection if still valid
-        if (currentIndex >= 0 && currentIndex < menuOptions.count()) {
-            m_viewModel->setCurrentIndex(currentIndex);
-        }
+    // Restore selection if still valid
+    if (currentIndex >= 0 && currentIndex < menuOptions.count()) {
+        m_viewModel->setCurrentIndex(currentIndex);
     }
+}
 
-    // Also update if detection state changes while day camera is active
-    if (newData.activeCameraIsDay && newData.detectionEnabled != m_previousDetectionEnabled) {
-        m_previousDetectionEnabled = newData.detectionEnabled;
+void MainMenuController::onDetectionChanged(bool enabled)
+{
+    // Only update if menu is visible
+    if (!m_viewModel->visible()) return;
 
-        // Save current selection
-        int currentIndex = m_viewModel->currentIndex();
+    m_previousDetectionEnabled = enabled;
 
-        // Rebuild menu with updated detection option
-        QStringList menuOptions = buildMainMenuOptions();
-        m_viewModel->optionsModel()->setStringList(menuOptions);
+    // Save current selection
+    int currentIndex = m_viewModel->currentIndex();
 
-        // Restore selection
-        if (currentIndex >= 0 && currentIndex < menuOptions.count()) {
-            m_viewModel->setCurrentIndex(currentIndex);
-        }
+    // Rebuild menu with updated detection option
+    QStringList menuOptions = buildMainMenuOptions();
+    m_viewModel->optionsModel()->setStringList(menuOptions);
+
+    // Restore selection
+    if (currentIndex >= 0 && currentIndex < menuOptions.count()) {
+        m_viewModel->setCurrentIndex(currentIndex);
     }
 }
 

@@ -14,7 +14,7 @@ class MenuViewModel;
 class ZeroingViewModel;
 class WindageViewModel;
 class EnvironmentalViewModel;
-class SystemStatusViewModel;
+// class SystemStatusViewModel;  // DISABLED
 class AboutViewModel;
 
 class QQmlContext;
@@ -77,7 +77,7 @@ public:
     EnvironmentalViewModel* environmentalViewModel() const { return m_environmentalViewModel; }
 
     // System Info ViewModels
-    SystemStatusViewModel* systemStatusViewModel() const { return m_systemStatusViewModel; }
+    // SystemStatusViewModel* systemStatusViewModel() const { return m_systemStatusViewModel; }  // DISABLED
     AboutViewModel* aboutViewModel() const { return m_aboutViewModel; }
 
 signals:
@@ -110,7 +110,7 @@ private:
     EnvironmentalViewModel* m_environmentalViewModel = nullptr;
 
     // System Info
-    SystemStatusViewModel* m_systemStatusViewModel = nullptr;
+    // SystemStatusViewModel* m_systemStatusViewModel = nullptr;  // DISABLED
     AboutViewModel* m_aboutViewModel = nullptr;
 };
 

@@ -42,7 +42,8 @@ void GimbalMotionModeBase::configureVelocityMode(ServoDriverDevice* driverInterf
 
 void GimbalMotionModeBase::writeVelocityCommand(ServoDriverDevice* driverInterface,
                                               double finalVelocity,
-                                              double scalingFactor)
+                                              double scalingFactor,
+                                              qint32& lastSpeedHz)
 {
     if (!driverInterface) return;
 
@@ -50,15 +51,21 @@ void GimbalMotionModeBase::writeVelocityCommand(ServoDriverDevice* driverInterfa
     // Use lround for proper rounding instead of truncation
     qint32 speedHz = static_cast<qint32>(std::lround(finalVelocity * scalingFactor));
 
-    // 2. Do bit-preserving conversion to two 16-bit registers using central helper
-    // This ensures correct handling of negative values (avoids implementation-defined behavior)
-    QVector<quint16> speedData = splitInt32ToRegs(speedHz);
-    driverInterface->writeData(AzdReg::OpSpeed, speedData);
+    // 2. ✅ CRITICAL FIX: Only write if speed actually changed!
+    // This prevents redundant Modbus writes (was 60 ops/sec, now 2-6 ops/sec)
+    if (speedHz != lastSpeedHz) {
+        // Do bit-preserving conversion to two 16-bit registers using central helper
+        QVector<quint16> speedData = splitInt32ToRegs(speedHz);
+        driverInterface->writeData(AzdReg::OpSpeed, speedData);
 
-    // 3. Trigger the speed update (preserve existing trigger sequence)
-    // From manual, trigger value -4 (FFFF FFFCh) updates the operating speed
-    QVector<quint16> triggerData = {0xFFFF, 0xFFFC};
-    driverInterface->writeData(AzdReg::OpTrigger, triggerData);
+        // 3. Trigger the speed update (preserve existing trigger sequence)
+        // From manual, trigger value -4 (FFFF FFFCh) updates the operating speed
+        QVector<quint16> triggerData = {0xFFFF, 0xFFFC};
+        driverInterface->writeData(AzdReg::OpTrigger, triggerData);
+
+        lastSpeedHz = speedHz;  // Update last command
+    }
+    // else: Speed unchanged, skip redundant Modbus write (latency fix!)
 }
 
 void GimbalMotionModeBase::updateGyroBias(const SystemStateData& systemState)
@@ -122,11 +129,12 @@ void GimbalMotionModeBase::sendStabilizedServoCommands(GimbalController* control
 
     // --- Step 4: Convert to servo steps and send commands (AZD-KD velocity mode) ---
     // Send velocity commands to AZD-KD drivers (Operation Type 16)
+    // Now with change detection to prevent redundant Modbus writes!
     if (auto azServo = controller->azimuthServo()) {
-        writeVelocityCommand(azServo, finalAzVelocity, AZ_STEPS_PER_DEGREE());
+        writeVelocityCommand(azServo, finalAzVelocity, AZ_STEPS_PER_DEGREE(), m_lastAzSpeedHz);
     }
     if (auto elServo = controller->elevationServo()) {
-        writeVelocityCommand(elServo, -finalElVelocity, EL_STEPS_PER_DEGREE());
+        writeVelocityCommand(elServo, -finalElVelocity, EL_STEPS_PER_DEGREE(), m_lastElSpeedHz);
     }
 }
 

@@ -235,8 +235,8 @@ void JoystickDevice::emitEventSignals(const SDL_Event& event)
     // Emit backward-compatible signals for QML/UI integration
     switch (event.type) {
         case SDL_JOYAXISMOTION:
-            emit axisMoved(event.jaxis.axis, 
-                          static_cast<float>(event.jaxis.value) / 32768.0f);
+            emit axisMoved(event.jaxis.axis,
+                          static_cast<float>(event.jaxis.value));
             break;
 
         case SDL_JOYBUTTONDOWN:

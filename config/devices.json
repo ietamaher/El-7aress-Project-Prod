@@ -70,7 +70,7 @@
     "comment": "3DM-GX3-25 MicroStrain AHRS - Serial Binary Protocol",
     "port": "/dev/ttyUSB2",
     "baudRate": 115200,
-    "samplingRateHz": 40,
+    "samplingRateHz": 25,
     "tiltWarningThreshold": 30.0
   },
   "lrf": {

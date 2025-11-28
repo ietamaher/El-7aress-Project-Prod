@@ -78,7 +78,7 @@ void JoystickController::onAxisChanged(int axis, float value)
         //qDebug() << "Joystick: El Axis =>" << velocityEl;
     }
         float velocityEl = -value * 10.0f; // maybe invert sign
-        qDebug() << "Joystick: El Axis =>" << velocityEl;
+        //qDebug() << "Joystick: El Axis =>" << velocityEl;
 }
 
 void JoystickController::onButtonChanged(int button, bool pressed)

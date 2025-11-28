@@ -89,13 +89,11 @@ GimbalController::GimbalController(ServoDriverDevice* azServo,
     setMotionMode(MotionMode::Idle);
 
     // Connect to system state changes
-    // ✅ CRITICAL FIX: Qt::QueuedConnection prevents blocking device updates
-    // Device I/O is already async (QModbus/QSerial internal threading)
-    // This prevents GimbalController processing from blocking SystemStateModel updates
+    // Direct connection (Qt::AutoConnection) - all components in main thread due to QModbus
+    // Previous Qt::QueuedConnection was causing event queue saturation and latency issues
     if (m_stateModel) {
         connect(m_stateModel, &SystemStateModel::dataChanged,
-                this, &GimbalController::onSystemStateChanged,
-                Qt::QueuedConnection);  // Non-blocking signal delivery
+                this, &GimbalController::onSystemStateChanged);
     }
 
     // Connect alarm signals
@@ -140,6 +138,35 @@ void GimbalController::shutdown()
 
 void GimbalController::update()
 {
+    // ✅ MEASURE UPDATE LOOP TIMING
+    static auto lastUpdateTime = std::chrono::high_resolution_clock::now();
+    static std::vector<long long> updateIntervals;
+    static int updateCount = 0;
+    
+    auto now = std::chrono::high_resolution_clock::now();
+    auto interval = std::chrono::duration_cast<std::chrono::microseconds>(now - lastUpdateTime).count();
+    
+    updateIntervals.push_back(interval);
+    if (updateIntervals.size() > 100) updateIntervals.erase(updateIntervals.begin());
+    
+    if (++updateCount % 50 == 0) {
+        long long minInterval = *std::min_element(updateIntervals.begin(), updateIntervals.end());
+        long long maxInterval = *std::max_element(updateIntervals.begin(), updateIntervals.end());
+        long long avgInterval = std::accumulate(updateIntervals.begin(), updateIntervals.end(), 0LL) / updateIntervals.size();
+        double jitter = (maxInterval - minInterval) / 1000.0;
+        
+        qDebug() << "🔄 [UPDATE LOOP] 50 cycles |"
+                 << "Target: 50.0ms |"
+                 << "Actual avg:" << (avgInterval / 1000.0) << "ms |"
+                 << "Min:" << (minInterval / 1000.0) << "ms |"
+                 << "Max:" << (maxInterval / 1000.0) << "ms |"
+                 << "Jitter:" << jitter << "ms"
+                 << (jitter > 10 ? "⚠️" : "✅");
+    }
+    
+    lastUpdateTime = now;
+
+
     if (!m_currentMode) {
         return;
     }
@@ -182,17 +209,17 @@ void GimbalController::onSystemStateChanged(const SystemStateData &newData)
 
     // PRIORITY 2: HOMING SEQUENCE
     // Only process if homing state or button changed
-    if (newData.homingState != m_oldState.homingState ||
+    /*if (newData.homingState != m_oldState.homingState ||
         newData.gotoHomePosition != m_oldState.gotoHomePosition) {
         processHomingSequence(newData);
-    }
+    }*/
 
     // If homing in progress, skip motion mode changes to avoid interference
-    if (newData.homingState == HomingState::InProgress ||
+    /*if (newData.homingState == HomingState::InProgress ||
         newData.homingState == HomingState::Requested) {
         m_oldState = newData;
         return;  // Exit - homing controls the gimbal exclusively
-    }
+    }*/
 
     // PRIORITY 3: FREE MODE MONITORING
     // Only process if free mode state changed
@@ -310,10 +337,9 @@ void GimbalController::setMotionMode(MotionMode newMode)
     case MotionMode::ManualTrack:
     {
         auto trackingMode = std::make_unique<TrackingMotionMode>();
-        // Connect with queued signal for thread-safe target updates
+        // Direct connection - motion mode runs in same thread as GimbalController
         connect(this, &GimbalController::trackingTargetUpdated,
-                trackingMode.get(), &TrackingMotionMode::onTargetPositionUpdated,
-                Qt::QueuedConnection);
+                trackingMode.get(), &TrackingMotionMode::onTargetPositionUpdated);
         m_currentMode = std::move(trackingMode);
         break;
     }

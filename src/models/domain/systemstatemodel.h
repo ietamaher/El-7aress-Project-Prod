@@ -608,6 +608,56 @@ signals:
      */
     void reticleStyleChanged(const ReticleType &type);
 
+    /**
+     * @brief Emitted when PLC21 button states change (menuUp, menuDown, menuVal).
+     * This signal is emitted ONLY when button states actually change, not on every 50ms update.
+     * Designed to reduce event queue congestion from 20Hz polling.
+     * @param menuUp Current state of the menu up button
+     * @param menuDown Current state of the menu down button
+     * @param menuVal Current state of the menu validation button
+     */
+    void buttonStateChanged(bool menuUp, bool menuDown, bool menuVal);
+
+    /**
+     * @brief Emitted when zeroing mode state changes.
+     * This signal is emitted ONLY when zeroingModeActive flag actually changes, not on every 50ms update.
+     * Designed to reduce event queue congestion for ZeroingController.
+     * @param active True if zeroing mode is now active, false otherwise
+     */
+    void zeroingModeChanged(bool active);
+
+    /**
+     * @brief Emitted when windage mode state changes.
+     * This signal is emitted ONLY when windageModeActive flag actually changes, not on every 50ms update.
+     * Designed to reduce event queue congestion for WindageController.
+     * @param active True if windage mode is now active, false otherwise
+     */
+    void windageModeChanged(bool active);
+
+    /**
+     * @brief Emitted when environmental mode state changes.
+     * This signal is emitted ONLY when environmentalModeActive flag actually changes, not on every 50ms update.
+     * Designed to reduce event queue congestion for EnvironmentalController.
+     * @param active True if environmental mode is now active, false otherwise
+     */
+    void environmentalModeChanged(bool active);
+
+    /**
+     * @brief Emitted when active camera type changes (day/night).
+     * This signal is emitted ONLY when activeCameraIsDay flag actually changes, not on every 50ms update.
+     * Designed to reduce event queue congestion for MainMenuController.
+     * @param isDayCamera True if day camera is now active, false for night camera
+     */
+    void activeCameraChanged(bool isDayCamera);
+
+    /**
+     * @brief Emitted when object detection state changes.
+     * This signal is emitted ONLY when detectionEnabled flag actually changes, not on every 50ms update.
+     * Designed to reduce event queue congestion for MainMenuController.
+     * @param enabled True if detection is now enabled, false otherwise
+     */
+    void detectionStateChanged(bool enabled);
+
     // =================================
     // ZONE MANAGEMENT SIGNALS
     // =================================

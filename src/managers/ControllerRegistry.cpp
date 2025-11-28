@@ -19,7 +19,7 @@
 #include "controllers/environmentalcontroller.h"
 #include "controllers/osdcontroller.h"
 #include "controllers/zonedefinitioncontroller.h"
-#include "controllers/systemstatuscontroller.h"
+// #include "controllers/systemstatuscontroller.h"  // DISABLED
 #include "controllers/aboutcontroller.h"
 
 // ViewModels
@@ -32,7 +32,7 @@
 #include "models/trpparameterviewmodel.h"
 #include "models/zeroingviewmodel.h"
 #include "models/windageviewmodel.h"
-#include "models/systemstatusviewmodel.h"
+// #include "models/systemstatusviewmodel.h"  // DISABLED
 #include "models/aboutviewmodel.h"
 
 // Domain Models
@@ -200,9 +200,9 @@ bool ControllerRegistry::createQmlControllers()
         m_zoneDefinitionController->setStateModel(m_systemStateModel);
 
         // System Status Controller
-        m_systemStatusController = new SystemStatusController();
-        m_systemStatusController->setViewModel(m_viewModelRegistry->systemStatusViewModel());
-        m_systemStatusController->setStateModel(m_systemStateModel);
+        // m_systemStatusController = new SystemStatusController();  // DISABLED
+        // m_systemStatusController->setViewModel(m_viewModelRegistry->systemStatusViewModel());  // DISABLED
+        // m_systemStatusController->setStateModel(m_systemStateModel);  // DISABLED
 
         // About Controller
         m_aboutController = new AboutController();
@@ -218,7 +218,7 @@ bool ControllerRegistry::createQmlControllers()
         m_appController->setWindageController(m_windageController);
         m_appController->setEnvironmentalController(m_environmentalController);
         m_appController->setZoneDefinitionController(m_zoneDefinitionController);
-        m_appController->setSystemStatusController(m_systemStatusController);
+        // m_appController->setSystemStatusController(m_systemStatusController);  // DISABLED
         m_appController->setAboutController(m_aboutController);
         m_appController->setSystemStateModel(m_systemStateModel);
 
@@ -250,7 +250,7 @@ bool ControllerRegistry::initializeControllers()
         m_windageController->initialize();
         m_environmentalController->initialize();
         m_zoneDefinitionController->initialize();
-        m_systemStatusController->initialize();
+        // m_systemStatusController->initialize();  // DISABLED
         m_aboutController->initialize();
 
         // Initialize ApplicationController LAST (it connects to all others)
