@@ -427,82 +427,123 @@ void WeaponController::updateFireControlSolution() {
     }
 
     // ========================================================================
-    // CHECK IF LAC (Lead Angle Compensation) IS ACTIVE
+    // PROFESSIONAL FCS: SPLIT BALLISTIC DROP AND MOTION LEAD
     // ========================================================================
-    // The following LAC calculations only run when LAC is enabled.
-    // Crosswind calculation above runs independently!
+    // Drop compensation:  Auto-applied when LRF range valid (like Kongsberg/Rafael)
+    // Motion lead:        Only when LAC toggle active
     // ========================================================================
-    if (!sData.leadAngleCompensationActive) {
-        // LAC is off, ensure model reflects zero offsets for reticle
-        if (sData.leadAngleOffsetAz != 0.0f ||
-            sData.leadAngleOffsetEl != 0.0f ||
-            sData.currentLeadAngleStatus != LeadAngleStatus::Off) {
-            m_stateModel->updateCalculatedLeadOffsets(0.0f, 0.0f, LeadAngleStatus::Off);
-        }
-        return; // No lead calculation needed, but crosswind was already calculated above!
+
+    if (!m_ballisticsProcessor) {
+        qCritical() << "[WeaponController] BallisticsComputer pointer is NULL!";
+        return;
     }
 
-    // Get necessary inputs for LAC (target range, angular rates, FOV, etc.)
+    // Get common inputs
     float targetRange = sData.currentTargetRange;
-    float targetAngRateAz = sData.currentTargetAngularRateAz;
-    float targetAngRateEl = sData.currentTargetAngularRateEl;
-    // ✅ FIXED (2025-11-14): Use correct FOV based on active camera
-    // Day: Sony FCB-EV7520A (2.3° - 63.7° variable zoom) - 1280×720 native → 1024×768 cropped
-    // Night: FLIR TAU 2 640×512 - NOT square! (Wide: 10.4°×8°, Narrow: 5.2°×4°)
     float currentHFOV = sData.activeCameraIsDay ? sData.dayCurrentHFOV : sData.nightCurrentHFOV;
     float currentVFOV = sData.activeCameraIsDay ? sData.dayCurrentVFOV : sData.nightCurrentVFOV;
-    float tofGuess = (targetRange > 0 && sData.muzzleVelocityMPS > 0) ? (targetRange / sData.muzzleVelocityMPS) : 0.0f; // Ensure muzzleVelocity is in SystemStateData
-
-    if (!m_ballisticsProcessor) { // If m_ballisticsProcessor is a pointer
-        qCritical() << "BallisticsComputer pointer is NULL!";
-        return; // Or handle error
-    }
 
     // ========================================================================
-    // UPDATE ENVIRONMENTAL CONDITIONS (if enabled)
-    // ========================================================================
-    // Apply real-time environmental data from sensors/user input
-    // NOTE: Crosswind is now calculated from windage (above), not from environmental menu
+    // STEP 1: UPDATE ENVIRONMENTAL CONDITIONS (affects both drop and lead)
     // ========================================================================
     if (sData.environmentalAppliedToBallistics) {
-        // Update ballistics processor with current environmental conditions
         m_ballisticsProcessor->setEnvironmentalConditions(
             sData.environmentalTemperatureCelsius,
             sData.environmentalAltitudeMeters,
-            currentCrosswind  // ✅ Use calculated crosswind from windage
+            currentCrosswind
         );
-
-        qDebug() << "[WeaponController] Environmental corrections ACTIVE:"
-                 << "Temp:" << sData.environmentalTemperatureCelsius << "°C"
-                 << "Alt:" << sData.environmentalAltitudeMeters << "m"
-                 << "Crosswind:" << currentCrosswind << "m/s (from windage)";
     } else {
-        // Set to standard conditions when environmental corrections are disabled
-        // But still apply windage if active (windage is independent of environmental menu)
         m_ballisticsProcessor->setEnvironmentalConditions(
-            15.0f,  // Standard temperature
-            0.0f,   // Sea level
-            currentCrosswind  // ✅ Apply windage-derived crosswind even if env corrections off
+            15.0f, 0.0f, currentCrosswind  // Standard + wind
         );
-
-        // Debug output commented to prevent app freeze (runs every frame)
-        /*if (sData.windageAppliedToBallistics && sData.windageSpeedKnots > 0.001f) {
-            qDebug() << "[WeaponController] Windage ACTIVE (env corrections OFF):"
-                     << "Crosswind:" << currentCrosswind << "m/s";
-        }*/
     }
 
-    LeadCalculationResult lead = m_ballisticsProcessor->calculateLeadAngle(
-        targetRange, targetAngRateAz, targetAngRateEl,
-        sData.muzzleVelocityMPS, // Pass actual muzzle velocity
-        tofGuess, currentHFOV, currentVFOV  // Pass both H and V FOV for non-square sensors
-        );
+    // ========================================================================
+    // STEP 2: BALLISTIC DROP - AUTO-APPLIED WHEN RANGE VALID (Professional FCS)
+    // ========================================================================
+    bool applyDrop = (targetRange > 0.1f);  // Valid range threshold
 
-    // Update the model with the calculated offsets (these are now for the reticle)
-    m_stateModel->updateCalculatedLeadOffsets(lead.leadAzimuthDegrees, lead.leadElevationDegrees, lead.status);
+    if (applyDrop) {
+        // Calculate ballistic drop (gravity + wind)
+        LeadCalculationResult drop = m_ballisticsProcessor->calculateBallisticDrop(targetRange);
 
-    // NO gimbal offset application here for "Reticle Offset" method.
-    // m_gimbalController->setAimpointOffsets(0,0); // Ensure gimbal is not offsetting.
+        // Update state with drop offsets
+        SystemStateData updatedData = sData;
+        updatedData.ballisticDropOffsetAz = drop.leadAzimuthDegrees;
+        updatedData.ballisticDropOffsetEl = drop.leadElevationDegrees;
+        updatedData.ballisticDropActive = true;
+        m_stateModel->updateData(updatedData);
+        sData = updatedData;  // Update local copy
+
+        qDebug() << "[WeaponController] 🎯 AUTO DROP APPLIED:"
+                 << "Range:" << targetRange << "m"
+                 << "| Drop Az:" << drop.leadAzimuthDegrees << "° (wind)"
+                 << "| Drop El:" << drop.leadElevationDegrees << "° (gravity)";
+    } else {
+        // Clear drop when no valid range
+        if (sData.ballisticDropActive) {
+            SystemStateData updatedData = sData;
+            updatedData.ballisticDropOffsetAz = 0.0f;
+            updatedData.ballisticDropOffsetEl = 0.0f;
+            updatedData.ballisticDropActive = false;
+            m_stateModel->updateData(updatedData);
+            sData = updatedData;
+
+            qDebug() << "[WeaponController] DROP CLEARED (no valid range)";
+        }
+    }
+
+    // ========================================================================
+    // STEP 3: MOTION LEAD - ONLY WHEN LAC TOGGLE ACTIVE (Professional FCS)
+    // ========================================================================
+    if (!sData.leadAngleCompensationActive) {
+        // LAC toggle is OFF - clear motion lead
+        if (sData.motionLeadOffsetAz != 0.0f || sData.motionLeadOffsetEl != 0.0f ||
+            sData.currentLeadAngleStatus != LeadAngleStatus::Off) {
+
+            SystemStateData updatedData = sData;
+            updatedData.motionLeadOffsetAz = 0.0f;
+            updatedData.motionLeadOffsetEl = 0.0f;
+            updatedData.currentLeadAngleStatus = LeadAngleStatus::Off;
+            // Update deprecated fields for backward compatibility
+            updatedData.leadAngleOffsetAz = 0.0f;
+            updatedData.leadAngleOffsetEl = 0.0f;
+            m_stateModel->updateData(updatedData);
+
+            qDebug() << "[WeaponController] MOTION LEAD CLEARED (LAC off)";
+        }
+        return;  // Exit - drop already applied above if range valid
+    }
+
+    // LAC is ACTIVE - calculate motion lead for moving target
+    float targetAngRateAz = sData.currentTargetAngularRateAz;
+    float targetAngRateEl = sData.currentTargetAngularRateEl;
+
+    LeadCalculationResult lead = m_ballisticsProcessor->calculateMotionLead(
+        targetRange,
+        targetAngRateAz,
+        targetAngRateEl,
+        currentHFOV,
+        currentVFOV
+    );
+
+    // Update state with motion lead
+    SystemStateData updatedData = sData;
+    updatedData.motionLeadOffsetAz = lead.leadAzimuthDegrees;
+    updatedData.motionLeadOffsetEl = lead.leadElevationDegrees;
+    updatedData.currentLeadAngleStatus = lead.status;
+    // Update deprecated fields for backward compatibility
+    updatedData.leadAngleOffsetAz = lead.leadAzimuthDegrees;
+    updatedData.leadAngleOffsetEl = lead.leadElevationDegrees;
+    m_stateModel->updateData(updatedData);
+
+    qDebug() << "[WeaponController] 🎯 MOTION LEAD:"
+             << "Az:" << lead.leadAzimuthDegrees << "°"
+             << "| El:" << lead.leadElevationDegrees << "°"
+             << "| Status:" << static_cast<int>(lead.status)
+             << (lead.status == LeadAngleStatus::On ? "(On)" :
+                 lead.status == LeadAngleStatus::Lag ? "(Lag)" :
+                 lead.status == LeadAngleStatus::ZoomOut ? "(ZoomOut)" : "(Unknown)");
 }
 
 // ============================================================================

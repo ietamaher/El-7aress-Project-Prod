@@ -184,3 +184,153 @@ LeadCalculationResult BallisticsProcessorLUT::calculateLeadAngle(
 
     return result;
 }
+
+// ============================================================================
+// PROFESSIONAL FCS METHODS - SPLIT DROP AND LEAD
+// ============================================================================
+
+LeadCalculationResult BallisticsProcessorLUT::calculateBallisticDrop(float targetRangeMeters)
+{
+    LeadCalculationResult result;
+    result.status = LeadAngleStatus::Off;
+    result.leadAzimuthDegrees = 0.0f;
+    result.leadElevationDegrees = 0.0f;
+
+    // Validate table loaded
+    if (!m_lut.isLoaded()) {
+        qWarning() << "[BallisticsProcessorLUT] calculateBallisticDrop: No ammunition table loaded!";
+        return result;
+    }
+
+    // Validate range
+    if (targetRangeMeters <= 0.1f) {
+        return result;
+    }
+
+    // Get ballistic solution from LUT with environmental corrections
+    BallisticSolution sol = m_lut.getSolution(
+        targetRangeMeters,
+        m_temperature_celsius,
+        m_altitude_m,
+        m_crosswind_ms
+    );
+
+    if (!sol.valid) {
+        qDebug() << "[BallisticsProcessorLUT] calculateBallisticDrop: Invalid solution for range:" << targetRangeMeters << "m";
+        return result;
+    }
+
+    // ========================================================================
+    // BALLISTIC DROP ONLY (no motion lead)
+    // ========================================================================
+    // ELEVATION: Gravity drop compensation from LUT
+    result.leadElevationDegrees = sol.elevation_deg;
+
+    // AZIMUTH: Wind deflection (convert mils to degrees)
+    result.leadAzimuthDegrees = sol.azimuth_correction_mils * 0.05625f;  // 1 mil = 0.05625°
+
+    result.status = LeadAngleStatus::On;  // Always ON for valid range
+
+    qDebug() << "[BallisticsProcessorLUT] 🎯 DROP:" << targetRangeMeters << "m"
+             << "| Elev:" << result.leadElevationDegrees << "°"
+             << "| Wind Az:" << result.leadAzimuthDegrees << "°"
+             << "| Temp:" << m_temperature_celsius << "°C"
+             << "| Alt:" << m_altitude_m << "m"
+             << "| Crosswind:" << m_crosswind_ms << "m/s";
+
+    return result;
+}
+
+LeadCalculationResult BallisticsProcessorLUT::calculateMotionLead(
+    float targetRangeMeters,
+    float targetAngularRateAzDegS,
+    float targetAngularRateElDegS,
+    float currentCameraFovHorizontalDegrees,
+    float currentCameraFovVerticalDegrees)
+{
+    LeadCalculationResult result;
+    result.status = LeadAngleStatus::Off;
+    result.leadAzimuthDegrees = 0.0f;
+    result.leadElevationDegrees = 0.0f;
+
+    // Validate table loaded and range
+    if (!m_lut.isLoaded()) {
+        qWarning() << "[BallisticsProcessorLUT] calculateMotionLead: No ammunition table loaded!";
+        return result;
+    }
+
+    if (targetRangeMeters <= 0.1f) {
+        return result;
+    }
+
+    // Get TOF from LUT (environmental conditions already set)
+    BallisticSolution sol = m_lut.getSolution(
+        targetRangeMeters,
+        m_temperature_celsius,
+        m_altitude_m,
+        m_crosswind_ms
+    );
+
+    if (!sol.valid) {
+        qDebug() << "[BallisticsProcessorLUT] calculateMotionLead: Invalid solution for range:" << targetRangeMeters << "m";
+        return result;
+    }
+
+    // ========================================================================
+    // MOTION LEAD ONLY (no ballistic drop)
+    // ========================================================================
+    // Calculate motion lead based on target angular rates and bullet TOF
+    // Lead_angle = angular_rate × time_of_flight
+    // ========================================================================
+
+    float tof_s = sol.tof_s;
+
+    // Calculate motion lead (target movement during bullet flight)
+    float motionLeadAzDeg = targetAngularRateAzDegS * tof_s;
+    float motionLeadElDeg = targetAngularRateElDegS * tof_s;
+
+    result.leadAzimuthDegrees = motionLeadAzDeg;
+    result.leadElevationDegrees = motionLeadElDeg;
+
+    // ========================================================================
+    // Apply limits and determine status
+    // ========================================================================
+
+    bool lag = false;
+    if (std::abs(result.leadAzimuthDegrees) > MAX_LEAD_ANGLE_DEGREES) {
+        result.leadAzimuthDegrees = std::copysign(MAX_LEAD_ANGLE_DEGREES, result.leadAzimuthDegrees);
+        lag = true;
+    }
+    if (std::abs(result.leadElevationDegrees) > MAX_LEAD_ANGLE_DEGREES) {
+        result.leadElevationDegrees = std::copysign(MAX_LEAD_ANGLE_DEGREES, result.leadElevationDegrees);
+        lag = true;
+    }
+
+    // Status determination: ZOOM OUT takes priority over LAG
+    result.status = LeadAngleStatus::On;
+
+    // Check ZOOM OUT condition (lead exceeds FOV)
+    if (currentCameraFovHorizontalDegrees > 0 && currentCameraFovVerticalDegrees > 0) {
+        if (std::abs(result.leadAzimuthDegrees) > (currentCameraFovHorizontalDegrees / 2.0f) ||
+            std::abs(result.leadElevationDegrees) > (currentCameraFovVerticalDegrees / 2.0f)) {
+            result.status = LeadAngleStatus::ZoomOut;
+        }
+    }
+
+    // Check LAG condition (only if not already ZoomOut)
+    if (result.status != LeadAngleStatus::ZoomOut && lag) {
+        result.status = LeadAngleStatus::Lag;
+    }
+
+    qDebug() << "[BallisticsProcessorLUT] 🎯 LEAD:" << targetRangeMeters << "m"
+             << "| TOF:" << tof_s << "s"
+             << "| Target Rate: Az=" << targetAngularRateAzDegS << "°/s El=" << targetAngularRateElDegS << "°/s"
+             << "| Motion Lead: Az=" << result.leadAzimuthDegrees << "° El=" << result.leadElevationDegrees << "°"
+             << "| FOV:" << currentCameraFovHorizontalDegrees << "×" << currentCameraFovVerticalDegrees << "°"
+             << "| Status:" << static_cast<int>(result.status)
+             << (result.status == LeadAngleStatus::On ? "(On)" :
+                 result.status == LeadAngleStatus::Lag ? "(Lag)" :
+                 result.status == LeadAngleStatus::ZoomOut ? "(ZoomOut)" : "(Unknown)");
+
+    return result;
+}

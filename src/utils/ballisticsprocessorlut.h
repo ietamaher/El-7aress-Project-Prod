@@ -38,10 +38,42 @@ public:
     bool loadAmmunitionTable(const QString& filepath);
 
     /**
-     * @brief Calculate lead angle (drop-in replacement for old processor)
+     * @brief Calculate BALLISTIC DROP only (gravity + wind) - PROFESSIONAL FCS
+     *
+     * This method calculates drop compensation for a STATIONARY target.
+     * Applied automatically when valid LRF range exists (professional military FCS behavior).
+     *
+     * @param targetRangeMeters Target range from laser rangefinder
+     * @return LeadCalculationResult with drop offsets (elevation + wind azimuth)
+     */
+    LeadCalculationResult calculateBallisticDrop(float targetRangeMeters);
+
+    /**
+     * @brief Calculate MOTION LEAD only (moving target) - PROFESSIONAL FCS
+     *
+     * This method calculates lead angle for a MOVING target.
+     * Applied only when LAC toggle is active and tracking locked.
+     *
+     * @param targetRangeMeters Target range from LRF (for TOF calculation)
+     * @param targetAngularRateAzDegS Target angular rate azimuth (deg/s)
+     * @param targetAngularRateElDegS Target angular rate elevation (deg/s)
+     * @param currentCameraFovHorizontalDegrees Camera HFOV for ZOOM check
+     * @param currentCameraFovVerticalDegrees Camera VFOV for ZOOM check
+     * @return LeadCalculationResult with motion lead only
+     */
+    LeadCalculationResult calculateMotionLead(
+        float targetRangeMeters,
+        float targetAngularRateAzDegS,
+        float targetAngularRateElDegS,
+        float currentCameraFovHorizontalDegrees,
+        float currentCameraFovVerticalDegrees
+    );
+
+    /**
+     * @brief Calculate lead angle (DEPRECATED - backward compatibility)
      *
      * This method maintains API compatibility with the old BallisticsProcessor
-     * but uses LUT instead of equations internally.
+     * but now calls the split methods internally (drop + lead combined).
      *
      * @param targetRangeMeters Target range from laser rangefinder
      * @param targetAngularRateAzDegS Target angular rate in azimuth (deg/s)
@@ -50,7 +82,7 @@ public:
      * @param projectileTimeOfFlightGuessS Initial TOF guess - IGNORED for LUT
      * @param currentCameraFovHorizontalDegrees Current horizontal FOV for ZOOM_OUT check
      * @param currentCameraFovVerticalDegrees Current vertical FOV for ZOOM_OUT check
-     * @return LeadCalculationResult with lead angles and status
+     * @return LeadCalculationResult with combined drop + lead angles
      */
     LeadCalculationResult calculateLeadAngle(
         float targetRangeMeters,

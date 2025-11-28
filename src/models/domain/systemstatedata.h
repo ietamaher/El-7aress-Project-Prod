@@ -591,11 +591,20 @@ struct SystemStateData {
     float environmentalAltitudeMeters = 0.0f;      ///< Altitude above sea level in meters
     bool environmentalAppliedToBallistics = false; ///< Whether environmental settings are applied    
     // Lead Angle Compensation
-    bool leadAngleCompensationActive = false;           ///< Lead angle compensation active status
+    bool leadAngleCompensationActive = false;           ///< Lead angle compensation active status (NOW controls motion lead ONLY)
     LeadAngleStatus currentLeadAngleStatus = LeadAngleStatus::Off; ///< Current lead angle system status
-    float leadAngleOffsetAz = 0.0f;                     ///< Lead angle azimuth offset in degrees
-    float leadAngleOffsetEl = 0.0f;                     ///< Lead angle elevation offset in degrees
-    
+    float leadAngleOffsetAz = 0.0f;                     ///< DEPRECATED - use motionLeadOffsetAz (kept for backward compat)
+    float leadAngleOffsetEl = 0.0f;                     ///< DEPRECATED - use motionLeadOffsetEl (kept for backward compat)
+
+    // Ballistic Drop Compensation (Professional FCS - Auto when LRF valid)
+    float ballisticDropOffsetAz = 0.0f;                 ///< Auto ballistic drop azimuth offset (wind deflection) in degrees
+    float ballisticDropOffsetEl = 0.0f;                 ///< Auto ballistic drop elevation offset (gravity compensation) in degrees
+    bool ballisticDropActive = false;                   ///< Auto-applied when valid LRF range exists
+
+    // Motion Lead Compensation (Only when LAC toggle active)
+    float motionLeadOffsetAz = 0.0f;                    ///< Moving target lead azimuth offset in degrees
+    float motionLeadOffsetEl = 0.0f;                    ///< Moving target lead elevation offset in degrees
+
     // Target Parameters for Ballistics
     float currentTargetRange = 2000.0f;                 ///< Current target range in meters
     float currentTargetAngularRateAz = 0.0f;            ///< Target angular rate in azimuth (degrees/second)
@@ -874,6 +883,11 @@ struct SystemStateData {
                currentLeadAngleStatus == other.currentLeadAngleStatus &&
                qFuzzyCompare(leadAngleOffsetAz, other.leadAngleOffsetAz) &&
                qFuzzyCompare(leadAngleOffsetEl, other.leadAngleOffsetEl) &&
+               qFuzzyCompare(ballisticDropOffsetAz, other.ballisticDropOffsetAz) &&
+               qFuzzyCompare(ballisticDropOffsetEl, other.ballisticDropOffsetEl) &&
+               ballisticDropActive == other.ballisticDropActive &&
+               qFuzzyCompare(motionLeadOffsetAz, other.motionLeadOffsetAz) &&
+               qFuzzyCompare(motionLeadOffsetEl, other.motionLeadOffsetEl) &&
                qFuzzyCompare(currentTargetRange, other.currentTargetRange) &&
                qFuzzyCompare(currentTargetAngularRateAz, other.currentTargetAngularRateAz) &&
                qFuzzyCompare(currentTargetAngularRateEl, other.currentTargetAngularRateEl) &&
