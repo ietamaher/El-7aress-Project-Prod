@@ -49,7 +49,9 @@ QPointF calculateAngularOffsetFromPixelError(
     // Calculate azimuth offset
     if (cameraHfovDegrees > 0.01f && imageWidthPx > 0) {
         double degreesPerPixelAz = cameraHfovDegrees / static_cast<double>(imageWidthPx);
-        angularOffsetXDeg = errorPxX * degreesPerPixelAz;
+        // ✅ CRITICAL FIX: Negate X to match gimbal coordinate system
+        // Target LEFT of center (errorPxX < 0) → Need POSITIVE azimuth (move left in gimbal coords)
+        angularOffsetXDeg = -errorPxX * degreesPerPixelAz;
     }
 
     // Calculate elevation offset

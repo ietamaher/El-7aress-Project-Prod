@@ -152,30 +152,35 @@ void TrackingMotionMode::update(GimbalController* controller)
     m_smoothedElVel_dps = alphaVel * m_targetElVel_dps + (1.0 - alphaVel) * m_smoothedElVel_dps;
 
     // ========================================================================
-    // CRITICAL FIX: Apply Lead Angle to Gimbal Aim Point
+    // PROFESSIONAL FCS: Apply Ballistic Corrections to Gimbal Aim Point
     // ========================================================================
     // The tracker provides VISUAL target position (where target IS).
-    // For moving targets, we must aim AHEAD (where target WILL BE).
-    // Lead angle compensates for:
-    //   - Bullet time-of-flight
-    //   - Target motion during flight
-    //   - Gravity drop
+    // For accurate fire control, we apply corrections in order:
+    //   1. BALLISTIC DROP (auto when range valid) - gravity + wind
+    //   2. MOTION LEAD (when LAC active) - moving target compensation
     //
-    // This is the ONLY correct approach for mechanically coupled camera/gun:
+    // This is the professional approach (Kongsberg/Rafael standard):
     // The gimbal physically aims at the IMPACT POINT, not the visual target.
     // ========================================================================
 
     double aimPointAz = m_smoothedTargetAz;
     double aimPointEl = m_smoothedTargetEl;
 
-    if (data.leadAngleCompensationActive && data.currentLeadAngleStatus == LeadAngleStatus::On) {
-        // Add lead angle offsets to aim AHEAD of visual target
-        aimPointAz += static_cast<double>(data.leadAngleOffsetAz);
-        aimPointEl += static_cast<double>(data.leadAngleOffsetEl);
+    // STEP 1: Apply ballistic drop (auto when LRF range valid)
+    if (data.ballisticDropActive) {
+        aimPointAz += static_cast<double>(data.ballisticDropOffsetAz);
+        aimPointEl += static_cast<double>(data.ballisticDropOffsetEl);
+    }
 
-        /*qDebug() << "[TrackingMotionMode] AUTO-LEAD: Visual Target("
+    // STEP 2: Apply motion lead (only when LAC toggle active)
+    if (data.leadAngleCompensationActive && data.currentLeadAngleStatus == LeadAngleStatus::On) {
+        aimPointAz += static_cast<double>(data.motionLeadOffsetAz);
+        aimPointEl += static_cast<double>(data.motionLeadOffsetEl);
+
+        /*qDebug() << "[TrackingMotionMode] FULL FCS: Visual Target("
                  << m_smoothedTargetAz << "," << m_smoothedTargetEl
-                 << ") + Lead(" << data.leadAngleOffsetAz << "," << data.leadAngleOffsetEl
+                 << ") + Drop(" << data.ballisticDropOffsetAz << "," << data.ballisticDropOffsetEl
+                 << ") + Lead(" << data.motionLeadOffsetAz << "," << data.motionLeadOffsetEl
                  << ") = Aim Point(" << aimPointAz << "," << aimPointEl << ")";*/
     }
 
