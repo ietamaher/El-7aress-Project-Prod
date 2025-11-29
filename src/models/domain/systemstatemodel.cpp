@@ -807,44 +807,24 @@ void SystemStateModel::onJoystickAxisChanged(int axis, float normalizedValue)
                      << (100000.0 / elapsed) << "Hz";
             lastLog = now;
         }
-    }
- 
-
-
-    //START_TS_TIMER("SystemStateModel");
-  /*  SystemStateData newData = m_currentStateData;
-
-    if (axis == 0){
-        newData.joystickAzValue = normalizedValue;
-    } else if (axis == 1){
-        newData.joystickElValue = normalizedValue;
-    }
-
-    updateData(newData);*/
-    //LOG_TS_ELAPSED("SystemStateModel", "Processed model data");
+    } 
 }
 
 void SystemStateModel::onJoystickButtonChanged(int button, bool pressed)
 {
-    //START_TS_TIMER("SystemStateModel");
     SystemStateData newData = m_currentStateData;
-
     updateData(newData);
-    //LOG_TS_ELAPSED("SystemStateModel", "Processed model data");
 }
 
 void SystemStateModel::onJoystickHatChanged(int hat, int direction)
 {
-    //START_TS_TIMER("SystemStateModel");
     SystemStateData newData = m_currentStateData;
 
     if (hat == 0) {
         newData.joystickHatDirection = direction; // Assuming direction is an int representing the hat state
     }
 
-
     updateData(newData);
-    //LOG_TS_ELAPSED("SystemStateModel", "Processed model data");
 }
 
 void SystemStateModel::onJoystickDataChanged(std::shared_ptr<const JoystickData> joyData)
@@ -1893,68 +1873,6 @@ void SystemStateModel::enterEmergencyStopMode() {
     emit dataChanged(m_currentStateData);
 }
 
-/*void SystemStateModel::updateTrackedTargetInfo(int cameraIndex, bool isValid, float centerX_px, float centerY_px,
-                                 float width_px, float height_px,
-                                 float velocityX_px_s, float velocityY_px_s,
-                                 VPITrackingState state)
-{
-    // Check which camera is supposed to be active (e.g., 0 for Day, 1 for Night)
-    int activeCameraIndex = m_currentStateData.activeCameraIsDay ? 0 : 1;
-
-    // If the update is coming from an INACTIVE camera, simply ignore it.
-    if (cameraIndex != activeCameraIndex) {
-        return; // Do nothing.
-    }
-
-    // --- If we get here, the update is from the ACTIVE camera. Proceed as before. ---
-
-    SystemStateData& data = m_currentStateData; // Get a reference to modify
-    bool changed = false;
-
-    if (data.trackerHasValidTarget != isValid) {
-        data.trackerHasValidTarget = isValid;
-        changed = true;
-    }
-    if (!qFuzzyCompare(data.trackedTargetCenterX_px, centerX_px)) {
-        data.trackedTargetCenterX_px = centerX_px;
-        changed = true;
-    }
-    if (!qFuzzyCompare(data.trackedTargetCenterY_px, centerY_px)) {
-        data.trackedTargetCenterY_px = centerY_px;
-        changed = true;
-    }
-    if (!qFuzzyCompare(data.trackedTargetWidth_px, width_px)) {
-        data.trackedTargetWidth_px = width_px;
-        changed = true;
-    }
-    if (!qFuzzyCompare(data.trackedTargetHeight_px, height_px)) {
-        data.trackedTargetHeight_px = height_px;
-        changed = true;
-    }
-    if (!qFuzzyCompare(data.trackedTargetVelocityX_px_s, velocityX_px_s)) {
-        data.trackedTargetVelocityX_px_s = velocityX_px_s;
-        changed = true;
-    }
-    if (!qFuzzyCompare(data.trackedTargetVelocityY_px_s, velocityY_px_s)) {
-        data.trackedTargetVelocityY_px_s = velocityY_px_s;
-        changed = true;
-    }
-
-    if (data.trackedTargetState != state) {
-        data.trackedTargetState = state;
-        changed = true;
-    }
-
-    if (changed) {
-        //qDebug() << "SystemStateModel: Tracked target info updated - Valid:" << isValid
-        //         << "CenterPx: (" << centerX_px << "," << centerY_px << ") State:" << static_cast<int>(state);
-        emit dataChanged(m_currentStateData); // Emit the signal with the entire updated state
-    }
-}*/
-
-// systemstatemodel.cpp
-
-// Rename/replace updateTrackedTargetInfo with this one.
 void SystemStateModel::updateTrackingResult(
     int cameraIndex,
     bool hasLock, // This parameter might become less relevant as we use VPITrackingState directly
@@ -2108,38 +2026,6 @@ void SystemStateModel::updateTrackingResult(
     }
 }
 
-// Dummy method to simulate external state changes for testing
-/*void SystemStateModel::simulateTrackingPhaseChange(TrackingPhase newPhase, int cameraIndex, float acqX, float acqY, float acqW, float acqH)
-{
-    QMutexLocker locker(&m_mutex);
-    m_currentStateData.currentTrackingPhase = newPhase;
-    m_currentStateData.activeCameraIsDay = (cameraIndex == 0); // Set active camera for simulation
-
-    // Update acquisition box if provided
-    if (acqW > 0 && acqH > 0) {
-        m_currentStateData.acquisitionBoxX_px = acqX;
-        m_currentStateData.acquisitionBoxY_px = acqY;
-        m_currentStateData.acquisitionBoxW_px = acqW;
-        m_currentStateData.acquisitionBoxH_px = acqH;
-    }
-
-    // Adjust opMode and motionMode based on newPhase for simulation clarity
-    if (newPhase == TrackingPhase::Off) {
-        m_currentStateData.opMode = OperationalMode::Idle;
-        m_currentStateData.motionMode = MotionMode::Manual;
-    } else if (newPhase == TrackingPhase::Acquisition) {
-        m_currentStateData.opMode = OperationalMode::Surveillance;
-        m_currentStateData.motionMode = MotionMode::Manual;
-    } else if (newPhase == TrackingPhase::Tracking_LockPending || newPhase == TrackingPhase::Tracking_ActiveLock || newPhase == TrackingPhase::Tracking_Coast || newPhase == TrackingPhase::Tracking_Firing) {
-        m_currentStateData.opMode = OperationalMode::Tracking;
-        // MotionMode will be set by updateTrackingResult or specific logic for Firing
-    }
-
-    qDebug() << "[MODEL-SIMULATE] Phase changed to:" << static_cast<int>(newPhase) << "for camera:" << cameraIndex;
-    emit dataChanged(m_currentStateData);
-}*/
-
-
 void SystemStateModel::startTrackingAcquisition() {
     // ========================================================================
     // UC2: Initiate Tracking on Moving Target
@@ -2233,31 +2119,6 @@ void SystemStateModel::stopTracking() {
     }
 }
 
-/*void SystemStateModel::updateTrackingResult(int camIndex, bool hasLock, ...) {
-    SystemStateData& data = m_currentStateData;
-    // ... (update trackerHasValidTarget, trackedTargetCenterX_px, etc. as before) ...
-
-    // --- State Machine Logic ---
-    if (data.currentTrackingPhase == TrackingPhase::Tracking_LockPending ||
-        data.currentTrackingPhase == TrackingPhase::Tracking_ActiveLock ||
-        data.currentTrackingPhase == TrackingPhase::Tracking_Coast)
-    {
-        if (hasLock) {
-            data.currentTrackingPhase = TrackingPhase::Tracking_ActiveLock;
-            // Now that we have a lock, system can enter tracking modes
-            data.opMode = OperationalMode::Tracking;
-            data.motionMode = MotionMode::AutoTrack; // Or just 'Tracking'
-        } else {
-            // Target was lost or lock failed
-            data.currentTrackingPhase = TrackingPhase::Tracking_Coast; // Or back to LockPending if it never locked
-            // Revert to manual control but keep trying to re-acquire (or show 'lost' status)
-            data.opMode = OperationalMode::Surveillance; // Or stay in Tracking op mode with a "COAST" status
-            data.motionMode = MotionMode::Manual;
-        }
-        emit dataChanged(m_currentStateData);
-    }
-}
-*/
 void SystemStateModel::adjustAcquisitionBoxSize(float dW, float dH) {
     // ========================================================================
     // SAFETY: Acquisition Box Boundary Validation
@@ -2294,7 +2155,6 @@ void SystemStateModel::adjustAcquisitionBoxSize(float dW, float dH) {
         emit dataChanged(m_currentStateData);
     }
 }
-
 
 void SystemStateModel::onRadarPlotsUpdated(const QVector<RadarData> &plots) {
 QVector<SimpleRadarPlot> converted;
