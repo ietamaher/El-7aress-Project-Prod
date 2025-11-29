@@ -50,7 +50,11 @@ private:
     int videoLUT = 0;
     int m_activeCameraIndex = 0;
     qint64 m_lastTrackButtonPressTime = 0; // For debouncing track button presses
-    static constexpr int DOUBLE_CLICK_INTERVAL_MS = 1000; // 300ms for double-click
+    static constexpr int DOUBLE_CLICK_INTERVAL_MS = 1000; // 1000ms for double-click
+
+    // ⭐ Enhanced LRF functionality (single press vs double press)
+    qint64 m_lastLrfButtonPressTime = 0;  // Track LRF button press timing
+    bool m_continuousLrfActive = false;    // Track continuous LRF state
 };
 
 #endif // JOYSTICKCONTROLLER_H

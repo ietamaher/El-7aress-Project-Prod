@@ -149,21 +149,18 @@ void JoystickController::onButtonChanged(int button, bool pressed)
                 qWarning() << "Cannot cycle modes, station is off.";
                 return;
             }
-            // *** CRUCIAL: Do not allow cycling into automated scans if tracking acquisition is in progress ***
-            if (curr.currentTrackingPhase == TrackingPhase::Acquisition) {
-                qDebug() << "Cannot cycle motion modes during Tracking Acquisition.";
-                return; // Ignore button press
-            }
-            // If tracking is active (locked), cycling modes should probably stop it first.
-            if (curr.currentTrackingPhase == TrackingPhase::Tracking_ActiveLock) {
-                qDebug() << "Cycling motion modes. Stopping active track first.";
-                m_stateModel->stopTracking();
-                // After stopping, it will default to Manual. The next part will then cycle from Manual.
-                // Re-fetch current state after stopping.
-                curr = m_stateModel->data();
+
+            // ⭐ BUG FIX: Block motion mode cycling during ANY tracking phase
+            // Original code only blocked during Acquisition phase
+            // Military requirement: Operator must not accidentally change modes during tracking
+            if (curr.currentTrackingPhase != TrackingPhase::Off) {
+                qWarning() << "[BUG FIX] Cannot cycle motion modes during tracking (phase:"
+                           << static_cast<int>(curr.currentTrackingPhase) << ")";
+                qWarning() << "[BUG FIX] Operator must stop tracking first (double-press Track button)";
+                return; // Block button - no mode cycling during tracking
             }
 
-            // Now, cycle surveillance modes
+            // Now, cycle surveillance modes (only when NOT tracking)
             if (curr.motionMode == MotionMode::Manual) {
                 m_stateModel->setMotionMode(MotionMode::AutoSectorScan);
             } else if (curr.motionMode == MotionMode::AutoSectorScan) {
@@ -195,10 +192,13 @@ void JoystickController::onButtonChanged(int button, bool pressed)
         break;
 
     // ========================================================================
-    // BUTTON 1: LRF TRIGGER (Laser Range Finder)
+    // BUTTON 1: LRF TRIGGER (Laser Range Finder) - ENHANCED FUNCTIONALITY
     // ========================================================================
-    // Trigger single-shot range measurement for ballistics calculation
-    // LRF is physically mounted with camera, so CameraController manages it
+    // ⭐ Military-grade LRF control:
+    // - Single press: Perform single LRF measurement
+    // - Double press (within 1 second): Toggle continuous LRF mode
+    //   * Continuous modes: 1Hz, 5Hz, or 10Hz (configurable)
+    //   * Visual/audio feedback for operator confirmation
     // ========================================================================
     case 1:
         if (pressed) {
@@ -207,8 +207,51 @@ void JoystickController::onButtonChanged(int button, bool pressed)
                 return;
             }
 
-            qDebug() << "[JoystickController] Button 1 pressed - Triggering LRF";
-            m_cameraController->triggerLRF();
+            // Measure time since last button press for double-click detection
+            qint64 now = QDateTime::currentMSecsSinceEpoch();
+            qint64 timeSinceLastPress = now - m_lastLrfButtonPressTime;
+            bool isDoubleClick = (timeSinceLastPress < DOUBLE_CLICK_INTERVAL_MS);
+
+            qDebug() << "[LRF] Button 1 pressed. Time since last:" << timeSinceLastPress
+                     << "ms | Double-click:" << isDoubleClick
+                     << "| Continuous LRF active:" << m_continuousLrfActive;
+
+            m_lastLrfButtonPressTime = now;
+
+            if (isDoubleClick) {
+                // ========================================================================
+                // DOUBLE PRESS: Toggle continuous LRF mode
+                // ========================================================================
+                m_continuousLrfActive = !m_continuousLrfActive;
+
+                if (m_continuousLrfActive) {
+                    qInfo() << "[LRF] ✓ CONTINUOUS LRF ENABLED (5Hz mode)";
+                    qInfo() << "[LRF] Operator: System will continuously range at 5Hz";
+                    qInfo() << "[LRF] Operator: Double-press Button 1 again to disable";
+
+                    // Start continuous ranging at 5Hz (professional military standard)
+                    m_cameraController->startContinuousLRF();
+
+                } else {
+                    qInfo() << "[LRF] ✗ CONTINUOUS LRF DISABLED";
+                    qInfo() << "[LRF] Operator: Returning to single-shot mode";
+
+                    // Stop continuous ranging
+                    m_cameraController->stopContinuousLRF();
+                }
+
+            } else {
+                // ========================================================================
+                // SINGLE PRESS: Single LRF measurement (if not in continuous mode)
+                // ========================================================================
+                if (m_continuousLrfActive) {
+                    qDebug() << "[LRF] Single press ignored - Continuous LRF already active";
+                    qDebug() << "[LRF] Operator: Double-press Button 1 to disable continuous mode";
+                } else {
+                    qDebug() << "[LRF] Triggering single LRF measurement";
+                    m_cameraController->triggerLRF();
+                }
+            }
         }
         break;
 
