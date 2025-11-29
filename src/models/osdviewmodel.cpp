@@ -105,12 +105,14 @@ void OsdViewModel::updateMotionMode(MotionMode mode)
 {
     QString newText;
     switch (mode) {
+    case MotionMode::Idle: newText = "MOTION: IDLE"; break;
     case MotionMode::Manual: newText = "MOTION: MAN"; break;
     case MotionMode::AutoSectorScan: newText = "MOTION: SCAN"; break;
     case MotionMode::TRPScan: newText = "MOTION: TRP"; break;
     case MotionMode::ManualTrack: newText = "MOTION: TRACK"; break;
     case MotionMode::AutoTrack: newText = "MOTION: AUTO TRACK"; break;
     case MotionMode::RadarSlew: newText = "MOTION: RADAR"; break;
+    case MotionMode::MotionFree: newText = "MOTION: FREE"; break;  // ⭐ BUG FIX: FREE mode now displayed
     default: newText = "MOTION: N/A"; break;
     }
 
