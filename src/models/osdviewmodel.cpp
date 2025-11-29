@@ -16,6 +16,8 @@ OsdViewModel::OsdViewModel(QObject *parent)
     , m_rateText("RATE: SINGLE SHOT")
     , m_lrfText("LRF: --- m")
     , m_fovText("FOV: 45.0°")
+    , m_homingText("")              // ⭐ Homing text empty by default
+    , m_homingVisible(false)        // ⭐ Homing not visible by default
     , m_trackingBox(0, 0, 0, 0)
     , m_trackingBoxVisible(false)
     , m_trackingBoxColor(Qt::yellow)
@@ -119,6 +121,56 @@ void OsdViewModel::updateMotionMode(MotionMode mode)
     if (m_motionText != newText) {
         m_motionText = newText;
         emit motionTextChanged();
+    }
+}
+
+// ============================================================================
+// ⭐ HOMING STATE DISPLAY
+// ============================================================================
+void OsdViewModel::updateHomingState(HomingState state)
+{
+    QString newText;
+    bool newVisible = false;
+
+    switch (state) {
+    case HomingState::Idle:
+        newText = "";
+        newVisible = false;
+        break;
+    case HomingState::Requested:
+        newText = "[HOMING INIT]";
+        newVisible = true;
+        break;
+    case HomingState::InProgress:
+        newText = "[HOMING IN PROGRESS...]";
+        newVisible = true;
+        break;
+    case HomingState::Completed:
+        newText = "[HOMING COMPLETE]";
+        newVisible = true;
+        break;
+    case HomingState::Failed:
+        newText = "[HOMING FAILED!]";
+        newVisible = true;
+        break;
+    case HomingState::Aborted:
+        newText = "[HOMING ABORTED]";
+        newVisible = true;
+        break;
+    default:
+        newText = "";
+        newVisible = false;
+        break;
+    }
+
+    if (m_homingText != newText) {
+        m_homingText = newText;
+        emit homingTextChanged();
+    }
+
+    if (m_homingVisible != newVisible) {
+        m_homingVisible = newVisible;
+        emit homingVisibleChanged();
     }
 }
 

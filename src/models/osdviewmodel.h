@@ -42,6 +42,10 @@ class OsdViewModel : public QObject
     Q_PROPERTY(QString lrfText READ lrfText NOTIFY lrfTextChanged)
     Q_PROPERTY(QString fovText READ fovText NOTIFY fovTextChanged)
 
+    // ⭐ Homing Operation Status
+    Q_PROPERTY(QString homingText READ homingText NOTIFY homingTextChanged)
+    Q_PROPERTY(bool homingVisible READ homingVisible NOTIFY homingVisibleChanged)
+
     // ========================================================================
     // TRACKING
     // ========================================================================
@@ -170,6 +174,10 @@ public:
     QString lrfText() const { return m_lrfText; }
     QString fovText() const { return m_fovText; }
 
+    // ⭐ Homing getters
+    QString homingText() const { return m_homingText; }
+    bool homingVisible() const { return m_homingVisible; }
+
     QRectF trackingBox() const { return m_trackingBox; }
     bool trackingBoxVisible() const { return m_trackingBoxVisible; }
     QColor trackingBoxColor() const { return m_trackingBoxColor; }
@@ -254,6 +262,7 @@ public slots:
     // Update methods (called by OsdController)
     void updateMode(OperationalMode mode);
     void updateMotionMode(MotionMode mode);
+    void updateHomingState(HomingState state);  // ⭐ Homing state update
     void updateStabilization(bool enabled);
     void updateCameraType(const QString& type);
     void updateSpeed(double speed);
@@ -329,6 +338,10 @@ signals:
     void rateTextChanged();
     void lrfTextChanged();
     void fovTextChanged();
+
+    // ⭐ Homing signals
+    void homingTextChanged();
+    void homingVisibleChanged();
 
     void trackingBoxChanged();
     void trackingBoxVisibleChanged();
@@ -430,6 +443,10 @@ private:
     QString m_rateText;
     QString m_lrfText;
     QString m_fovText;
+
+    // ⭐ Homing state
+    QString m_homingText;
+    bool m_homingVisible;
 
     QRectF m_trackingBox;
     bool m_trackingBoxVisible;

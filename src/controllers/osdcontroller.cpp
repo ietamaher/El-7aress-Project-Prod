@@ -193,6 +193,7 @@ void OsdController::onFrameDataReady(const FrameData& frmdata)
     // === BASIC OSD DATA ===
     m_viewModel->updateMode(frmdata.currentOpMode);
     m_viewModel->updateMotionMode(frmdata.motionMode);
+    m_viewModel->updateHomingState(frmdata.homingState);  // ⭐ Homing state display
     //check if motion mode is Tracking mode
     if (frmdata.motionMode == MotionMode::AutoTrack) {
         m_viewModel->updateTrackingActive(true);

@@ -79,6 +79,7 @@ struct FrameData {
     // Gimbal State
     OperationalMode currentOpMode = OperationalMode::Idle;
     MotionMode motionMode = MotionMode::Manual;
+    HomingState homingState = HomingState::Idle;  // ⭐ Homing operation state
     bool stabEnabled = false;
     float azimuth = 0.0f;
     float elevation = 0.0f;
@@ -290,6 +291,7 @@ private:
     // Gimbal State
     OperationalMode m_currentMode;
     MotionMode m_motionMode;
+    HomingState m_homingState;  // ⭐ Homing state cache
     bool m_stabEnabled;
     float m_currentAzimuth;
     float m_currentElevation;
