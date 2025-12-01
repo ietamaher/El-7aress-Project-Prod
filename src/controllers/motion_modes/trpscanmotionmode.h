@@ -14,7 +14,7 @@ public:
     // Overridden methods from the base class
     void enterMode(GimbalController* controller) override;
     void exitMode(GimbalController* controller) override;
-    void update(GimbalController* controller) override;
+    void update(GimbalController* controller, double dt) override;
 
     // This method is called by GimbalController to give us the path
     void setActiveTRPPage(const std::vector<TargetReferencePoint>& trpPage);

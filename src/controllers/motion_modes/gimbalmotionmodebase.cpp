@@ -102,7 +102,8 @@ void GimbalMotionModeBase::updateGyroBias(const SystemStateData& systemState)
 void GimbalMotionModeBase::sendStabilizedServoCommands(GimbalController* controller,
                                  double desiredAzVelocity,
                                  double desiredElVelocity,
-                                 bool enableStabilization)
+                                 bool enableStabilization,
+                                 double dt)
 {
     // --- Step 1: Get current system state ---
     SystemStateData systemState = controller->systemStateModel()->data();
@@ -115,8 +116,8 @@ void GimbalMotionModeBase::sendStabilizedServoCommands(GimbalController* control
         double azCorrection = 0.0;
         double elCorrection = 0.0;
 
-        // Use new hybrid stabilization: AHRS position control + gyro velocity feedforward
-        calculateHybridStabilizationCorrection(systemState, azCorrection, elCorrection);
+        // ✅ EXPERT REVIEW FIX: Use hybrid stabilization with dt parameter
+        calculateHybridStabilizationCorrection(systemState, azCorrection, elCorrection, dt);
 
         // Add the calculated correction to the desired velocity
         finalAzVelocity += azCorrection;
@@ -311,15 +312,18 @@ void GimbalMotionModeBase::calculateStabilizationCorrection(double currentAz_deg
     double gyroX_dps_corrected = gyroX_dps_raw - m_gyroBiasX;
     double gyroY_dps_corrected = gyroY_dps_raw - m_gyroBiasY;
     double gyroZ_dps_corrected = gyroZ_dps_raw - m_gyroBiasZ;
-    //  Filter the raw DPS data ---
-    double gyroX_dps_filtered = m_gyroXFilter.update(gyroX_dps_corrected);
-    double gyroY_dps_filtered = m_gyroYFilter.update(gyroY_dps_corrected);
-    double gyroZ_dps_filtered = m_gyroZFilter.update(gyroZ_dps_corrected);
 
-    // Map to platform motion axes (p, q, r)
-    const double p_imu = gyroY_dps_filtered; // Roll
-    const double q_imu = gyroX_dps_filtered; // Pitch
-    const double r_imu = gyroZ_dps_filtered; // Yaw
+    // ✅ EXPERT REVIEW FIX: Use updateWithDt() with default dt (this function is legacy, not called)
+    double dt = UPDATE_INTERVAL_S();
+    double gyroX_dps_filtered = m_gyroXFilter.updateWithDt(gyroX_dps_corrected, dt);
+    double gyroY_dps_filtered = m_gyroYFilter.updateWithDt(gyroY_dps_corrected, dt);
+    double gyroZ_dps_filtered = m_gyroZFilter.updateWithDt(gyroZ_dps_corrected, dt);
+
+    // ✅ EXPERT REVIEW FIX: Correct IMU→body-rate mapping (unified with calculateHybridStabilizationCorrection)
+    // IMU X → p (roll rate), Y → q (pitch rate), Z → r (yaw rate, inverted)
+    const double p_imu = gyroX_dps_filtered;  // Roll rate (deg/s)
+    const double q_imu = gyroY_dps_filtered;  // Pitch rate (deg/s)
+    const double r_imu = -gyroZ_dps_filtered; // Yaw rate (deg/s) - NEGATED because Z is DOWN
 
     // Get current gimbal angles in radians
     const double currentAzRad = degToRad(currentAz_deg);
@@ -459,14 +463,16 @@ void GimbalMotionModeBase::convertGimbalToWorldFrame(
     worldAz = radToDeg(atan2(y_world, x_world));
     worldEl = radToDeg(atan2(z_world, sqrt(x_world * x_world + y_world * y_world)));
 
-    // Normalize azimuth to [0, 360)
-    if (worldAz < 0.0) worldAz += 360.0;
+    // ✅ EXPERT REVIEW FIX: Normalize azimuth to [-180, 180] for consistency with control loops
+    while (worldAz > 180.0) worldAz -= 360.0;
+    while (worldAz < -180.0) worldAz += 360.0;
 }
 
 void GimbalMotionModeBase::calculateHybridStabilizationCorrection(
     const SystemStateData& state,
     double& azCorrection_dps,
-    double& elCorrection_dps)
+    double& elCorrection_dps,
+    double dt)
 {
     // -------------------------
     // Units convention (explicit)
@@ -519,24 +525,17 @@ void GimbalMotionModeBase::calculateHybridStabilizationCorrection(
             velocityCorrectionAz_dps = 0.0;
             velocityCorrectionEl_dps = 0.0;
         } else {
-            // ✅ CRITICAL FIX: Compute dt from internal timer (or fallback to UPDATE_INTERVAL_S)
-            double dt_s = UPDATE_INTERVAL_S();
-            if (m_velocityTimer.isValid()) {
-                dt_s = clampDt(m_velocityTimer.restart() / 1000.0);
-            } else {
-                // If timer not started, start it and assume UPDATE_INTERVAL_S for this frame
-                m_velocityTimer.start();
-            }
+            // ✅ EXPERT REVIEW FIX: dt is now passed from GimbalController (centralized measurement)
 
             // Bias correction (deg/s)
             double gx = state.GyroX - m_gyroBiasX;
             double gy = state.GyroY - m_gyroBiasY;
             double gz = state.GyroZ - m_gyroBiasZ;
 
-            // ✅ CRITICAL FIX: Filter using runtime dt (not fixed sampleRate!)
-            double gx_f = m_gyroXFilter.updateWithDt(gx, dt_s);
-            double gy_f = m_gyroYFilter.updateWithDt(gy, dt_s);
-            double gz_f = m_gyroZFilter.updateWithDt(gz, dt_s);
+            // ✅ EXPERT REVIEW FIX: Filter using runtime dt (passed from GimbalController)
+            double gx_f = m_gyroXFilter.updateWithDt(gx, dt);
+            double gy_f = m_gyroYFilter.updateWithDt(gy, dt);
+            double gz_f = m_gyroZFilter.updateWithDt(gz, dt);
 
             // ✅ VERIFIED IMU ORIENTATION (2025-11-14):
             // IMU Frame: X forward, Y right, Z down (Forward-Right-Down)

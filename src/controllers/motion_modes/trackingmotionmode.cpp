@@ -121,7 +121,7 @@ double TrackingMotionMode::applyVelocityScaling(double velocity, double error)
     return velocity * scale;
 }
 
-void TrackingMotionMode::update(GimbalController* controller)
+void TrackingMotionMode::update(GimbalController* controller, double dt)
 {
     if (!m_targetValid) {
         stopServos(controller);
@@ -129,9 +129,9 @@ void TrackingMotionMode::update(GimbalController* controller)
     }
 
     // ✅ CRITICAL FIX: Compute and clamp dt
-    double dt_s = UPDATE_INTERVAL_S();
+    double dt = UPDATE_INTERVAL_S();
     if (m_velocityTimer.isValid()) {
-        dt_s = clampDt(m_velocityTimer.restart() / 1000.0);
+        dt = clampDt(m_velocityTimer.restart() / 1000.0);
     } else {
         m_velocityTimer.start();
     }
@@ -140,8 +140,8 @@ void TrackingMotionMode::update(GimbalController* controller)
 
     // ✅ CRITICAL FIX: dt-aware smoothing using runtime-configurable tau
     const auto& cfg = MotionTuningConfig::instance();
-    double alphaPos = alphaFromTauDt(cfg.filters.trackingPositionTau, dt_s);
-    double alphaVel = alphaFromTauDt(cfg.filters.trackingVelocityTau, dt_s);
+    double alphaPos = alphaFromTauDt(cfg.filters.trackingPositionTau, dt);
+    double alphaVel = alphaFromTauDt(cfg.filters.trackingVelocityTau, dt);
 
     // 1. Smooth the Target Position (for PID feedback)
     m_smoothedTargetAz = alphaPos * m_targetAz + (1.0 - alphaPos) * m_smoothedTargetAz;
@@ -194,10 +194,10 @@ void TrackingMotionMode::update(GimbalController* controller)
 
     // 4. Calculate PID output (Feedback)
     bool useDerivativeOnMeasurement = true;
-    // CRITICAL FIX: Use the measured dt_s, not the constant UPDATE_INTERVAL_S
+    // CRITICAL FIX: Use the measured dt, not the constant UPDATE_INTERVAL_S
     // CRITICAL FIX: Use aimPoint (with lead) for setpoint, NOT smoothedTarget (without lead)
-    double pidAzVelocity = pidCompute(m_azPid, errAz, aimPointAz, data.gimbalAz, useDerivativeOnMeasurement, dt_s);
-    double pidElVelocity = pidCompute(m_elPid, errEl, aimPointEl, data.gimbalEl, useDerivativeOnMeasurement, dt_s);
+    double pidAzVelocity = pidCompute(m_azPid, errAz, aimPointAz, data.gimbalAz, useDerivativeOnMeasurement, dt);
+    double pidElVelocity = pidCompute(m_elPid, errEl, aimPointEl, data.gimbalEl, useDerivativeOnMeasurement, dt);
 
     // 5. Add Feed-forward term (scaled down to prevent aggressive response)
     const double FEEDFORWARD_GAIN = 0.5; // Scale down the feed-forward contribution
@@ -214,7 +214,7 @@ void TrackingMotionMode::update(GimbalController* controller)
     desiredElVelocity = qBound(-maxVel, desiredElVelocity, maxVel);
 
     // ✅ CRITICAL FIX: Apply TIME-BASED rate limiting (from config)
-    double maxDelta = cfg.motion.maxAccelerationDegS2 * dt_s; // deg/s^2 * s = deg/s
+    double maxDelta = cfg.motion.maxAccelerationDegS2 * dt; // deg/s^2 * s = deg/s
     desiredAzVelocity = applyRateLimitTimeBased(desiredAzVelocity, m_previousDesiredAzVel, maxDelta);
     desiredElVelocity = applyRateLimitTimeBased(desiredElVelocity, m_previousDesiredElVel, maxDelta);
 
@@ -252,11 +252,11 @@ void TrackingMotionMode::update(GimbalController* controller)
         qDebug() << "Tracking - Error(Az,El):" << errAz << "," << errEl
                  << "| Vel(Az,El):" << desiredAzVelocity << "," << desiredElVelocity
                  << "| FF(Az,El):" << m_smoothedAzVel_dps << "," << m_smoothedElVel_dps
-                 << "| elapsed(s):" << dt_s;
+                 << "| elapsed(s):" << dt;
     }*/
 
     // 11. Send final commands with stabilization enabled
     // Hybrid stabilization adds platform motion compensation to tracking velocity
-    sendStabilizedServoCommands(controller, desiredAzVelocity, desiredElVelocity, true);
+    sendStabilizedServoCommands(controller, desiredAzVelocity, desiredElVelocity, true, dt);
 }
 

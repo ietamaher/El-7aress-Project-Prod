@@ -69,7 +69,7 @@ void AutoSectorScanMotionMode::setActiveScanZone(const AutoSectorScanZone& scanZ
 // ===================================================================================
 // =================== FULLY UPDATED AND UNIFORM UPDATE METHOD =====================
 // ===================================================================================
-/*void AutoSectorScanMotionMode::update(GimbalController* controller) {
+/*void AutoSectorScanMotionMode::update(GimbalController* controller, double dt) {
     // Top-level guard clauses for mode-specific state
     if (!controller || !m_scanZoneSet || !m_activeScanZone.isEnabled) {
         // If the scan zone is disabled while we are in this mode, stop and let the
@@ -131,7 +131,7 @@ void AutoSectorScanMotionMode::setActiveScanZone(const AutoSectorScanZone& scanZ
 // ===================================================================================
 // =================== REFACTORED UPDATE METHOD WITH MOTION PROFILING ================
 // ===================================================================================
-void AutoSectorScanMotionMode::update(GimbalController* controller) {
+void AutoSectorScanMotionMode::update(GimbalController* controller, double dt) {
     // Top-level guard clauses
     if (!controller || !m_scanZoneSet || !m_activeScanZone.isEnabled) {
         stopServos(controller);
@@ -143,14 +143,7 @@ void AutoSectorScanMotionMode::update(GimbalController* controller) {
 
     SystemStateData data = controller->systemStateModel()->data();
 
-    // ✅ CRITICAL FIX: Measure dt using timer (not fixed UPDATE_INTERVAL_S!)
-    const auto& cfg = MotionTuningConfig::instance();
-    double dt_s = UPDATE_INTERVAL_S();
-    if (m_velocityTimer.isValid()) {
-        dt_s = clampDt(m_velocityTimer.restart() / 1000.0);
-    } else {
-        m_velocityTimer.start();
-    }
+    // ✅ EXPERT REVIEW FIX: dt is now passed from GimbalController (centralized measurement)
 
     // Calculate errors - use encoder for Az, IMU pitch for El
     double errAz = m_targetAz - data.gimbalAz;
@@ -189,8 +182,8 @@ void AutoSectorScanMotionMode::update(GimbalController* controller) {
 
     if (m_activeScanZone.scanSpeed <= 0) {
         // Scan speed zero - use PID to hold position
-        desiredAzVelocity = pidCompute(m_azPid, errAz, dt_s);
-        desiredElVelocity = pidCompute(m_elPid, errEl, dt_s);
+        desiredAzVelocity = pidCompute(m_azPid, errAz, dt);
+        desiredElVelocity = pidCompute(m_elPid, errEl, dt);
     } else {
         // ✅ CRITICAL FIX: Compute deceleration distance from kinematics (from config)
         const double a = cfg.motion.scanMaxAccelDegS2;
@@ -205,8 +198,8 @@ void AutoSectorScanMotionMode::update(GimbalController* controller) {
         if (distanceToTarget < decelDist) {
             // DECELERATION ZONE: Use PID to slow down smoothly
             qDebug() << "AreaScan: Decelerating. Distance:" << distanceToTarget;
-            desiredAzVelocity = pidCompute(m_azPid, errAz, dt_s);
-            desiredElVelocity = pidCompute(m_elPid, errEl, dt_s);
+            desiredAzVelocity = pidCompute(m_azPid, errAz, dt);
+            desiredElVelocity = pidCompute(m_elPid, errEl, dt);
         } else {
             // CRUISING ZONE: Move at constant scan speed
             double dirAz = errAz / distanceToTarget;
@@ -224,7 +217,7 @@ void AutoSectorScanMotionMode::update(GimbalController* controller) {
     }
 
     // ✅ CRITICAL FIX: Apply time-based rate limiting (from config)
-    double maxDelta = cfg.motion.scanMaxAccelDegS2 * dt_s;  // deg/s^2 * s = deg/s
+    double maxDelta = cfg.motion.scanMaxAccelDegS2 * dt;  // deg/s^2 * s = deg/s
     desiredAzVelocity = applyRateLimitTimeBased(desiredAzVelocity, m_previousDesiredAzVel, maxDelta);
     desiredElVelocity = applyRateLimitTimeBased(desiredElVelocity, m_previousDesiredElVel, maxDelta);
 
@@ -251,5 +244,5 @@ void AutoSectorScanMotionMode::update(GimbalController* controller) {
     }
 
     // Send stabilized commands
-    sendStabilizedServoCommands(controller, desiredAzVelocity, desiredElVelocity, true);
+    sendStabilizedServoCommands(controller, desiredAzVelocity, desiredElVelocity, true, dt);
 }

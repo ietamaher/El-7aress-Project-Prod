@@ -93,7 +93,8 @@ public:
     virtual void exitMode(GimbalController* /*controller*/) {}
 
     // Called periodically (e.g. from GimbalController::update())
-    virtual void update(GimbalController* /*controller*/) {}
+    // dt parameter is the measured time delta in seconds since last update (Expert Review Fix)
+    virtual void update(GimbalController* /*controller*/, double /*dt*/) {}
     void stopServos(GimbalController* controller);
     bool checkSafetyConditions(GimbalController* controller);
     /**
@@ -202,11 +203,13 @@ protected:
      * @param desiredAzVelocity The desired azimuth velocity relative to a stable world frame (deg/s).
      * @param desiredElVelocity The desired elevation velocity relative to a stable world frame (deg/s).
      * @param enableStabilization True to apply stabilization corrections, false to send raw commands.
+     * @param dt Time delta in seconds since last update (Expert Review Fix)
      */
     void sendStabilizedServoCommands(GimbalController* controller,
                                  double desiredAzVelocity,
                                  double desiredElVelocity,
-                                 bool enableStabilization = true);
+                                 bool enableStabilization,
+                                 double dt);
     // --- UNIFIED PID CONTROLLER ---
     struct PIDController {
         double Kp = 0.0;
@@ -365,9 +368,11 @@ private:
      * @param state Current system state with IMU data and gimbal angles
      * @param azCorrection_dps Output azimuth correction velocity (deg/s)
      * @param elCorrection_dps Output elevation correction velocity (deg/s)
+     * @param dt Time delta in seconds since last update (Expert Review Fix)
      */
     void calculateHybridStabilizationCorrection(const SystemStateData& state,
-                                                double& azCorrection_dps, double& elCorrection_dps);
+                                                double& azCorrection_dps, double& elCorrection_dps,
+                                                double dt);
 
     void calculateStabilizationCorrection(double currentAz_deg, double currentEl_deg,
                                                             double gyroX_dps_raw, double gyroY_dps_raw, double gyroZ_dps_raw,

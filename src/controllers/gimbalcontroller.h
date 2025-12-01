@@ -8,6 +8,7 @@
 // Qt Framework
 #include <QObject>
 #include <QTimer>
+#include <QElapsedTimer>
 
 // Standard Library
 #include <memory>
@@ -142,6 +143,9 @@ private:
 
     // --- Update Timer ---
     QTimer* m_updateTimer = nullptr;
+
+    // --- Centralized dt measurement timer (Expert Review Fix) ---
+    QElapsedTimer m_velocityTimer;
 
     // ========================================================================
     // HOMING STATE MACHINE

@@ -38,7 +38,7 @@ void ManualMotionMode::exitMode(GimbalController* controller)
     stopServos(controller);
 }
 
-void ManualMotionMode::update(GimbalController* controller)
+void ManualMotionMode::update(GimbalController* controller, double dt)
 {
     if (!checkSafetyConditions(controller)) {
         stopServos(controller);
@@ -47,22 +47,16 @@ void ManualMotionMode::update(GimbalController* controller)
 
     SystemStateData data = controller->systemStateModel()->data();
 
-    // ✅ CRITICAL FIX: Measure dt using timer (not fixed UPDATE_INTERVAL_S!)
-    double dt_s = UPDATE_INTERVAL_S();
-    if (m_velocityTimer.isValid()) {
-        dt_s = clampDt(m_velocityTimer.restart() / 1000.0);
-    } else {
-        m_velocityTimer.start();
-    }
+    // ✅ EXPERT REVIEW FIX: dt is now passed from GimbalController (centralized measurement)
 
     // 1. Calculate TARGET velocity in the motor's native units
     static constexpr double MAX_SPEED_HZ = 25000.0;
     double speedPercent = data.gimbalSpeed / 100.0;
     double maxCurrentSpeedHz = speedPercent * MAX_SPEED_HZ;
 
-    // ✅ CRITICAL FIX: dt-aware joystick filter using runtime-configurable tau
+    // ✅ EXPERT REVIEW FIX: dt-aware joystick filter using runtime-configurable tau
     const auto& cfg = MotionTuningConfig::instance();
-    double alpha = alphaFromTauDt(cfg.filters.manualJoystickTau, dt_s);
+    double alpha = alphaFromTauDt(cfg.filters.manualJoystickTau, dt);
 
     // 2. Get and filter joystick values
     double rawAzJoystick = data.joystickAzValue;
@@ -71,9 +65,10 @@ void ManualMotionMode::update(GimbalController* controller)
     m_filteredAzJoystick = alpha * rawAzJoystick + (1.0 - alpha) * m_filteredAzJoystick;
     m_filteredElJoystick = alpha * rawElJoystick + (1.0 - alpha) * m_filteredElJoystick;
 
-    // Apply shaping (power curve for finer control)
-    double shaped_stick_Azinput = processJoystickInput(m_filteredAzJoystick, m_filteredAzJoystick);
-    double shaped_stick_Elinput = processJoystickInput(m_filteredElJoystick, m_filteredElJoystick);
+    // ✅ EXPERT REVIEW FIX: Apply shaping ONLY (no double-filtering!)
+    // Filter already applied above, now only shape the response curve
+    double shaped_stick_Azinput = processJoystickInput(m_filteredAzJoystick);
+    double shaped_stick_Elinput = processJoystickInput(m_filteredElJoystick);
 
     // 3. Calculate target speeds
     double targetAzSpeedHz = shaped_stick_Azinput * maxCurrentSpeedHz;
@@ -86,8 +81,8 @@ void ManualMotionMode::update(GimbalController* controller)
     if (std::abs(targetAzSpeedHz) < DEADBAND_HZ) targetAzSpeedHz = 0.0;
     if (std::abs(targetElSpeedHz) < DEADBAND_HZ) targetElSpeedHz = 0.0;
 
-    // ✅ CRITICAL FIX: Time-based rate limiter in Hz domain (from config)
-    double maxChangeHz = cfg.manualLimits.maxAccelHzPerSec * dt_s; // Hz/s * s = Hz
+    // ✅ EXPERT REVIEW FIX: Time-based rate limiter in Hz domain (from config)
+    double maxChangeHz = cfg.manualLimits.maxAccelHzPerSec * dt; // Hz/s * s = Hz
 
     // ✅ Apply time-based rate limiting using central helper
     m_currentAzSpeedCmd_Hz = applyRateLimitTimeBased(targetAzSpeedHz, m_currentAzSpeedCmd_Hz, maxChangeHz);
@@ -136,17 +131,16 @@ void ManualMotionMode::update(GimbalController* controller)
     }
 
     // 6. Send final command (stabilization handles world-frame hold)
-    sendStabilizedServoCommands(controller, azVelocityDegS, elVelocityDegS, true);
+    sendStabilizedServoCommands(controller, azVelocityDegS, elVelocityDegS, true, dt);
 }
 
-double ManualMotionMode::processJoystickInput(double rawInput, double& filteredValue) {
-    const double alpha = 0.4;
+// ✅ EXPERT REVIEW FIX: Removed double-filtering - this now only shapes the response curve
+double ManualMotionMode::processJoystickInput(double filteredInput) {
     const double exponent = 1.5;
-    
-    filteredValue = (alpha * rawInput) + (1.0 - alpha) * filteredValue;
-    
-    double shaped = std::pow(std::abs(filteredValue), exponent);
-    return (filteredValue < 0) ? -shaped : shaped;
+
+    // Apply power curve for finer control near center
+    double shaped = std::pow(std::abs(filteredInput), exponent);
+    return (filteredInput < 0) ? -shaped : shaped;
 }
 
 

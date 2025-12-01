@@ -51,7 +51,7 @@ void RadarSlewMotionMode::exitMode(GimbalController* controller)
     stopServos(controller);
 }
 
-void RadarSlewMotionMode::update(GimbalController* controller)
+void RadarSlewMotionMode::update(GimbalController* controller, double dt)
 {
     // --- 1. Safety and Pre-condition Checks ---
     if (!controller || !controller->systemStateModel()) { return; }
@@ -190,7 +190,7 @@ void RadarSlewMotionMode::update(GimbalController* controller)
     }
 
     // Let the base class handle stabilization and sending the final command
-    sendStabilizedServoCommands(controller, desiredAzVelocity, desiredElVelocity, true);
+    sendStabilizedServoCommands(controller, desiredAzVelocity, desiredElVelocity, true, dt);
 }
 
 

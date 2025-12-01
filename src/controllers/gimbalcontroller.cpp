@@ -109,6 +109,9 @@ GimbalController::GimbalController(ServoDriverDevice* azServo,
     connect(m_updateTimer, &QTimer::timeout, this, &GimbalController::update);
     m_updateTimer->start(50);
 
+    // Initialize centralized dt measurement timer (Expert Review Fix)
+    m_velocityTimer.start();
+
     // Initialize homing timeout timer
     m_homingTimeoutTimer = new QTimer(this);
     m_homingTimeoutTimer->setSingleShot(true);
@@ -140,23 +143,29 @@ void GimbalController::shutdown()
 
 void GimbalController::update()
 {
+    // ============================================================================
+    // ✅ EXPERT REVIEW FIX: Centralized dt computation for all stabilization logic
+    // ============================================================================
+    double dt = m_velocityTimer.restart() / 1000.0;  // Convert ms to seconds
+    dt = std::clamp(dt, 0.001, 0.050);  // Clamp between 1-50 ms
+
     // ✅ MEASURE UPDATE LOOP TIMING
     static auto lastUpdateTime = std::chrono::high_resolution_clock::now();
     static std::vector<long long> updateIntervals;
     static int updateCount = 0;
-    
+
     auto now = std::chrono::high_resolution_clock::now();
     auto interval = std::chrono::duration_cast<std::chrono::microseconds>(now - lastUpdateTime).count();
-    
+
     updateIntervals.push_back(interval);
     if (updateIntervals.size() > 100) updateIntervals.erase(updateIntervals.begin());
-    
+
     if (++updateCount % 50 == 0) {
         long long minInterval = *std::min_element(updateIntervals.begin(), updateIntervals.end());
         long long maxInterval = *std::max_element(updateIntervals.begin(), updateIntervals.end());
         long long avgInterval = std::accumulate(updateIntervals.begin(), updateIntervals.end(), 0LL) / updateIntervals.size();
         double jitter = (maxInterval - minInterval) / 1000.0;
-        
+
         qDebug() << "🔄 [UPDATE LOOP] 50 cycles |"
                  << "Target: 50.0ms |"
                  << "Actual avg:" << (avgInterval / 1000.0) << "ms |"
@@ -165,7 +174,7 @@ void GimbalController::update()
                  << "Jitter:" << jitter << "ms"
                  << (jitter > 10 ? "⚠️" : "✅");
     }
-    
+
     lastUpdateTime = now;
 
 
@@ -177,8 +186,9 @@ void GimbalController::update()
     m_currentMode->updateGyroBias(m_stateModel->data());
 
     // Execute motion mode update if safety conditions are met
+    // ✅ EXPERT REVIEW FIX: Pass centralized dt to motion mode
     if (m_currentMode->checkSafetyConditions(this)) {
-        m_currentMode->update(this);
+        m_currentMode->update(this, dt);
     } else {
         // Stop servos if safety conditions fail
         m_currentMode->stopServos(this);
