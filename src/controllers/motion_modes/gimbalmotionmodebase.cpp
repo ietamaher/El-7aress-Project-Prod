@@ -370,7 +370,7 @@ void GimbalMotionModeBase::calculateStabilizationCorrection(double currentAz_deg
 // AHRS-BASED WORLD-FRAME STABILIZATION FUNCTIONS
 // =========================================================================
 
-void GimbalMotionModeBase::calculateRequiredGimbalAngles(
+/*void GimbalMotionModeBase::calculateRequiredGimbalAngles(
     double platform_roll, double platform_pitch, double platform_yaw,
     double target_az_world, double target_el_world,
     double& required_gimbal_az, double& required_gimbal_el)
@@ -416,7 +416,52 @@ void GimbalMotionModeBase::calculateRequiredGimbalAngles(
     // STEP C: Convert platform-frame vector back to azimuth/elevation angles
     required_gimbal_az = radToDeg(atan2(y_final, x_final));
     required_gimbal_el = radToDeg(atan2(z_final, sqrt(x_final * x_final + y_final * y_final)));
+}*/
+
+void calculateRequiredGimbalAngles(double roll_deg,
+                                   double pitch_deg,
+                                   double yaw_deg,
+                                   double &required_gimbal_az,
+                                   double &required_gimbal_el)
+{
+    // Convert to radians
+    double roll  = degToRad(roll_deg);
+    double pitch = degToRad(pitch_deg);
+    double yaw   = degToRad(yaw_deg);
+
+    // Rotation matrices (intrinsic rotations):
+    // Rplat = Rz(yaw) * Ry(pitch) * Rx(roll)
+    Eigen::Matrix3d Rz;
+    Rz <<  cos(yaw), -sin(yaw), 0,
+           sin(yaw),  cos(yaw), 0,
+                0,         0,   1;
+
+    Eigen::Matrix3d Ry;
+    Ry <<  cos(pitch), 0, sin(pitch),
+                 0,    1,      0,
+          -sin(pitch), 0, cos(pitch);
+
+    Eigen::Matrix3d Rx;
+    Rx << 1,      0,         0,
+          0, cos(roll), -sin(roll),
+          0, sin(roll),  cos(roll);
+
+    // Platform rotation (inertial -> platform)
+    Eigen::Matrix3d Rplat = Rz * Ry * Rx;
+
+    // Desired gimbal rotation (platform -> camera):
+    // Rg = Rplat^T   (to keep camera 0°,0° in world frame)
+    Eigen::Matrix3d Rg = Rplat.transpose();
+
+    // Extract gimbal angles for Rz(psi) * Ry(theta)
+    double theta = std::asin(-Rg(2,0));                // elevation (rad)
+    double psi   = std::atan2(Rg(1,0), Rg(0,0));       // azimuth (rad)
+
+    // Convert to degrees
+    required_gimbal_az = radToDeg(psi);
+    required_gimbal_el = radToDeg(theta);
 }
+
 
 void GimbalMotionModeBase::convertGimbalToWorldFrame(
     double gimbalAz_platform, double gimbalEl_platform,
