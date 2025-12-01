@@ -1684,7 +1684,7 @@ void SystemStateModel::selectPreviousTRPLocationPage() {
 }
 
  
-void SystemStateModel::processStateTransitions(const SystemStateData& oldData, 
+void SystemStateModel::processStateTransitions(const SystemStateData& oldData,
                                                 SystemStateData& newData)
 {
     // ========================================================================
@@ -1717,11 +1717,22 @@ void SystemStateModel::processStateTransitions(const SystemStateData& oldData,
         enterIdleMode();
         return;
     }
-    
+
+    // ⭐ BUG FIX: Handle startup case where station is already enabled
+    // Original code only detected rising edge (false→true transition)
+    // This fix ensures that if we're in Idle mode and station is enabled,
+    // we transition to Surveillance mode even at startup
     if (newData.stationEnabled && !oldData.stationEnabled) {
+        // Rising edge detected - normal transition
         if (newData.opMode == OperationalMode::Idle) {
             enterSurveillanceMode();
         }
+    } else if (newData.stationEnabled && oldData.stationEnabled &&
+               newData.opMode == OperationalMode::Idle) {
+        // ⭐ STARTUP FIX: Station already enabled at startup
+        // This happens when application starts with physical switch already ON
+        qDebug() << "[BUG FIX] Station already enabled at startup - entering Surveillance mode";
+        enterSurveillanceMode();
     }
 
     // Add any other automatic state transition rules here...

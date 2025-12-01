@@ -78,7 +78,8 @@ Item {
                 Row {
                     spacing: 15
                     visible: (viewModel && viewModel.zeroingVisible) ||
-                             (viewModel && viewModel.environmentVisible)
+                             (viewModel && viewModel.environmentVisible) ||
+                             (viewModel && viewModel.homingVisible)
 
                     Text {
                         visible: viewModel ? viewModel.zeroingVisible : false
@@ -96,6 +97,15 @@ Item {
                         color: accentColor
                     }
 
+                    // ⭐ Homing status display
+                    Text {
+                        visible: viewModel ? viewModel.homingVisible : false
+                        text: viewModel ? viewModel.homingText : ""
+                        font.pixelSize: 13
+                        font.bold: true
+                        font.family: primaryFont
+                        color: cautionColor  // Orange for visibility
+                    }
 
                 }
                 Text {

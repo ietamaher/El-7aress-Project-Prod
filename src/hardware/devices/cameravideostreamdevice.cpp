@@ -303,6 +303,7 @@ void CameraVideoStreamDevice::onSystemStateChanged(const SystemStateData &newSta
     // Update members based on the new state data
     m_currentMode = newState.opMode;
     m_motionMode = newState.motionMode;
+    m_homingState = newState.homingState;  // ⭐ Update homing state
     m_stabEnabled = newState.enableStabilization;
     m_currentAzimuth = newState.gimbalAz;         // Assuming gimbalAz is the display value
     m_currentElevation = newState.gimbalEl;       // Assuming gimbalEl is the display value
@@ -846,6 +847,7 @@ bool CameraVideoStreamDevice::processFrame(GstBuffer *buffer)
         data.cameraFOV = m_cameraFOV;
         data.currentOpMode = m_currentMode;
         data.motionMode = m_motionMode;
+        data.homingState = m_homingState;  // ⭐ Homing state for OSD display
         data.stabEnabled = m_stabEnabled;
         data.azimuth = m_currentAzimuth;
         data.elevation = m_currentElevation;
