@@ -144,6 +144,49 @@ void GimbalController::shutdown()
 void GimbalController::update()
 {
     // ============================================================================
+    // ✅ STARTUP SANITY CHECKS (run once on first update)
+    // ============================================================================
+    static bool sanityChecksPerformed = false;
+    if (!sanityChecksPerformed) {
+        SystemStateData state = m_stateModel->data();
+
+        // Verify IMU gyro rates are in deg/s (not rad/s)
+        // Expected: typical vehicle rotation rates are 0-100 deg/s
+        // If units were rad/s, typical values would be 0-1.75 rad/s
+        const double MAX_REASONABLE_GYRO_DEGS = 500.0; // deg/s (aggressive maneuver)
+        const double MAX_REASONABLE_GYRO_RADS = 10.0;  // rad/s (~573 deg/s, clearly wrong)
+
+        if (state.imuConnected) {
+            double gyroMag = std::sqrt(state.GyroX * state.GyroX +
+                                       state.GyroY * state.GyroY +
+                                       state.GyroZ * state.GyroZ);
+
+            if (gyroMag > MAX_REASONABLE_GYRO_DEGS) {
+                qWarning() << "[GimbalController] ⚠️ IMU gyro rates suspiciously high:"
+                           << "mag =" << gyroMag << "deg/s"
+                           << "- Check units (should be deg/s, not rad/s)";
+            } else if (gyroMag > 0.001 && gyroMag < MAX_REASONABLE_GYRO_RADS) {
+                qWarning() << "[GimbalController] ⚠️ IMU gyro rates suspiciously low:"
+                           << "mag =" << gyroMag
+                           << "- Check units (should be deg/s, not rad/s)";
+            }
+        }
+
+        // Verify stabilizer limits relationships
+        const auto& stabCfg = MotionTuningConfig::instance().stabilizer;
+        double componentSum = stabCfg.maxPositionVel + stabCfg.maxVelocityCorr;
+        if (stabCfg.maxTotalVel < componentSum) {
+            qWarning() << "[GimbalController] ⚠️ Stabilizer limit mismatch:"
+                       << "maxTotalVel (" << stabCfg.maxTotalVel << ") < "
+                       << "maxPositionVel + maxVelocityCorr (" << componentSum << ")"
+                       << "- Position correction will saturate early";
+        }
+
+        sanityChecksPerformed = true;
+        qDebug() << "[GimbalController] Startup sanity checks completed";
+    }
+
+    // ============================================================================
     // ✅ EXPERT REVIEW FIX: Centralized dt computation for all stabilization logic
     // ============================================================================
     double dt = m_velocityTimer.restart() / 1000.0;  // Convert ms to seconds

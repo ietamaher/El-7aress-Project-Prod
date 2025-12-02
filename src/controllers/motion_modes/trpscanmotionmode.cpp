@@ -134,8 +134,7 @@ void TRPScanMotionMode::update(GimbalController* controller, double dt)
             double errEl = targetTrp.elevation - data.imuPitchDeg;
 
             // Normalize Azimuth error for shortest path
-            while (errAz > 180.0)  errAz -= 360.0;
-            while (errAz < -180.0) errAz += 360.0;
+            errAz = normalizeAngle180(errAz);
 
             // ✅ ROBUSTNESS: Use hypot for proper 2D distance
             double distanceToTarget = std::hypot(errAz, errEl);

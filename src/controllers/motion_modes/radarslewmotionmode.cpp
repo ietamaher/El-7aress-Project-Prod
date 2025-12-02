@@ -121,8 +121,7 @@ void RadarSlewMotionMode::update(GimbalController* controller, double dt)
     double errEl = m_targetEl - data.imuPitchDeg; // Elevation now uses IMU Pitch
 
     // Normalize Azimuth error to take the shortest path
-    while (errAz > 180.0)  errAz -= 360.0;
-    while (errAz < -180.0) errAz += 360.0;
+    errAz = normalizeAngle180(errAz);
 
     // Check for arrival at the destination
     // Corrected to use both Az and El errors for 2D distance.

@@ -454,6 +454,10 @@ void GimbalMotionModeBase::calculateRequiredGimbalAngles(
     required_gimbal_el = radToDeg(atan2(v_platform.z(),
                                         sqrt(v_platform.x() * v_platform.x() +
                                              v_platform.y() * v_platform.y())));
+
+    // ✅ EXPERT REVIEW FIX: Negate elevation to match system sign convention
+    // (Consistent with GimbalStabilizer::computeRequiredGimbalAngles)
+    required_gimbal_el = -required_gimbal_el;
 }
 
 
@@ -503,8 +507,7 @@ void GimbalMotionModeBase::convertGimbalToWorldFrame(
     worldEl = radToDeg(atan2(z_world, sqrt(x_world * x_world + y_world * y_world)));
 
     // ✅ EXPERT REVIEW FIX: Normalize azimuth to [-180, 180] for consistency with control loops
-    while (worldAz > 180.0) worldAz -= 360.0;
-    while (worldAz < -180.0) worldAz += 360.0;
+    worldAz = normalizeAngle180(worldAz);
 }
 
 void GimbalMotionModeBase::calculateHybridStabilizationCorrection(
@@ -543,8 +546,7 @@ void GimbalMotionModeBase::calculateHybridStabilizationCorrection(
         double el_error_deg = required_el_deg - state.gimbalEl;
 
         // Normalize az error to [-180, 180]
-        while (az_error_deg > 180.0) az_error_deg -= 360.0;
-        while (az_error_deg < -180.0) az_error_deg += 360.0;
+        az_error_deg = normalizeAngle180(az_error_deg);
 
         const double Kp_position = 2.0; // deg/s per degree
         positionCorrectionAz_dps = Kp_position * az_error_deg;

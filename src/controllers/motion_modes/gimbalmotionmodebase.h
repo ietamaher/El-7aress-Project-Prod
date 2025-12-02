@@ -323,6 +323,17 @@ protected:
         return MotionTuningConfig::instance().servo.elStepsPerDegree;
     }
 
+    /**
+     * @brief Normalize angle to [-180, 180] range
+     * @param angle Angle in degrees
+     * @return Normalized angle in degrees
+     */
+    static inline double normalizeAngle180(double angle) {
+        while (angle > 180.0) angle -= 360.0;
+        while (angle < -180.0) angle += 360.0;
+        return angle;
+    }
+
 private:
     // Helper for angle conversions (scalar)
     static inline double degToRad(double deg) { return deg * (M_PI / 180.0); }

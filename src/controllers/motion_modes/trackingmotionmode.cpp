@@ -180,11 +180,10 @@ void TrackingMotionMode::update(GimbalController* controller, double dt)
 
     // 3. Calculate Position Error (using aim point, NOT visual target)
     double errAz = aimPointAz - data.gimbalAz;
-    double errEl = aimPointEl - data.gimbalEl;  
-    
+    double errEl = aimPointEl - data.gimbalEl;
+
     // Normalize azimuth error to [-180, 180] range
-    while (errAz > 180.0) errAz -= 360.0;
-    while (errAz < -180.0) errAz += 360.0;
+    errAz = normalizeAngle180(errAz);
 
     // 4. Calculate PID output (Feedback)
     bool useDerivativeOnMeasurement = true;
