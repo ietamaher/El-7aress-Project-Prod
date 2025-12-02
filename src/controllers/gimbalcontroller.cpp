@@ -49,9 +49,8 @@ QPointF calculateAngularOffsetFromPixelError(
     // Calculate azimuth offset
     if (cameraHfovDegrees > 0.01f && imageWidthPx > 0) {
         double degreesPerPixelAz = cameraHfovDegrees / static_cast<double>(imageWidthPx);
-        // ✅ CRITICAL FIX: Negate X to match gimbal coordinate system
-        // Target LEFT of center (errorPxX < 0) → Need POSITIVE azimuth (move left in gimbal coords)
-        angularOffsetXDeg = -errorPxX * degreesPerPixelAz;
+        // ✅ CRITICAL FIX: !!! check sign
+        angularOffsetXDeg = errorPxX * degreesPerPixelAz;
     }
 
     // Calculate elevation offset
@@ -264,17 +263,17 @@ void GimbalController::onSystemStateChanged(const SystemStateData &newData)
 
     // PRIORITY 2: HOMING SEQUENCE
     // Only process if homing state or button changed
-    /*if (newData.homingState != m_oldState.homingState ||
+    if (newData.homingState != m_oldState.homingState ||
         newData.gotoHomePosition != m_oldState.gotoHomePosition) {
         processHomingSequence(newData);
-    }*/
+    }
 
     // If homing in progress, skip motion mode changes to avoid interference
-    /*if (newData.homingState == HomingState::InProgress ||
+    if (newData.homingState == HomingState::InProgress ||
         newData.homingState == HomingState::Requested) {
         m_oldState = newData;
         return;  // Exit - homing controls the gimbal exclusively
-    }*/
+    }
 
     // PRIORITY 3: FREE MODE MONITORING
     // Only process if free mode state changed
