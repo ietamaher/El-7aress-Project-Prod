@@ -370,66 +370,30 @@ void GimbalMotionModeBase::calculateStabilizationCorrection(double currentAz_deg
 // AHRS-BASED WORLD-FRAME STABILIZATION FUNCTIONS
 // =========================================================================
 
-/*void GimbalMotionModeBase::calculateRequiredGimbalAngles(
+void GimbalMotionModeBase::calculateRequiredGimbalAngles(
     double platform_roll, double platform_pitch, double platform_yaw,
     double target_az_world, double target_el_world,
     double& required_gimbal_az, double& required_gimbal_el)
 {
+    // ✅ EXPERT REVIEW FIX: Matrix-based approach to avoid gimbal lock and sign errors
+    //
+    // This function computes the gimbal angles needed to point at a specific
+    // world-frame target, given the platform's orientation.
+    //
+    // Mathematical approach:
+    // 1. Build platform rotation matrix: Rplat = Rz(yaw) * Ry(pitch) * Rx(roll)
+    // 2. Create unit vector pointing at world target
+    // 3. Transform to platform frame: v_platform = Rplat^T * v_world
+    // 4. Extract gimbal angles from platform-frame vector
+
     // Convert angles to radians
-    double roll = degToRad(platform_roll);
+    double roll  = degToRad(platform_roll);
     double pitch = degToRad(platform_pitch);
-    double yaw = degToRad(platform_yaw);
+    double yaw   = degToRad(platform_yaw);
     double target_az = degToRad(target_az_world);
     double target_el = degToRad(target_el_world);
 
-    // STEP A: Create unit vector pointing at target in world frame
-    double cos_el = cos(target_el);
-    double target_x_world = cos_el * cos(target_az);
-    double target_y_world = cos_el * sin(target_az);
-    double target_z_world = sin(target_el);
-
-    // STEP B: Rotate vector INTO platform frame (inverse rotation sequence: ZYX)
-    // The platform's orientation is defined by Yaw-Pitch-Roll Euler angles.
-    // To transform from world to platform, we apply the INVERSE rotations in REVERSE order.
-
-    // Undo yaw rotation (Z-axis rotation)
-    double cos_yaw = cos(-yaw);
-    double sin_yaw = sin(-yaw);
-    double x_temp = target_x_world * cos_yaw - target_y_world * sin_yaw;
-    double y_temp = target_x_world * sin_yaw + target_y_world * cos_yaw;
-    double z_temp = target_z_world;
-
-    // Undo pitch rotation (Y-axis rotation)
-    double cos_pitch = cos(-pitch);
-    double sin_pitch = sin(-pitch);
-    double x_platform = x_temp * cos_pitch + z_temp * sin_pitch;
-    double y_platform = y_temp;
-    double z_platform = -x_temp * sin_pitch + z_temp * cos_pitch;
-
-    // Undo roll rotation (X-axis rotation)
-    double cos_roll = cos(-roll);
-    double sin_roll = sin(-roll);
-    double y_final = y_platform * cos_roll - z_platform * sin_roll;
-    double z_final = y_platform * sin_roll + z_platform * cos_roll;
-    double x_final = x_platform;
-
-    // STEP C: Convert platform-frame vector back to azimuth/elevation angles
-    required_gimbal_az = radToDeg(atan2(y_final, x_final));
-    required_gimbal_el = radToDeg(atan2(z_final, sqrt(x_final * x_final + y_final * y_final)));
-}*/
-
-void calculateRequiredGimbalAngles(double roll_deg,
-                                   double pitch_deg,
-                                   double yaw_deg,
-                                   double &required_gimbal_az,
-                                   double &required_gimbal_el)
-{
-    // Convert to radians
-    double roll  = degToRad(roll_deg);
-    double pitch = degToRad(pitch_deg);
-    double yaw   = degToRad(yaw_deg);
-
-    // Rotation matrices (intrinsic rotations):
+    // Step 1: Build platform rotation matrix (world -> platform)
     // Rplat = Rz(yaw) * Ry(pitch) * Rx(roll)
     Eigen::Matrix3d Rz;
     Rz <<  cos(yaw), -sin(yaw), 0,
@@ -446,20 +410,25 @@ void calculateRequiredGimbalAngles(double roll_deg,
           0, cos(roll), -sin(roll),
           0, sin(roll),  cos(roll);
 
-    // Platform rotation (inertial -> platform)
     Eigen::Matrix3d Rplat = Rz * Ry * Rx;
 
-    // Desired gimbal rotation (platform -> camera):
-    // Rg = Rplat^T   (to keep camera 0°,0° in world frame)
-    Eigen::Matrix3d Rg = Rplat.transpose();
+    // Step 2: Create unit vector pointing at world target
+    double cos_el = cos(target_el);
+    Eigen::Vector3d v_world;
+    v_world << cos_el * cos(target_az),
+               cos_el * sin(target_az),
+               sin(target_el);
 
-    // Extract gimbal angles for Rz(psi) * Ry(theta)
-    double theta = std::asin(-Rg(2,0));                // elevation (rad)
-    double psi   = std::atan2(Rg(1,0), Rg(0,0));       // azimuth (rad)
+    // Step 3: Transform target vector to platform frame
+    Eigen::Vector3d v_platform = Rplat.transpose() * v_world;
 
-    // Convert to degrees
-    required_gimbal_az = radToDeg(psi);
-    required_gimbal_el = radToDeg(theta);
+    // Step 4: Extract gimbal angles from platform-frame vector
+    // Azimuth: angle in XY plane
+    // Elevation: angle from XY plane to vector
+    required_gimbal_az = radToDeg(atan2(v_platform.y(), v_platform.x()));
+    required_gimbal_el = radToDeg(atan2(v_platform.z(),
+                                        sqrt(v_platform.x() * v_platform.x() +
+                                             v_platform.y() * v_platform.y())));
 }
 
 
