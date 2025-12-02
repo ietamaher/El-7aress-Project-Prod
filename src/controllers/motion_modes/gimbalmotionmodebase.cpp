@@ -6,6 +6,11 @@
 #include <algorithm>
 
 // =========================================================================
+// STATIC MEMBER DEFINITIONS
+// =========================================================================
+GimbalStabilizer GimbalMotionModeBase::s_stabilizer;
+
+// =========================================================================
 // REGISTER DEFINITIONS for AZD-KX Direct Data Operation (from your manual)
 // =========================================================================
 namespace AzdReg {
@@ -113,15 +118,27 @@ void GimbalMotionModeBase::sendStabilizedServoCommands(GimbalController* control
 
     // --- Step 2: Apply stabilization if enabled ---
     if (enableStabilization && systemState.enableStabilization) {
-        double azCorrection = 0.0;
-        double elCorrection = 0.0;
+        // ✅ NEW ARCHITECTURE: Use velocity-based GimbalStabilizer
+        // Control Law: ω_cmd = ω_user + ω_feedforward + Kp × (angle_error)
+        auto [stabAz_dps, stabEl_dps] = s_stabilizer.computeStabilizedVelocity(
+            desiredAzVelocity,                      // User-commanded velocity
+            desiredElVelocity,
+            systemState.imuRollDeg,                 // Platform attitude (AHRS)
+            systemState.imuPitchDeg,
+            systemState.imuYawDeg,
+            systemState.GyroX,                      // Platform rates (gyros)
+            systemState.GyroY,
+            systemState.GyroZ,
+            systemState.currentAzimuthAngle,        // Current gimbal position
+            systemState.currentElevationAngle,
+            systemState.targetAzimuth_world,        // World-frame target
+            systemState.targetElevation_world,
+            systemState.enableStabilization,        // Use world target holding
+            dt
+        );
 
-        // ✅ EXPERT REVIEW FIX: Use hybrid stabilization with dt parameter
-        calculateHybridStabilizationCorrection(systemState, azCorrection, elCorrection, dt);
-
-        // Add the calculated correction to the desired velocity
-        finalAzVelocity += azCorrection;
-        finalElVelocity += elCorrection;
+        finalAzVelocity = stabAz_dps;
+        finalElVelocity = stabEl_dps;
     }
 
     // --- Step 3: Apply system-wide velocity limits (from config) ---

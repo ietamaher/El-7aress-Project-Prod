@@ -60,6 +60,7 @@ SOURCES += \
     src/controllers/mainmenucontroller.cpp \
     src/controllers/motion_modes/autosectorscanmotionmode.cpp \
     src/controllers/motion_modes/gimbalmotionmodebase.cpp \
+    src/controllers/motion_modes/GimbalStabilizer.cpp \
     src/controllers/motion_modes/manualmotionmode.cpp \
     src/controllers/motion_modes/radarslewmotionmode.cpp \
     src/controllers/motion_modes/trackingmotionmode.cpp \
@@ -156,6 +157,7 @@ HEADERS += \
     src/controllers/mainmenucontroller.h \
     src/controllers/motion_modes/autosectorscanmotionmode.h \
     src/controllers/motion_modes/gimbalmotionmodebase.h \
+    src/controllers/motion_modes/GimbalStabilizer.h \
     src/controllers/motion_modes/manualmotionmode.h \
     src/controllers/motion_modes/pidcontroller.h \
     src/controllers/motion_modes/radarslewmotionmode.h \

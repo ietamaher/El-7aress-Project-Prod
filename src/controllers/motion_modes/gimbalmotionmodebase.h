@@ -9,6 +9,7 @@
 #include <limits>
 #include "models/domain/systemstatedata.h" // Include for SystemStateData
 #include "config/MotionTuningConfig.h"      // Include for runtime-configurable parameters
+#include "GimbalStabilizer.h"               // Include for velocity-based stabilization
 
 // Eigen for 3D transformations (rotation matrices)
 #include <Eigen/Dense>
@@ -335,7 +336,14 @@ private:
         return rad * (180.0 / M_PI);
     }
 
-    // Gyro filters for stabilization
+    // ========================================================================
+    // STABILIZATION
+    // ========================================================================
+
+    // Velocity-based stabilizer (stateless, shared across all modes)
+    static GimbalStabilizer s_stabilizer;
+
+    // Gyro filters for stabilization (legacy code)
     GyroLowPassFilter m_gyroXFilter;
     GyroLowPassFilter m_gyroYFilter;
     GyroLowPassFilter m_gyroZFilter;
