@@ -1,4 +1,5 @@
 #include "GimbalStabilizer.h"
+#include "config/MotionTuningConfig.h"
 #include <algorithm>
 
 // ============================================================================
@@ -37,6 +38,9 @@ std::pair<double,double> GimbalStabilizer::computeStabilizedVelocity(
     // COMPONENT 1: Position Correction (AHRS-based drift compensation)
     // ========================================================================
 
+    // Access runtime-configurable tuning parameters
+    const auto& cfg = MotionTuningConfig::instance().stabilizer;
+
     // Compute required gimbal angles to point at world target
     auto [requiredAz_deg, requiredEl_deg] = computeRequiredGimbalAngles(
         imuRoll_deg, imuPitch_deg, imuYaw_deg,
@@ -48,12 +52,12 @@ std::pair<double,double> GimbalStabilizer::computeStabilizedVelocity(
     double elError_deg = normalizeAngle180(requiredEl_deg - currentEl_deg);
 
     // Convert to velocity correction: v_correction = Kp × error
-    double azPositionCorr_dps = KP_POSITION * azError_deg;
-    double elPositionCorr_dps = KP_POSITION * elError_deg;
+    double azPositionCorr_dps = cfg.kpPosition * azError_deg;
+    double elPositionCorr_dps = cfg.kpPosition * elError_deg;
 
     // Clamp position correction velocities
-    azPositionCorr_dps = std::clamp(azPositionCorr_dps, -MAX_POSITION_VEL, MAX_POSITION_VEL);
-    elPositionCorr_dps = std::clamp(elPositionCorr_dps, -MAX_POSITION_VEL, MAX_POSITION_VEL);
+    azPositionCorr_dps = std::clamp(azPositionCorr_dps, -cfg.maxPositionVel, cfg.maxPositionVel);
+    elPositionCorr_dps = std::clamp(elPositionCorr_dps, -cfg.maxPositionVel, cfg.maxPositionVel);
 
     // ========================================================================
     // COMPONENT 2: Rate Feed-Forward (Gyro-based transient compensation)
@@ -71,8 +75,8 @@ std::pair<double,double> GimbalStabilizer::computeStabilizedVelocity(
     );
 
     // Clamp rate feed-forward velocities
-    azRateFF_dps = std::clamp(azRateFF_dps, -MAX_VELOCITY_CORR, MAX_VELOCITY_CORR);
-    elRateFF_dps = std::clamp(elRateFF_dps, -MAX_VELOCITY_CORR, MAX_VELOCITY_CORR);
+    azRateFF_dps = std::clamp(azRateFF_dps, -cfg.maxVelocityCorr, cfg.maxVelocityCorr);
+    elRateFF_dps = std::clamp(elRateFF_dps, -cfg.maxVelocityCorr, cfg.maxVelocityCorr);
 
     // ========================================================================
     // COMPONENT 3: Velocity Composition
@@ -83,8 +87,8 @@ std::pair<double,double> GimbalStabilizer::computeStabilizedVelocity(
     finalEl_dps = desiredElVel_dps + elPositionCorr_dps + elRateFF_dps;
 
     // Apply total velocity limit
-    finalAz_dps = std::clamp(finalAz_dps, -MAX_TOTAL_VEL, MAX_TOTAL_VEL);
-    finalEl_dps = std::clamp(finalEl_dps, -MAX_TOTAL_VEL, MAX_TOTAL_VEL);
+    finalAz_dps = std::clamp(finalAz_dps, -cfg.maxTotalVel, cfg.maxTotalVel);
+    finalEl_dps = std::clamp(finalEl_dps, -cfg.maxTotalVel, cfg.maxTotalVel);
 
     return {finalAz_dps, finalEl_dps};
 }
@@ -154,6 +158,10 @@ std::pair<double,double> GimbalStabilizer::computeRequiredGimbalAngles(
     double gimbalAz_deg = radToDeg(gimbalAz_rad);
     double gimbalEl_deg = radToDeg(gimbalEl_rad);
 
+    // ✅ EXPERT REVIEW FIX: Negate elevation to match system sign convention
+    // Elevation servo wiring convention requires sign inversion
+    gimbalEl_deg = -gimbalEl_deg;
+
     return {gimbalAz_deg, gimbalEl_deg};
 }
 
@@ -174,7 +182,11 @@ std::pair<double,double> GimbalStabilizer::computeRateFeedForward(
 
     double sin_az = std::sin(az_rad);
     double cos_az = std::cos(az_rad);
+
+    // ✅ SAFETY: Clamp tan(el) to prevent singularities near ±90° elevation
+    const auto& cfg = MotionTuningConfig::instance().stabilizer;
     double tan_el = std::tan(el_rad);
+    tan_el = std::clamp(tan_el, -cfg.maxTanEl, cfg.maxTanEl);
 
     // Platform motion effect on elevation axis
     // Elevation couples with platform pitch and roll (depending on azimuth orientation)

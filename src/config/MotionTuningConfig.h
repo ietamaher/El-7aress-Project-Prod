@@ -74,6 +74,17 @@ public:
         double maxAccelHzPerSec = 500000.0;   ///< Max acceleration in Hz/s
     };
 
+    /**
+     * @brief Stabilizer tuning parameters (GimbalStabilizer)
+     */
+    struct StabilizerConfig {
+        double kpPosition = 2.0;              ///< Position error gain (deg/s per deg)
+        double maxPositionVel = 10.0;         ///< Max position correction velocity (deg/s)
+        double maxVelocityCorr = 5.0;         ///< Max rate feed-forward velocity (deg/s)
+        double maxTotalVel = 12.0;            ///< Max total correction velocity (deg/s)
+        double maxTanEl = 10.0;               ///< Clamp tan(elevation) for singularity protection
+    };
+
     // ========================================================================
     // PUBLIC API
     // ========================================================================
@@ -124,6 +135,7 @@ public:
     ScanParams autoScanParams;
     ScanParams trpScanParams;
     ManualLimits manualLimits;
+    StabilizerConfig stabilizer;
 
 private:
     /**

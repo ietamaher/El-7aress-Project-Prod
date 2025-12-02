@@ -357,31 +357,33 @@ private:
     qint32 m_lastAzSpeedHz = std::numeric_limits<qint32>::max(); // Initialize to invalid value
     qint32 m_lastElSpeedHz = std::numeric_limits<qint32>::max();
 
+    // ========================================================================
+    // LEGACY FUNCTIONS (Deprecated - use GimbalStabilizer instead)
+    // ========================================================================
+
     /**
-     * @brief Calculates required gimbal angles to point at a world-frame target.
-     * @param platform_roll Platform roll angle from AHRS (degrees)
-     * @param platform_pitch Platform pitch angle from AHRS (degrees)
-     * @param platform_yaw Platform yaw angle from AHRS (degrees)
-     * @param target_az_world Desired world azimuth (degrees, 0° = North)
-     * @param target_el_world Desired world elevation (degrees, 0° = horizon)
-     * @param required_gimbal_az Output required gimbal azimuth in platform frame (degrees)
-     * @param required_gimbal_el Output required gimbal elevation in platform frame (degrees)
+     * @brief [DEPRECATED] Use GimbalStabilizer::computeRequiredGimbalAngles() instead
+     * @deprecated Replaced by matrix-based GimbalStabilizer for production code
      */
+    [[deprecated("Use GimbalStabilizer::computeRequiredGimbalAngles() instead")]]
     void calculateRequiredGimbalAngles(double platform_roll, double platform_pitch, double platform_yaw,
                                        double target_az_world, double target_el_world,
                                        double& required_gimbal_az, double& required_gimbal_el);
 
     /**
-     * @brief Hybrid stabilization: combines position control (AHRS) + velocity feedforward (gyros).
-     * @param state Current system state with IMU data and gimbal angles
-     * @param azCorrection_dps Output azimuth correction velocity (deg/s)
-     * @param elCorrection_dps Output elevation correction velocity (deg/s)
-     * @param dt Time delta in seconds since last update (Expert Review Fix)
+     * @brief [DEPRECATED] Use GimbalStabilizer::computeStabilizedVelocity() instead
+     * @deprecated Replaced by velocity-based GimbalStabilizer for production code
      */
+    [[deprecated("Use GimbalStabilizer::computeStabilizedVelocity() instead")]]
     void calculateHybridStabilizationCorrection(const SystemStateData& state,
                                                 double& azCorrection_dps, double& elCorrection_dps,
                                                 double dt);
 
+    /**
+     * @brief [DEPRECATED] Legacy stabilization function (diagnostic only)
+     * @deprecated Replaced by velocity-based GimbalStabilizer for production code
+     */
+    [[deprecated("Legacy function - use GimbalStabilizer for production code")]]
     void calculateStabilizationCorrection(double currentAz_deg, double currentEl_deg,
                                                             double gyroX_dps_raw, double gyroY_dps_raw, double gyroZ_dps_raw,
                                                             double& azCorrection_dps, double& elCorrection_dps);

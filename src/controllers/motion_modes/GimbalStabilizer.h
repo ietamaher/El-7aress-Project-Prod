@@ -114,11 +114,15 @@ private:
     // ========================================================================
     // Tuning parameters
     // ========================================================================
-
-    static constexpr double KP_POSITION = 2.0;      // Position error gain (deg/s per deg)
-    static constexpr double MAX_POSITION_VEL = 10.0; // Max position correction velocity (deg/s)
-    static constexpr double MAX_VELOCITY_CORR = 5.0; // Max rate feed-forward velocity (deg/s)
-    static constexpr double MAX_TOTAL_VEL = 12.0;   // Max total correction velocity (deg/s)
+    // All tuning parameters are now loaded from motion_tuning.json at runtime
+    // via MotionTuningConfig::instance().stabilizer
+    //
+    // Configurable parameters:
+    //   - kpPosition:       Position error gain (deg/s per deg) [default: 2.0]
+    //   - maxPositionVel:   Max position correction velocity (deg/s) [default: 10.0]
+    //   - maxVelocityCorr:  Max rate feed-forward velocity (deg/s) [default: 5.0]
+    //   - maxTotalVel:      Max total correction velocity (deg/s) [default: 12.0]
+    //   - maxTanEl:         Clamp tan(elevation) for singularity protection [default: 10.0]
 
     // ========================================================================
     // Helper functions

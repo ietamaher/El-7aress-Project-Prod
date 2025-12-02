@@ -117,9 +117,17 @@ void GimbalMotionModeBase::sendStabilizedServoCommands(GimbalController* control
     double finalElVelocity = desiredElVelocity;
 
     // --- Step 2: Apply stabilization if enabled ---
+    // FLAG SEMANTICS:
+    //   enableStabilization (param): Mode-level stabilization request (e.g., tracking wants it, manual doesn't)
+    //   systemState.enableStabilization: User-level global stabilization toggle (GUI button)
+    //   Both must be true to apply stabilization (AND logic)
     if (enableStabilization && systemState.enableStabilization) {
         // ✅ NEW ARCHITECTURE: Use velocity-based GimbalStabilizer
         // Control Law: ω_cmd = ω_user + ω_feedforward + Kp × (angle_error)
+        //
+        // When stabilization is active, we ALWAYS enable world-frame target holding
+        // (position correction + rate feed-forward). The stabilizer handles both
+        // AHRS-based drift compensation and gyro-based transient compensation.
         auto [stabAz_dps, stabEl_dps] = s_stabilizer.computeStabilizedVelocity(
             desiredAzVelocity,                      // User-commanded velocity
             desiredElVelocity,
@@ -133,7 +141,7 @@ void GimbalMotionModeBase::sendStabilizedServoCommands(GimbalController* control
             systemState.currentElevationAngle,
             systemState.targetAzimuth_world,        // World-frame target
             systemState.targetElevation_world,
-            systemState.enableStabilization,        // Use world target holding
+            true,                                   // Always enable world target holding when stabilizing
             dt
         );
 
