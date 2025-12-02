@@ -128,17 +128,11 @@ void TrackingMotionMode::update(GimbalController* controller, double dt)
         return;
     }
 
-    // ✅ CRITICAL FIX: Compute and clamp dt
-    double dt = UPDATE_INTERVAL_S();
-    if (m_velocityTimer.isValid()) {
-        dt = clampDt(m_velocityTimer.restart() / 1000.0);
-    } else {
-        m_velocityTimer.start();
-    }
+    // ✅ EXPERT REVIEW FIX: dt is now passed from GimbalController (centralized measurement)
 
     SystemStateData data = controller->systemStateModel()->data();
 
-    // ✅ CRITICAL FIX: dt-aware smoothing using runtime-configurable tau
+    // ✅ EXPERT REVIEW FIX: dt-aware smoothing using runtime-configurable tau
     const auto& cfg = MotionTuningConfig::instance();
     double alphaPos = alphaFromTauDt(cfg.filters.trackingPositionTau, dt);
     double alphaVel = alphaFromTauDt(cfg.filters.trackingVelocityTau, dt);

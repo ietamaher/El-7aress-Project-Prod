@@ -126,14 +126,8 @@ void TRPScanMotionMode::update(GimbalController* controller, double dt)
             const auto& targetTrp = m_trpPage[m_currentTrpIndex];
             SystemStateData data = controller->systemStateModel()->data();
 
-            // ✅ CRITICAL FIX: Measure dt using timer (not fixed UPDATE_INTERVAL_S!)
+            // ✅ EXPERT REVIEW FIX: dt is now passed from GimbalController (centralized measurement)
             const auto& cfg = MotionTuningConfig::instance();
-            double dt = UPDATE_INTERVAL_S();
-            if (m_velocityTimer.isValid()) {
-                dt = clampDt(m_velocityTimer.restart() / 1000.0);
-            } else {
-                m_velocityTimer.start();
-            }
 
             // Calculate errors
             double errAz = targetTrp.azimuth - data.gimbalAz;
