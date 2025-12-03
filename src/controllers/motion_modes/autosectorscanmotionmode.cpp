@@ -144,6 +144,7 @@ void AutoSectorScanMotionMode::update(GimbalController* controller, double dt) {
     SystemStateData data = controller->systemStateModel()->data();
 
     // ✅ EXPERT REVIEW FIX: dt is now passed from GimbalController (centralized measurement)
+    const auto& cfg = MotionTuningConfig::instance();
 
     // Calculate errors - use encoder for Az, IMU pitch for El
     double errAz = m_targetAz - data.gimbalAz;

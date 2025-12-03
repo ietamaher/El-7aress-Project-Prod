@@ -210,8 +210,9 @@ void GimbalMotionModeBase::stopServos(GimbalController* controller)
 {
     if (!controller) return;
     // Send a zero-velocity command through the new architecture.
-    // If stabilization is on, this will still actively hold the gimbal steady.
-    sendStabilizedServoCommands(controller, 0.0, 0.0);
+    // Disable stabilization when stopping (no need to hold position)
+    const double dt = 0.05; // 50ms nominal, doesn't matter for zero velocity
+    sendStabilizedServoCommands(controller, 0.0, 0.0, false, dt);
 }
 
 void GimbalMotionModeBase::writeServoCommands(ServoDriverDevice* driverInterface, double finalVelocity, float scalingFactor)
