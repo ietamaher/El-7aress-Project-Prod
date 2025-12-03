@@ -74,7 +74,7 @@ void TRPScanMotionMode::exitMode(GimbalController* controller)
 // ===================================================================================
 // =================== REFACTORED UPDATE METHOD WITH MOTION PROFILING ================
 // ===================================================================================
-void TRPScanMotionMode::update(GimbalController* controller)
+void TRPScanMotionMode::update(GimbalController* controller, double dt)
 {
     if (!controller) return;
 
@@ -126,22 +126,15 @@ void TRPScanMotionMode::update(GimbalController* controller)
             const auto& targetTrp = m_trpPage[m_currentTrpIndex];
             SystemStateData data = controller->systemStateModel()->data();
 
-            // ✅ CRITICAL FIX: Measure dt using timer (not fixed UPDATE_INTERVAL_S!)
+            // ✅ EXPERT REVIEW FIX: dt is now passed from GimbalController (centralized measurement)
             const auto& cfg = MotionTuningConfig::instance();
-            double dt_s = UPDATE_INTERVAL_S();
-            if (m_velocityTimer.isValid()) {
-                dt_s = clampDt(m_velocityTimer.restart() / 1000.0);
-            } else {
-                m_velocityTimer.start();
-            }
 
             // Calculate errors
             double errAz = targetTrp.azimuth - data.gimbalAz;
             double errEl = targetTrp.elevation - data.imuPitchDeg;
 
             // Normalize Azimuth error for shortest path
-            while (errAz > 180.0)  errAz -= 360.0;
-            while (errAz < -180.0) errAz += 360.0;
+            errAz = normalizeAngle180(errAz);
 
             // ✅ ROBUSTNESS: Use hypot for proper 2D distance
             double distanceToTarget = std::hypot(errAz, errEl);
@@ -164,8 +157,8 @@ void TRPScanMotionMode::update(GimbalController* controller)
 
             if (travelSpeed <= 0.0) {
                 // Speed zero - use PID to hold position
-                desiredAzVelocity = pidCompute(m_azPid, errAz, dt_s);
-                desiredElVelocity = pidCompute(m_elPid, errEl, dt_s);
+                desiredAzVelocity = pidCompute(m_azPid, errAz, dt);
+                desiredElVelocity = pidCompute(m_elPid, errEl, dt);
             } else {
                 // ✅ CRITICAL FIX: Compute deceleration distance from kinematics (from config)
                 const double a = cfg.motion.trpMaxAccelDegS2;
@@ -179,8 +172,8 @@ void TRPScanMotionMode::update(GimbalController* controller)
                 if (distanceToTarget < decelDist) {
                     // DECELERATION ZONE: Use PID to slow down smoothly
                     qDebug() << "TRP: Decelerating. Dist:" << distanceToTarget;
-                    desiredAzVelocity = pidCompute(m_azPid, errAz, dt_s);
-                    desiredElVelocity = pidCompute(m_elPid, errEl, dt_s);
+                    desiredAzVelocity = pidCompute(m_azPid, errAz, dt);
+                    desiredElVelocity = pidCompute(m_elPid, errEl, dt);
                 } else {
                     // CRUISING ZONE: Move at constant speed
                     double dirAz = errAz / distanceToTarget;
@@ -195,7 +188,7 @@ void TRPScanMotionMode::update(GimbalController* controller)
             }
 
             // ✅ CRITICAL FIX: Apply time-based rate limiting (from config)
-            double maxDelta = cfg.motion.trpMaxAccelDegS2 * dt_s;
+            double maxDelta = cfg.motion.trpMaxAccelDegS2 * dt;
             desiredAzVelocity = applyRateLimitTimeBased(desiredAzVelocity, m_previousDesiredAzVel, maxDelta);
             desiredElVelocity = applyRateLimitTimeBased(desiredElVelocity, m_previousDesiredElVel, maxDelta);
 
@@ -221,7 +214,7 @@ void TRPScanMotionMode::update(GimbalController* controller)
                 lastPublishMs = nowMs;
             }
 
-            sendStabilizedServoCommands(controller, desiredAzVelocity, desiredElVelocity, true);
+            sendStabilizedServoCommands(controller, desiredAzVelocity, desiredElVelocity, true, dt);
             break;
         }
     }

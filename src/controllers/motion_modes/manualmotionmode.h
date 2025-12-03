@@ -11,8 +11,8 @@ public:
 
     void enterMode(GimbalController* controller) override;
     void exitMode(GimbalController* controller) override;
-    void update(GimbalController* controller) override;
-    double processJoystickInput(double rawInput, double& filteredValue);
+    void update(GimbalController* controller, double dt) override;
+    double processJoystickInput(double filteredInput);
 
 
 private:

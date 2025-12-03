@@ -74,6 +74,25 @@ public:
         double maxAccelHzPerSec = 500000.0;   ///< Max acceleration in Hz/s
     };
 
+    /**
+     * @brief Stabilizer tuning parameters (GimbalStabilizer)
+     *
+     * IMPORTANT: Limit interplay and constraints:
+     * - maxTotalVel should be >= (maxPositionVel + maxVelocityCorr) to avoid saturation
+     * - Recommended: maxTotalVel = maxPositionVel + maxVelocityCorr + margin
+     * - If maxTotalVel < sum of components, position correction may be clipped
+     * - maxTanEl prevents singularities near ±90° elevation (tan(84.3°) ≈ 10)
+     *
+     * Defaults tuned for 50ms update rate (20Hz) on moving platform.
+     */
+    struct StabilizerConfig {
+        double kpPosition = 2.0;              ///< Position error gain (deg/s per deg)
+        double maxPositionVel = 10.0;         ///< Max position correction velocity (deg/s)
+        double maxVelocityCorr = 5.0;         ///< Max rate feed-forward velocity (deg/s)
+        double maxTotalVel = 18.0;            ///< Max total correction velocity (deg/s) [must be >= sum]
+        double maxTanEl = 10.0;               ///< Clamp tan(elevation) for singularity protection
+    };
+
     // ========================================================================
     // PUBLIC API
     // ========================================================================
@@ -124,6 +143,7 @@ public:
     ScanParams autoScanParams;
     ScanParams trpScanParams;
     ManualLimits manualLimits;
+    StabilizerConfig stabilizer;
 
 private:
     /**

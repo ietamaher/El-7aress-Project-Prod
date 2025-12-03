@@ -13,7 +13,7 @@ public:
 
     void enterMode(GimbalController* controller) override;
     void exitMode(GimbalController* controller) override;
-    void update(GimbalController* controller) override;
+    void update(GimbalController* controller, double dt) override;
 
     // Method for GimbalController to set the active scan parameters
     void setActiveScanZone(const AutoSectorScanZone& scanZone);

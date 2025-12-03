@@ -49,9 +49,8 @@ QPointF calculateAngularOffsetFromPixelError(
     // Calculate azimuth offset
     if (cameraHfovDegrees > 0.01f && imageWidthPx > 0) {
         double degreesPerPixelAz = cameraHfovDegrees / static_cast<double>(imageWidthPx);
-        // ✅ CRITICAL FIX: Negate X to match gimbal coordinate system
-        // Target LEFT of center (errorPxX < 0) → Need POSITIVE azimuth (move left in gimbal coords)
-        angularOffsetXDeg = -errorPxX * degreesPerPixelAz;
+        // ✅ CRITICAL FIX: !!! check sign
+        angularOffsetXDeg = errorPxX * degreesPerPixelAz;
     }
 
     // Calculate elevation offset
@@ -109,6 +108,9 @@ GimbalController::GimbalController(ServoDriverDevice* azServo,
     connect(m_updateTimer, &QTimer::timeout, this, &GimbalController::update);
     m_updateTimer->start(50);
 
+    // Initialize centralized dt measurement timer (Expert Review Fix)
+    m_velocityTimer.start();
+
     // Initialize homing timeout timer
     m_homingTimeoutTimer = new QTimer(this);
     m_homingTimeoutTimer->setSingleShot(true);
@@ -140,23 +142,72 @@ void GimbalController::shutdown()
 
 void GimbalController::update()
 {
+    // ============================================================================
+    // ✅ STARTUP SANITY CHECKS (run once on first update)
+    // ============================================================================
+    static bool sanityChecksPerformed = false;
+    if (!sanityChecksPerformed) {
+        SystemStateData state = m_stateModel->data();
+
+        // Verify IMU gyro rates are in deg/s (not rad/s)
+        // Expected: typical vehicle rotation rates are 0-100 deg/s
+        // If units were rad/s, typical values would be 0-1.75 rad/s
+        const double MAX_REASONABLE_GYRO_DEGS = 500.0; // deg/s (aggressive maneuver)
+        const double MAX_REASONABLE_GYRO_RADS = 10.0;  // rad/s (~573 deg/s, clearly wrong)
+
+        if (state.imuConnected) {
+            double gyroMag = std::sqrt(state.GyroX * state.GyroX +
+                                       state.GyroY * state.GyroY +
+                                       state.GyroZ * state.GyroZ);
+
+            if (gyroMag > MAX_REASONABLE_GYRO_DEGS) {
+                qWarning() << "[GimbalController] ⚠️ IMU gyro rates suspiciously high:"
+                           << "mag =" << gyroMag << "deg/s"
+                           << "- Check units (should be deg/s, not rad/s)";
+            } else if (gyroMag > 0.001 && gyroMag < MAX_REASONABLE_GYRO_RADS) {
+                qWarning() << "[GimbalController] ⚠️ IMU gyro rates suspiciously low:"
+                           << "mag =" << gyroMag
+                           << "- Check units (should be deg/s, not rad/s)";
+            }
+        }
+
+        // Verify stabilizer limits relationships
+        const auto& stabCfg = MotionTuningConfig::instance().stabilizer;
+        double componentSum = stabCfg.maxPositionVel + stabCfg.maxVelocityCorr;
+        if (stabCfg.maxTotalVel < componentSum) {
+            qWarning() << "[GimbalController] ⚠️ Stabilizer limit mismatch:"
+                       << "maxTotalVel (" << stabCfg.maxTotalVel << ") < "
+                       << "maxPositionVel + maxVelocityCorr (" << componentSum << ")"
+                       << "- Position correction will saturate early";
+        }
+
+        sanityChecksPerformed = true;
+        qDebug() << "[GimbalController] Startup sanity checks completed";
+    }
+
+    // ============================================================================
+    // ✅ EXPERT REVIEW FIX: Centralized dt computation for all stabilization logic
+    // ============================================================================
+    double dt = m_velocityTimer.restart() / 1000.0;  // Convert ms to seconds
+    dt = std::clamp(dt, 0.001, 0.050);  // Clamp between 1-50 ms
+
     // ✅ MEASURE UPDATE LOOP TIMING
     static auto lastUpdateTime = std::chrono::high_resolution_clock::now();
     static std::vector<long long> updateIntervals;
     static int updateCount = 0;
-    
+
     auto now = std::chrono::high_resolution_clock::now();
     auto interval = std::chrono::duration_cast<std::chrono::microseconds>(now - lastUpdateTime).count();
-    
+
     updateIntervals.push_back(interval);
     if (updateIntervals.size() > 100) updateIntervals.erase(updateIntervals.begin());
-    
+
     if (++updateCount % 50 == 0) {
         long long minInterval = *std::min_element(updateIntervals.begin(), updateIntervals.end());
         long long maxInterval = *std::max_element(updateIntervals.begin(), updateIntervals.end());
         long long avgInterval = std::accumulate(updateIntervals.begin(), updateIntervals.end(), 0LL) / updateIntervals.size();
         double jitter = (maxInterval - minInterval) / 1000.0;
-        
+
         qDebug() << "🔄 [UPDATE LOOP] 50 cycles |"
                  << "Target: 50.0ms |"
                  << "Actual avg:" << (avgInterval / 1000.0) << "ms |"
@@ -165,7 +216,7 @@ void GimbalController::update()
                  << "Jitter:" << jitter << "ms"
                  << (jitter > 10 ? "⚠️" : "✅");
     }
-    
+
     lastUpdateTime = now;
 
 
@@ -177,8 +228,9 @@ void GimbalController::update()
     m_currentMode->updateGyroBias(m_stateModel->data());
 
     // Execute motion mode update if safety conditions are met
+    // ✅ EXPERT REVIEW FIX: Pass centralized dt to motion mode
     if (m_currentMode->checkSafetyConditions(this)) {
-        m_currentMode->update(this);
+        m_currentMode->update(this, dt);
     } else {
         // Stop servos if safety conditions fail
         m_currentMode->stopServos(this);
@@ -211,17 +263,17 @@ void GimbalController::onSystemStateChanged(const SystemStateData &newData)
 
     // PRIORITY 2: HOMING SEQUENCE
     // Only process if homing state or button changed
-    /*if (newData.homingState != m_oldState.homingState ||
+    if (newData.homingState != m_oldState.homingState ||
         newData.gotoHomePosition != m_oldState.gotoHomePosition) {
         processHomingSequence(newData);
-    }*/
+    }
 
     // If homing in progress, skip motion mode changes to avoid interference
-    /*if (newData.homingState == HomingState::InProgress ||
+    if (newData.homingState == HomingState::InProgress ||
         newData.homingState == HomingState::Requested) {
         m_oldState = newData;
         return;  // Exit - homing controls the gimbal exclusively
-    }*/
+    }
 
     // PRIORITY 3: FREE MODE MONITORING
     // Only process if free mode state changed

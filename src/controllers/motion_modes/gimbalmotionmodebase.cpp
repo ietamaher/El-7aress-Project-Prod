@@ -6,6 +6,11 @@
 #include <algorithm>
 
 // =========================================================================
+// STATIC MEMBER DEFINITIONS
+// =========================================================================
+GimbalStabilizer GimbalMotionModeBase::s_stabilizer;
+
+// =========================================================================
 // REGISTER DEFINITIONS for AZD-KX Direct Data Operation (from your manual)
 // =========================================================================
 namespace AzdReg {
@@ -102,7 +107,8 @@ void GimbalMotionModeBase::updateGyroBias(const SystemStateData& systemState)
 void GimbalMotionModeBase::sendStabilizedServoCommands(GimbalController* controller,
                                  double desiredAzVelocity,
                                  double desiredElVelocity,
-                                 bool enableStabilization)
+                                 bool enableStabilization,
+                                 double dt)
 {
     // --- Step 1: Get current system state ---
     SystemStateData systemState = controller->systemStateModel()->data();
@@ -111,16 +117,36 @@ void GimbalMotionModeBase::sendStabilizedServoCommands(GimbalController* control
     double finalElVelocity = desiredElVelocity;
 
     // --- Step 2: Apply stabilization if enabled ---
+    // FLAG SEMANTICS:
+    //   enableStabilization (param): Mode-level stabilization request (e.g., tracking wants it, manual doesn't)
+    //   systemState.enableStabilization: User-level global stabilization toggle (GUI button)
+    //   Both must be true to apply stabilization (AND logic)
     if (enableStabilization && systemState.enableStabilization) {
-        double azCorrection = 0.0;
-        double elCorrection = 0.0;
+        // ✅ NEW ARCHITECTURE: Use velocity-based GimbalStabilizer
+        // Control Law: ω_cmd = ω_user + ω_feedforward + Kp × (angle_error)
+        //
+        // When stabilization is active, we ALWAYS enable world-frame target holding
+        // (position correction + rate feed-forward). The stabilizer handles both
+        // AHRS-based drift compensation and gyro-based transient compensation.
+        auto [stabAz_dps, stabEl_dps] = s_stabilizer.computeStabilizedVelocity(
+            desiredAzVelocity,                      // User-commanded velocity
+            desiredElVelocity,
+            systemState.imuRollDeg,                 // Platform attitude (AHRS)
+            systemState.imuPitchDeg,
+            systemState.imuYawDeg,
+            systemState.GyroX,                      // Platform rates (gyros)
+            systemState.GyroY,
+            systemState.GyroZ,
+            systemState.currentAzimuthAngle,        // Current gimbal position
+            systemState.currentElevationAngle,
+            systemState.targetAzimuth_world,        // World-frame target
+            systemState.targetElevation_world,
+            true,                                   // Always enable world target holding when stabilizing
+            dt
+        );
 
-        // Use new hybrid stabilization: AHRS position control + gyro velocity feedforward
-        calculateHybridStabilizationCorrection(systemState, azCorrection, elCorrection);
-
-        // Add the calculated correction to the desired velocity
-        finalAzVelocity += azCorrection;
-        finalElVelocity += elCorrection;
+        finalAzVelocity = stabAz_dps;
+        finalElVelocity = stabEl_dps;
     }
 
     // --- Step 3: Apply system-wide velocity limits (from config) ---
@@ -311,15 +337,18 @@ void GimbalMotionModeBase::calculateStabilizationCorrection(double currentAz_deg
     double gyroX_dps_corrected = gyroX_dps_raw - m_gyroBiasX;
     double gyroY_dps_corrected = gyroY_dps_raw - m_gyroBiasY;
     double gyroZ_dps_corrected = gyroZ_dps_raw - m_gyroBiasZ;
-    //  Filter the raw DPS data ---
-    double gyroX_dps_filtered = m_gyroXFilter.update(gyroX_dps_corrected);
-    double gyroY_dps_filtered = m_gyroYFilter.update(gyroY_dps_corrected);
-    double gyroZ_dps_filtered = m_gyroZFilter.update(gyroZ_dps_corrected);
 
-    // Map to platform motion axes (p, q, r)
-    const double p_imu = gyroY_dps_filtered; // Roll
-    const double q_imu = gyroX_dps_filtered; // Pitch
-    const double r_imu = gyroZ_dps_filtered; // Yaw
+    // ✅ EXPERT REVIEW FIX: Use updateWithDt() with default dt (this function is legacy, not called)
+    double dt = UPDATE_INTERVAL_S();
+    double gyroX_dps_filtered = m_gyroXFilter.updateWithDt(gyroX_dps_corrected, dt);
+    double gyroY_dps_filtered = m_gyroYFilter.updateWithDt(gyroY_dps_corrected, dt);
+    double gyroZ_dps_filtered = m_gyroZFilter.updateWithDt(gyroZ_dps_corrected, dt);
+
+    // ✅ EXPERT REVIEW FIX: Correct IMU→body-rate mapping (unified with calculateHybridStabilizationCorrection)
+    // IMU X → p (roll rate), Y → q (pitch rate), Z → r (yaw rate, inverted)
+    const double p_imu = gyroX_dps_filtered;  // Roll rate (deg/s)
+    const double q_imu = gyroY_dps_filtered;  // Pitch rate (deg/s)
+    const double r_imu = -gyroZ_dps_filtered; // Yaw rate (deg/s) - NEGATED because Z is DOWN
 
     // Get current gimbal angles in radians
     const double currentAzRad = degToRad(currentAz_deg);
@@ -371,48 +400,66 @@ void GimbalMotionModeBase::calculateRequiredGimbalAngles(
     double target_az_world, double target_el_world,
     double& required_gimbal_az, double& required_gimbal_el)
 {
+    // ✅ EXPERT REVIEW FIX: Matrix-based approach to avoid gimbal lock and sign errors
+    //
+    // This function computes the gimbal angles needed to point at a specific
+    // world-frame target, given the platform's orientation.
+    //
+    // Mathematical approach:
+    // 1. Build platform rotation matrix: Rplat = Rz(yaw) * Ry(pitch) * Rx(roll)
+    // 2. Create unit vector pointing at world target
+    // 3. Transform to platform frame: v_platform = Rplat^T * v_world
+    // 4. Extract gimbal angles from platform-frame vector
+
     // Convert angles to radians
-    double roll = degToRad(platform_roll);
+    double roll  = degToRad(platform_roll);
     double pitch = degToRad(platform_pitch);
-    double yaw = degToRad(platform_yaw);
+    double yaw   = degToRad(platform_yaw);
     double target_az = degToRad(target_az_world);
     double target_el = degToRad(target_el_world);
 
-    // STEP A: Create unit vector pointing at target in world frame
+    // Step 1: Build platform rotation matrix (world -> platform)
+    // Rplat = Rz(yaw) * Ry(pitch) * Rx(roll)
+    Eigen::Matrix3d Rz;
+    Rz <<  cos(yaw), -sin(yaw), 0,
+           sin(yaw),  cos(yaw), 0,
+                0,         0,   1;
+
+    Eigen::Matrix3d Ry;
+    Ry <<  cos(pitch), 0, sin(pitch),
+                 0,    1,      0,
+          -sin(pitch), 0, cos(pitch);
+
+    Eigen::Matrix3d Rx;
+    Rx << 1,      0,         0,
+          0, cos(roll), -sin(roll),
+          0, sin(roll),  cos(roll);
+
+    Eigen::Matrix3d Rplat = Rz * Ry * Rx;
+
+    // Step 2: Create unit vector pointing at world target
     double cos_el = cos(target_el);
-    double target_x_world = cos_el * cos(target_az);
-    double target_y_world = cos_el * sin(target_az);
-    double target_z_world = sin(target_el);
+    Eigen::Vector3d v_world;
+    v_world << cos_el * cos(target_az),
+               cos_el * sin(target_az),
+               sin(target_el);
 
-    // STEP B: Rotate vector INTO platform frame (inverse rotation sequence: ZYX)
-    // The platform's orientation is defined by Yaw-Pitch-Roll Euler angles.
-    // To transform from world to platform, we apply the INVERSE rotations in REVERSE order.
+    // Step 3: Transform target vector to platform frame
+    Eigen::Vector3d v_platform = Rplat.transpose() * v_world;
 
-    // Undo yaw rotation (Z-axis rotation)
-    double cos_yaw = cos(-yaw);
-    double sin_yaw = sin(-yaw);
-    double x_temp = target_x_world * cos_yaw - target_y_world * sin_yaw;
-    double y_temp = target_x_world * sin_yaw + target_y_world * cos_yaw;
-    double z_temp = target_z_world;
+    // Step 4: Extract gimbal angles from platform-frame vector
+    // Azimuth: angle in XY plane
+    // Elevation: angle from XY plane to vector
+    required_gimbal_az = radToDeg(atan2(v_platform.y(), v_platform.x()));
+    required_gimbal_el = radToDeg(atan2(v_platform.z(),
+                                        sqrt(v_platform.x() * v_platform.x() +
+                                             v_platform.y() * v_platform.y())));
 
-    // Undo pitch rotation (Y-axis rotation)
-    double cos_pitch = cos(-pitch);
-    double sin_pitch = sin(-pitch);
-    double x_platform = x_temp * cos_pitch + z_temp * sin_pitch;
-    double y_platform = y_temp;
-    double z_platform = -x_temp * sin_pitch + z_temp * cos_pitch;
-
-    // Undo roll rotation (X-axis rotation)
-    double cos_roll = cos(-roll);
-    double sin_roll = sin(-roll);
-    double y_final = y_platform * cos_roll - z_platform * sin_roll;
-    double z_final = y_platform * sin_roll + z_platform * cos_roll;
-    double x_final = x_platform;
-
-    // STEP C: Convert platform-frame vector back to azimuth/elevation angles
-    required_gimbal_az = radToDeg(atan2(y_final, x_final));
-    required_gimbal_el = radToDeg(atan2(z_final, sqrt(x_final * x_final + y_final * y_final)));
+    // ✅ EXPERT REVIEW FIX: Negate elevation to match system sign convention
+    // (Consistent with GimbalStabilizer::computeRequiredGimbalAngles)
+    required_gimbal_el = -required_gimbal_el;
 }
+
 
 void GimbalMotionModeBase::convertGimbalToWorldFrame(
     double gimbalAz_platform, double gimbalEl_platform,
@@ -459,14 +506,15 @@ void GimbalMotionModeBase::convertGimbalToWorldFrame(
     worldAz = radToDeg(atan2(y_world, x_world));
     worldEl = radToDeg(atan2(z_world, sqrt(x_world * x_world + y_world * y_world)));
 
-    // Normalize azimuth to [0, 360)
-    if (worldAz < 0.0) worldAz += 360.0;
+    // ✅ EXPERT REVIEW FIX: Normalize azimuth to [-180, 180] for consistency with control loops
+    worldAz = normalizeAngle180(worldAz);
 }
 
 void GimbalMotionModeBase::calculateHybridStabilizationCorrection(
     const SystemStateData& state,
     double& azCorrection_dps,
-    double& elCorrection_dps)
+    double& elCorrection_dps,
+    double dt)
 {
     // -------------------------
     // Units convention (explicit)
@@ -498,8 +546,7 @@ void GimbalMotionModeBase::calculateHybridStabilizationCorrection(
         double el_error_deg = required_el_deg - state.gimbalEl;
 
         // Normalize az error to [-180, 180]
-        while (az_error_deg > 180.0) az_error_deg -= 360.0;
-        while (az_error_deg < -180.0) az_error_deg += 360.0;
+        az_error_deg = normalizeAngle180(az_error_deg);
 
         const double Kp_position = 2.0; // deg/s per degree
         positionCorrectionAz_dps = Kp_position * az_error_deg;
@@ -519,24 +566,17 @@ void GimbalMotionModeBase::calculateHybridStabilizationCorrection(
             velocityCorrectionAz_dps = 0.0;
             velocityCorrectionEl_dps = 0.0;
         } else {
-            // ✅ CRITICAL FIX: Compute dt from internal timer (or fallback to UPDATE_INTERVAL_S)
-            double dt_s = UPDATE_INTERVAL_S();
-            if (m_velocityTimer.isValid()) {
-                dt_s = clampDt(m_velocityTimer.restart() / 1000.0);
-            } else {
-                // If timer not started, start it and assume UPDATE_INTERVAL_S for this frame
-                m_velocityTimer.start();
-            }
+            // ✅ EXPERT REVIEW FIX: dt is now passed from GimbalController (centralized measurement)
 
             // Bias correction (deg/s)
             double gx = state.GyroX - m_gyroBiasX;
             double gy = state.GyroY - m_gyroBiasY;
             double gz = state.GyroZ - m_gyroBiasZ;
 
-            // ✅ CRITICAL FIX: Filter using runtime dt (not fixed sampleRate!)
-            double gx_f = m_gyroXFilter.updateWithDt(gx, dt_s);
-            double gy_f = m_gyroYFilter.updateWithDt(gy, dt_s);
-            double gz_f = m_gyroZFilter.updateWithDt(gz, dt_s);
+            // ✅ EXPERT REVIEW FIX: Filter using runtime dt (passed from GimbalController)
+            double gx_f = m_gyroXFilter.updateWithDt(gx, dt);
+            double gy_f = m_gyroYFilter.updateWithDt(gy, dt);
+            double gz_f = m_gyroZFilter.updateWithDt(gz, dt);
 
             // ✅ VERIFIED IMU ORIENTATION (2025-11-14):
             // IMU Frame: X forward, Y right, Z down (Forward-Right-Down)

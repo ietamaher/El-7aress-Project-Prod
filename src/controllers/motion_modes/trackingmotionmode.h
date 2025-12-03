@@ -13,7 +13,7 @@ public:
     
     void enterMode(GimbalController* controller) override;
     void exitMode(GimbalController* controller) override;
-    void update(GimbalController* controller) override;
+    void update(GimbalController* controller, double dt) override;
 
 public slots:
     void onTargetPositionUpdated(double az, double el, 

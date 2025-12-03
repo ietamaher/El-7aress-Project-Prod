@@ -13,7 +13,7 @@ public:
 
     void enterMode(GimbalController* controller) override;
     void exitMode(GimbalController* controller) override;
-    void update(GimbalController* controller) override;
+    void update(GimbalController* controller, double dt) override;
 
 private:
     // Use the PIDController struct defined in the base class

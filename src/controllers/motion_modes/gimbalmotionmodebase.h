@@ -9,6 +9,7 @@
 #include <limits>
 #include "models/domain/systemstatedata.h" // Include for SystemStateData
 #include "config/MotionTuningConfig.h"      // Include for runtime-configurable parameters
+#include "GimbalStabilizer.h"               // Include for velocity-based stabilization
 
 // Eigen for 3D transformations (rotation matrices)
 #include <Eigen/Dense>
@@ -93,7 +94,8 @@ public:
     virtual void exitMode(GimbalController* /*controller*/) {}
 
     // Called periodically (e.g. from GimbalController::update())
-    virtual void update(GimbalController* /*controller*/) {}
+    // dt parameter is the measured time delta in seconds since last update (Expert Review Fix)
+    virtual void update(GimbalController* /*controller*/, double /*dt*/) {}
     void stopServos(GimbalController* controller);
     bool checkSafetyConditions(GimbalController* controller);
     /**
@@ -202,11 +204,13 @@ protected:
      * @param desiredAzVelocity The desired azimuth velocity relative to a stable world frame (deg/s).
      * @param desiredElVelocity The desired elevation velocity relative to a stable world frame (deg/s).
      * @param enableStabilization True to apply stabilization corrections, false to send raw commands.
+     * @param dt Time delta in seconds since last update (Expert Review Fix)
      */
     void sendStabilizedServoCommands(GimbalController* controller,
                                  double desiredAzVelocity,
                                  double desiredElVelocity,
-                                 bool enableStabilization = true);
+                                 bool enableStabilization,
+                                 double dt);
     // --- UNIFIED PID CONTROLLER ---
     struct PIDController {
         double Kp = 0.0;
@@ -319,6 +323,17 @@ protected:
         return MotionTuningConfig::instance().servo.elStepsPerDegree;
     }
 
+    /**
+     * @brief Normalize angle to [-180, 180] range
+     * @param angle Angle in degrees
+     * @return Normalized angle in degrees
+     */
+    static inline double normalizeAngle180(double angle) {
+        while (angle > 180.0) angle -= 360.0;
+        while (angle < -180.0) angle += 360.0;
+        return angle;
+    }
+
 private:
     // Helper for angle conversions (scalar)
     static inline double degToRad(double deg) { return deg * (M_PI / 180.0); }
@@ -332,7 +347,14 @@ private:
         return rad * (180.0 / M_PI);
     }
 
-    // Gyro filters for stabilization
+    // ========================================================================
+    // STABILIZATION
+    // ========================================================================
+
+    // Velocity-based stabilizer (stateless, shared across all modes)
+    static GimbalStabilizer s_stabilizer;
+
+    // Gyro filters for stabilization (legacy code)
     GyroLowPassFilter m_gyroXFilter;
     GyroLowPassFilter m_gyroYFilter;
     GyroLowPassFilter m_gyroZFilter;
@@ -346,29 +368,33 @@ private:
     qint32 m_lastAzSpeedHz = std::numeric_limits<qint32>::max(); // Initialize to invalid value
     qint32 m_lastElSpeedHz = std::numeric_limits<qint32>::max();
 
+    // ========================================================================
+    // LEGACY FUNCTIONS (Deprecated - use GimbalStabilizer instead)
+    // ========================================================================
+
     /**
-     * @brief Calculates required gimbal angles to point at a world-frame target.
-     * @param platform_roll Platform roll angle from AHRS (degrees)
-     * @param platform_pitch Platform pitch angle from AHRS (degrees)
-     * @param platform_yaw Platform yaw angle from AHRS (degrees)
-     * @param target_az_world Desired world azimuth (degrees, 0° = North)
-     * @param target_el_world Desired world elevation (degrees, 0° = horizon)
-     * @param required_gimbal_az Output required gimbal azimuth in platform frame (degrees)
-     * @param required_gimbal_el Output required gimbal elevation in platform frame (degrees)
+     * @brief [DEPRECATED] Use GimbalStabilizer::computeRequiredGimbalAngles() instead
+     * @deprecated Replaced by matrix-based GimbalStabilizer for production code
      */
+    [[deprecated("Use GimbalStabilizer::computeRequiredGimbalAngles() instead")]]
     void calculateRequiredGimbalAngles(double platform_roll, double platform_pitch, double platform_yaw,
                                        double target_az_world, double target_el_world,
                                        double& required_gimbal_az, double& required_gimbal_el);
 
     /**
-     * @brief Hybrid stabilization: combines position control (AHRS) + velocity feedforward (gyros).
-     * @param state Current system state with IMU data and gimbal angles
-     * @param azCorrection_dps Output azimuth correction velocity (deg/s)
-     * @param elCorrection_dps Output elevation correction velocity (deg/s)
+     * @brief [DEPRECATED] Use GimbalStabilizer::computeStabilizedVelocity() instead
+     * @deprecated Replaced by velocity-based GimbalStabilizer for production code
      */
+    [[deprecated("Use GimbalStabilizer::computeStabilizedVelocity() instead")]]
     void calculateHybridStabilizationCorrection(const SystemStateData& state,
-                                                double& azCorrection_dps, double& elCorrection_dps);
+                                                double& azCorrection_dps, double& elCorrection_dps,
+                                                double dt);
 
+    /**
+     * @brief [DEPRECATED] Legacy stabilization function (diagnostic only)
+     * @deprecated Replaced by velocity-based GimbalStabilizer for production code
+     */
+    [[deprecated("Legacy function - use GimbalStabilizer for production code")]]
     void calculateStabilizationCorrection(double currentAz_deg, double currentEl_deg,
                                                             double gyroX_dps_raw, double gyroY_dps_raw, double gyroZ_dps_raw,
                                                             double& azCorrection_dps, double& elCorrection_dps);
