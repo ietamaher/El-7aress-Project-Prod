@@ -50,7 +50,7 @@ void ManualMotionMode::update(GimbalController* controller, double dt)
     // ✅ EXPERT REVIEW FIX: dt is now passed from GimbalController (centralized measurement)
 
     // 1. Calculate TARGET velocity in the motor's native units
-    static constexpr double MAX_SPEED_HZ = 25000.0;
+    static constexpr double MAX_SPEED_HZ = 35000.0;
     double speedPercent = data.gimbalSpeed / 100.0;
     double maxCurrentSpeedHz = speedPercent * MAX_SPEED_HZ;
 

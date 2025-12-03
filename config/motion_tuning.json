@@ -23,16 +23,16 @@
     "scanMaxAccelDegS2": 20.0,
     "trpMaxAccelDegS2": 50.0,
     "trpDefaultTravelSpeed": 15.0,
-    "maxVelocityDegS": 30.0,
+    "maxVelocityDegS": 60.0,
     "arrivalThresholdDeg": 0.5,
     "updateIntervalS": 0.05,
     "comment": "General motion limits and control loop parameters"
   },
 
   "servo": {
-    "azStepsPerDegree": 618.0556,
+    "azStepsPerDegree": 568.627350634,
     "elStepsPerDegree": 555.5556,
-    "comment": "Servo unit conversions (222500/360 for AZ, 200000/360 for EL)"
+    "comment": "Servo unit conversions (205500/360 for AZ, 200000/360 for EL)"
   },
 
   "pid": {

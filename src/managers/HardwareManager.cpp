@@ -379,8 +379,8 @@ void HardwareManager::createDevices()
     m_plc42Device->setDependencies(m_plc42Transport, m_plc42Parser);
 
     // Servo Actuator (Serial ASCII protocol)
-    //m_servoActuatorDevice = new ServoActuatorDevice("servoActuator", this);
-    //m_servoActuatorDevice->setDependencies(m_servoActuatorTransport, m_servoActuatorParser);
+    m_servoActuatorDevice = new ServoActuatorDevice("servoActuator", this);
+    m_servoActuatorDevice->setDependencies(m_servoActuatorTransport, m_servoActuatorParser);
 
     // Servo Driver devices (Modbus RTU) with MIL-STD architecture
     m_servoAzThread = new QThread(this);
@@ -518,7 +518,7 @@ void HardwareManager::initializeDevices()
     m_plc42Device->initialize();
     m_lrfDevice->initialize();
    // m_radarDevice->initialize();
-    //m_servoActuatorDevice->initialize();
+    m_servoActuatorDevice->initialize();
 
     if (m_servoAzDevice) m_servoAzDevice->initialize();
     if (m_servoElDevice) m_servoElDevice->initialize();

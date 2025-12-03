@@ -157,7 +157,7 @@ void GimbalMotionModeBase::sendStabilizedServoCommands(GimbalController* control
     // Send velocity commands to AZD-KD drivers (Operation Type 16)
     // Now with change detection to prevent redundant Modbus writes!
     if (auto azServo = controller->azimuthServo()) {
-        writeVelocityCommand(azServo, finalAzVelocity, AZ_STEPS_PER_DEGREE(), m_lastAzSpeedHz);
+        writeVelocityCommand(azServo, -finalAzVelocity, AZ_STEPS_PER_DEGREE(), m_lastAzSpeedHz);
     }
     if (auto elServo = controller->elevationServo()) {
         writeVelocityCommand(elServo, -finalElVelocity, EL_STEPS_PER_DEGREE(), m_lastElSpeedHz);

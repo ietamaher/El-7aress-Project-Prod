@@ -25,7 +25,7 @@ Item {
     // ========================================================================
     readonly property real trueBearing: {
         if (!viewModel || !viewModel.imuConnected) return viewModel ? viewModel.azimuth : 0.0;
-        var bearing = viewModel.azimuth + viewModel.vehicleHeading;
+        var bearing =  viewModel.vehicleHeading; //viewModel.azimuth +
         while (bearing >= 360.0) bearing -= 360.0;
         while (bearing < 0.0) bearing += 360.0;
         return bearing;
@@ -193,7 +193,7 @@ Item {
             Text {
                 visible: viewModel ? viewModel.imuConnected : false
                 text: viewModel ? ("(" + viewModel.azimuth.toFixed(1) + " REL)") : "(0.0 REL)"
-                font.pixelSize: 11
+                font.pixelSize: 16
                 font.family: primaryFont
                 color: "yellow"
                 anchors.horizontalCenter: parent.horizontalCenter
