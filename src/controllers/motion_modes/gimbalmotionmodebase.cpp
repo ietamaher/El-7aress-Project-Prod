@@ -137,8 +137,8 @@ void GimbalMotionModeBase::sendStabilizedServoCommands(GimbalController* control
             systemState.GyroX,                      // Platform rates (gyros)
             systemState.GyroY,
             systemState.GyroZ,
-            systemState.currentAzimuthAngle,        // Current gimbal position
-            systemState.currentElevationAngle,
+            systemState.gimbalAz,                   // Current gimbal position
+            systemState.gimbalEl,
             systemState.targetAzimuth_world,        // World-frame target
             systemState.targetElevation_world,
             true,                                   // Always enable world target holding when stabilizing
