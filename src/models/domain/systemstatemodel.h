@@ -413,6 +413,13 @@ public:
      */
     void clearZeroing();
 
+    /**
+     * @brief Clears LRF measurement (Button 10).
+     * Sets LRF distance to 0 and recalculates reticle position.
+     * Does NOT affect zeroing offsets.
+     */
+    void clearLRF();
+
     // =================================
     // WINDAGE COMPENSATION
     // =================================

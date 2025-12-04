@@ -1107,6 +1107,31 @@ void SystemStateModel::clearZeroing() { // Called on power down, or manually
     emit zeroingModeChanged(false);
 }
 
+// ============================================================================
+// LRF CLEAR (Button 10)
+// ============================================================================
+void SystemStateModel::clearLRF() {
+    // ========================================================================
+    // Simple LRF clear: Reset distance to 0 and recalculate reticle
+    // Does NOT affect zeroing offsets (separate function for that)
+    // ========================================================================
+
+    qInfo() << "[LRF CLEAR] Button 10 pressed - Clearing LRF measurement";
+
+    // Clear LRF measurement
+    m_currentStateData.lrfDistance = 0.0;
+    qDebug() << "[LRF CLEAR] ✓ LRF distance reset to:" << m_currentStateData.lrfDistance;
+
+    // Recalculate reticle position (may change due to ballistic calculations)
+    recalculateDerivedAimpointData();
+    qDebug() << "[LRF CLEAR] ✓ Reticle position recalculated";
+
+    // Emit signal for UI updates
+    emit dataChanged(m_currentStateData);
+
+    qInfo() << "[LRF CLEAR] ✓ Clear operation complete";
+}
+
 void SystemStateModel::startWindageProcedure() {
     if (!m_currentStateData.windageModeActive) {
         m_currentStateData.windageModeActive = true;
@@ -1810,6 +1835,20 @@ void SystemStateModel::processHomingStateMachine(const SystemStateData& oldData,
     }
 
     // ========================================================================
+    // HOMING REQUESTED → TRANSITION TO IN PROGRESS
+    // ========================================================================
+    // ⭐ BUG FIX: Auto-transition from Requested to InProgress
+    // GimbalController sets its own m_currentHomingState but doesn't propagate
+    // back to SystemStateModel. We auto-transition after one cycle to sync states.
+    if (newData.homingState == HomingState::Requested &&
+        oldData.homingState == HomingState::Requested) {
+        // We've been in Requested for at least one cycle - GimbalController should
+        // have sent the HOME command by now. Transition to InProgress.
+        qInfo() << "[SystemStateModel] Auto-transitioning from Requested → InProgress";
+        newData.homingState = HomingState::InProgress;
+    }
+
+    // ========================================================================
     // HOMING IN PROGRESS → CHECK FOR COMPLETION (REQUIRE BOTH AXES)
     // ========================================================================
     if (newData.homingState == HomingState::InProgress) {
@@ -1817,21 +1856,25 @@ void SystemStateModel::processHomingStateMachine(const SystemStateData& oldData,
         // We need both azimuth AND elevation to complete homing
         bool azHomeDone = newData.azimuthHomeComplete;
         bool elHomeDone = newData.elevationHomeComplete;
-        
-        // Log individual axis completion
+
+        // Log individual axis completion (rising edge detection for logging only)
         if (azHomeDone && !oldData.azimuthHomeComplete) {
             qInfo() << "[SystemStateModel] ✓ Azimuth HOME-END received";
         }
         if (elHomeDone && !oldData.elevationHomeComplete) {
             qInfo() << "[SystemStateModel] ✓ Elevation HOME-END received";
         }
-        
-        // Complete homing only when BOTH axes report HOME-END
-        if (azHomeDone && elHomeDone &&
-            (!oldData.azimuthHomeComplete || !oldData.elevationHomeComplete)) {
-            qInfo() << "[SystemStateModel] ✓✓ BOTH axes homed - homing complete";
-            newData.homingState = HomingState::Completed;
-            // GimbalController will restore motion mode
+
+        // ⭐ BUG FIX: Complete homing when BOTH axes report HOME-END
+        // Original code: Required rising edge detection, preventing completion if flags were already set
+        // New code: Complete homing whenever both flags are true, regardless of previous state
+        if (azHomeDone && elHomeDone) {
+            // Only log and transition if we weren't already Completed
+            if (newData.homingState == HomingState::InProgress) {
+                qInfo() << "[SystemStateModel] ✓✓ BOTH axes homed - homing complete";
+                newData.homingState = HomingState::Completed;
+                // GimbalController will restore motion mode
+            }
         }
     }
 

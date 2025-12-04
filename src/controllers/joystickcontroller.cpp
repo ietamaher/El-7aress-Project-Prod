@@ -181,13 +181,24 @@ void JoystickController::onButtonChanged(int button, bool pressed)
     switch (button) {
 
     case 0:
+        // ========================================================================
+        // BUTTON 0: ENGAGEMENT MODE (Momentary Switch - CROWS Style)
+        // ========================================================================
+        // Press → Enter Engagement mode (stores previous mode)
+        // Release → Return to previous mode (Surveillance/Tracking/etc)
+        // ========================================================================
         if (pressed) {
             if (!curr.stationEnabled) {
-                qDebug() << "Cannot toggle, station is off.";
+                qDebug() << "Cannot enter engagement, station is off.";
                 return;
             }
-             // This acts like a momentary switch
-             m_stateModel->commandEngagement(pressed);
+            // Enter engagement mode
+            m_stateModel->commandEngagement(true);
+        } else {
+            // ⭐ BUG FIX: Button released - exit engagement and return to previous mode
+            // Original code: Only called commandEngagement() on button press, never on release
+            // This caused the system to get stuck in Engagement mode
+            m_stateModel->commandEngagement(false);
         }
         break;
 
@@ -360,6 +371,23 @@ void JoystickController::onButtonChanged(int button, bool pressed)
                 videoLUT = 0;
             }
             m_cameraController->prevVideoLUT();
+        }
+        break;
+
+    // ========================================================================
+    // BUTTON 10: LRF CLEAR (Dedicated Clear Button)
+    // ========================================================================
+    // Single press → Clear LRF measurement (set to 0)
+    // Does NOT affect zeroing (separate clear function for that)
+    // ========================================================================
+    case 10:
+        if (pressed) {
+            qInfo() << "[Joystick] Button 10 (LRF CLEAR) pressed";
+
+            // Clear LRF distance to 0 and recalculate reticle
+            m_stateModel->clearLRF();
+
+            qInfo() << "[Joystick] LRF cleared";
         }
         break;
 
