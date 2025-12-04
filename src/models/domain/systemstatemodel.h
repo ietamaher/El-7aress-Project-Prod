@@ -414,11 +414,11 @@ public:
     void clearZeroing();
 
     /**
-     * @brief Clears LRF measurement and centers reticle (Button 10 - CROWS M153 style).
-     * This function resets the LRF distance to default and clears zeroing offsets,
-     * effectively centering the reticle to screen center.
+     * @brief Clears LRF measurement (Button 10).
+     * Sets LRF distance to 0 and recalculates reticle position.
+     * Does NOT affect zeroing offsets.
      */
-    void clearLRFAndCenterReticle();
+    void clearLRF();
 
     // =================================
     // WINDAGE COMPENSATION

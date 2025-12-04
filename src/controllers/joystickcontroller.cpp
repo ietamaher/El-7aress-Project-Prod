@@ -375,22 +375,19 @@ void JoystickController::onButtonChanged(int button, bool pressed)
         break;
 
     // ========================================================================
-    // BUTTON 10: LRF CLEAR (Dedicated Clear Button - CROWS M153 Style)
+    // BUTTON 10: LRF CLEAR (Dedicated Clear Button)
     // ========================================================================
-    // Single press → Clear LRF measurement + Center reticle (clear zeroing offsets)
-    // This is a military standard feature for rapid reset of fire control system
+    // Single press → Clear LRF measurement (set to 0)
+    // Does NOT affect zeroing (separate clear function for that)
     // ========================================================================
     case 10:
         if (pressed) {
             qInfo() << "[Joystick] Button 10 (LRF CLEAR) pressed";
 
-            // Military standard: Clear LRF and center reticle in one operation
-            // This resets:
-            // 1. LRF distance to default (2000m)
-            // 2. Zeroing offsets to 0 (centers reticle to screen center)
-            m_stateModel->clearLRFAndCenterReticle();
+            // Clear LRF distance to 0 and recalculate reticle
+            m_stateModel->clearLRF();
 
-            qInfo() << "[Joystick] LRF cleared, reticle centered - system ready";
+            qInfo() << "[Joystick] LRF cleared";
         }
         break;
 

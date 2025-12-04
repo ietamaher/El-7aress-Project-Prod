@@ -1108,40 +1108,28 @@ void SystemStateModel::clearZeroing() { // Called on power down, or manually
 }
 
 // ============================================================================
-// LRF CLEAR AND RETICLE CENTER (Button 10 - CROWS M153 Style)
+// LRF CLEAR (Button 10)
 // ============================================================================
-void SystemStateModel::clearLRFAndCenterReticle() {
+void SystemStateModel::clearLRF() {
     // ========================================================================
-    // Military Standard: Clear LRF button (similar to CROWS M153)
-    // Single press clears:
-    // 1. LRF last measurement (reset to default invalid range)
-    // 2. Reticle to screen center (clear zeroing offsets)
+    // Simple LRF clear: Reset distance to 0 and recalculate reticle
+    // Does NOT affect zeroing offsets (separate function for that)
     // ========================================================================
 
-    qInfo() << "[LRF CLEAR] Button 10 pressed - Clearing LRF and centering reticle";
+    qInfo() << "[LRF CLEAR] Button 10 pressed - Clearing LRF measurement";
 
-    // 1. Clear LRF measurement (reset to default/invalid value)
-    // Using 2000m as default range (professional military standard - beyond typical engagement range)
-    m_currentStateData.lrfDistance = 2000.0;
-    qDebug() << "[LRF CLEAR] ✓ LRF distance reset to default:" << m_currentStateData.lrfDistance << "meters";
+    // Clear LRF measurement
+    m_currentStateData.lrfDistance = 0.0;
+    qDebug() << "[LRF CLEAR] ✓ LRF distance reset to:" << m_currentStateData.lrfDistance;
 
-    // 2. Clear zeroing offsets (centers reticle to screen center)
-    m_currentStateData.zeroingModeActive = false;
-    m_currentStateData.zeroingAzimuthOffset = 0.0f;
-    m_currentStateData.zeroingElevationOffset = 0.0f;
-    m_currentStateData.zeroingAppliedToBallistics = false;
-    qDebug() << "[LRF CLEAR] ✓ Zeroing offsets cleared - reticle centered";
-
-    // 3. Recalculate reticle position to screen center
+    // Recalculate reticle position (may change due to ballistic calculations)
     recalculateDerivedAimpointData();
-    qDebug() << "[LRF CLEAR] ✓ Reticle position recalculated at screen center";
+    qDebug() << "[LRF CLEAR] ✓ Reticle position recalculated";
 
-    // 4. Emit signals for UI updates
+    // Emit signal for UI updates
     emit dataChanged(m_currentStateData);
-    emit zeroingStateChanged(false, 0.0f, 0.0f);
-    emit zeroingModeChanged(false);
 
-    qInfo() << "[LRF CLEAR] ✓ Clear operation complete - system ready";
+    qInfo() << "[LRF CLEAR] ✓ Clear operation complete";
 }
 
 void SystemStateModel::startWindageProcedure() {
@@ -1844,6 +1832,20 @@ void SystemStateModel::processHomingStateMachine(const SystemStateData& oldData,
             newData.motionMode = MotionMode::Idle;  // Suspend motion during homing
             // GimbalController will send HOME command in next cycle
         }
+    }
+
+    // ========================================================================
+    // HOMING REQUESTED → TRANSITION TO IN PROGRESS
+    // ========================================================================
+    // ⭐ BUG FIX: Auto-transition from Requested to InProgress
+    // GimbalController sets its own m_currentHomingState but doesn't propagate
+    // back to SystemStateModel. We auto-transition after one cycle to sync states.
+    if (newData.homingState == HomingState::Requested &&
+        oldData.homingState == HomingState::Requested) {
+        // We've been in Requested for at least one cycle - GimbalController should
+        // have sent the HOME command by now. Transition to InProgress.
+        qInfo() << "[SystemStateModel] Auto-transitioning from Requested → InProgress";
+        newData.homingState = HomingState::InProgress;
     }
 
     // ========================================================================
