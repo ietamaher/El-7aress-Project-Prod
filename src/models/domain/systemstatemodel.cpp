@@ -616,11 +616,16 @@ void SystemStateModel::updateNextIdsAfterLoad() {
 
 
 void SystemStateModel::onServoAzDataChanged(const ServoDriverData &azData) {
-    // ✅ MEMORY LEAK FIX: Only emit if position actually changed
-    // Without this check: 20 Hz constant emission even when stationary
-    // With this check: Only emit when servo actually moves (saves ~100-400 KB/sec)
-    if (!qFuzzyCompare(m_currentStateData.gimbalAz, azData.position * 0.0016179775280)) {
-        m_currentStateData.gimbalAz = azData.position* 0.0016179775280;;
+
+    double mechAz = azData.position * ( 0.009/(174/34));      // raw mechanical angle
+    double displayAz = std::fmod(mechAz, 360.0);
+    if (displayAz < 0) displayAz += 360.0;                   // keep in [0, 360)
+
+    if (!qFuzzyCompare(m_currentStateData.gimbalAz, displayAz)) {
+
+        m_currentStateData.mechanicalGimbalAz = mechAz;
+        m_currentStateData.gimbalAz = displayAz;
+
         m_currentStateData.azMotorTemp = azData.motorTemp;
         m_currentStateData.azDriverTemp = azData.driverTemp;
         m_currentStateData.azServoConnected = azData.isConnected;
@@ -628,16 +633,15 @@ void SystemStateModel::onServoAzDataChanged(const ServoDriverData &azData) {
         m_currentStateData.azTorque = azData.torque;
         m_currentStateData.azFault = azData.fault;
 
-        emit dataChanged(m_currentStateData); // Emit general data change
-        emit gimbalPositionChanged(m_currentStateData.gimbalAz, m_currentStateData.gimbalEl); // Emit specific gimbal change
+        emit dataChanged(m_currentStateData);
+        emit gimbalPositionChanged(m_currentStateData.gimbalAz,
+                                m_currentStateData.gimbalEl);
     }
 }
 
 void SystemStateModel::onServoElDataChanged(const ServoDriverData &elData) {
-    // ✅ MEMORY LEAK FIX: Only emit if position actually changed
-    // Without this check: 20 Hz constant emission even when stationary
-    // With this check: Only emit when servo actually moves (saves ~100-400 KB/sec)
-    if (!qFuzzyCompare(m_currentStateData.gimbalEl, elData.position * (-0.0018))) {
+
+     if (!qFuzzyCompare(m_currentStateData.gimbalEl, elData.position * (-0.0018))) {
         m_currentStateData.gimbalEl = elData.position * (-0.0018);
         m_currentStateData.elMotorTemp = elData.motorTemp;
         m_currentStateData.elDriverTemp = elData.driverTemp;

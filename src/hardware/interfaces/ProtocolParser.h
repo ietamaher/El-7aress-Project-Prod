@@ -3,7 +3,7 @@
 #include <QByteArray>
 #include <QList>
 #include "hardware/interfaces/Message.h"
-#include <vector> // <-- ADD THIS INCLUDE
+#include <vector>
 
 class QModbusReply;
 

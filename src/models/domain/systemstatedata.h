@@ -385,6 +385,8 @@ struct SystemStateData {
     // =================================
     // GIMBAL & POSITIONING SYSTEM
     // =================================
+     double mechanicalGimbalAz = 0.0;   ///< Mechanical gimbal azimuth position in degrees (without software offsets)
+    double mechanicalGimbalEl = 0.0;   ///< Mechanical gimbal elevation position in degrees (without software offsets)
     double gimbalAz = 0.0;              ///< Current gimbal azimuth position in degrees
     double gimbalEl = 0.0;              ///< Current gimbal elevation position in degrees
 
