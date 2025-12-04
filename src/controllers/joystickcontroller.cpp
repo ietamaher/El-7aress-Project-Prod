@@ -181,13 +181,24 @@ void JoystickController::onButtonChanged(int button, bool pressed)
     switch (button) {
 
     case 0:
+        // ========================================================================
+        // BUTTON 0: ENGAGEMENT MODE (Momentary Switch - CROWS Style)
+        // ========================================================================
+        // Press → Enter Engagement mode (stores previous mode)
+        // Release → Return to previous mode (Surveillance/Tracking/etc)
+        // ========================================================================
         if (pressed) {
             if (!curr.stationEnabled) {
-                qDebug() << "Cannot toggle, station is off.";
+                qDebug() << "Cannot enter engagement, station is off.";
                 return;
             }
-             // This acts like a momentary switch
-             m_stateModel->commandEngagement(pressed);
+            // Enter engagement mode
+            m_stateModel->commandEngagement(true);
+        } else {
+            // ⭐ BUG FIX: Button released - exit engagement and return to previous mode
+            // Original code: Only called commandEngagement() on button press, never on release
+            // This caused the system to get stuck in Engagement mode
+            m_stateModel->commandEngagement(false);
         }
         break;
 
@@ -360,6 +371,26 @@ void JoystickController::onButtonChanged(int button, bool pressed)
                 videoLUT = 0;
             }
             m_cameraController->prevVideoLUT();
+        }
+        break;
+
+    // ========================================================================
+    // BUTTON 10: LRF CLEAR (Dedicated Clear Button - CROWS M153 Style)
+    // ========================================================================
+    // Single press → Clear LRF measurement + Center reticle (clear zeroing offsets)
+    // This is a military standard feature for rapid reset of fire control system
+    // ========================================================================
+    case 10:
+        if (pressed) {
+            qInfo() << "[Joystick] Button 10 (LRF CLEAR) pressed";
+
+            // Military standard: Clear LRF and center reticle in one operation
+            // This resets:
+            // 1. LRF distance to default (2000m)
+            // 2. Zeroing offsets to 0 (centers reticle to screen center)
+            m_stateModel->clearLRFAndCenterReticle();
+
+            qInfo() << "[Joystick] LRF cleared, reticle centered - system ready";
         }
         break;
 

@@ -1107,6 +1107,43 @@ void SystemStateModel::clearZeroing() { // Called on power down, or manually
     emit zeroingModeChanged(false);
 }
 
+// ============================================================================
+// LRF CLEAR AND RETICLE CENTER (Button 10 - CROWS M153 Style)
+// ============================================================================
+void SystemStateModel::clearLRFAndCenterReticle() {
+    // ========================================================================
+    // Military Standard: Clear LRF button (similar to CROWS M153)
+    // Single press clears:
+    // 1. LRF last measurement (reset to default invalid range)
+    // 2. Reticle to screen center (clear zeroing offsets)
+    // ========================================================================
+
+    qInfo() << "[LRF CLEAR] Button 10 pressed - Clearing LRF and centering reticle";
+
+    // 1. Clear LRF measurement (reset to default/invalid value)
+    // Using 2000m as default range (professional military standard - beyond typical engagement range)
+    m_currentStateData.lrfDistance = 2000.0;
+    qDebug() << "[LRF CLEAR] ✓ LRF distance reset to default:" << m_currentStateData.lrfDistance << "meters";
+
+    // 2. Clear zeroing offsets (centers reticle to screen center)
+    m_currentStateData.zeroingModeActive = false;
+    m_currentStateData.zeroingAzimuthOffset = 0.0f;
+    m_currentStateData.zeroingElevationOffset = 0.0f;
+    m_currentStateData.zeroingAppliedToBallistics = false;
+    qDebug() << "[LRF CLEAR] ✓ Zeroing offsets cleared - reticle centered";
+
+    // 3. Recalculate reticle position to screen center
+    recalculateDerivedAimpointData();
+    qDebug() << "[LRF CLEAR] ✓ Reticle position recalculated at screen center";
+
+    // 4. Emit signals for UI updates
+    emit dataChanged(m_currentStateData);
+    emit zeroingStateChanged(false, 0.0f, 0.0f);
+    emit zeroingModeChanged(false);
+
+    qInfo() << "[LRF CLEAR] ✓ Clear operation complete - system ready";
+}
+
 void SystemStateModel::startWindageProcedure() {
     if (!m_currentStateData.windageModeActive) {
         m_currentStateData.windageModeActive = true;
@@ -1817,21 +1854,25 @@ void SystemStateModel::processHomingStateMachine(const SystemStateData& oldData,
         // We need both azimuth AND elevation to complete homing
         bool azHomeDone = newData.azimuthHomeComplete;
         bool elHomeDone = newData.elevationHomeComplete;
-        
-        // Log individual axis completion
+
+        // Log individual axis completion (rising edge detection for logging only)
         if (azHomeDone && !oldData.azimuthHomeComplete) {
             qInfo() << "[SystemStateModel] ✓ Azimuth HOME-END received";
         }
         if (elHomeDone && !oldData.elevationHomeComplete) {
             qInfo() << "[SystemStateModel] ✓ Elevation HOME-END received";
         }
-        
-        // Complete homing only when BOTH axes report HOME-END
-        if (azHomeDone && elHomeDone &&
-            (!oldData.azimuthHomeComplete || !oldData.elevationHomeComplete)) {
-            qInfo() << "[SystemStateModel] ✓✓ BOTH axes homed - homing complete";
-            newData.homingState = HomingState::Completed;
-            // GimbalController will restore motion mode
+
+        // ⭐ BUG FIX: Complete homing when BOTH axes report HOME-END
+        // Original code: Required rising edge detection, preventing completion if flags were already set
+        // New code: Complete homing whenever both flags are true, regardless of previous state
+        if (azHomeDone && elHomeDone) {
+            // Only log and transition if we weren't already Completed
+            if (newData.homingState == HomingState::InProgress) {
+                qInfo() << "[SystemStateModel] ✓✓ BOTH axes homed - homing complete";
+                newData.homingState = HomingState::Completed;
+                // GimbalController will restore motion mode
+            }
         }
     }
 
