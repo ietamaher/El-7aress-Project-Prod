@@ -904,3 +904,30 @@ void OsdViewModel::updateAmmunitionLevel(bool level)
         emit ammunitionLevelChanged();
     }
 }
+
+// ============================================================================
+// AMMUNITION FEED STATUS
+// ============================================================================
+
+void OsdViewModel::updateAmmoFeedStatus(bool cycleInProgress, bool loaded)
+{
+    bool changed = false;
+
+    if (m_ammoFeedCycleInProgress != cycleInProgress) {
+        m_ammoFeedCycleInProgress = cycleInProgress;
+        emit ammoFeedCycleInProgressChanged();
+        changed = true;
+    }
+
+    if (m_ammoLoaded != loaded) {
+        m_ammoLoaded = loaded;
+        emit ammoLoadedChanged();
+        changed = true;
+    }
+
+    if (changed) {
+        qDebug() << "[OsdViewModel] Ammo Feed Status:"
+                 << "CycleInProgress=" << cycleInProgress
+                 << "Loaded=" << loaded;
+    }
+}

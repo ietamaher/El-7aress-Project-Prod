@@ -1141,6 +1141,64 @@ Item {
                 color: viewModel.ammunitionLevel ? "#00FF00" : "#FF0000"
                 anchors.verticalCenter: parent.verticalCenter
             }
+
+            // ========================================================================
+            // AMMUNITION FEED STATUS INDICATOR
+            // Shows: LOADING... (yellow pulsing), LOADED (green), or nothing
+            // ========================================================================
+            Rectangle {
+                id: ammoFeedIndicator
+                width: 18
+                height: 18
+                radius: 9
+                visible: viewModel ? (viewModel.ammoFeedCycleInProgress || viewModel.ammoLoaded) : false
+                color: {
+                    if (!viewModel) return "gray"
+                    if (viewModel.ammoFeedCycleInProgress) return "#FFA500"  // Orange for loading
+                    if (viewModel.ammoLoaded) return "#00FF00"               // Green for loaded
+                    return "gray"
+                }
+                border.color: "white"
+                border.width: 2
+                anchors.verticalCenter: parent.verticalCenter
+
+                // Pulsing animation during feed cycle
+                SequentialAnimation on opacity {
+                    running: viewModel ? viewModel.ammoFeedCycleInProgress : false
+                    loops: Animation.Infinite
+                    NumberAnimation { to: 0.4; duration: 300 }
+                    NumberAnimation { to: 1.0; duration: 300 }
+                }
+            }
+            Text {
+                id: ammoFeedText
+                visible: viewModel ? (viewModel.ammoFeedCycleInProgress || viewModel.ammoLoaded) : false
+                text: {
+                    if (!viewModel) return ""
+                    if (viewModel.ammoFeedCycleInProgress) return "FEED..."
+                    if (viewModel.ammoLoaded) return "BELT"
+                    return ""
+                }
+                font.pixelSize: 11
+                font.bold: true
+                font.family: "Archivo Narrow"
+                color: {
+                    if (!viewModel) return "gray"
+                    if (viewModel.ammoFeedCycleInProgress) return "#FFA500"  // Orange
+                    if (viewModel.ammoLoaded) return "#00FF00"               // Green
+                    return "gray"
+                }
+                anchors.verticalCenter: parent.verticalCenter
+
+                // Pulsing animation during feed cycle
+                SequentialAnimation on opacity {
+                    running: viewModel ? viewModel.ammoFeedCycleInProgress : false
+                    loops: Animation.Infinite
+                    NumberAnimation { to: 0.4; duration: 300 }
+                    NumberAnimation { to: 1.0; duration: 300 }
+                }
+            }
+
             Rectangle { width: 2; height: 20; color: accentColor }
 
             // TRK

@@ -133,6 +133,12 @@ void OsdController::onSystemStateChanged(const SystemStateData& data)
             data.environmentalAltitudeMeters
         );
 
+        // Update ammunition feed status (also updated via FrameData path for synchronization)
+        m_viewModel->updateAmmoFeedStatus(
+            data.ammoFeedCycleInProgress,
+            data.ammoLoaded
+        );
+
         // NOTE: Windage display is now updated from FrameData in onFrameDataReady()
         // This ensures frame-synchronized display with other OSD elements
     }
@@ -384,6 +390,12 @@ void OsdController::onFrameDataReady(const FrameData& frmdata)
     // === SCAN NAME ===
     m_viewModel->updateCurrentScanName(frmdata.currentScanName);
     m_viewModel->updateAmmunitionLevel(frmdata.stationAmmunitionLevel);
+
+    // === AMMUNITION FEED STATUS ===
+    m_viewModel->updateAmmoFeedStatus(
+        frmdata.ammoFeedCycleInProgress,
+        frmdata.ammoLoaded
+    );
 }
 // ============================================================================
 // SHARED UPDATE LOGIC

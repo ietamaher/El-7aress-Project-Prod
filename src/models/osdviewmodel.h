@@ -148,6 +148,12 @@ class OsdViewModel : public QObject
 
     Q_PROPERTY(bool ammunitionLevel READ ammunitionLevel NOTIFY ammunitionLevelChanged)
 
+    // ========================================================================
+    // AMMUNITION FEED STATUS (for OSD display with animation)
+    // ========================================================================
+    Q_PROPERTY(bool ammoFeedCycleInProgress READ ammoFeedCycleInProgress NOTIFY ammoFeedCycleInProgressChanged)
+    Q_PROPERTY(bool ammoLoaded READ ammoLoaded NOTIFY ammoLoadedChanged)
+
 
 public:
     explicit OsdViewModel(QObject *parent = nullptr);
@@ -255,6 +261,10 @@ public:
 
     bool ammunitionLevel() const { return m_ammunitionLevel; }
 
+    // Ammunition Feed Status getters
+    bool ammoFeedCycleInProgress() const { return m_ammoFeedCycleInProgress; }
+    bool ammoLoaded() const { return m_ammoLoaded; }
+
 public slots:
     // Setters
     void setAccentColor(const QColor& color);
@@ -313,7 +323,10 @@ public slots:
                            bool imuConnected,
                            bool plc21Connected, bool plc42Connected,
                            bool joystickConnected);
-        void updateAmmunitionLevel(bool level);
+    void updateAmmunitionLevel(bool level);
+
+    // Ammunition Feed Status update
+    void updateAmmoFeedStatus(bool cycleInProgress, bool loaded);
 
 
 signals:
@@ -418,6 +431,9 @@ signals:
 
     void ammunitionLevelChanged();
 
+    // Ammunition Feed Status signals
+    void ammoFeedCycleInProgressChanged();
+    void ammoLoadedChanged();
 
 
 private:
@@ -534,7 +550,9 @@ private:
 
     bool m_ammunitionLevel;
 
-
+    // Ammunition Feed Status
+    bool m_ammoFeedCycleInProgress = false;
+    bool m_ammoLoaded = false;
 };
 
 #endif // OSDVIEWMODEL_H

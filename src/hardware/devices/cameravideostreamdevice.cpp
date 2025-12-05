@@ -359,11 +359,15 @@ void CameraVideoStreamDevice::onSystemStateChanged(const SystemStateData &newSta
     m_currentAcquisitionBoxW_px = newState.acquisitionBoxW_px;
     m_currentAcquisitionBoxH_px = newState.acquisitionBoxH_px;
 
-    m_currentLeadAngleStatus = newState.currentLeadAngleStatus;   
-    m_currentLeadAngleOffsetAz = newState.leadAngleOffsetAz;      
+    m_currentLeadAngleStatus = newState.currentLeadAngleStatus;
+    m_currentLeadAngleOffsetAz = newState.leadAngleOffsetAz;
     m_currentLeadAngleOffsetEl = newState.leadAngleOffsetEl;
     m_currentAmmunitionLevel = newState.stationAmmunitionLevel;
-    
+
+    // Ammunition Feed Status (for OSD display)
+    m_ammoFeedCycleInProgress = newState.ammoFeedCycleInProgress;
+    m_ammoLoaded = newState.ammoLoaded;
+
     m_detectionEnabled.store(newState.detectionEnabled);
 }
 
@@ -898,10 +902,14 @@ bool CameraVideoStreamDevice::processFrame(GstBuffer *buffer)
         data.acquisitionBoxW_px = m_currentAcquisitionBoxW_px  ;
         data.acquisitionBoxH_px = m_currentAcquisitionBoxH_px  ;
         data.trackerHasValidTarget = true;
-        data.leadAngleStatus = m_currentLeadAngleStatus;          
+        data.leadAngleStatus = m_currentLeadAngleStatus;
         data.leadAngleOffsetAz_deg = m_currentLeadAngleOffsetAz;
         data.leadAngleOffsetEl_deg = m_currentLeadAngleOffsetEl;
         data.stationAmmunitionLevel = m_currentAmmunitionLevel;
+
+        // Ammunition Feed Status (for OSD display)
+        data.ammoFeedCycleInProgress = m_ammoFeedCycleInProgress;
+        data.ammoLoaded = m_ammoLoaded;
 
         // ====================================================================
         // LATENCY MEASUREMENT: Calculate glass-to-glass latency
