@@ -111,6 +111,7 @@ SOURCES += \
     src/utils/inference.cpp \
     src/utils/reticleaimpointcalculator.cpp \
     src/video/gstvideosource.cpp \
+    src/video/videoframenotifier.cpp \
     src/video/videoimageprovider.cpp \
     src/hardware/communication/modbustransport.cpp \
     src/hardware/communication/serialporttransport.cpp \
@@ -223,6 +224,7 @@ HEADERS += \
     src/utils/reticleaimpointcalculator.h \
     src/utils/targetstate.h \
     src/video/gstvideosource.h \
+    src/video/videoframenotifier.h \
     src/video/videoimageprovider.h \
     src/hardware/interfaces/IDevice.h \
     src/hardware/interfaces/Transport.h \

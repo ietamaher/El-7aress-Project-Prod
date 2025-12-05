@@ -34,3 +34,4 @@ QImage VideoImageProvider::requestImage(const QString &id, QSize *size, const QS
 
     return m_currentImage;
 }
+
