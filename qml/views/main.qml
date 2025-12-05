@@ -16,10 +16,6 @@ Window {
 
     // ========================================================================
     // VIDEO FEED BACKGROUND
-    // =========================================================================
-    // LATENCY FIX #1: Signal-driven refresh (replaces timer-based polling)
-    // Old timer (33ms interval) added 0-33ms latency to every frame
-    // Now updates immediately when new frame is available via signal
     // ========================================================================
     Image {
         id: videoDisplay
@@ -28,28 +24,25 @@ Window {
         source: "image://video/camera"
         cache: false // Don't cache, we want fresh frames
 
-        // Frame counter for cache-busting URL
-        property int frameCounter: 0
-    }
-
-    // Signal-driven refresh: update video ONLY when new frame is ready
-    Connections {
-        target: osdViewModel
-        function onVideoFrameUpdated() {
-            // Increment counter to force QML to request new image from provider
-            videoDisplay.frameCounter++
-            videoDisplay.source = "image://video/camera?" + videoDisplay.frameCounter
+        // Timer to refresh video feed
+        Timer {
+            interval: 33 // ~30 FPS (adjust based on camera framerate)
+            running: true
+            repeat: true
+            onTriggered: {
+                // Force QML to request new image from provider
+                videoDisplay.source = "image://video/camera?" + Date.now()
+            }
         }
-    }
 
-    // Fallback if video not available
-    Text {
-        anchors.centerIn: parent
-        text: "Waiting for video signal..."
-        color: "gray"
-        font.pixelSize: 24
-        z: 1
-        visible: videoDisplay.status === Image.Null || videoDisplay.status === Image.Error
+        // Fallback if video not available
+        Text {
+            anchors.centerIn: parent
+            text: "Waiting for video signal..."
+            color: "gray"
+            font.pixelSize: 24
+            visible: videoDisplay.status === Image.Null || videoDisplay.status === Image.Error
+        }
     }
 
     // ========================================================================

@@ -15,7 +15,6 @@
 
 // Models & Services
 #include "models/domain/systemstatemodel.h"
-#include "models/osdviewmodel.h"  // ✅ For videoFrameUpdated signal (latency fix)
 #include "video/videoimageprovider.h"
 
 // Hardware Devices (for video connection)
@@ -212,12 +211,6 @@ void SystemController::connectVideoToProvider()
     // Video provider only needs the QImage, not the full 3.1 MB FrameData struct
     // This lambda copies FrameData by value to extract only baseImage, preventing queue bloat
 
-    // =========================================================================
-    // LATENCY FIX #1: Signal-driven QML refresh
-    // Instead of timer-based polling, emit signal when new frame is ready
-    // QML connects to this signal and updates the Image source immediately
-    // =========================================================================
-
     // Day camera
     if (m_hardwareManager->dayVideoProcessor()) {
         connect(m_hardwareManager->dayVideoProcessor(), &CameraVideoStreamDevice::frameDataReady,
@@ -226,10 +219,6 @@ void SystemController::connectVideoToProvider()
                     if (data.cameraIndex == 0 && m_systemStateModel->data().activeCameraIsDay) {
                         // QImage uses implicit sharing - assignment is cheap, copy-on-write
                         m_videoProvider->updateImage(data.baseImage);
-                        // ✅ Signal QML to refresh immediately (eliminates timer-based latency)
-                        if (m_viewModelRegistry && m_viewModelRegistry->osdViewModel()) {
-                            emit m_viewModelRegistry->osdViewModel()->videoFrameUpdated();
-                        }
                     }
                     // ✅ FrameData goes out of scope here, releasing the QImage reference
                 }, Qt::QueuedConnection);  // Explicit connection type for clarity
@@ -244,10 +233,6 @@ void SystemController::connectVideoToProvider()
                     if (data.cameraIndex == 1 && !m_systemStateModel->data().activeCameraIsDay) {
                         // QImage uses implicit sharing - assignment is cheap, copy-on-write
                         m_videoProvider->updateImage(data.baseImage);
-                        // ✅ Signal QML to refresh immediately (eliminates timer-based latency)
-                        if (m_viewModelRegistry && m_viewModelRegistry->osdViewModel()) {
-                            emit m_viewModelRegistry->osdViewModel()->videoFrameUpdated();
-                        }
                     }
                     // ✅ FrameData goes out of scope here, releasing the QImage reference
                 }, Qt::QueuedConnection);  // Explicit connection type for clarity
