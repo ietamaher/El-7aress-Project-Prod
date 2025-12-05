@@ -108,6 +108,10 @@ struct FrameData {
     FireMode fireMode = FireMode::SingleShot;
     bool stationAmmunitionLevel = false;
 
+    // Ammunition Feed Status (for OSD display)
+    bool ammoFeedCycleInProgress = false;  // FSM is running (for GUI animation)
+    bool ammoLoaded = false;                // Physical sensor state (belt seated)
+
     // Ballistics - Zeroing
     bool zeroingModeActive = false;
     float zeroingAzimuthOffset = 0.0f;
@@ -316,6 +320,10 @@ private:
     bool m_sysReady;
     bool m_currentAmmunitionLevel;
     FireMode m_fireMode;
+
+    // Ammunition Feed Status (for OSD display)
+    bool m_ammoFeedCycleInProgress = false;
+    bool m_ammoLoaded = false;
 
     // Ballistics - Zeroing
     bool m_currentZeroingModeActive;
