@@ -336,7 +336,7 @@ void WeaponController::startAmmoFeedCycle()
 void WeaponController::onActuatorFeedback(const ServoActuatorData& data)
 {
     // Extract position (adjust field name to match your ServoActuatorData struct)
-    double pos = data.position_mm;  // or data.position_countsposition_mm if using mm
+    double pos = data.position_counts;  // or data.position_mm if using mm
 
     processActuatorPosition(pos);
 }

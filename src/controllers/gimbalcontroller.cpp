@@ -18,6 +18,12 @@
 // Qt
 #include <QDebug>
 
+// Standard Library
+#include <algorithm>
+#include <numeric>
+#include <chrono>
+#include <cmath>
+
 // ============================================================================
 // UTILITY FUNCTIONS
 // ============================================================================
@@ -47,9 +53,9 @@ QPointF calculateAngularOffsetFromPixelError(
     double angularOffsetYDeg = 0.0;
 
     // Calculate azimuth offset
+    // CRITICAL FIX: !!! check sign
     if (cameraHfovDegrees > 0.01f && imageWidthPx > 0) {
         double degreesPerPixelAz = cameraHfovDegrees / static_cast<double>(imageWidthPx);
-        // ✅ CRITICAL FIX: !!! check sign
         angularOffsetXDeg = errorPxX * degreesPerPixelAz;
     }
 
@@ -98,10 +104,14 @@ GimbalController::GimbalController(ServoDriverDevice* azServo,
     }
 
     // Connect alarm signals
-    connect(m_azServo, &ServoDriverDevice::alarmDetected, this, &GimbalController::onAzAlarmDetected);
-    connect(m_azServo, &ServoDriverDevice::alarmCleared, this, &GimbalController::onAzAlarmCleared);
-    connect(m_elServo, &ServoDriverDevice::alarmDetected, this, &GimbalController::onElAlarmDetected);
-    connect(m_elServo, &ServoDriverDevice::alarmCleared, this, &GimbalController::onElAlarmCleared);
+    connect(m_azServo, &ServoDriverDevice::alarmDetected,
+            this, &GimbalController::onAzAlarmDetected);
+    connect(m_azServo, &ServoDriverDevice::alarmCleared,
+            this, &GimbalController::onAzAlarmCleared);
+    connect(m_elServo, &ServoDriverDevice::alarmDetected,
+            this, &GimbalController::onElAlarmDetected);
+    connect(m_elServo, &ServoDriverDevice::alarmCleared,
+            this, &GimbalController::onElAlarmCleared);
 
     // Start periodic update timer (20Hz)
     m_updateTimer = new QTimer(this);
@@ -114,17 +124,20 @@ GimbalController::GimbalController(ServoDriverDevice* azServo,
     // Initialize homing timeout timer
     m_homingTimeoutTimer = new QTimer(this);
     m_homingTimeoutTimer->setSingleShot(true);
-    connect(m_homingTimeoutTimer, &QTimer::timeout, 
+    connect(m_homingTimeoutTimer, &QTimer::timeout,
             this, &GimbalController::onHomingTimeout);
 
-    qDebug() << "[GimbalController] Homing system initialized (timeout:" << HOMING_TIMEOUT_MS << "ms)";
-
+    qDebug() << "[GimbalController] Initialized (homing timeout:" << HOMING_TIMEOUT_MS << "ms)";
 }
 
 GimbalController::~GimbalController()
 {
     shutdown();
 }
+
+// ============================================================================
+// SHUTDOWN
+// ============================================================================
 
 void GimbalController::shutdown()
 {
@@ -137,14 +150,14 @@ void GimbalController::shutdown()
 }
 
 // ============================================================================
-// CONTROL METHODS
+// UPDATE LOOP
 // ============================================================================
 
 void GimbalController::update()
 {
-    // ============================================================================
-    // ✅ STARTUP SANITY CHECKS (run once on first update)
-    // ============================================================================
+    // ========================================================================
+    // Startup Sanity Checks (run once on first update)
+    // ========================================================================
     static bool sanityChecksPerformed = false;
     if (!sanityChecksPerformed) {
         SystemStateData state = m_stateModel->data();
@@ -152,8 +165,8 @@ void GimbalController::update()
         // Verify IMU gyro rates are in deg/s (not rad/s)
         // Expected: typical vehicle rotation rates are 0-100 deg/s
         // If units were rad/s, typical values would be 0-1.75 rad/s
-        const double MAX_REASONABLE_GYRO_DEGS = 500.0; // deg/s (aggressive maneuver)
-        const double MAX_REASONABLE_GYRO_RADS = 10.0;  // rad/s (~573 deg/s, clearly wrong)
+        const double MAX_REASONABLE_GYRO_DEGS = 500.0;  // deg/s (aggressive maneuver)
+        const double MAX_REASONABLE_GYRO_RADS = 10.0;   // rad/s (~573 deg/s, clearly wrong)
 
         if (state.imuConnected) {
             double gyroMag = std::sqrt(state.GyroX * state.GyroX +
@@ -161,11 +174,11 @@ void GimbalController::update()
                                        state.GyroZ * state.GyroZ);
 
             if (gyroMag > MAX_REASONABLE_GYRO_DEGS) {
-                qWarning() << "[GimbalController] ⚠️ IMU gyro rates suspiciously high:"
+                qWarning() << "[GimbalController] IMU gyro rates suspiciously high:"
                            << "mag =" << gyroMag << "deg/s"
                            << "- Check units (should be deg/s, not rad/s)";
             } else if (gyroMag > 0.001 && gyroMag < MAX_REASONABLE_GYRO_RADS) {
-                qWarning() << "[GimbalController] ⚠️ IMU gyro rates suspiciously low:"
+                qWarning() << "[GimbalController] IMU gyro rates suspiciously low:"
                            << "mag =" << gyroMag
                            << "- Check units (should be deg/s, not rad/s)";
             }
@@ -175,7 +188,7 @@ void GimbalController::update()
         const auto& stabCfg = MotionTuningConfig::instance().stabilizer;
         double componentSum = stabCfg.maxPositionVel + stabCfg.maxVelocityCorr;
         if (stabCfg.maxTotalVel < componentSum) {
-            qWarning() << "[GimbalController] ⚠️ Stabilizer limit mismatch:"
+            qWarning() << "[GimbalController] Stabilizer limit mismatch:"
                        << "maxTotalVel (" << stabCfg.maxTotalVel << ") < "
                        << "maxPositionVel + maxVelocityCorr (" << componentSum << ")"
                        << "- Position correction will saturate early";
@@ -185,13 +198,15 @@ void GimbalController::update()
         qDebug() << "[GimbalController] Startup sanity checks completed";
     }
 
-    // ============================================================================
-    // ✅ EXPERT REVIEW FIX: Centralized dt computation for all stabilization logic
-    // ============================================================================
+    // ========================================================================
+    // Centralized dt Computation (Expert Review Fix)
+    // ========================================================================
     double dt = m_velocityTimer.restart() / 1000.0;  // Convert ms to seconds
-    dt = std::clamp(dt, 0.001, 0.050);  // Clamp between 1-50 ms
+    dt = std::clamp(dt, 0.001, 0.050);               // Clamp between 1-50 ms
 
-    // ✅ MEASURE UPDATE LOOP TIMING
+    // ========================================================================
+    // Update Loop Timing Diagnostics
+    // ========================================================================
     static auto lastUpdateTime = std::chrono::high_resolution_clock::now();
     static std::vector<long long> updateIntervals;
     static int updateCount = 0;
@@ -200,26 +215,31 @@ void GimbalController::update()
     auto interval = std::chrono::duration_cast<std::chrono::microseconds>(now - lastUpdateTime).count();
 
     updateIntervals.push_back(interval);
-    if (updateIntervals.size() > 100) updateIntervals.erase(updateIntervals.begin());
+    if (updateIntervals.size() > 100) {
+        updateIntervals.erase(updateIntervals.begin());
+    }
 
     if (++updateCount % 50 == 0) {
         long long minInterval = *std::min_element(updateIntervals.begin(), updateIntervals.end());
         long long maxInterval = *std::max_element(updateIntervals.begin(), updateIntervals.end());
-        long long avgInterval = std::accumulate(updateIntervals.begin(), updateIntervals.end(), 0LL) / updateIntervals.size();
+        long long avgInterval = std::accumulate(updateIntervals.begin(), updateIntervals.end(), 0LL)
+                                / static_cast<long long>(updateIntervals.size());
         double jitter = (maxInterval - minInterval) / 1000.0;
 
-        qDebug() << "🔄 [UPDATE LOOP] 50 cycles |"
+        qDebug() << "[UPDATE LOOP] 50 cycles |"
                  << "Target: 50.0ms |"
                  << "Actual avg:" << (avgInterval / 1000.0) << "ms |"
                  << "Min:" << (minInterval / 1000.0) << "ms |"
                  << "Max:" << (maxInterval / 1000.0) << "ms |"
                  << "Jitter:" << jitter << "ms"
-                 << (jitter > 10 ? "⚠️" : "✅");
+                 << (jitter > 10 ? "[HIGH]" : "[OK]");
     }
 
     lastUpdateTime = now;
 
-
+    // ========================================================================
+    // Motion Mode Update
+    // ========================================================================
     if (!m_currentMode) {
         return;
     }
@@ -228,7 +248,7 @@ void GimbalController::update()
     m_currentMode->updateGyroBias(m_stateModel->data());
 
     // Execute motion mode update if safety conditions are met
-    // ✅ EXPERT REVIEW FIX: Pass centralized dt to motion mode
+    // Pass centralized dt to motion mode (Expert Review Fix)
     if (m_currentMode->checkSafetyConditions(this)) {
         m_currentMode->update(this, dt);
     } else {
@@ -238,19 +258,18 @@ void GimbalController::update()
 }
 
 // ============================================================================
-// STATE MANAGEMENT
+// STATE CHANGE HANDLER
 // ============================================================================
 
-void GimbalController::onSystemStateChanged(const SystemStateData &newData)
+void GimbalController::onSystemStateChanged(const SystemStateData& newData)
 {
     // ========================================================================
-    // ✅ PERFORMANCE OPTIMIZATION: Early exit checks
+    // Performance Optimization: Early exit checks
     // Only process expensive operations if relevant state has changed
     // This prevents wasting CPU on servo position updates (110 Hz!)
     // ========================================================================
 
     // PRIORITY 1: EMERGENCY STOP (highest priority!)
-    // Only process if emergency state changed
     if (newData.emergencyStopActive != m_oldState.emergencyStopActive) {
         processEmergencyStop(newData);
     }
@@ -258,11 +277,10 @@ void GimbalController::onSystemStateChanged(const SystemStateData &newData)
     // If emergency stop active, skip all other processing
     if (newData.emergencyStopActive) {
         m_oldState = newData;
-        return;  // Exit immediately - no motion commands during E-STOP
+        return;
     }
 
     // PRIORITY 2: HOMING SEQUENCE
-    // Only process if homing state or button changed
     if (newData.homingState != m_oldState.homingState ||
         newData.gotoHomePosition != m_oldState.gotoHomePosition) {
         processHomingSequence(newData);
@@ -272,16 +290,17 @@ void GimbalController::onSystemStateChanged(const SystemStateData &newData)
     if (newData.homingState == HomingState::InProgress ||
         newData.homingState == HomingState::Requested) {
         m_oldState = newData;
-        return;  // Exit - homing controls the gimbal exclusively
+        return;
     }
 
     // PRIORITY 3: FREE MODE MONITORING
-    // Only process if free mode state changed
     if (newData.freeGimbalState != m_oldState.freeGimbalState) {
         processFreeMode(newData);
     }
 
-    // Detect motion mode type change
+    // ========================================================================
+    // Motion Mode Change Detection
+    // ========================================================================
     bool motionModeTypeChanged = (m_oldState.motionMode != newData.motionMode);
     bool scanParametersChanged = false;
 
@@ -289,19 +308,22 @@ void GimbalController::onSystemStateChanged(const SystemStateData &newData)
     if (!motionModeTypeChanged) {
         if (newData.motionMode == MotionMode::AutoSectorScan &&
             m_oldState.activeAutoSectorScanZoneId != newData.activeAutoSectorScanZoneId) {
-            qDebug() << "GimbalController: AutoSectorScanZone changed to" << newData.activeAutoSectorScanZoneId;
+            qDebug() << "[GimbalController] AutoSectorScanZone changed to"
+                     << newData.activeAutoSectorScanZoneId;
             scanParametersChanged = true;
         } else if (newData.motionMode == MotionMode::TRPScan &&
                    m_oldState.activeTRPLocationPage != newData.activeTRPLocationPage) {
-            qDebug() << "GimbalController: TRPLocationPage changed to" << newData.activeTRPLocationPage;
+            qDebug() << "[GimbalController] TRPLocationPage changed to"
+                     << newData.activeTRPLocationPage;
             scanParametersChanged = true;
         }
     }
 
-    // ✅ PERFORMANCE: Only update tracking if in AutoTrack mode AND tracking data changed
+    // ========================================================================
+    // Tracking Target Updates (Performance: only when tracking data changed)
+    // ========================================================================
     if (newData.motionMode == MotionMode::AutoTrack && m_currentMode) {
         if (dynamic_cast<TrackingMotionMode*>(m_currentMode.get())) {
-            // Check if tracking data actually changed (avoid expensive trigonometry!)
             bool trackingDataChanged = (
                 newData.trackerHasValidTarget != m_oldState.trackerHasValidTarget ||
                 newData.trackedTargetCenterX_px != m_oldState.trackedTargetCenterX_px ||
@@ -319,22 +341,21 @@ void GimbalController::onSystemStateChanged(const SystemStateData &newData)
                     double errorPxY = newData.trackedTargetCenterY_px - screenCenterY_px;
 
                     // Get active camera FOV
-                    float activeHfov = newData.activeCameraIsDay ?
-                                       static_cast<float>(newData.dayCurrentHFOV) :
-                                       static_cast<float>(newData.nightCurrentHFOV);
+                    float activeHfov = newData.activeCameraIsDay
+                                       ? static_cast<float>(newData.dayCurrentHFOV)
+                                       : static_cast<float>(newData.nightCurrentHFOV);
 
                     QPointF angularOffset = GimbalUtils::calculateAngularOffsetFromPixelError(
                         errorPxX, errorPxY,
                         newData.currentImageWidthPx, newData.currentImageHeightPx, activeHfov
                     );
 
-                    // The desired target gimbal position is current gimbal position + this offset
-                    // (because the offset tells us how far to move FROM current to get target to center)
+                    // Target gimbal position = current position + offset
                     double targetGimbalAz = newData.gimbalAz + angularOffset.x();
                     double targetGimbalEl = newData.gimbalEl + angularOffset.y();
 
                     QPointF angularVelocity = GimbalUtils::calculateAngularOffsetFromPixelError(
-                        newData.trackedTargetVelocityX_px_s, // Use velocity in pixels/sec
+                        newData.trackedTargetVelocityX_px_s,
                         newData.trackedTargetVelocityY_px_s,
                         newData.currentImageWidthPx,
                         newData.currentImageHeightPx,
@@ -387,6 +408,7 @@ void GimbalController::setMotionMode(MotionMode newMode)
     case MotionMode::Manual:
         m_currentMode = std::make_unique<ManualMotionMode>();
         break;
+
     case MotionMode::AutoTrack:
     case MotionMode::ManualTrack:
     {
@@ -417,7 +439,8 @@ void GimbalController::setMotionMode(MotionMode newMode)
             scanMode->setActiveScanZone(*it);
             m_currentMode = std::move(scanMode);
         } else {
-            qWarning() << "GimbalController: AutoSectorScan zone" << activeId << "not found or disabled";
+            qWarning() << "[GimbalController] AutoSectorScan zone" << activeId
+                       << "not found or disabled";
             m_currentMode = nullptr;
             newMode = MotionMode::Idle;
         }
@@ -441,7 +464,7 @@ void GimbalController::setMotionMode(MotionMode newMode)
             trpMode->setActiveTRPPage(pageToScan);
             m_currentMode = std::move(trpMode);
         } else {
-            qWarning() << "GimbalController: No TRPs for page" << activePageNum;
+            qWarning() << "[GimbalController] No TRPs for page" << activePageNum;
             m_currentMode = nullptr;
             newMode = MotionMode::Idle;
         }
@@ -449,17 +472,15 @@ void GimbalController::setMotionMode(MotionMode newMode)
     }
 
     case MotionMode::MotionFree:
-    {
         // Free mode - no active control, brakes released
         // This mode is activated by the physical FREE toggle switch at station
         // No motion mode object needed - servos are held in FREE by PLC42
         m_currentMode = nullptr;
         qInfo() << "[GimbalController] Motion mode set to FREE (no active control)";
         break;
-    }
 
     default:
-        qWarning() << "GimbalController: Unknown motion mode" << int(newMode);
+        qWarning() << "[GimbalController] Unknown motion mode" << static_cast<int>(newMode);
         m_currentMode = nullptr;
         break;
     }
@@ -471,7 +492,7 @@ void GimbalController::setMotionMode(MotionMode newMode)
         m_currentMode->enterMode(this);
     }
 
-    qDebug() << "GimbalController: Motion mode set to" << int(m_currentMotionModeType);
+    qDebug() << "[GimbalController] Motion mode set to" << static_cast<int>(m_currentMotionModeType);
 }
 
 // ============================================================================
@@ -499,7 +520,7 @@ void GimbalController::clearAlarms()
     });
 }
 
-void GimbalController::onAzAlarmDetected(uint16_t alarmCode, const QString &description)
+void GimbalController::onAzAlarmDetected(uint16_t alarmCode, const QString& description)
 {
     emit azAlarmDetected(alarmCode, description);
 }
@@ -509,7 +530,7 @@ void GimbalController::onAzAlarmCleared()
     emit azAlarmCleared();
 }
 
-void GimbalController::onElAlarmDetected(uint16_t alarmCode, const QString &description)
+void GimbalController::onElAlarmDetected(uint16_t alarmCode, const QString& description)
 {
     emit elAlarmDetected(alarmCode, description);
 }
@@ -520,11 +541,7 @@ void GimbalController::onElAlarmCleared()
 }
 
 // ============================================================================
-// HOMING STATE MACHINE IMPLEMENTATION
-// ============================================================================
-
-// ============================================================================
-// HOMING STATE MACHINE IMPLEMENTATION
+// HOMING STATE MACHINE
 // ============================================================================
 
 void GimbalController::processHomingSequence(const SystemStateData& data)
@@ -533,23 +550,24 @@ void GimbalController::processHomingSequence(const SystemStateData& data)
     case HomingState::Idle:
         // Check if home button pressed (rising edge detection)
         if (data.gotoHomePosition && !m_oldState.gotoHomePosition) {
-            qInfo() << "[GimbalController] 🏠 Home button pressed";
+            qInfo() << "[GimbalController] Home button pressed";
             startHomingSequence();
         }
         break;
 
     case HomingState::Requested:
-    {  // ⭐ Braces for scope
+    {
         // Send HOME command to PLC42
         if (m_plc42 && m_plc42->data()->isConnected) {
-            qInfo() << "[GimbalController] ▶ Starting HOME sequence";
+            qInfo() << "[GimbalController] Starting HOME sequence";
 
             // Store current mode to restore after homing completes
             m_modeBeforeHoming = data.motionMode;
-            qDebug() << "[GimbalController] Stored current mode:" << int(m_modeBeforeHoming);
+            qDebug() << "[GimbalController] Stored current mode:"
+                     << static_cast<int>(m_modeBeforeHoming);
 
             // Send HOME command to Oriental Motor via PLC42
-            m_plc42->setHomePosition();  // Sets gimbalOpMode = 3 → Q1_1 HIGH (ZHOME)
+            m_plc42->setHomePosition();  // Sets gimbalOpMode = 3 -> Q1_1 HIGH (ZHOME)
 
             // Update state to InProgress
             m_currentHomingState = HomingState::InProgress;
@@ -558,38 +576,37 @@ void GimbalController::processHomingSequence(const SystemStateData& data)
             m_homingTimeoutTimer->start(HOMING_TIMEOUT_MS);
 
             qInfo() << "[GimbalController] HOME command sent, waiting for HOME-END signals...";
-
         } else {
-            qCritical() << "[GimbalController] ✗ Cannot start homing - PLC42 not connected";
+            qCritical() << "[GimbalController] Cannot start homing - PLC42 not connected";
             abortHomingSequence("PLC42 not connected");
         }
         break;
     }
 
     case HomingState::InProgress:
-    {  // ⭐ Braces for scope - THIS IS CRITICAL!
+    {
         // Check if BOTH HOME-END signals received
         bool azHomeDone = data.azimuthHomeComplete;
         bool elHomeDone = data.elevationHomeComplete;
 
         // Log individual axis completion (rising edge detection)
         if (azHomeDone && !m_oldState.azimuthHomeComplete) {
-            qInfo() << "[GimbalController] ✓ Azimuth axis homed (HOME-END received)";
+            qInfo() << "[GimbalController] Azimuth axis homed (HOME-END received)";
         }
         if (elHomeDone && !m_oldState.elevationHomeComplete) {
-            qInfo() << "[GimbalController] ✓ Elevation axis homed (HOME-END received)";
+            qInfo() << "[GimbalController] Elevation axis homed (HOME-END received)";
         }
 
         // Complete homing only when BOTH axes report HOME-END
         if (azHomeDone && elHomeDone &&
             (!m_oldState.azimuthHomeComplete || !m_oldState.elevationHomeComplete)) {
-            qInfo() << "[GimbalController] ✓✓ BOTH axes at home position";
+            qInfo() << "[GimbalController] BOTH axes at home position";
             completeHomingSequence();
         }
 
         // Check for emergency stop during homing
         if (data.emergencyStopActive) {
-            qWarning() << "[GimbalController] ⚠ Homing aborted by emergency stop";
+            qWarning() << "[GimbalController] Homing aborted by emergency stop";
             abortHomingSequence("Emergency stop activated");
         }
         break;
@@ -619,31 +636,32 @@ void GimbalController::startHomingSequence()
     // This method is called when home button first pressed
     // It signals SystemStateModel to transition to HomingState::Requested
     // SystemStateModel will update the state, which triggers processHomingSequence
-    
+
     m_currentHomingState = HomingState::Requested;
-    
+
     qInfo() << "[GimbalController] Homing sequence initiated";
-    qInfo() << "[GimbalController] → Will send HOME command to Oriental Motor";
+    qInfo() << "[GimbalController] -> Will send HOME command to Oriental Motor";
 }
 
 void GimbalController::completeHomingSequence()
 {
     // Stop timeout timer
     m_homingTimeoutTimer->stop();
-    
+
     // Return PLC42 to manual mode (gimbalOpMode = 0)
     if (m_plc42) {
         m_plc42->setManualMode();  // Clears HOME output (Q1_1 LOW)
         qDebug() << "[GimbalController] PLC42 returned to MANUAL mode";
     }
-    
+
     // Mark as completed
     m_currentHomingState = HomingState::Completed;
-    
-    qInfo() << "[GimbalController] ✓ HOME sequence completed successfully";
+
+    qInfo() << "[GimbalController] HOME sequence completed successfully";
     qInfo() << "[GimbalController] Gimbal at home position, ready for operation";
-    qInfo() << "[GimbalController] Will restore motion mode:" << int(m_modeBeforeHoming);
-    
+    qInfo() << "[GimbalController] Will restore motion mode:"
+            << static_cast<int>(m_modeBeforeHoming);
+
     // SystemStateModel will handle:
     // 1. Setting homingState = Completed
     // 2. Restoring motionMode = m_modeBeforeHoming
@@ -654,41 +672,42 @@ void GimbalController::abortHomingSequence(const QString& reason)
 {
     // Stop timeout timer
     m_homingTimeoutTimer->stop();
-    
+
     // Return PLC42 to manual mode
     if (m_plc42) {
         m_plc42->setManualMode();
         qDebug() << "[GimbalController] PLC42 returned to MANUAL mode after abort";
     }
-    
+
     // Mark as aborted
     m_currentHomingState = HomingState::Aborted;
-    
-    qCritical() << "[GimbalController] ✗ HOME sequence aborted:" << reason;
+
+    qCritical() << "[GimbalController] HOME sequence aborted:" << reason;
     qWarning() << "[GimbalController] Gimbal position may be uncertain";
-    qWarning() << "[GimbalController] Will restore motion mode:" << int(m_modeBeforeHoming);
-    
+    qWarning() << "[GimbalController] Will restore motion mode:"
+               << static_cast<int>(m_modeBeforeHoming);
+
     // SystemStateModel will handle flag clearing and mode restoration
 }
 
 void GimbalController::onHomingTimeout()
 {
-    qCritical() << "[GimbalController] ✗ HOME sequence TIMEOUT after" 
+    qCritical() << "[GimbalController] HOME sequence TIMEOUT after"
                 << HOMING_TIMEOUT_MS << "ms";
     qCritical() << "[GimbalController] HOME-END signal was NOT received";
     qCritical() << "[GimbalController] Possible causes:";
     qCritical() << "[GimbalController]   - Wiring issue (I0_7 not connected)";
     qCritical() << "[GimbalController]   - Oriental Motor fault";
     qCritical() << "[GimbalController]   - Mechanical obstruction";
-    
+
     // Mark as failed
     m_currentHomingState = HomingState::Failed;
-    
+
     // Return PLC42 to manual mode
     if (m_plc42) {
         m_plc42->setManualMode();
     }
-    
+
     // SystemStateModel will be notified of failure state
 }
 
@@ -699,58 +718,57 @@ void GimbalController::onHomingTimeout()
 void GimbalController::processEmergencyStop(const SystemStateData& data)
 {
     bool emergencyActive = data.emergencyStopActive;
-    
+
     // Detect rising edge (emergency stop activation)
     if (emergencyActive && !m_wasInEmergencyStop) {
         qCritical() << "";
         qCritical() << "========================================";
-        qCritical() << "⚠️  EMERGENCY STOP ACTIVATED  ⚠️";
+        qCritical() << "  EMERGENCY STOP ACTIVATED";
         qCritical() << "========================================";
         qCritical() << "";
-        
+
         // Send STOP command to PLC42
         if (m_plc42 && m_plc42->data()->isConnected) {
-            m_plc42->setStopGimbal();  // Sets gimbalOpMode = 1 → Q1_4 HIGH (STOP)
+            m_plc42->setStopGimbal();  // Sets gimbalOpMode = 1 -> Q1_4 HIGH (STOP)
             qCritical() << "[GimbalController] STOP command sent to Oriental Motor";
         } else {
-            qCritical() << "[GimbalController] ✗ PLC42 not connected - cannot send STOP";
+            qCritical() << "[GimbalController] PLC42 not connected - cannot send STOP";
         }
-        
+
         // Abort homing if in progress
         if (m_currentHomingState == HomingState::InProgress ||
             m_currentHomingState == HomingState::Requested) {
             qWarning() << "[GimbalController] Aborting in-progress homing sequence";
             abortHomingSequence("Emergency stop activated");
         }
-        
+
         // Stop current motion mode servos
         if (m_currentMode) {
             m_currentMode->stopServos(this);
             qCritical() << "[GimbalController] All servo motion halted";
         }
-        
+
         qCritical() << "[GimbalController] System halted - awaiting E-STOP release";
-        
+
         m_wasInEmergencyStop = true;
-        
-    } 
+    }
     // Detect falling edge (emergency stop release)
     else if (!emergencyActive && m_wasInEmergencyStop) {
         qInfo() << "";
         qInfo() << "========================================";
-        qInfo() << "✓ Emergency stop CLEARED";
+        qInfo() << "  Emergency stop CLEARED";
         qInfo() << "========================================";
         qInfo() << "";
-        
+
         // Return to manual mode
         if (m_plc42 && m_plc42->data()->isConnected) {
-            m_plc42->setManualMode();  // Sets gimbalOpMode = 0 → Q1_4 LOW
+            m_plc42->setManualMode();  // Sets gimbalOpMode = 0 -> Q1_4 LOW
             qInfo() << "[GimbalController] PLC42 returned to MANUAL mode";
         }
-        
+
         qInfo() << "[GimbalController] System ready - operator may resume operations";
         qInfo() << "[GimbalController] Previous motion mode will be restored";
-        
+
         m_wasInEmergencyStop = false;
     }
 }
@@ -762,12 +780,12 @@ void GimbalController::processEmergencyStop(const SystemStateData& data)
 void GimbalController::processFreeMode(const SystemStateData& data)
 {
     bool freeActive = data.freeGimbalState;
-    
+
     // Detect rising edge (FREE mode activation)
     if (freeActive && !m_wasInFreeMode) {
         qInfo() << "";
         qInfo() << "========================================";
-        qInfo() << "🔓 FREE MODE ACTIVATED";
+        qInfo() << "  FREE MODE ACTIVATED";
         qInfo() << "========================================";
         qInfo() << "";
         qInfo() << "[GimbalController] Local FREE toggle switch turned ON";
@@ -775,29 +793,28 @@ void GimbalController::processFreeMode(const SystemStateData& data)
         qInfo() << "[GimbalController] Manual positioning enabled";
         qInfo() << "[GimbalController] No servo commands will be sent";
         qInfo() << "";
-        qInfo() << "⚠️  CAUTION: Gimbal can be moved manually";
-        qInfo() << "⚠️  Ensure area is clear before positioning";
-        
+        qInfo() << "  CAUTION: Gimbal can be moved manually";
+        qInfo() << "  Ensure area is clear before positioning";
+
         // Motion mode will be set to MotionFree by SystemStateModel
         // This handler just logs for operator awareness
-        
+
         m_wasInFreeMode = true;
-        
-    } 
+    }
     // Detect falling edge (FREE mode deactivation)
     else if (!freeActive && m_wasInFreeMode) {
         qInfo() << "";
         qInfo() << "========================================";
-        qInfo() << "🔒 FREE MODE DEACTIVATED";
+        qInfo() << "  FREE MODE DEACTIVATED";
         qInfo() << "========================================";
         qInfo() << "";
         qInfo() << "[GimbalController] Local FREE toggle switch turned OFF";
         qInfo() << "[GimbalController] Gimbal brakes ENGAGED";
         qInfo() << "[GimbalController] Returning to powered control";
         qInfo() << "[GimbalController] Previous motion mode will be restored";
-        
+
         // Motion mode will be restored by SystemStateModel
-        
+
         m_wasInFreeMode = false;
     }
 }

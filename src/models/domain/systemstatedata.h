@@ -493,7 +493,7 @@ struct SystemStateData {
     bool stationEnabled = true;         ///< Weapon station enable status
     bool gotoHomePosition = false;                ///< Home position switch status
     bool gunArmed = false;              ///< Weapon arming status
-    bool ammoLoaded = false;            ///< Ammunition loaded status
+    bool ammoLoadButtonPressed = false;            ///< Ammunition loaded status
     bool authorized = false;            ///< System authorization status
     bool detectionEnabled = false;      ///< Target detection enable status
     FireMode fireMode = FireMode::Unknown; ///< Current weapon fire mode
@@ -613,6 +613,10 @@ struct SystemStateData {
     float currentTargetAngularRateEl = 0.0f;            ///< Target angular rate in elevation (degrees/second)
     float muzzleVelocityMPS = 900.0f;                   ///< Projectile muzzle velocity in meters per second
     
+    // ammunition feed  parameters
+    //bool ammoLoadButtonPressed = false;     // Operator input (momentary button)
+    bool ammoFeedCycleInProgress = false;   // FSM is running (for GUI animation)
+    bool ammoLoaded = false;                // Physical sensor state (belt seated)
     // =================================
     // STATUS & INFORMATION DISPLAY
     // =================================

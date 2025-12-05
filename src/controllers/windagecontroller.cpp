@@ -1,42 +1,66 @@
 #include "windagecontroller.h"
+
+// ============================================================================
+// Project
+// ============================================================================
 #include "models/windageviewmodel.h"
 #include "models/domain/systemstatemodel.h"
+
+// ============================================================================
+// Qt Framework
+// ============================================================================
 #include <QDebug>
 
-WindageController::WindageController(QObject *parent)
+// ============================================================================
+// CONSTRUCTOR
+// ============================================================================
+
+WindageController::WindageController(QObject* parent)
     : QObject(parent)
-    , m_viewModel(nullptr)
-    , m_stateModel(nullptr)
-    , m_currentState(WindageState::Idle)
-    , m_currentWindSpeedEdit(0.0f)
 {
 }
+
+// ============================================================================
+// INITIALIZATION
+// ============================================================================
 
 void WindageController::initialize()
 {
     Q_ASSERT(m_viewModel);
     Q_ASSERT(m_stateModel);
 
-    // ✅ LATENCY FIX: Use dedicated windageModeChanged signal to reduce event queue load
+    // LATENCY FIX: Use dedicated windageModeChanged signal to reduce event queue load
     // Only processes ~5 events per menu session instead of 1,200 events/min from dataChanged
     connect(m_stateModel, &SystemStateModel::windageModeChanged,
             this, [this](bool active) {
-                // If windage is externally cancelled
                 if (!active && m_currentState != WindageState::Idle) {
-                    qDebug() << "Windage mode became inactive externally.";
+                    qDebug() << "[WindageController] Windage mode became inactive externally.";
                 }
-
-                // Note: We do NOT sync m_currentWindSpeedEdit from the model during editing.
+                // NOTE: We do NOT sync m_currentWindSpeedEdit from the model during editing.
                 // The controller maintains its own edit value independently until SELECT confirms it.
-            }, Qt::QueuedConnection);  // Non-blocking signal delivery
+            }, Qt::QueuedConnection);
 
     connect(m_stateModel, &SystemStateModel::colorStyleChanged,
             this, &WindageController::onColorStyleChanged);
-    
+
     // Set initial color
     const auto& data = m_stateModel->data();
     m_viewModel->setAccentColor(data.colorStyle);
 }
+
+void WindageController::setViewModel(WindageViewModel* viewModel)
+{
+    m_viewModel = viewModel;
+}
+
+void WindageController::setStateModel(SystemStateModel* stateModel)
+{
+    m_stateModel = stateModel;
+}
+
+// ============================================================================
+// UI CONTROL
+// ============================================================================
 
 void WindageController::show()
 {
@@ -52,6 +76,10 @@ void WindageController::hide()
     transitionToState(WindageState::Idle);
 }
 
+// ============================================================================
+// STATE MACHINE
+// ============================================================================
+
 void WindageController::transitionToState(WindageState newState)
 {
     m_currentState = newState;
@@ -66,7 +94,7 @@ void WindageController::updateUI()
         m_viewModel->setInstruction(
             "Align Weapon Station TOWARDS THE WIND using joystick.\n\n"
             "Press SELECT when aligned."
-            );
+        );
         m_viewModel->setShowWindSpeed(false);
         m_viewModel->setShowWindDirection(false);
         break;
@@ -78,21 +106,19 @@ void WindageController::updateUI()
         m_viewModel->setInstruction(
             "Set HEADWIND speed.\n"
             "Use UP/DOWN to adjust. Press SELECT to confirm."
-            );
+        );
         m_viewModel->setWindSpeed(m_currentWindSpeedEdit);
         m_viewModel->setShowWindSpeed(true);
-
-        // Always update the label for editing state (no "APPLIED" suffix)
         m_viewModel->setWindSpeedLabel(
             QString("Headwind: %1 knots").arg(m_currentWindSpeedEdit, 0, 'f', 0)
-            );
+        );
 
         // Show captured wind direction
         if (data.windageDirectionCaptured) {
             m_viewModel->setWindDirection(data.windageDirectionDegrees);
             m_viewModel->setWindDirectionLabel(
-                QString("Wind FROM: %1°").arg(data.windageDirectionDegrees, 0, 'f', 0)
-                );
+                QString("Wind FROM: %1 deg").arg(data.windageDirectionDegrees, 0, 'f', 0)
+            );
             m_viewModel->setShowWindDirection(true);
         }
         break;
@@ -103,24 +129,22 @@ void WindageController::updateUI()
         const SystemStateData& data = m_stateModel->data();
         m_viewModel->setTitle("Windage Set");
         m_viewModel->setInstruction(
-            QString("Windage set to %1° @ %2 knots and applied.\n"
+            QString("Windage set to %1 deg @ %2 knots and applied.\n"
                     "'W' will display on OSD.\n\n"
                     "Press SELECT to return.")
                 .arg(data.windageDirectionDegrees, 0, 'f', 0)
                 .arg(data.windageSpeedKnots, 0, 'f', 0)
-            );
+        );
         m_viewModel->setWindSpeed(data.windageSpeedKnots);
         m_viewModel->setShowWindSpeed(true);
         m_viewModel->setWindSpeedLabel(
             QString("Headwind: %1 knots (APPLIED)")
                 .arg(data.windageSpeedKnots, 0, 'f', 0)
-            );
-
-        // Show applied wind direction
+        );
         m_viewModel->setWindDirection(data.windageDirectionDegrees);
         m_viewModel->setWindDirectionLabel(
-            QString("Wind FROM: %1° (APPLIED)").arg(data.windageDirectionDegrees, 0, 'f', 0)
-            );
+            QString("Wind FROM: %1 deg (APPLIED)").arg(data.windageDirectionDegrees, 0, 'f', 0)
+        );
         m_viewModel->setShowWindDirection(true);
         break;
     }
@@ -135,6 +159,10 @@ void WindageController::updateUI()
     }
 }
 
+// ============================================================================
+// BUTTON HANDLERS
+// ============================================================================
+
 void WindageController::onSelectButtonPressed()
 {
     switch (m_currentState) {
@@ -144,51 +172,49 @@ void WindageController::onSelectButtonPressed()
         // Wind direction is ABSOLUTE (relative to true North), not relative to vehicle!
         // Therefore we must use: Absolute bearing = IMU yaw + Station azimuth
         const SystemStateData& data = m_stateModel->data();
-
         float absoluteBearing;
 
-        // Check if IMU is connected
         if (!data.imuConnected) {
-            // ⚠️ WARNING: IMU not connected! Fallback to station azimuth only
+            // WARNING: IMU not connected! Fallback to station azimuth only
             // This is NOT correct for moving vehicles, but better than nothing
             absoluteBearing = data.azimuthDirection;
-            qCritical() << "⚠️ WARNING: IMU NOT CONNECTED! Wind direction captured as station azimuth only:" << absoluteBearing << "°";
-            qCritical() << "Wind direction will be INCORRECT if vehicle rotates!";
-            qCritical() << "Please connect IMU for accurate windage.";
+            qCritical() << "[WindageController] WARNING: IMU NOT CONNECTED!";
+            qCritical() << "[WindageController] Wind direction captured as station azimuth only:"
+                        << absoluteBearing << "deg";
+            qCritical() << "[WindageController] Wind direction will be INCORRECT if vehicle rotates!";
         } else {
-            // ✅ IMU connected: Calculate correct absolute gimbal bearing
+            // IMU connected: Calculate correct absolute gimbal bearing
             absoluteBearing = static_cast<float>(data.imuYawDeg) + data.azimuthDirection;
 
             // Normalize to 0-360 range
             while (absoluteBearing >= 360.0f) absoluteBearing -= 360.0f;
             while (absoluteBearing < 0.0f) absoluteBearing += 360.0f;
 
-            qDebug() << "Wind direction captured - Vehicle Heading (IMU):" << data.imuYawDeg << "°"
-                     << "Station Az:" << data.azimuthDirection << "°"
-                     << "Absolute Bearing:" << absoluteBearing << "degrees (wind FROM this direction)";
+            qDebug() << "[WindageController] Wind direction captured -"
+                     << "Vehicle Heading (IMU):" << data.imuYawDeg << "deg"
+                     << "Station Az:" << data.azimuthDirection << "deg"
+                     << "Absolute Bearing:" << absoluteBearing << "deg (wind FROM)";
         }
 
         m_stateModel->captureWindageDirection(absoluteBearing);
-
-        // Load current wind speed for editing
         m_currentWindSpeedEdit = data.windageSpeedKnots;
         transitionToState(WindageState::Set_WindSpeed);
+        break;
     }
-    break;
 
     case WindageState::Set_WindSpeed:
     {
-        // Set wind speed and finalize
         m_stateModel->setWindageSpeed(m_currentWindSpeedEdit);
         m_stateModel->finalizeWindage();
 
         const SystemStateData& data = m_stateModel->data();
-        qDebug() << "Windage finalized - Direction:" << data.windageDirectionDegrees
-                 << "degrees, Speed:" << m_currentWindSpeedEdit << "knots";
+        qDebug() << "[WindageController] Windage finalized -"
+                 << "Direction:" << data.windageDirectionDegrees << "deg"
+                 << "Speed:" << m_currentWindSpeedEdit << "knots";
 
         transitionToState(WindageState::Completed);
+        break;
     }
-    break;
 
     case WindageState::Completed:
         hide();
@@ -212,7 +238,7 @@ void WindageController::onBackButtonPressed()
             SystemStateData updatedData = currentData;
             updatedData.windageModeActive = false;
             m_stateModel->updateData(updatedData);
-            qDebug() << "WindageController: Exiting UI, applied windage remains.";
+            qDebug() << "[WindageController] Exiting UI, applied windage remains.";
         }
     }
 
@@ -224,8 +250,7 @@ void WindageController::onBackButtonPressed()
 void WindageController::onUpButtonPressed()
 {
     if (m_currentState == WindageState::Set_WindSpeed) {
-        m_currentWindSpeedEdit += 1.0f;
-        if (m_currentWindSpeedEdit > 50) m_currentWindSpeedEdit = 50;
+        m_currentWindSpeedEdit = qMin(m_currentWindSpeedEdit + 1.0f, 50.0f);
         updateUI();
     }
 }
@@ -233,24 +258,17 @@ void WindageController::onUpButtonPressed()
 void WindageController::onDownButtonPressed()
 {
     if (m_currentState == WindageState::Set_WindSpeed) {
-        m_currentWindSpeedEdit -= 1.0f;
-        if (m_currentWindSpeedEdit < 0) m_currentWindSpeedEdit = 0;
+        m_currentWindSpeedEdit = qMax(m_currentWindSpeedEdit - 1.0f, 0.0f);
         updateUI();
     }
 }
 
+// ============================================================================
+// COLOR STYLE HANDLER
+// ============================================================================
+
 void WindageController::onColorStyleChanged(const QColor& color)
 {
-    qDebug() << "WindageController: Color changed to" << color;
+    qDebug() << "[WindageController] Color changed to" << color;
     m_viewModel->setAccentColor(color);
-}
-
-void WindageController::setViewModel(WindageViewModel* viewModel)
-{
-    m_viewModel = viewModel;
-}
-
-void WindageController::setStateModel(SystemStateModel* stateModel)
-{
-    m_stateModel = stateModel;
 }

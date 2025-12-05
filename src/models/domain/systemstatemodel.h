@@ -714,6 +714,9 @@ signals:
      */
     void leadAngleStateChanged(bool active, LeadAngleStatus status, float offsetAz, float offsetEl);
 
+    void ammoFeedCycleInProgressChanged(bool inProgress);
+    void ammoLoadedChanged(bool loaded);
+
 public slots:
     // =================================
     // HARDWARE INTERFACE SLOTS
@@ -836,6 +839,18 @@ public slots:
      */
     void setTrackingStarted(bool start);
 
+    /**
+     * @brief Set ammo feed cycle in progress state (for GUI feedback)
+     * @param inProgress True if feed cycle is running
+     */
+    void setAmmoFeedCycleInProgress(bool inProgress);
+
+    /**
+     * @brief Set ammo loaded sensor state (physical sensor, not button)
+     * @param loaded True if ammo physically loaded (belt seated)
+     */
+    void setAmmoLoaded(bool loaded);
+
 private:
     // =================================
     // PRIVATE MEMBER VARIABLES
@@ -911,7 +926,8 @@ private:
     void processStateTransitions(const SystemStateData& oldData, SystemStateData& newData);
     void processHomingStateMachine(const SystemStateData& oldData,  SystemStateData& newData);
 
-
+    bool m_ammoFeedCycleInProgress = false;
+    bool m_ammoLoaded = false;   
 };
 
 #endif // SYSTEMSTATEMODEL_H

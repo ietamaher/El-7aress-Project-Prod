@@ -919,7 +919,7 @@ void SystemStateModel::onPlc21DataChanged(const Plc21PanelData &pData)
     newData.stationEnabled = pData.enableStationSW;
     newData.gunArmed = pData.armGunSW;
     newData.gotoHomePosition = pData.homePositionSW;  // ✓ Home button
-    newData.ammoLoaded = pData.loadAmmunitionSW;
+    newData.ammoLoadButtonPressed = pData.loadAmmunitionSW;
 
     newData.authorized = pData.authorizeSw;
     newData.enableStabilization = pData.enableStabilizationSW;
@@ -2291,3 +2291,29 @@ void SystemStateModel::commandSlewToSelectedRadarTrack() {
         emit dataChanged(data);
     }
 }
+
+/*
+Ammo Feed Cycle State Management
+*/
+void SystemStateModel::setAmmoFeedCycleInProgress(bool inProgress)
+{
+    if (m_ammoFeedCycleInProgress == inProgress) {
+        return;
+    }
+    m_ammoFeedCycleInProgress = inProgress;
+    emit ammoFeedCycleInProgressChanged(inProgress);
+    
+    qDebug() << "[SystemStateModel] Ammo feed cycle in progress:" << inProgress;
+}
+
+void SystemStateModel::setAmmoLoaded(bool loaded)
+{
+    if (m_ammoLoaded == loaded) {
+        return;
+    }
+    m_ammoLoaded = loaded;
+    emit ammoLoadedChanged(loaded);
+    
+    qDebug() << "[SystemStateModel] Ammo loaded:" << loaded;
+}
+

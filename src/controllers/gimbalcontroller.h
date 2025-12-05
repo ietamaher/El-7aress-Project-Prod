@@ -2,31 +2,28 @@
 #define GIMBALCONTROLLER_H
 
 // ============================================================================
-// INCLUDES
-// ============================================================================
-
 // Qt Framework
+// ============================================================================
 #include <QObject>
 #include <QTimer>
 #include <QElapsedTimer>
 
+// ============================================================================
 // Standard Library
+// ============================================================================
 #include <memory>
 
+// ============================================================================
 // Project
+// ============================================================================
 #include "motion_modes/gimbalmotionmodebase.h"
 #include "models/domain/systemstatemodel.h"
 
 // ============================================================================
-// FORWARD DECLARATIONS
+// Forward Declarations
 // ============================================================================
-
 class ServoDriverDevice;
 class Plc42Device;
-
-// ============================================================================
-// CLASS DEFINITION
-// ============================================================================
 
 /**
  * @brief Gimbal motion mode coordinator and servo controller
@@ -51,9 +48,8 @@ class GimbalController : public QObject
 
 public:
     // ========================================================================
-    // PUBLIC INTERFACE
+    // Constructor / Destructor
     // ========================================================================
-
     explicit GimbalController(ServoDriverDevice* azServo,
                               ServoDriverDevice* elServo,
                               Plc42Device* plc42,
@@ -61,106 +57,132 @@ public:
                               QObject* parent = nullptr);
     ~GimbalController();
 
-    // --- Motion Control ---
+    // ========================================================================
+    // Motion Control
+    // ========================================================================
     void update();
     void setMotionMode(MotionMode newMode);
     MotionMode currentMotionModeType() const { return m_currentMotionModeType; }
 
-    // --- Device Accessors ---
+    // ========================================================================
+    // Device Accessors
+    // ========================================================================
     ServoDriverDevice* azimuthServo() const { return m_azServo; }
     ServoDriverDevice* elevationServo() const { return m_elServo; }
     Plc42Device* plc42() const { return m_plc42; }
     SystemStateModel* systemStateModel() const { return m_stateModel; }
 
-    // --- Alarm Management ---
+    // ========================================================================
+    // Alarm Management
+    // ========================================================================
     void readAlarms();
     void clearAlarms();
 
 signals:
-    // --- Tracking Updates ---
+    // ========================================================================
+    // Tracking Updates
     // Thread-safe tracking target update signal (Qt::QueuedConnection)
     // Emitted from vision thread to motion mode slot, eliminating race conditions
+    // ========================================================================
     void trackingTargetUpdated(double azDeg, double elDeg,
                                double azVel_dps, double elVel_dps,
                                bool valid);
 
-    // --- Alarm Notifications ---
-    void azAlarmDetected(uint16_t alarmCode, const QString &description);
+    // ========================================================================
+    // Alarm Notifications
+    // ========================================================================
+    void azAlarmDetected(uint16_t alarmCode, const QString& description);
     void azAlarmCleared();
-    void elAlarmDetected(uint16_t alarmCode, const QString &description);
+    void elAlarmDetected(uint16_t alarmCode, const QString& description);
     void elAlarmCleared();
 
 private slots:
-    // --- State Management ---
-    void onSystemStateChanged(const SystemStateData &newData);
+    // ========================================================================
+    // State Management
+    // ========================================================================
+    void onSystemStateChanged(const SystemStateData& newData);
 
-    // --- Alarm Handlers ---
-    void onAzAlarmDetected(uint16_t alarmCode, const QString &description);
+    // ========================================================================
+    // Alarm Handlers
+    // ========================================================================
+    void onAzAlarmDetected(uint16_t alarmCode, const QString& description);
     void onAzAlarmCleared();
-    void onElAlarmDetected(uint16_t alarmCode, const QString &description);
+    void onElAlarmDetected(uint16_t alarmCode, const QString& description);
     void onElAlarmCleared();
+
+    // ========================================================================
+    // Homing Timeout Handler
+    // ========================================================================
     void onHomingTimeout();
 
 private:
     // ========================================================================
-    // PRIVATE METHODS
+    // Private Methods
     // ========================================================================
-
     void shutdown();
+
     // ========================================================================
-    // HOMING STATE MACHINE METHODS
+    // Homing State Machine
     // ========================================================================
     void processHomingSequence(const SystemStateData& data);
     void startHomingSequence();
     void completeHomingSequence();
     void abortHomingSequence(const QString& reason);
-    
+
     // ========================================================================
-    // EMERGENCY STOP HANDLER
+    // Emergency Stop Handler
     // ========================================================================
     void processEmergencyStop(const SystemStateData& data);
-    
+
     // ========================================================================
-    // FREE MODE HANDLER
+    // Free Mode Handler
     // ========================================================================
     void processFreeMode(const SystemStateData& data);
-    // ========================================================================
-    // MEMBER VARIABLES
-    // ========================================================================
 
-    // --- Hardware Devices ---
+    // ========================================================================
+    // Constants
+    // ========================================================================
+    static constexpr int HOMING_TIMEOUT_MS = 30000;  // 30 seconds timeout
+
+    // ========================================================================
+    // Hardware Devices
+    // ========================================================================
     ServoDriverDevice* m_azServo = nullptr;
     ServoDriverDevice* m_elServo = nullptr;
     Plc42Device* m_plc42 = nullptr;
 
-    // --- System State ---
+    // ========================================================================
+    // System State
+    // ========================================================================
     SystemStateModel* m_stateModel = nullptr;
     SystemStateData m_oldState;
 
-    // --- Motion Mode Management ---
+    // ========================================================================
+    // Motion Mode Management (Strategy Pattern)
+    // ========================================================================
     std::unique_ptr<GimbalMotionModeBase> m_currentMode;
     MotionMode m_currentMotionModeType = MotionMode::Manual;
 
-    // --- Update Timer ---
+    // ========================================================================
+    // Timers
+    // ========================================================================
     QTimer* m_updateTimer = nullptr;
+    QTimer* m_homingTimeoutTimer = nullptr;
 
-    // --- Centralized dt measurement timer (Expert Review Fix) ---
+    // Centralized dt measurement timer (Expert Review Fix)
     QElapsedTimer m_velocityTimer;
 
     // ========================================================================
-    // HOMING STATE MACHINE
+    // Homing State Machine
     // ========================================================================
-    QTimer* m_homingTimeoutTimer = nullptr;
     HomingState m_currentHomingState = HomingState::Idle;
-    MotionMode m_modeBeforeHoming = MotionMode::Idle;  // Store mode to restore after homing
-    
-    static constexpr int HOMING_TIMEOUT_MS = 30000;  // 30 seconds timeout for homing
-    
+    MotionMode m_modeBeforeHoming = MotionMode::Idle;
+
     // ========================================================================
-    // STATE TRACKING
+    // State Tracking Flags
     // ========================================================================
     bool m_wasInFreeMode = false;
-    bool m_wasInEmergencyStop = false;    
+    bool m_wasInEmergencyStop = false;
 };
 
 #endif // GIMBALCONTROLLER_H

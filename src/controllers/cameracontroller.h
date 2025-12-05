@@ -1,24 +1,44 @@
 #ifndef CAMERACONTROLLER_H
 #define CAMERACONTROLLER_H
 
+// ============================================================================
+// Qt Framework
+// ============================================================================
 #include <QObject>
 #include <QMutex>
-#include <QPointer> // Use QPointer for robustness if models/devices can be deleted
+#include <QPointer>
+
+// ============================================================================
+// Project
+// ============================================================================
 #include "models/domain/systemstatemodel.h"
-#include "models/domain/systemstatemodel.h"
+
+// ============================================================================
 // Forward Declarations
+// ============================================================================
 class DayCameraControlDevice;
 class NightCameraControlDevice;
-class CameraVideoStreamDevice; // Replaces pipeline devices
-class SystemStateModel;
+class CameraVideoStreamDevice;
 class LRFDevice;
- 
 
+/**
+ * @brief Camera system coordinator
+ *
+ * This class manages day/night camera switching, tracking control,
+ * and LRF (Laser Range Finder) operations. It provides:
+ * - Camera control (zoom, focus, LUT selection)
+ * - Tracking enable/disable on active camera
+ * - LRF single-shot and continuous ranging
+ * - State synchronization with SystemStateModel
+ */
 class CameraController : public QObject
 {
     Q_OBJECT
 
 public:
+    // ========================================================================
+    // Constructor / Destructor
+    // ========================================================================
     explicit CameraController(DayCameraControlDevice* dayControl,
                               CameraVideoStreamDevice* dayProcessor,
                               NightCameraControlDevice* nightControl,
@@ -28,9 +48,19 @@ public:
                               QObject* parent = nullptr);
     ~CameraController() override;
 
-    bool initialize(); // Simplified initialization
+    bool initialize();
 
-    // --- Camera Control Methods (Remain Largely the Same) ---
+    // ========================================================================
+    // Camera Processor Accessors
+    // ========================================================================
+    CameraVideoStreamDevice* getDayCameraProcessor() const;
+    CameraVideoStreamDevice* getNightCameraProcessor() const;
+    CameraVideoStreamDevice* getActiveCameraProcessor() const;
+    bool isDayCameraActive() const;
+
+    // ========================================================================
+    // Day Camera Control
+    // ========================================================================
     Q_INVOKABLE virtual void zoomIn();
     Q_INVOKABLE virtual void zoomOut();
     Q_INVOKABLE virtual void zoomStop();
@@ -38,67 +68,66 @@ public:
     Q_INVOKABLE void focusFar();
     Q_INVOKABLE void focusStop();
     Q_INVOKABLE void setFocusAuto(bool enabled);
-    // Night camera specific
+
+    // ========================================================================
+    // Night Camera Control (Thermal)
+    // ========================================================================
     Q_INVOKABLE void nextVideoLUT();
     Q_INVOKABLE void prevVideoLUT();
     Q_INVOKABLE void performFFC();
 
-    // --- Tracking Control ---
-    Q_INVOKABLE bool startTracking(); // Request tracking on active camera
-    Q_INVOKABLE void stopTracking();  // Request tracking stop on active camera
+    // ========================================================================
+    // Tracking Control
+    // ========================================================================
+    Q_INVOKABLE bool startTracking();
+    Q_INVOKABLE void stopTracking();
 
-    // --- LRF Control (Laser Range Finder) ---
-    Q_INVOKABLE void triggerLRF();           // Single shot ranging (Button 1)
-    Q_INVOKABLE void startContinuousLRF();   // Continuous ranging (5Hz)
-    Q_INVOKABLE void stopContinuousLRF();    // Stop continuous ranging
-
-    // --- Getters ---
-    CameraVideoStreamDevice* getDayCameraProcessor() const;   // Changed name/type
-    CameraVideoStreamDevice* getNightCameraProcessor() const; // Changed name/type
-    CameraVideoStreamDevice* getActiveCameraProcessor() const; // Changed name/type
-    bool isDayCameraActive() const;
+    // ========================================================================
+    // LRF Control (Laser Range Finder)
+    // Called by JoystickController when Button 1 is pressed
+    // ========================================================================
+    Q_INVOKABLE void triggerLRF();
+    Q_INVOKABLE void startContinuousLRF();
+    Q_INVOKABLE void stopContinuousLRF();
 
 signals:
-    // Simple signal indicating some relevant state might have changed
-    // (e.g., active camera changed, tracking toggled)
+    // ========================================================================
+    // State Notifications
+    // ========================================================================
     void stateChanged();
-    // Signal to update external status displays
     void statusUpdated(const QString& message);
 
 public slots:
-    // React to changes in the central state model
-    void onSystemStateChanged(const SystemStateData &newData);
+    // ========================================================================
+    // System State Handler
+    // ========================================================================
+    void onSystemStateChanged(const SystemStateData& newData);
 
 private:
+    // ========================================================================
+    // Private Methods
+    // ========================================================================
     void updateStatus(const QString& message);
-    void setActiveCamera(bool isDay); // Internal helper to manage state on change
+    void setActiveCamera(bool isDay);
 
-    // --- Dependencies ---
-    QPointer<DayCameraControlDevice>    m_dayControl;
-    QPointer<CameraVideoStreamDevice>   m_dayProcessor; // Changed
-    QPointer<NightCameraControlDevice>  m_nightControl;
-    QPointer<CameraVideoStreamDevice>   m_nightProcessor; // Changed
-    QPointer<SystemStateModel>          m_stateModel;
-    QPointer<LRFDevice>                 m_lrfDevice;     // Laser Range Finder
+    // ========================================================================
+    // Dependencies
+    // ========================================================================
+    QPointer<DayCameraControlDevice>   m_dayControl;
+    QPointer<CameraVideoStreamDevice>  m_dayProcessor;
+    QPointer<NightCameraControlDevice> m_nightControl;
+    QPointer<CameraVideoStreamDevice>  m_nightProcessor;
+    QPointer<SystemStateModel>         m_stateModel;
+    QPointer<LRFDevice>                m_lrfDevice;
 
-    // --- Internal State ---
-    QMutex m_mutex; // For thread safety if needed, although most action is on state model signals
-    bool m_isDayCameraActive = true; // Cache the active camera flag
-    SystemStateData m_cachedState;   // Cache the last known state from the model
-
-    /*
-     * /home/rapit/Desktop/tous_dossiers/docs/el7aress/controllers/cameracontroller.h:81: error: field ‘m_cachedState’ has incomplete type ‘SystemStateData’
-In file included from moc_cameracontroller.cpp:9:
-../../Desktop/tous_dossiers/docs/el7aress/controllers/cameracontroller.h:81:21: error: field ‘m_cachedState’ has incomplete type ‘SystemStateData’
-   81 |     SystemStateData m_cachedState;   // Cache the last known state from the model
-      |                     ^~~~~~~~~~~~~
-../../Desktop/tous_dossiers/docs/el7aress/controllers/cameracontroller.h:14:7: note: forward declaration of ‘class SystemStateData’
-   14 | class SystemStateData; // Assuming SystemStateModel emits this
-      |       ^~~~~~~~~~~~~~~
-      */
-
-    int m_lutIndex = 0; // Keep track of LUT index for night camera
-    QString statusMessage; // Last status message
+    // ========================================================================
+    // Internal State
+    // ========================================================================
+    QMutex m_mutex;
+    bool m_isDayCameraActive = true;
+    SystemStateData m_cachedState;
+    int m_lutIndex = 0;
+    QString m_statusMessage;
 };
 
 #endif // CAMERACONTROLLER_H

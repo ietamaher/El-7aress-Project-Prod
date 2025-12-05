@@ -1,15 +1,28 @@
 #include "controllers/reticlemenucontroller.h"
+
+// ============================================================================
+// Project
+// ============================================================================
 #include "models/osdviewmodel.h"
 #include "models/domain/systemstatemodel.h"
+
+// ============================================================================
+// Qt Framework
+// ============================================================================
 #include <QDebug>
 
-ReticleMenuController::ReticleMenuController(QObject *parent)
+// ============================================================================
+// CONSTRUCTOR
+// ============================================================================
+
+ReticleMenuController::ReticleMenuController(QObject* parent)
     : QObject(parent)
-    , m_viewModel(nullptr)
-    , m_osdViewModel(nullptr)
-    , m_originalReticleType(ReticleType::BoxCrosshair)
 {
 }
+
+// ============================================================================
+// INITIALIZATION
+// ============================================================================
 
 void ReticleMenuController::initialize()
 {
@@ -24,19 +37,35 @@ void ReticleMenuController::initialize()
     // Use Qt::QueuedConnection to prevent re-entrant calls during hardware button processing
     connect(m_viewModel, &MenuViewModel::currentIndexChanged,
             this, [this]() {
-                int currentIndex = m_viewModel->currentIndex();
-                handleCurrentItemChanged(currentIndex);
+                handleCurrentItemChanged(m_viewModel->currentIndex());
             }, Qt::QueuedConnection);
 
-    // Connect to color changes
     connect(m_stateModel, &SystemStateModel::colorStyleChanged,
             this, &ReticleMenuController::onColorStyleChanged);
 
     // Set initial color
     const auto& data = m_stateModel->data();
     m_viewModel->setAccentColor(data.colorStyle);
-
 }
+
+void ReticleMenuController::setViewModel(MenuViewModel* viewModel)
+{
+    m_viewModel = viewModel;
+}
+
+void ReticleMenuController::setOsdViewModel(OsdViewModel* osdViewModel)
+{
+    m_osdViewModel = osdViewModel;
+}
+
+void ReticleMenuController::setStateModel(SystemStateModel* stateModel)
+{
+    m_stateModel = stateModel;
+}
+
+// ============================================================================
+// CONVERSION HELPERS
+// ============================================================================
 
 QStringList ReticleMenuController::buildReticleOptions() const
 {
@@ -52,25 +81,29 @@ QStringList ReticleMenuController::buildReticleOptions() const
 
 QString ReticleMenuController::reticleTypeToString(ReticleType type) const
 {
-    switch(type) {
-    case ReticleType::BoxCrosshair: return "Box Crosshair";
+    switch (type) {
+    case ReticleType::BoxCrosshair:    return "Box Crosshair";
     case ReticleType::BracketsReticle: return "Brackets Reticle";
     case ReticleType::DuplexCrosshair: return "Duplex Crosshair";
-    case ReticleType::FineCrosshair: return "Fine Crosshair";
-    case ReticleType::ChevronReticle: return "Chevron Reticle";
-    default: return "Unknown";
+    case ReticleType::FineCrosshair:   return "Fine Crosshair";
+    case ReticleType::ChevronReticle:  return "Chevron Reticle";
+    default:                           return "Unknown";
     }
 }
 
 ReticleType ReticleMenuController::stringToReticleType(const QString& str) const
 {
-    if (str == "Box Crosshair") return ReticleType::BoxCrosshair;
+    if (str == "Box Crosshair")    return ReticleType::BoxCrosshair;
     if (str == "Brackets Reticle") return ReticleType::BracketsReticle;
     if (str == "Duplex Crosshair") return ReticleType::DuplexCrosshair;
-    if (str == "Fine Crosshair") return ReticleType::FineCrosshair;
-    if (str == "Chevron Reticle") return ReticleType::ChevronReticle;
+    if (str == "Fine Crosshair")   return ReticleType::FineCrosshair;
+    if (str == "Chevron Reticle")  return ReticleType::ChevronReticle;
     return ReticleType::BoxCrosshair;
 }
+
+// ============================================================================
+// UI CONTROL
+// ============================================================================
 
 void ReticleMenuController::show()
 {
@@ -81,11 +114,10 @@ void ReticleMenuController::show()
     QStringList options = buildReticleOptions();
     m_viewModel->showMenu("Personalize Reticle", "Select Reticle Style", options);
 
-    // ✅ FIX: Set current selection to match current reticle
+    // Set current selection to match current reticle
     int currentIndex = static_cast<int>(m_originalReticleType);
     if (currentIndex >= 0 && currentIndex < options.size()) {
         m_viewModel->setCurrentIndex(currentIndex);
-        // ✅ FIX: Apply initial preview to match the selected option
         handleCurrentItemChanged(currentIndex);
     }
 }
@@ -94,6 +126,10 @@ void ReticleMenuController::hide()
 {
     m_viewModel->hideMenu();
 }
+
+// ============================================================================
+// BUTTON HANDLERS
+// ============================================================================
 
 void ReticleMenuController::onUpButtonPressed()
 {
@@ -112,32 +148,33 @@ void ReticleMenuController::onSelectButtonPressed()
 
 void ReticleMenuController::onBackButtonPressed()
 {
-    // Restore original reticle on cancel
-    // m_osdViewModel->setReticleType(m_originalReticleType);
-
     hide();
     emit returnToMainMenu();
     emit menuFinished();
 }
 
+// ============================================================================
+// MENU HANDLERS
+// ============================================================================
+
 void ReticleMenuController::handleCurrentItemChanged(int index)
 {
-    // Get the option text at this index for preview
     QStringList options = buildReticleOptions();
-    if (index >= 0 && index < options.size() - 1) { // Exclude "Return ..."
+
+    // Exclude "Return ..." option from preview
+    if (index >= 0 && index < options.size() - 1) {
         QString optionText = options.at(index);
         ReticleType previewType = stringToReticleType(optionText);
 
-        // Update OSD with preview
         m_stateModel->setReticleStyle(previewType);
 
-        qDebug() << "ReticleMenuController: Previewing" << optionText;
+        qDebug() << "[ReticleMenuController] Previewing" << optionText;
     }
 }
 
 void ReticleMenuController::handleMenuOptionSelected(const QString& option)
 {
-    qDebug() << "ReticleMenuController: Selected" << option;
+    qDebug() << "[ReticleMenuController] Selected" << option;
 
     hide();
 
@@ -149,34 +186,23 @@ void ReticleMenuController::handleMenuOptionSelected(const QString& option)
         // Apply the selected reticle permanently
         ReticleType selectedType = stringToReticleType(option);
         m_stateModel->setReticleStyle(selectedType);
-        //m_osdViewModel->saveReticleType(); // Persist to settings
 
-        qDebug() << "ReticleMenuController: Applied" << option;
+        qDebug() << "[ReticleMenuController] Applied" << option;
         emit returnToMainMenu();
     }
 
     emit menuFinished();
 }
 
+// ============================================================================
+// COLOR STYLE HANDLER
+// ============================================================================
+
 void ReticleMenuController::onColorStyleChanged(const QColor& color)
 {
-    qDebug() << "ReticleMenuController: Color changed to" << color;
+    qDebug() << "[ReticleMenuController] Color changed to" << color;
+
     if (m_viewModel) {
         m_viewModel->setAccentColor(color);
     }
-}
-
-void ReticleMenuController::setViewModel(MenuViewModel* viewModel)
-{
-    m_viewModel = viewModel;
-}
-
-void ReticleMenuController::setOsdViewModel(OsdViewModel* osdViewModel)
-{
-    m_osdViewModel = osdViewModel;
-}
-
-void ReticleMenuController::setStateModel(SystemStateModel* stateModel)
-{
-    m_stateModel = stateModel;
 }

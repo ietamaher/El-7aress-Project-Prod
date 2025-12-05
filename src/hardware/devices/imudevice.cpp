@@ -55,9 +55,9 @@ bool ImuDevice::initialize() {
 
     qDebug() << m_identifier << "initializing 3DM-GX3-25...";
 
-    // Get poll interval from config (default 10ms = 100Hz)
+    // Get poll interval from config (default 40ms = 25Hz)
     QJsonObject config = property("config").toJsonObject();
-    int samplingRateHz = config["samplingRateHz"].toInt(100);
+    int samplingRateHz = config["samplingRateHz"].toInt(25);
     m_pollIntervalMs = 1000 / samplingRateHz;
     qDebug() << m_identifier << "Config received: samplingRateHz =" << samplingRateHz
              << "Hz, pollInterval =" << m_pollIntervalMs << "ms";
