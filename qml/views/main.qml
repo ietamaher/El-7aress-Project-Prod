@@ -17,23 +17,16 @@ Window {
     // ========================================================================
     // VIDEO FEED BACKGROUND
     // ========================================================================
+    // Latency Fix #1: Signal-driven refresh (replaces timer-based polling)
+    // Old timer (33ms) added 0-33ms latency. Now updates immediately on signal.
+    // ========================================================================
     Image {
         id: videoDisplay
         anchors.fill: parent
         fillMode: Image.PreserveAspectFit
         source: "image://video/camera"
         cache: false // Don't cache, we want fresh frames
-
-        // Timer to refresh video feed
-        Timer {
-            interval: 33 // ~30 FPS (adjust based on camera framerate)
-            running: true
-            repeat: true
-            onTriggered: {
-                // Force QML to request new image from provider
-                videoDisplay.source = "image://video/camera?" + Date.now()
-            }
-        }
+        property int frameCounter: 0
 
         // Fallback if video not available
         Text {
@@ -42,6 +35,15 @@ Window {
             color: "gray"
             font.pixelSize: 24
             visible: videoDisplay.status === Image.Null || videoDisplay.status === Image.Error
+        }
+    }
+
+    // Signal-driven video refresh (from VideoImageProvider)
+    Connections {
+        target: videoFrameNotifier
+        function onFrameUpdated() {
+            videoDisplay.frameCounter++
+            videoDisplay.source = "image://video/camera?" + videoDisplay.frameCounter
         }
     }
 

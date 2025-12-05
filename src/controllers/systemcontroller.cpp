@@ -98,7 +98,9 @@ void SystemController::initializeQmlSystem(QQmlApplicationEngine* engine)
     // 1. Create Video Provider
     m_videoProvider = new VideoImageProvider();
     engine->addImageProvider("video", m_videoProvider);
-    qInfo() << "  ✓ VideoImageProvider registered";
+    // Latency Fix #1: Expose notifier to QML for signal-driven refresh
+    engine->rootContext()->setContextProperty("videoFrameNotifier", m_videoProvider->notifier());
+    qInfo() << "  ✓ VideoImageProvider registered (with signal-driven notifier)";
 
     // 2. Connect Video Streams to Provider
     connectVideoToProvider();
