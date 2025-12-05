@@ -292,9 +292,16 @@ void WeaponController::onOperatorRequestLoad()
     qDebug() << "[WeaponController] Operator REQUEST LOAD. Current feed state:"
              << feedStateName(m_feedState);
 
+    // Handle FAULT state - operator presses button again to reset
+    if (m_feedState == AmmoFeedState::Fault) {
+        qDebug() << "[WeaponController] Button pressed in FAULT state - resetting fault";
+        resetFeedFault();
+        return;
+    }
+
     // Only allow start when idle
     if (m_feedState != AmmoFeedState::Idle) {
-        qDebug() << "[WeaponController] Feed cycle start IGNORED - already running or faulted";
+        qDebug() << "[WeaponController] Feed cycle start IGNORED - cycle already running";
         return;
     }
 
