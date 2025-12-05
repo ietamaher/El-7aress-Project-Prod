@@ -388,6 +388,7 @@ void CameraVideoStreamDevice::onSystemStateChanged(const SystemStateData &newSta
     m_currentAmmunitionLevel = newState.stationAmmunitionLevel;
 
     // Ammunition Feed Status (for OSD display)
+    m_ammoFeedState = newState.ammoFeedState;
     m_ammoFeedCycleInProgress = newState.ammoFeedCycleInProgress;
     m_ammoLoaded = newState.ammoLoaded;
 
@@ -1031,6 +1032,7 @@ bool CameraVideoStreamDevice::processFrame(GstBuffer *buffer)
         data.stationAmmunitionLevel = m_currentAmmunitionLevel;
 
         // Ammunition Feed Status (for OSD display)
+        data.ammoFeedState = m_ammoFeedState;
         data.ammoFeedCycleInProgress = m_ammoFeedCycleInProgress;
         data.ammoLoaded = m_ammoLoaded;
 

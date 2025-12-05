@@ -162,6 +162,17 @@ enum class LeadAngleStatus {
     ZoomOut  ///< Lead angle too large for current FOV, zoom out required
 };
 
+/**
+ * @brief Ammunition feed cycle FSM states
+ * Tracks the state of the ammunition feeding mechanism
+ */
+enum class AmmoFeedState {
+    Idle,       ///< Ready for new cycle - displays "IDLE"
+    Extending,  ///< Actuator moving to extended position - displays "FEED..."
+    Retracting, ///< Actuator returning to home - displays "FEED..."
+    Fault       ///< Timeout/error occurred - displays "FAULT" (red, requires reset)
+};
+
 // =================================
 // ZONE STRUCTURES
 // =================================
@@ -613,10 +624,10 @@ struct SystemStateData {
     float currentTargetAngularRateEl = 0.0f;            ///< Target angular rate in elevation (degrees/second)
     float muzzleVelocityMPS = 900.0f;                   ///< Projectile muzzle velocity in meters per second
     
-    // ammunition feed  parameters
-    //bool ammoLoadButtonPressed = false;     // Operator input (momentary button)
-    bool ammoFeedCycleInProgress = false;   // FSM is running (for GUI animation)
-    bool ammoLoaded = false;                // Physical sensor state (belt seated)
+    // Ammunition Feed Parameters
+    AmmoFeedState ammoFeedState = AmmoFeedState::Idle;  ///< Current FSM state (for OSD display)
+    bool ammoFeedCycleInProgress = false;   ///< FSM is running (for backward compat)
+    bool ammoLoaded = false;                ///< Physical sensor state (belt seated)
     // =================================
     // STATUS & INFORMATION DISPLAY
     // =================================
@@ -898,8 +909,9 @@ struct SystemStateData {
                qFuzzyCompare(currentTargetAngularRateAz, other.currentTargetAngularRateAz) &&
                qFuzzyCompare(currentTargetAngularRateEl, other.currentTargetAngularRateEl) &&
                qFuzzyCompare(muzzleVelocityMPS, other.muzzleVelocityMPS) &&
-                ammoFeedCycleInProgress == other.ammoFeedCycleInProgress &&
-                ammoLoaded == other.ammoLoaded &&
+               ammoFeedState == other.ammoFeedState &&
+               ammoFeedCycleInProgress == other.ammoFeedCycleInProgress &&
+               ammoLoaded == other.ammoLoaded &&
 
                // Status & Information Display
                weaponSystemStatus == other.weaponSystemStatus &&

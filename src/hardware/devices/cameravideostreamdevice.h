@@ -111,6 +111,7 @@ struct FrameData {
     bool stationAmmunitionLevel = false;
 
     // Ammunition Feed Status (for OSD display)
+    AmmoFeedState ammoFeedState = AmmoFeedState::Idle;  // Current FSM state
     bool ammoFeedCycleInProgress = false;  // FSM is running (for GUI animation)
     bool ammoLoaded = false;                // Physical sensor state (belt seated)
 
@@ -360,6 +361,7 @@ private:
     FireMode m_fireMode;
 
     // Ammunition Feed Status (for OSD display)
+    AmmoFeedState m_ammoFeedState = AmmoFeedState::Idle;
     bool m_ammoFeedCycleInProgress = false;
     bool m_ammoLoaded = false;
 

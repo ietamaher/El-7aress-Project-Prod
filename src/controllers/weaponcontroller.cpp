@@ -446,6 +446,11 @@ void WeaponController::transitionFeedState(AmmoFeedState newState)
     qDebug() << "[WeaponController] Feed state:" << feedStateName(m_feedState)
              << "->" << feedStateName(newState);
     m_feedState = newState;
+
+    // Update SystemStateModel for OSD display
+    if (m_stateModel) {
+        m_stateModel->setAmmoFeedState(newState);
+    }
 }
 
 QString WeaponController::feedStateName(AmmoFeedState s) const

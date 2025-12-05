@@ -909,9 +909,15 @@ void OsdViewModel::updateAmmunitionLevel(bool level)
 // AMMUNITION FEED STATUS
 // ============================================================================
 
-void OsdViewModel::updateAmmoFeedStatus(bool cycleInProgress, bool loaded)
+void OsdViewModel::updateAmmoFeedStatus(int state, bool cycleInProgress, bool loaded)
 {
     bool changed = false;
+
+    if (m_ammoFeedState != state) {
+        m_ammoFeedState = state;
+        emit ammoFeedStateChanged();
+        changed = true;
+    }
 
     if (m_ammoFeedCycleInProgress != cycleInProgress) {
         m_ammoFeedCycleInProgress = cycleInProgress;
@@ -926,7 +932,17 @@ void OsdViewModel::updateAmmoFeedStatus(bool cycleInProgress, bool loaded)
     }
 
     if (changed) {
+        // State names for logging
+        QString stateName;
+        switch (state) {
+            case 0: stateName = "IDLE"; break;
+            case 1: stateName = "EXTENDING"; break;
+            case 2: stateName = "RETRACTING"; break;
+            case 3: stateName = "FAULT"; break;
+            default: stateName = "UNKNOWN"; break;
+        }
         qDebug() << "[OsdViewModel] Ammo Feed Status:"
+                 << "State=" << stateName
                  << "CycleInProgress=" << cycleInProgress
                  << "Loaded=" << loaded;
     }

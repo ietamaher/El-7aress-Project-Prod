@@ -2295,6 +2295,35 @@ void SystemStateModel::commandSlewToSelectedRadarTrack() {
 /*
 Ammo Feed Cycle State Management
 */
+void SystemStateModel::setAmmoFeedState(AmmoFeedState state)
+{
+    if (m_ammoFeedState == state) {
+        return;
+    }
+    m_ammoFeedState = state;
+
+    // Update the central data store
+    SystemStateData data = m_currentStateData;
+    data.ammoFeedState = state;
+    // Also update backward compat flag
+    data.ammoFeedCycleInProgress = (state == AmmoFeedState::Extending ||
+                                     state == AmmoFeedState::Retracting);
+    m_currentStateData = data;
+
+    emit ammoFeedStateChanged(state);
+    emit dataChanged(data);
+
+    // Log state name for debugging
+    QString stateName;
+    switch (state) {
+        case AmmoFeedState::Idle: stateName = "IDLE"; break;
+        case AmmoFeedState::Extending: stateName = "EXTENDING"; break;
+        case AmmoFeedState::Retracting: stateName = "RETRACTING"; break;
+        case AmmoFeedState::Fault: stateName = "FAULT"; break;
+    }
+    qDebug() << "[SystemStateModel] Ammo feed state:" << stateName;
+}
+
 void SystemStateModel::setAmmoFeedCycleInProgress(bool inProgress)
 {
     if (m_ammoFeedCycleInProgress == inProgress) {

@@ -135,6 +135,7 @@ void OsdController::onSystemStateChanged(const SystemStateData& data)
 
         // Update ammunition feed status (also updated via FrameData path for synchronization)
         m_viewModel->updateAmmoFeedStatus(
+            static_cast<int>(data.ammoFeedState),
             data.ammoFeedCycleInProgress,
             data.ammoLoaded
         );
@@ -393,6 +394,7 @@ void OsdController::onFrameDataReady(const FrameData& frmdata)
 
     // === AMMUNITION FEED STATUS ===
     m_viewModel->updateAmmoFeedStatus(
+        static_cast<int>(frmdata.ammoFeedState),
         frmdata.ammoFeedCycleInProgress,
         frmdata.ammoLoaded
     );
