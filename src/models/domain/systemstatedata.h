@@ -815,7 +815,7 @@ struct SystemStateData {
                stationEnabled == other.stationEnabled &&
                gotoHomePosition == other.gotoHomePosition &&
                gunArmed == other.gunArmed &&
-               ammoLoaded == other.ammoLoaded &&
+               ammoLoadButtonPressed == other.ammoLoadButtonPressed &&
                authorized == other.authorized &&
                detectionEnabled == other.detectionEnabled &&
                fireMode == other.fireMode &&
@@ -898,6 +898,8 @@ struct SystemStateData {
                qFuzzyCompare(currentTargetAngularRateAz, other.currentTargetAngularRateAz) &&
                qFuzzyCompare(currentTargetAngularRateEl, other.currentTargetAngularRateEl) &&
                qFuzzyCompare(muzzleVelocityMPS, other.muzzleVelocityMPS) &&
+                ammoFeedCycleInProgress == other.ammoFeedCycleInProgress &&
+                ammoLoaded == other.ammoLoaded &&
 
                // Status & Information Display
                weaponSystemStatus == other.weaponSystemStatus &&
