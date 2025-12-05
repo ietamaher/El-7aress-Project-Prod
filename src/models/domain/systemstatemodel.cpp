@@ -1119,7 +1119,7 @@ void SystemStateModel::clearLRF() {
     qInfo() << "[LRF CLEAR] Button 10 pressed - Clearing LRF measurement";
 
     // Clear LRF measurement
-    m_currentStateData.lrfDistance = 0.0;
+    m_currentStateData.currentTargetRange = 0.0;
     qDebug() << "[LRF CLEAR] ✓ LRF distance reset to:" << m_currentStateData.lrfDistance;
 
     // Recalculate reticle position (may change due to ballistic calculations)
