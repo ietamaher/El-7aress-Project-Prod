@@ -232,6 +232,7 @@ void CameraVideoStreamDevice::run()
 
     bool vpiInitialized = false;
     bool gstInitialized = false;
+    QFuture<void> consumerFuture;
 
     try {
         emit statusUpdate(m_cameraIndex, "Initializing GStreamer...");
@@ -245,6 +246,17 @@ void CameraVideoStreamDevice::run()
         qInfo() << "VPI initialized successfully for Camera" << m_cameraIndex;
 
         m_yuy2_host_buffer.create(m_sourceHeight, m_sourceWidth, CV_8UC2);
+
+        // =====================================================================
+        // LATENCY FIX #2: Start frame processing consumer thread
+        // The consumer thread runs independently, processing frames from the queue
+        // This decouples GStreamer streaming from heavy VPI/YOLO processing
+        // =====================================================================
+        m_processingThreadRunning.store(true);
+        consumerFuture = QtConcurrent::run([this]() {
+            frameProcessingConsumer();
+        });
+        qInfo() << "Cam" << m_cameraIndex << ": Frame processing consumer thread started";
 
         emit statusUpdate(m_cameraIndex, "Starting GStreamer pipeline...");
         if (gst_element_set_state(m_pipeline, GST_STATE_PLAYING) == GST_STATE_CHANGE_FAILURE) {
@@ -266,9 +278,20 @@ void CameraVideoStreamDevice::run()
         qCritical() << "Cam" << m_cameraIndex << ": Unknown exception in run()";
     }
 
-    // Cleanup sequence
+    // =========================================================================
+    // CLEANUP SEQUENCE: Stop consumer thread, then clean up resources
+    // =========================================================================
     emit statusUpdate(m_cameraIndex, "Stopping pipeline and cleaning up...");
     qInfo() << "Cam" << m_cameraIndex << ": Starting cleanup sequence...";
+
+    // Signal the consumer thread to stop and wait for it
+    m_processingThreadRunning.store(false);
+    m_frameQueueCond.wakeAll();  // Wake up consumer if it's waiting
+    if (consumerFuture.isValid()) {
+        qInfo() << "Cam" << m_cameraIndex << ": Waiting for frame processing consumer to finish...";
+        consumerFuture.waitForFinished();
+        qInfo() << "Cam" << m_cameraIndex << ": Frame processing consumer finished.";
+    }
 
     if (m_pipeline) {
         qInfo() << "Cam" << m_cameraIndex << ": Setting GStreamer pipeline to NULL state...";
@@ -279,7 +302,7 @@ void CameraVideoStreamDevice::run()
     if (vpiInitialized) {
         qInfo() << "Cam" << m_cameraIndex << ": Cleaning up VPI resources...";
         cleanupVPI();
-         qInfo() << "Cam" << m_cameraIndex << ": VPI cleanup finished.";
+        qInfo() << "Cam" << m_cameraIndex << ": VPI cleanup finished.";
     }
 
     if (gstInitialized) {
@@ -383,13 +406,22 @@ bool CameraVideoStreamDevice::initializeGStreamer()
     }
     gst_init(nullptr, nullptr);
 
+    // =========================================================================
+    // LATENCY FIX #3: Pipeline tuning for minimal latency
+    // Expert recommendations for real-time military EO/IR systems:
+    // - max-lateness=0: GStreamer discards anything older than NOW
+    // - qos=true: upstream elements adapt their rate (critical for backpressure)
+    // - processing-deadline=0: forces no tolerance for long processing
+    // - method=nearest-neighbour: fastest scaling (bilinear disabled for raw preview)
+    // =========================================================================
     QString pipelineStr = QString("v4l2src device=%1 do-timestamp=true ! "
         "video/x-raw,format=YUY2,width=%2,height=%3,framerate=30/1 ! "
-        "videocrop top=%4 left= %6 bottom=%5  right=%7 ! "
-        "videoscale ! "
+        "videocrop top=%4 left=%6 bottom=%5 right=%7 ! "
+        "videoscale method=nearest-neighbour ! "
         "video/x-raw,width=1024,height=768 ! "
         "queue max-size-buffers=1 leaky=downstream ! "
-        "appsink name=mysink emit-signals=true max-buffers=1 drop=true sync=false")
+        "appsink name=mysink emit-signals=true max-buffers=1 drop=true sync=false "
+        "max-lateness=0 qos=true processing-deadline=0")
         .arg(m_deviceName)
         .arg(m_sourceWidth)
         .arg(m_sourceHeight)
@@ -458,44 +490,135 @@ GstFlowReturn CameraVideoStreamDevice::on_new_sample_from_sink(GstAppSink *sink,
 
 GstFlowReturn CameraVideoStreamDevice::handleNewSample(GstAppSink *sink)
 {
+    // =========================================================================
+    // NON-BLOCKING APPSINK CALLBACK (Latency Fix #2)
+    // Expert recommendation: Keep only the latest frame, drop all old frames
+    // This ensures real-time correct behavior: gimbal stops instantly visually
+    // =========================================================================
+
     GstSample *sample = gst_app_sink_pull_sample(sink);
     if (!sample) {
         if (gst_app_sink_is_eos(sink)) {
             qInfo() << "Cam" << m_cameraIndex << ": EOS received.";
-             if (m_gstLoop && g_main_loop_is_running(m_gstLoop)) g_main_loop_quit(m_gstLoop);
+            if (m_gstLoop && g_main_loop_is_running(m_gstLoop)) g_main_loop_quit(m_gstLoop);
+            // Wake up consumer thread to exit
+            m_frameQueueCond.wakeAll();
             return GST_FLOW_EOS;
         } else if (m_abortRequest.load()) {
-             qDebug() << "Cam" << m_cameraIndex << ": Sample pull failed after abort request.";
-             return GST_FLOW_EOS;
+            qDebug() << "Cam" << m_cameraIndex << ": Sample pull failed after abort request.";
+            m_frameQueueCond.wakeAll();
+            return GST_FLOW_EOS;
         } else {
             qWarning() << "Cam" << m_cameraIndex << ": Failed to pull sample (not EOS).";
             return GST_FLOW_ERROR;
         }
     }
+
     GstBuffer *buffer = gst_sample_get_buffer(sample);
     if (!buffer) {
         qWarning() << "Cam" << m_cameraIndex << ": Failed to get buffer from sample.";
-        gst_sample_unref(sample); return GST_FLOW_ERROR;
+        gst_sample_unref(sample);
+        return GST_FLOW_ERROR;
     }
 
-    bool success = false;
-    try {
-        success = processFrame(buffer);
-    } catch (const std::exception &e) {
-        qCritical() << "Cam" << m_cameraIndex << ": Exception during processFrame:" << e.what();
-        emit processingError(m_cameraIndex, QString("Frame Error: %1").arg(e.what()));
-        success = false;
-    } catch (...) {
-         qCritical() << "Cam" << m_cameraIndex << ": Unknown exception during processFrame.";
-        emit processingError(m_cameraIndex, "Unknown error during frame processing.");
-        success = false;
+    // -------------------------------------------------------------------------
+    // NON-BLOCKING QUEUE: Drop old frames, keep only latest
+    // Real-time military systems ALWAYS drop frames under overload because
+    // old frames = wrong fire control decisions
+    // -------------------------------------------------------------------------
+    {
+        QMutexLocker locker(&m_frameQueueMutex);
+
+        // Drop all old frames in the queue (they're now stale)
+        while (!m_frameQueue.empty()) {
+            GstBuffer* oldBuffer = m_frameQueue.front();
+            m_frameQueue.pop();
+            gst_buffer_unref(oldBuffer);
+        }
+
+        // Ref the buffer before pushing (sample owns it, we need our own ref)
+        gst_buffer_ref(buffer);
+        m_frameQueue.push(buffer);
+
+        // Signal the consumer thread that a new frame is available
+        m_frameQueueCond.wakeOne();
     }
+
+    // Unref the sample (we've ref'd the buffer separately)
     gst_sample_unref(sample);
-    if (m_abortRequest.load(std::memory_order_relaxed)) {
-        qDebug() << "Cam" << m_cameraIndex << ": Abort requested during frame processing.";
-        return GST_FLOW_EOS;
+
+    // Return immediately - streaming thread is nearly zero-time
+    return GST_FLOW_OK;
+}
+
+// =============================================================================
+// FRAME PROCESSING CONSUMER (Latency Fix #2 - continued)
+// This runs in a separate thread from the GStreamer streaming thread
+// =============================================================================
+void CameraVideoStreamDevice::frameProcessingConsumer()
+{
+    qInfo() << "Cam" << m_cameraIndex << ": Frame processing consumer started";
+
+    while (!m_abortRequest.load(std::memory_order_relaxed)) {
+        GstBuffer* buffer = nullptr;
+
+        // Wait for a frame with timeout (allows checking abort flag)
+        {
+            QMutexLocker locker(&m_frameQueueMutex);
+
+            // Wait for a frame or timeout (100ms max wait)
+            if (m_frameQueue.empty()) {
+                m_frameQueueCond.wait(&m_frameQueueMutex, 100);
+            }
+
+            // Check again after waking
+            if (m_frameQueue.empty()) {
+                continue;  // Timeout or spurious wakeup, check abort and retry
+            }
+
+            // Pop the frame (there should be exactly 1 due to drop logic)
+            buffer = m_frameQueue.front();
+            m_frameQueue.pop();
+        }
+
+        if (!buffer) {
+            continue;  // Safety check
+        }
+
+        // Process the frame (outside mutex lock for maximum parallelism)
+        bool success = false;
+        try {
+            success = processFrame(buffer);
+        } catch (const std::exception &e) {
+            qCritical() << "Cam" << m_cameraIndex << ": Exception during processFrame:" << e.what();
+            emit processingError(m_cameraIndex, QString("Frame Error: %1").arg(e.what()));
+            success = false;
+        } catch (...) {
+            qCritical() << "Cam" << m_cameraIndex << ": Unknown exception during processFrame.";
+            emit processingError(m_cameraIndex, "Unknown error during frame processing.");
+            success = false;
+        }
+
+        // Unref the buffer after processing
+        gst_buffer_unref(buffer);
+
+        if (!success && !m_abortRequest.load(std::memory_order_relaxed)) {
+            // Log but continue - don't crash the consumer thread
+            qWarning() << "Cam" << m_cameraIndex << ": Frame processing failed, continuing...";
+        }
     }
-    return success ? GST_FLOW_OK : GST_FLOW_ERROR;
+
+    // Cleanup: drain any remaining frames in the queue
+    {
+        QMutexLocker locker(&m_frameQueueMutex);
+        while (!m_frameQueue.empty()) {
+            GstBuffer* buffer = m_frameQueue.front();
+            m_frameQueue.pop();
+            gst_buffer_unref(buffer);
+        }
+    }
+
+    qInfo() << "Cam" << m_cameraIndex << ": Frame processing consumer stopped";
 }
 
 // ============================================================================

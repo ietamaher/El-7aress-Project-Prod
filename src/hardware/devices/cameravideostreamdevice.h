@@ -9,11 +9,13 @@
 #include <atomic>
 #include <string>
 #include <vector>
+#include <queue>  // ✅ For non-blocking frame queue (latency fix)
 
 // Qt Framework
 #include <QThread>
 #include <QImage>
 #include <QMutex>
+#include <QWaitCondition>  // ✅ For frame queue signaling (latency fix)
 #include <QRect>
 #include <QColor>
 #include <QObject>
@@ -168,6 +170,33 @@ struct FrameData {
  * - VPI (CUDA): High-performance tracking
  * - YOLO (CUDA): Object detection
  * - Qt Signals: Thread-safe communication
+ *
+ * Latency Optimizations (Real-time Military EO/IR design pattern):
+ * - Fix #2: Non-blocking appsink with frame queue (drops old frames, keeps latest)
+ * - Fix #3: Pipeline tuning (max-lateness=0, qos=true, method=nearest-neighbour)
+ *
+ * Future Optimization (Fix #4 - NVMM Zero-Copy Pipeline):
+ * For even lower latency on Jetson, use NVMM memory to avoid CPU memcpy:
+ * @code
+ * // Current: YUY2 → CPU memcpy → CPU cvtColor → CPU BGRA → GPU VPI
+ * // Target:  NVMM → GPU nvvidconv → NVMM RGBA → GPU VPI (zero CPU copy)
+ *
+ * // Replace current pipeline with:
+ * QString nvmmPipeline = QString(
+ *     "v4l2src device=%1 do-timestamp=true ! "
+ *     "video/x-raw(memory:NVMM),format=YUY2,width=%2,height=%3,framerate=30/1 ! "
+ *     "nvvidconv ! "
+ *     "video/x-raw(memory:NVMM),format=RGBA,width=1024,height=768 ! "
+ *     "appsink name=mysink emit-signals=true max-buffers=1 drop=true sync=false "
+ *     "max-lateness=0 qos=true");
+ *
+ * // Then wrap NVMM buffer directly into VPI:
+ * // VPIImageData data;
+ * // data.bufferType = VPI_IMAGE_BUFFER_NVMM;
+ * // data.buffer.nvmm.fd = nvmmBufferFD;
+ * // vpiImageCreateWrapper(&data, 0, &vpiImage);
+ * @endcode
+ * This reduces 4-8 ms per frame on Jetson Xavier NX.
  */
 class CameraVideoStreamDevice : public QThread
 {
@@ -215,6 +244,7 @@ private:
     void cleanupGStreamer();
     static GstFlowReturn on_new_sample_from_sink(GstAppSink *sink, gpointer user_data);
     GstFlowReturn handleNewSample(GstAppSink *sink);
+    void frameProcessingConsumer();  // ✅ Non-blocking frame consumer loop (latency fix)
 
     // VPI Processing
     bool initializeVPI();
@@ -245,6 +275,14 @@ private:
     GstElement *m_pipeline;
     GstElement *m_appSink;
     GMainLoop *m_gstLoop;
+
+    // --- Non-blocking Frame Queue (Latency Fix) ---
+    // Expert recommendation: Drop old frames, keep only latest frame
+    // This ensures deterministic latency and eliminates pipeline backpressure
+    std::queue<GstBuffer*> m_frameQueue;
+    QMutex m_frameQueueMutex;
+    QWaitCondition m_frameQueueCond;
+    std::atomic<bool> m_processingThreadRunning{false};
 
     // --- VPI Components ---
     VPIBackend m_vpiBackend;

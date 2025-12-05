@@ -435,6 +435,13 @@ signals:
     void ammoFeedCycleInProgressChanged();
     void ammoLoadedChanged();
 
+    // =========================================================================
+    // VIDEO FRAME UPDATE SIGNAL (Latency Fix #1)
+    // Signal-driven refresh: QML updates only when a new frame is ready
+    // This eliminates timer-based polling latency (was 33ms timer)
+    // =========================================================================
+    void videoFrameUpdated();
+
 
 private:
     // Member variables
