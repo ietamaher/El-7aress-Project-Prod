@@ -714,6 +714,7 @@ signals:
      */
     void leadAngleStateChanged(bool active, LeadAngleStatus status, float offsetAz, float offsetEl);
 
+    void ammoFeedStateChanged(AmmoFeedState state);
     void ammoFeedCycleInProgressChanged(bool inProgress);
     void ammoLoadedChanged(bool loaded);
 
@@ -840,6 +841,12 @@ public slots:
     void setTrackingStarted(bool start);
 
     /**
+     * @brief Set ammunition feed FSM state (for OSD display)
+     * @param state Current FSM state (Idle, Extending, Retracting, Fault)
+     */
+    void setAmmoFeedState(AmmoFeedState state);
+
+    /**
      * @brief Set ammo feed cycle in progress state (for GUI feedback)
      * @param inProgress True if feed cycle is running
      */
@@ -940,8 +947,9 @@ private:
     void processStateTransitions(const SystemStateData& oldData, SystemStateData& newData);
     void processHomingStateMachine(const SystemStateData& oldData,  SystemStateData& newData);
 
+    AmmoFeedState m_ammoFeedState = AmmoFeedState::Idle;
     bool m_ammoFeedCycleInProgress = false;
-    bool m_ammoLoaded = false;   
+    bool m_ammoLoaded = false;
 };
 
 #endif // SYSTEMSTATEMODEL_H

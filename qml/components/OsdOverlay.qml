@@ -1143,20 +1143,26 @@ Item {
             }
 
             // ========================================================================
-            // AMMUNITION FEED STATUS INDICATOR
-            // Shows: LOADING... (yellow pulsing), LOADED (green), or nothing
+            // AMMUNITION FEED STATUS INDICATOR (Always Visible)
+            // States: 0=IDLE (gray), 1/2=FEED... (orange pulse), 3=FAULT (red flash)
+            // When ammoLoaded=true: BELT (green)
             // ========================================================================
             Rectangle {
                 id: ammoFeedIndicator
                 width: 18
                 height: 18
                 radius: 9
-                visible: viewModel ? (viewModel.ammoFeedCycleInProgress || viewModel.ammoLoaded) : false
+                visible: true  // Always visible
                 color: {
-                    if (!viewModel) return "gray"
-                    if (viewModel.ammoFeedCycleInProgress) return "#FFA500"  // Orange for loading
-                    if (viewModel.ammoLoaded) return "#00FF00"               // Green for loaded
-                    return "gray"
+                    if (!viewModel) return "#555555"
+                    // Fault state (3) = RED
+                    if (viewModel.ammoFeedState === 3) return "#FF0000"
+                    // Extending/Retracting (1,2) = ORANGE
+                    if (viewModel.ammoFeedState === 1 || viewModel.ammoFeedState === 2) return "#FFA500"
+                    // Loaded sensor = GREEN
+                    if (viewModel.ammoLoaded) return "#00FF00"
+                    // Idle (0) = DIM GRAY
+                    return "#555555"
                 }
                 border.color: "white"
                 border.width: 2
@@ -1164,38 +1170,62 @@ Item {
 
                 // Pulsing animation during feed cycle
                 SequentialAnimation on opacity {
-                    running: viewModel ? viewModel.ammoFeedCycleInProgress : false
+                    id: feedPulseAnim
+                    running: viewModel ? (viewModel.ammoFeedState === 1 || viewModel.ammoFeedState === 2) : false
                     loops: Animation.Infinite
                     NumberAnimation { to: 0.4; duration: 300 }
                     NumberAnimation { to: 1.0; duration: 300 }
                 }
+
+                // Fast flash animation for FAULT state
+                SequentialAnimation on opacity {
+                    id: faultFlashAnim
+                    running: viewModel ? (viewModel.ammoFeedState === 3) : false
+                    loops: Animation.Infinite
+                    NumberAnimation { to: 0.2; duration: 150 }
+                    NumberAnimation { to: 1.0; duration: 150 }
+                }
             }
             Text {
                 id: ammoFeedText
-                visible: viewModel ? (viewModel.ammoFeedCycleInProgress || viewModel.ammoLoaded) : false
+                visible: true  // Always visible
                 text: {
-                    if (!viewModel) return ""
-                    if (viewModel.ammoFeedCycleInProgress) return "FEED..."
+                    if (!viewModel) return "FEED:---"
+                    // Fault state = FAULT
+                    if (viewModel.ammoFeedState === 3) return "FAULT"
+                    // Extending/Retracting = FEED...
+                    if (viewModel.ammoFeedState === 1 || viewModel.ammoFeedState === 2) return "FEED..."
+                    // Loaded sensor = BELT
                     if (viewModel.ammoLoaded) return "BELT"
-                    return ""
+                    // Idle = IDLE
+                    return "IDLE"
                 }
                 font.pixelSize: 11
                 font.bold: true
                 font.family: "Archivo Narrow"
                 color: {
-                    if (!viewModel) return "gray"
-                    if (viewModel.ammoFeedCycleInProgress) return "#FFA500"  // Orange
-                    if (viewModel.ammoLoaded) return "#00FF00"               // Green
-                    return "gray"
+                    if (!viewModel) return "#555555"
+                    if (viewModel.ammoFeedState === 3) return "#FF0000"  // Red for FAULT
+                    if (viewModel.ammoFeedState === 1 || viewModel.ammoFeedState === 2) return "#FFA500"  // Orange
+                    if (viewModel.ammoLoaded) return "#00FF00"  // Green
+                    return "#888888"  // Dim gray for IDLE
                 }
                 anchors.verticalCenter: parent.verticalCenter
 
                 // Pulsing animation during feed cycle
                 SequentialAnimation on opacity {
-                    running: viewModel ? viewModel.ammoFeedCycleInProgress : false
+                    running: viewModel ? (viewModel.ammoFeedState === 1 || viewModel.ammoFeedState === 2) : false
                     loops: Animation.Infinite
                     NumberAnimation { to: 0.4; duration: 300 }
                     NumberAnimation { to: 1.0; duration: 300 }
+                }
+
+                // Fast flash animation for FAULT state
+                SequentialAnimation on opacity {
+                    running: viewModel ? (viewModel.ammoFeedState === 3) : false
+                    loops: Animation.Infinite
+                    NumberAnimation { to: 0.2; duration: 150 }
+                    NumberAnimation { to: 1.0; duration: 150 }
                 }
             }
 

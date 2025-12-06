@@ -304,9 +304,16 @@ void WeaponController::onOperatorRequestLoad()
     qDebug() << "[WeaponController] Operator REQUEST LOAD. Current feed state:"
              << feedStateName(m_feedState);
 
+    // Handle FAULT state - operator presses button again to reset
+    if (m_feedState == AmmoFeedState::Fault) {
+        qDebug() << "[WeaponController] Button pressed in FAULT state - resetting fault";
+        resetFeedFault();
+        return;
+    }
+
     // Only allow start when idle
     if (m_feedState != AmmoFeedState::Idle) {
-        qDebug() << "[WeaponController] Feed cycle start IGNORED - already running or faulted";
+        qDebug() << "[WeaponController] Feed cycle start IGNORED - cycle already running";
         return;
     }
 
@@ -378,15 +385,16 @@ void WeaponController::processActuatorPosition(double posCounts)
             // Cycle complete
             transitionFeedState(AmmoFeedState::Idle);
 
-            // Notify GUI
+            // Notify GUI - belt is now loaded (inferred from successful cycle)
             if (m_stateModel) {
                 m_stateModel->setAmmoFeedCycleInProgress(false);
+                m_stateModel->setAmmoLoaded(true);
             }
 
             m_feedTimer->stop();
             emit ammoFeedCycleCompleted();
 
-            qDebug() << "========== FEED CYCLE COMPLETED ==========";
+            qDebug() << "========== FEED CYCLE COMPLETED - BELT LOADED ==========";
         }
         break;
 
@@ -458,6 +466,11 @@ void WeaponController::transitionFeedState(AmmoFeedState newState)
     qDebug() << "[WeaponController] Feed state:" << feedStateName(m_feedState)
              << "->" << feedStateName(newState);
     m_feedState = newState;
+
+    // Update SystemStateModel for OSD display
+    if (m_stateModel) {
+        m_stateModel->setAmmoFeedState(newState);
+    }
 }
 
 QString WeaponController::feedStateName(AmmoFeedState s) const

@@ -167,12 +167,7 @@ private:
      *                      v
      *                 Retracting
      */
-    enum class AmmoFeedState {
-        Idle,       ///< Ready for new cycle
-        Extending,  ///< Moving to extended position (feed round)
-        Retracting, ///< Moving to retracted position (return home)
-        Fault       ///< Timeout occurred - requires operator reset
-    };
+    // Uses global AmmoFeedState enum from systemstatedata.h
 
     void startAmmoFeedCycle();
     void processActuatorPosition(double posCounts);

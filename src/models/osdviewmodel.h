@@ -150,7 +150,9 @@ class OsdViewModel : public QObject
 
     // ========================================================================
     // AMMUNITION FEED STATUS (for OSD display with animation)
+    // States: 0=Idle, 1=Extending, 2=Retracting, 3=Fault
     // ========================================================================
+    Q_PROPERTY(int ammoFeedState READ ammoFeedState NOTIFY ammoFeedStateChanged)
     Q_PROPERTY(bool ammoFeedCycleInProgress READ ammoFeedCycleInProgress NOTIFY ammoFeedCycleInProgressChanged)
     Q_PROPERTY(bool ammoLoaded READ ammoLoaded NOTIFY ammoLoadedChanged)
 
@@ -262,6 +264,7 @@ public:
     bool ammunitionLevel() const { return m_ammunitionLevel; }
 
     // Ammunition Feed Status getters
+    int ammoFeedState() const { return m_ammoFeedState; }
     bool ammoFeedCycleInProgress() const { return m_ammoFeedCycleInProgress; }
     bool ammoLoaded() const { return m_ammoLoaded; }
 
@@ -326,7 +329,7 @@ public slots:
     void updateAmmunitionLevel(bool level);
 
     // Ammunition Feed Status update
-    void updateAmmoFeedStatus(bool cycleInProgress, bool loaded);
+    void updateAmmoFeedStatus(int state, bool cycleInProgress, bool loaded);
 
 
 signals:
@@ -432,6 +435,7 @@ signals:
     void ammunitionLevelChanged();
 
     // Ammunition Feed Status signals
+    void ammoFeedStateChanged();
     void ammoFeedCycleInProgressChanged();
     void ammoLoadedChanged();
 
@@ -551,6 +555,7 @@ private:
     bool m_ammunitionLevel;
 
     // Ammunition Feed Status
+    int m_ammoFeedState = 0;  // 0=Idle, 1=Extending, 2=Retracting, 3=Fault
     bool m_ammoFeedCycleInProgress = false;
     bool m_ammoLoaded = false;
 };

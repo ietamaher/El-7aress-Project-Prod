@@ -8,10 +8,14 @@ VideoImageProvider::VideoImageProvider()
 
 void VideoImageProvider::updateImage(const QImage& newImage)
 {
-    QMutexLocker locker(&m_mutex);
-    // QImage uses implicit sharing (copy-on-write), so this is already thread-safe
-    // No need for deep copy - reduces latency by 3-5ms
-    m_currentImage = newImage;
+    {
+        QMutexLocker locker(&m_mutex);
+        // QImage uses implicit sharing (copy-on-write), so this is already thread-safe
+        // No need for deep copy - reduces latency by 3-5ms
+        m_currentImage = newImage;
+    }
+    // Latency Fix #1: Signal QML immediately (eliminates timer-based polling)
+    emit m_notifier.frameUpdated();
 }
 
 QImage VideoImageProvider::requestImage(const QString &id, QSize *size, const QSize &requestedSize)
@@ -30,3 +34,4 @@ QImage VideoImageProvider::requestImage(const QString &id, QSize *size, const QS
 
     return m_currentImage;
 }
+
