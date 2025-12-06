@@ -627,7 +627,7 @@ struct SystemStateData {
     // Ammunition Feed Parameters
     AmmoFeedState ammoFeedState = AmmoFeedState::Idle;  ///< Current FSM state (for OSD display)
     bool ammoFeedCycleInProgress = false;   ///< FSM is running (for backward compat)
-    bool ammoLoaded = false;                ///< Physical sensor state (belt seated)
+    bool ammoLoaded = false;                ///< Inferred from successful feed cycle completion
     // =================================
     // STATUS & INFORMATION DISPLAY
     // =================================

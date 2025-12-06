@@ -373,15 +373,16 @@ void WeaponController::processActuatorPosition(double posCounts)
             // Cycle complete
             transitionFeedState(AmmoFeedState::Idle);
 
-            // Notify GUI
+            // Notify GUI - belt is now loaded (inferred from successful cycle)
             if (m_stateModel) {
                 m_stateModel->setAmmoFeedCycleInProgress(false);
+                m_stateModel->setAmmoLoaded(true);
             }
 
             m_feedTimer->stop();
             emit ammoFeedCycleCompleted();
 
-            qDebug() << "========== FEED CYCLE COMPLETED ==========";
+            qDebug() << "========== FEED CYCLE COMPLETED - BELT LOADED ==========";
         }
         break;
 
