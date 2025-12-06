@@ -1050,8 +1050,27 @@ void SystemStateModel::onServoActuatorDataChanged(const ServoActuatorData &actua
 void SystemStateModel::startZeroingProcedure() {
     if (!m_currentStateData.zeroingModeActive) {
         m_currentStateData.zeroingModeActive = true;
-        // Don't reset offsets here, user might be re-doing it or making cumulative adjustments
-        qDebug() << "Zeroing procedure started.";
+
+        // ========================================================================
+        // BUG FIX #1: CAPTURE INITIAL GIMBAL POSITION
+        // ========================================================================
+        // Store current gimbal position as reference point
+        // When finalized, offset = (final_position - initial_position)
+        // This tracks how far the operator moved the gimbal to align with impact
+        // ========================================================================
+        m_zeroingState.initialAz = m_currentStateData.gimbalAz;
+        m_zeroingState.initialEl = m_currentStateData.gimbalEl;
+        m_zeroingState.capturedInitialPos = true;
+
+        qInfo() << "[ZEROING] Procedure started";
+        qInfo() << "[ZEROING]   Initial gimbal position captured:";
+        qInfo() << "[ZEROING]     Azimuth:   " << m_zeroingState.initialAz << "°";
+        qInfo() << "[ZEROING]     Elevation: " << m_zeroingState.initialEl << "°";
+        qInfo() << "[ZEROING]   Existing offsets:";
+        qInfo() << "[ZEROING]     Az offset: " << m_currentStateData.zeroingAzimuthOffset << "°";
+        qInfo() << "[ZEROING]     El offset: " << m_currentStateData.zeroingElevationOffset << "°";
+        qInfo() << "[ZEROING]   Operator can now move joystick to align reticle with impact point";
+
         emit dataChanged(m_currentStateData);
         emit zeroingStateChanged(true, m_currentStateData.zeroingAzimuthOffset, m_currentStateData.zeroingElevationOffset);
         // ✅ LATENCY FIX: Dedicated signal for ZeroingController to reduce event queue load
@@ -1083,11 +1102,49 @@ void SystemStateModel::applyZeroingAdjustment(float deltaAz, float deltaEl) {
 }
 
 void SystemStateModel::finalizeZeroing() {
-    if (m_currentStateData.zeroingModeActive) {
+    if (m_currentStateData.zeroingModeActive && m_zeroingState.capturedInitialPos) {
+        // ========================================================================
+        // BUG FIX #1: CALCULATE ZEROING OFFSET FROM GIMBAL MOVEMENT
+        // ========================================================================
+        // Calculate how far the gimbal moved from initial position
+        // This represents the angular offset between weapon bore and camera LOS
+        // Positive offset means weapon hits right/high of where camera points
+        // ========================================================================
+
+        float currentAz = m_currentStateData.gimbalAz;
+        float currentEl = m_currentStateData.gimbalEl;
+
+        float deltaAz = currentAz - m_zeroingState.initialAz;
+        float deltaEl = currentEl - m_zeroingState.initialEl;
+
+        qInfo() << "[ZEROING] Finalizing procedure";
+        qInfo() << "[ZEROING]   Initial position:";
+        qInfo() << "[ZEROING]     Az: " << m_zeroingState.initialAz << "°  El: " << m_zeroingState.initialEl << "°";
+        qInfo() << "[ZEROING]   Final position:";
+        qInfo() << "[ZEROING]     Az: " << currentAz << "°  El: " << currentEl << "°";
+        qInfo() << "[ZEROING]   Gimbal movement detected:";
+        qInfo() << "[ZEROING]     ΔAz: " << deltaAz << "°  ΔEl: " << deltaEl << "°";
+
+        // Apply the calculated offset (cumulative with existing offsets)
+        if (std::abs(deltaAz) > 0.01f || std::abs(deltaEl) > 0.01f) {
+            applyZeroingAdjustment(deltaAz, deltaEl);
+            qInfo() << "[ZEROING]   ✓ New zeroing offsets applied";
+        } else {
+            qInfo() << "[ZEROING]   ⚠ No significant gimbal movement detected (< 0.01°)";
+            qInfo() << "[ZEROING]   ⚠ Keeping existing offsets unchanged";
+        }
+
+        qInfo() << "[ZEROING]   Total cumulative offsets:";
+        qInfo() << "[ZEROING]     Az: " << m_currentStateData.zeroingAzimuthOffset << "°";
+        qInfo() << "[ZEROING]     El: " << m_currentStateData.zeroingElevationOffset << "°";
+
+        // Mark zeroing as complete and active
         m_currentStateData.zeroingModeActive = false;
-        m_currentStateData.zeroingAppliedToBallistics = true; // Zeroing is now active
-        qDebug() << "Zeroing procedure finalized. Offsets Az:" << m_currentStateData.zeroingAzimuthOffset
-                 << "El:" << m_currentStateData.zeroingElevationOffset;
+        m_currentStateData.zeroingAppliedToBallistics = true;
+        m_zeroingState.capturedInitialPos = false;
+
+        qInfo() << "[ZEROING] ✓ Procedure complete - Zeroing now ACTIVE";
+
         emit dataChanged(m_currentStateData);
         emit zeroingStateChanged(false, m_currentStateData.zeroingAzimuthOffset, m_currentStateData.zeroingElevationOffset);
         // ✅ LATENCY FIX: Dedicated signal for ZeroingController to reduce event queue load
