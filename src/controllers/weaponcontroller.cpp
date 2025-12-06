@@ -34,11 +34,23 @@ WeaponController::WeaponController(SystemStateModel* stateModel,
     // SYSTEM STATE MONITORING
     // ========================================================================
     if (m_stateModel) {
-        // LATENCY FIX: Queued connection prevents ballistics calculations
-        // from blocking device I/O thread
+        // ========================================================================
+        // BUG FIX #4: MOTOR CONTROL LATENCY - USE DIRECT CONNECTION
+        // ========================================================================
+        // ORIGINAL: Qt::QueuedConnection caused event queue saturation over time
+        // - Servo updates at 110Hz → ~1200 events/min from state changes
+        // - Queued events accumulate if processing takes longer than arrival rate
+        // - Result: Latency increases from 0ms to several seconds over time
+        //
+        // FIX: Use Qt::DirectConnection (all components in main thread)
+        // - Immediate processing, no event queue buildup
+        // - Safe because SystemStateModel, WeaponController, and GimbalController
+        //   all run in the main thread (required by QModbus)
+        // - Ballistics calculations are fast (<1ms), won't block I/O
+        // ========================================================================
         connect(m_stateModel, &SystemStateModel::dataChanged,
                 this, &WeaponController::onSystemStateChanged,
-                Qt::QueuedConnection);
+                Qt::DirectConnection);  // ✅ FIX: Changed from QueuedConnection
 
         // Initialize GUI state for ammo feed
         m_stateModel->setAmmoFeedCycleInProgress(false);

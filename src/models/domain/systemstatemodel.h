@@ -855,13 +855,27 @@ private:
     // =================================
     // PRIVATE MEMBER VARIABLES
     // =================================
-    
+
     SystemStateData m_currentStateData; ///< Central data store for all system state
 
     // ID Counters for zones
     int m_nextAreaZoneId;       ///< Counter for assigning unique area zone IDs
     int m_nextSectorScanId;     ///< Counter for assigning unique sector scan zone IDs
     int m_nextTRPId;            ///< Counter for assigning unique TRP IDs
+
+    // ========================================================================
+    // ZEROING PROCEDURE STATE TRACKING (BUG FIX #1)
+    // ========================================================================
+    /**
+     * @brief Tracks gimbal position during zeroing procedure
+     * When zeroing starts, initial position is captured.
+     * When zeroing finalizes, offset = (final_position - initial_position)
+     */
+    struct ZeroingProcedureState {
+        float initialAz = 0.0f;           ///< Gimbal azimuth when zeroing started
+        float initialEl = 0.0f;           ///< Gimbal elevation when zeroing started
+        bool capturedInitialPos = false;  ///< True if initial position was captured
+    } m_zeroingState;
 
     // =================================
     // PRIVATE HELPER METHODS
