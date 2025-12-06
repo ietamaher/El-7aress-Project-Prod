@@ -1,0 +1,380 @@
+% ============================================================================
+% APPENDIX A - QUICK REFERENCE CARDS
+% ============================================================================
+\appendixchapter{A - QUICK REFERENCE CARDS}
+
+\section{STARTUP SEQUENCE}
+
+\begin{quickref}
+	\textbf{SYSTEM STARTUP PROCEDURE}
+	
+	\begin{enumerate}
+		\item Main Power ON
+		\item Station Enable ON
+		\item Wait for boot (~60 seconds)
+		\item Check System Status (all devices connected)
+		\item Perform pre-operation checks
+		\item Ready for operations
+	\end{enumerate}
+\end{quickref}
+
+% ============================================================================
+\section{CONTROL REFERENCE}
+
+\subsection{JOYSTICK}
+
+\spectable{
+	\begin{tabular}{|L{0.25\textwidth}|L{0.65\textwidth}|}
+		\hline
+		\rowcolor{milblue!20}
+		\textbf{Control} & \textbf{Function} \\
+		\hline
+		\textbf{X-Axis} & Azimuth (left/right) \\
+		\hline
+		\textbf{Y-Axis} & Elevation (up/down) \\
+		\hline
+		\textbf{Button 0} & Master Arm \\
+		\hline
+		\textbf{Button 2} & LAC Toggle (hold Button 3) \\
+		\hline
+		\textbf{Button 3} & Dead Man Switch \\
+		\hline
+		\textbf{Button 4} & Track Select (single=start, double=abort) \\
+		\hline
+		\textbf{Button 5} & Fire \\
+		\hline
+		\textbf{Button 6/8} & Zoom In/Out \\
+		\hline
+		\textbf{Button 7/9} & Thermal LUT \\
+		\hline
+		\textbf{Button 10/12} & Camera Switch \\
+		\hline
+		\textbf{Button 11/13} & Motion Mode Cycle \\
+		\hline
+		\textbf{D-Pad} & Acquisition gate sizing (in Acquisition mode) \\
+		\hline
+	\end{tabular}
+}
+
+% ----------------------------------------------------------------------------
+\subsection{CONTROL PANEL (DCU)}
+
+\spectable{
+	\begin{tabular}{|L{0.25\textwidth}|L{0.65\textwidth}|}
+		\hline
+		\rowcolor{milblue!20}
+		\textbf{Control} & \textbf{Function} \\
+		\hline
+		\textbf{E-STOP} & Emergency Stop (red mushroom) \\
+		\hline
+		\textbf{Station Enable} & Power on/off weapon station \\
+		\hline
+		\textbf{Gun Arm / Safe} & Weapon arming switch \\
+		\hline
+		\textbf{MENU ✓} & Menu access / Validate \\
+		\hline
+		\textbf{▲ / ▼} & Menu navigation \\
+		\hline
+		\textbf{Authorization Key} & Enable weapon fire \\
+		\hline
+		\textbf{Indicator Lights} & System status (Armed, Tracking, Faults) \\
+		\hline
+	\end{tabular}
+}
+
+% ============================================================================
+\section{OSD INDICATORS}
+
+\begin{longtable}{|L{0.30\textwidth}|L{0.60\textwidth}|}
+	\hline
+	\rowcolor{milblue!20}
+	\textbf{Indicator} & \textbf{Meaning} \\
+	\hline
+	\endfirsthead
+	
+	\hline
+	\rowcolor{milblue!20}
+	\textbf{Indicator} & \textbf{Meaning} \\
+	\hline
+	\endhead
+	
+	\textbf{Z} & Zeroing active \\
+	\hline
+	\textbf{ENV} & Environmental parameters active \\
+	\hline
+	\textcolor{milgreen}{\textbf{LEAD ANGLE ON}} (GREEN) & LAC active, ready to fire \\
+	\hline
+	\textcolor{milyellow}{\textbf{LEAD ANGLE LAG}} (YELLOW) & LAC waiting for tracking data \\
+	\hline
+	\textcolor{milred}{\textbf{ZOOM OUT}} (RED) & LAC FOV insufficient \\
+	\hline
+	\textcolor{milred}{\textbf{ZONE VIOLATION}} (RED) & No-Fire/No-Traverse zone warning \\
+	\hline
+	\textbf{TRACKING} & Tracking active \\
+	\hline
+	\textbf{ACQUISITION} & Acquisition mode \\
+	\hline
+	\textbf{RNG: xxxx m} & Laser range reading \\
+	\hline
+\end{longtable}
+
+% ============================================================================
+\section{EMERGENCY ACTIONS}
+
+\begin{longtable}{|L{0.30\textwidth}|L{0.60\textwidth}|}
+	\hline
+	\rowcolor{milred!20}
+	\textbf{Emergency} & \textbf{Immediate Action} \\
+	\hline
+	\endfirsthead
+	
+	\hline
+	\rowcolor{milred!20}
+	\textbf{Emergency} & \textbf{Immediate Action} \\
+	\hline
+	\endhead
+	
+	\textbf{Personnel in danger} & \textbf{E-STOP} \\
+	\hline
+	\textbf{Wrong target} & \textbf{\button{Button 4} (double-click)} \\
+	\hline
+	\textbf{Accidental fire} & \textbf{Release \button{Button 5}, Release \button{Button 0}} \\
+	\hline
+	\textbf{Runaway gimbal} & \textbf{E-STOP → Station Power OFF} \\
+	\hline
+	\textbf{Fire/Smoke} & \textbf{E-STOP → Main Power OFF} \\
+	\hline
+\end{longtable}
+
+% ============================================================================
+\section{TRACKING QUICK REFERENCE}
+
+\begin{quickref}
+	\textbf{TRACKING SEQUENCE}
+	
+	\begin{enumerate}
+		\item \textbf{Start Acquisition:} \button{Button 4} (single press)
+		\item \textbf{Size Gate:} \button{D-Pad} (10-30\% margin)
+		\item \textbf{Request Lock:} \button{Button 4} (second press)
+		\item \textbf{Monitor Track:} Green gate = good, Yellow = marginal
+		\item \textbf{Emergency Abort:} \button{Button 4} (double-click <500ms)
+	\end{enumerate}
+\end{quickref}
+
+% ============================================================================
+\section{ENGAGEMENT CHECKLIST}
+
+\begin{quickref}
+	\textbf{PRE-ENGAGEMENT VERIFICATION}
+	
+	\begin{checklist}
+		\item Target positively identified (PID)
+		\item Target valid (meets ROE)
+		\item Fire authorization received
+		\item NOT in no-fire zone
+		\item Friendly forces clear
+		\item Weapon loaded and ready
+		\item Zeroing active (Z indicator)
+		\item Track established (if using tracking)
+	\end{checklist}
+	
+	\textbf{IF ANY ITEM CANNOT BE CHECKED: DO NOT FIRE}
+\end{quickref}
+
+% ============================================================================
+\section{BALLISTICS QUICK REFERENCE}
+
+\subsection{Zeroing Status}
+
+\spectable{
+	\small
+	\begin{tabular}{|L{0.25\textwidth}|L{0.35\textwidth}|L{0.30\textwidth}|}
+		\hline
+		\rowcolor{milblue!20}
+		\textbf{OSD Indicator} & \textbf{Meaning} & \textbf{Action} \\
+		\hline
+		\textbf{Z} visible & Zeroing active & Normal ops \\
+		\hline
+		No \textbf{Z} & No zero applied & Re-zero before firing \\
+		\hline
+		\textbf{ENV} visible & Environmental corrections active & Normal ops \\
+		\hline
+		\textbf{LEAD ANGLE ON} & LAC active & Aim at CCIP reticle \\
+		\hline
+	\end{tabular}
+}
+
+% ----------------------------------------------------------------------------
+\subsection{Fire Control Combinations}
+
+\spectable{
+	\small
+	\begin{tabular}{|L{0.22\textwidth}|L{0.22\textwidth}|C{0.08\textwidth}|C{0.08\textwidth}|C{0.08\textwidth}|L{0.20\textwidth}|}
+		\hline
+		\rowcolor{milblue!20}
+		\textbf{Target} & \textbf{Conditions} & \textbf{Z} & \textbf{ENV} & \textbf{LAC} & \textbf{OSD Display} \\
+		\hline
+		Stationary & Standard & ✓ & & & Z \\
+		\hline
+		Stationary & Extreme temp/alt & ✓ & ✓ & & Z ENV \\
+		\hline
+		Moving (fast) & Standard & ✓ & & ✓ & Z LEAD ANGLE ON \\
+		\hline
+		Moving (fast) & Extreme & ✓ & ✓ & ✓ & Z ENV LEAD ANGLE ON \\
+		\hline
+	\end{tabular}
+}
+
+% ============================================================================
+\section{TROUBLESHOOTING QUICK GUIDE}
+
+\begin{longtable}{|L{0.25\textwidth}|L{0.35\textwidth}|L{0.30\textwidth}|}
+	\hline
+	\rowcolor{milblue!20}
+	\textbf{Symptom} & \textbf{Quick Fix} & \textbf{Escalate If} \\
+	\hline
+	\endfirsthead
+	
+	\hline
+	\rowcolor{milblue!20}
+	\textbf{Symptom} & \textbf{Quick Fix} & \textbf{Escalate If} \\
+	\hline
+	\endhead
+	
+	No joystick & Reconnect USB, reboot & Still offline \\
+	\hline
+	Black video & Switch cameras & Both offline \\
+	\hline
+	Won't track & Resize gate, improve contrast & Fails all targets \\
+	\hline
+	Gimbal frozen & Reset E-Stop, Station ON & Servo fault \\
+	\hline
+	LRF no reading & Re-fire, try different target & LRF disconnected \\
+	\hline
+	High temp & Reduce ops, cool down & Temp >80\degree C \\
+	\hline
+\end{longtable}
+
+% ============================================================================
+\section{SYSTEM STATUS QUICK CHECK}
+
+\begin{quickref}
+	\textbf{HEALTHY SYSTEM INDICATORS}
+	
+	\begin{itemize}
+		\item All devices: \textbf{Connected} ✓
+		\item Servo torque: \textbf{0-50\%}
+		\item Temperatures: \textbf{20-60\degree C}
+		\item No fault flags
+		\item Track confidence: \textbf{>70\%}
+		\item No alarms (RED or YELLOW)
+	\end{itemize}
+	
+	\textbf{DEGRADED SYSTEM INDICATORS}
+	
+	\begin{itemize}
+		\item Servo torque: \textbf{50-80\%} (marginal)
+		\item Temperatures: \textbf{60-70\degree C} (warning)
+		\item Track confidence: \textbf{50-70\%} (marginal)
+		\item YELLOW alarms present
+	\end{itemize}
+	
+	\textbf{FAULTED SYSTEM (NO-GO)}
+	
+	\begin{itemize}
+		\item Any device: \textbf{Disconnected} ✗
+		\item Servo torque: \textbf{>80\%} sustained
+		\item Temperatures: \textbf{>70\degree C}
+		\item Fault flags present
+		\item RED alarms present
+	\end{itemize}
+\end{quickref}
+
+% ============================================================================
+\section{ENVIRONMENTAL PARAMETERS GUIDE}
+
+\subsection{When to Apply Environmental Settings}
+
+\spectable{
+	\small
+	\begin{tabular}{|L{0.30\textwidth}|C{0.12\textwidth}|C{0.12\textwidth}|C{0.12\textwidth}|C{0.12\textwidth}|}
+		\hline
+		\rowcolor{milblue!20}
+		\textbf{Situation} & \textbf{Temp} & \textbf{Alt} & \textbf{Wind} & \textbf{Apply?} \\
+		\hline
+		Sea level, standard, calm & 15\degree C & 0m & 0 m/s & No \\
+		\hline
+		Desert, hot, calm & 40\degree C & 0m & 0 m/s & Yes \\
+		\hline
+		Mountain, cold, windy & -10\degree C & 2000m & 8 m/s & Yes \\
+		\hline
+		Temperate, mild breeze & 20\degree C & 300m & 3 m/s & Optional \\
+		\hline
+	\end{tabular}
+}
+
+% ============================================================================
+\section{LAC (LEAD ANGLE COMPENSATION) GUIDE}
+
+\begin{quickref}
+	\textbf{LAC ACTIVATION}
+	
+	\begin{enumerate}
+		\item Establish Active Lock (green gate)
+		\item Hold \button{Button 3} (Dead Man Switch)
+		\item Press \button{Button 2} (LAC Toggle)
+		\item Release both buttons
+		\item Verify: \textcolor{milgreen}{\textbf{LEAD ANGLE ON}} (GREEN)
+	\end{enumerate}
+	
+	\textbf{LAC STATUS MEANINGS}
+	
+	\begin{itemize}
+		\item \textcolor{milgreen}{\textbf{LEAD ANGLE ON}} (GREEN): Ready to fire
+		\item \textcolor{milyellow}{\textbf{LEAD ANGLE LAG}} (YELLOW): Wait 2-5 seconds
+		\item \textcolor{milred}{\textbf{ZOOM OUT}} (RED): Zoom out, LAC non-functional
+	\end{itemize}
+	
+	\textbf{WHEN TO USE LAC}
+	
+	\begin{itemize}
+		\item ✅ Target moving laterally (crossing FOV)
+		\item ✅ Target speed >5 m/s
+		\item ✅ Range >100 meters
+	\end{itemize}
+	
+	\textbf{WHEN NOT TO USE LAC}
+	
+	\begin{itemize}
+		\item ❌ Stationary targets
+		\item ❌ Targets moving radially (toward/away)
+		\item ❌ Very close range (<50m)
+	\end{itemize}
+\end{quickref}
+
+% ============================================================================
+\section{SAFETY REMINDERS}
+
+\begin{warningbox}[CRITICAL SAFETY RULES]
+	\textbf{ALWAYS:}
+	\begin{itemize}
+		\item Verify target before engaging (PID mandatory)
+		\item Check for friendly forces
+		\item Verify NOT in no-fire zone
+		\item Follow Rules of Engagement (ROE)
+		\item Have fire authorization (if required)
+	\end{itemize}
+	
+	\textbf{NEVER:}
+	\begin{itemize}
+		\item Fire without positive identification
+		\item Fire into no-fire zones
+		\item Fire if friendlies potentially in line of fire
+		\item Fire without authorization (if required)
+		\item Bypass safety interlocks
+	\end{itemize}
+\end{warningbox}
+
+% ============================================================================
+% END OF APPENDIX A
+% ============================================================================

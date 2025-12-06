@@ -1,0 +1,776 @@
+% ============================================================================
+% LESSON 5 - TARGET ENGAGEMENT PROCESS
+% ============================================================================
+\lesson{5 - TARGET ENGAGEMENT PROCESS}
+
+\begin{tabular}{@{}ll@{}}
+\textbf{Duration:} & 4 hours (Classroom 1h + Simulator 3h) \\
+\textbf{Type:} & Classroom + Practical \\
+\textbf{References:} & Operator manual, tracking system documentation \\
+\end{tabular}
+
+\section{LEARNING OBJECTIVES}
+
+Upon completion of this lesson, operators will be able to:
+\begin{itemize}
+    \item Execute complete target engagement sequence
+    \item Operate tracking system through all phases
+    \item Adjust acquisition gate for target selection
+    \item Perform emergency tracking abort
+    \item Execute simulated weapons engagement
+\end{itemize}
+
+% ============================================================================
+\section{TARGET ENGAGEMENT SEQUENCE}
+
+\subsection{THE SIX-PHASE ENGAGEMENT CYCLE}
+
+The complete engagement process follows six distinct phases:
+
+\begin{center}
+\texttt{DETECT → IDENTIFY → ACQUIRE → TRACK → ENGAGE → ASSESS}
+\end{center}
+
+\spectable{
+\begin{tabular}{|L{0.15\textwidth}|L{0.45\textwidth}|L{0.25\textwidth}|}
+\hline
+\rowcolor{milblue!20}
+\textbf{Phase} & \textbf{Operator Actions} & \textbf{Expected Duration} \\
+\hline
+\textbf{1. DETECT} & Scan area (manual/auto modes), visual detection & Continuous \\
+\hline
+\textbf{2. IDENTIFY} & Slew to target, zoom in, PID (Positive ID), verify ROE & 5-15 seconds \\
+\hline
+\textbf{3. ACQUIRE} & Enter tracking acquisition, position gate, size gate & 5-10 seconds \\
+\hline
+\textbf{4. TRACK} & Lock-on, monitor track quality & Continuous until engagement \\
+\hline
+\textbf{5. ENGAGE} & Range, LAC (if moving), Master Arm, Fire, Observe & 2-30 seconds \\
+\hline
+\textbf{6. ASSESS} & BDA (Battle Damage Assessment), re-engage or cease & 5-10 seconds \\
+\hline
+\end{tabular}
+}
+
+\subsection{DETECT \& IDENTIFY (PHASES 1-2)}
+
+\subsubsection{Detection Methods}
+\begin{itemize}
+    \item Manual scan (joystick control)
+    \item Auto Sector Scan (Lesson 4)
+    \item TRP Scan (Lesson 4)
+    \item Radar cues (if available)
+\end{itemize}
+
+\subsubsection{Identification Requirements}
+\begin{itemize}
+    \item \textbf{PID (Positive Identification)} mandatory before engagement
+    \item Use zoom to magnify target (\button{Button 6/8})
+    \item Thermal camera may aid identification (night, obscurants)
+    \item Verify target meets Rules of Engagement (ROE)
+    \item Confirm NOT friendly forces
+\end{itemize}
+
+\begin{warningbox}
+Failure to achieve PID before engagement violates ROE and may result in fratricide.
+\end{warningbox}
+
+% ============================================================================
+\section{TRACKING SYSTEM OVERVIEW}
+
+\subsection{TRACKING PHASE STATE MACHINE}
+
+The tracking system operates through discrete phases:
+
+\begin{center}
+\begin{tikzpicture}[
+    node distance=1.5cm,
+    state/.style={rectangle, rounded corners, draw=milblue, fill=milblue!10, thick, minimum width=3cm, minimum height=0.8cm, align=center},
+    arrow/.style={->, thick, >=stealth}
+]
+    \node[state] (off) {OFF};
+    \node[state, below of=off] (acq) {ACQUISITION};
+    \node[state, below of=acq] (pend) {LOCK PENDING};
+    \node[state, below of=pend] (lock) {ACTIVE LOCK};
+    \node[state, right of=lock, node distance=4cm] (coast) {COAST};
+    \node[state, below of=lock] (fire) {FIRING};
+    
+    \draw[arrow] (off) -- node[right, font=\tiny] {Button 4} (acq);
+    \draw[arrow] (acq) -- node[right, font=\tiny] {Size gate + Button 4} (pend);
+    \draw[arrow] (pend) -- node[right, font=\tiny] {Lock success} (lock);
+    \draw[arrow] (lock) -- node[above, font=\tiny] {Target lost} (coast);
+    \draw[arrow] (coast) -- node[below, font=\tiny] {Re-acquired} (lock);
+    \draw[arrow] (lock) -- (fire);
+    \draw[arrow] (fire) -- node[left, font=\tiny] {Cease fire} (lock);
+    \draw[arrow, dashed] (fire.east) -- ++(2,0) |- node[right, font=\tiny] {Abort} (off.east);
+\end{tikzpicture}
+\end{center}
+
+\subsection{TRACKING PHASE REFERENCE}
+
+\begin{longtable}{|L{0.13\textwidth}|L{0.13\textwidth}|L{0.10\textwidth}|L{0.10\textwidth}|L{0.11\textwidth}|L{0.18\textwidth}|}
+\hline
+\rowcolor{milblue!20}
+\textbf{Phase} & \textbf{OSD Status} & \textbf{Box Color} & \textbf{Box Style} & \textbf{Duration} & \textbf{Gimbal Control} \\
+\hline
+\endfirsthead
+
+\hline
+\rowcolor{milblue!20}
+\textbf{Phase} & \textbf{OSD Status} & \textbf{Box Color} & \textbf{Box Style} & \textbf{Duration} & \textbf{Gimbal Control} \\
+\hline
+\endhead
+
+\textbf{Off} & MODE: Manual & None & N/A & Until acquisition & Operator (joystick) \\
+\hline
+\textbf{Acquisition} & ACQUISITION & Yellow & Solid & 5-10 sec & Operator (joystick) \\
+\hline
+\textbf{Lock Pending} & LOCK PENDING & Cyan & Solid/Flash & 0.5-2 sec & Operator (hold steady) \\
+\hline
+\textbf{Active Lock} & TRACKING & Green & Dashed & Continuous & Automatic (tracker) \\
+\hline
+\textbf{Coast} & TRACKING (COAST) & Yellow & Dashed & 1-5 sec & Automatic (predict) \\
+\hline
+\textbf{Firing} & TRACKING (FIRING) & Green & Solid & While firing & Automatic (hold) \\
+\hline
+\end{longtable}
+
+\subsection{TRACKING CONTROLS}
+
+\spectable{
+\begin{tabular}{|L{0.20\textwidth}|L{0.40\textwidth}|L{0.30\textwidth}|}
+\hline
+\rowcolor{milblue!20}
+\textbf{Control} & \textbf{Function} & \textbf{Active Phase(s)} \\
+\hline
+\button{Button 4} (single) & Start Acquisition / Request Lock-On & Off → Acq, Acq → Lock Pending \\
+\hline
+\button{Button 4} (double <500ms) & \textbf{EMERGENCY ABORT} & Any phase → Off \\
+\hline
+\button{D-Pad ▲} & Decrease gate height (-4 px) & Acquisition only \\
+\hline
+\button{D-Pad ▼} & Increase gate height (+4 px) & Acquisition only \\
+\hline
+\button{D-Pad ◄} & Decrease gate width (-4 px) & Acquisition only \\
+\hline
+\button{D-Pad ►} & Increase gate width (+4 px) & Acquisition only \\
+\hline
+\end{tabular}
+}
+
+% ============================================================================
+\section{ACQUISITION PHASE}
+
+\subsection{ENTERING ACQUISITION MODE}
+
+\subsubsection{Prerequisites}
+\begin{checklist}
+    \item Motion mode: Manual
+    \item Target on-screen and identified
+    \item Target approximately centered in reticle
+\end{checklist}
+
+\begin{procedurebox}[ENTERING ACQUISITION]
+\textbf{1. Press \button{Button 4} (Track Select)}
+
+\textbf{Result:}
+\begin{itemize}
+    \item System enters \textbf{ACQUISITION} phase
+    \item Yellow acquisition gate appears (centered on reticle)
+    \item OSD displays: \osd{MODE: ACQUISITION}
+    \item Joystick gimbal control remains active
+    \item D-Pad now controls gate size
+\end{itemize}
+\end{procedurebox}
+
+\subsection{SIZING THE ACQUISITION GATE}
+
+\textbf{Objective:} Frame target with 10-30\% margin on all sides
+
+\subsubsection{D-Pad Controls}
+\begin{itemize}
+    \item \button{UP ▲}: Decrease height
+    \item \button{DOWN ▼}: Increase height
+    \item \button{LEFT ◄}: Decrease width
+    \item \button{RIGHT ►}: Increase width
+    \item \textbf{Step size:} 4 pixels per press
+\end{itemize}
+
+\subsubsection{Gate Sizing Guidelines}
+
+\spectable{
+\begin{tabular}{|L{0.22\textwidth}|L{0.35\textwidth}|L{0.23\textwidth}|}
+\hline
+\rowcolor{milblue!20}
+\textbf{Target Framing} & \textbf{Effect on Tracking} & \textbf{Recommendation} \\
+\hline
+Too Tight (<10\% margin) & Tracker may lose target if target rotates/expands & ❌ Avoid \\
+\hline
+Optimal (10-30\% margin) & Best tracking performance & ✅ Ideal \\
+\hline
+Too Loose (>50\% margin) & Background clutter may confuse tracker & ❌ Avoid \\
+\hline
+\end{tabular}
+}
+
+\subsubsection{Best Practices}
+\begin{itemize}
+    \item \textbf{Vehicles:} Frame entire hull, exclude ground
+    \item \textbf{Personnel:} Include torso/legs, minimize background
+    \item \textbf{Moving targets:} Size slightly larger (anticipate motion)
+    \item \textbf{Default size:} 100×100 pixels (adjust as needed)
+\end{itemize}
+
+\subsection{REQUESTING LOCK-ON}
+
+\subsubsection{When Ready}
+\begin{checklist}
+    \item Target fully visible and framed in gate
+    \item Target has good contrast against background
+    \item Target not moving erratically
+\end{checklist}
+
+\textbf{Action:} Press \button{Button 4} (second press)
+
+\textbf{Result:}
+\begin{itemize}
+    \item System → \textbf{LOCK PENDING} phase
+    \item Gate color: Yellow → Cyan (or flashing)
+    \item OSD: \osd{MODE: LOCK PENDING}
+    \item Tracker initialization begins (0.5-2 seconds)
+\end{itemize}
+
+\begin{cautionbox}
+Do NOT make rapid gimbal movements during Lock Pending. Hold gimbal steady.
+\end{cautionbox}
+
+% ============================================================================
+\section{LOCK PENDING → ACTIVE LOCK}
+
+\subsection{LOCK PENDING PHASE}
+
+\textbf{Purpose:} Tracking system initializes on target
+
+\textbf{Duration:} 0.5 to 2 seconds (typically ~1 second)
+
+\textbf{Operator Action:} \textbf{WAIT} - maintain steady gimbal
+
+\subsubsection{What Happens}
+\begin{enumerate}
+    \item System captures reference image of target
+    \item Initializes tracker algorithm
+    \item Calculates target features
+    \item Begins tracking target in video stream
+\end{enumerate}
+
+\subsubsection{Transition Outcomes}
+
+\textbf{✅ SUCCESS:}
+\begin{itemize}
+    \item System → \textbf{ACTIVE LOCK} phase
+    \item Gate color: Green
+    \item Gate style: Dashed outline
+    \item OSD: \osd{MODE: TRACKING} or \osd{ACTIVE LOCK}
+    \item Gimbal control switches to automatic
+\end{itemize}
+
+\textbf{❌ FAILURE (rare):}
+\begin{itemize}
+    \item System → \textbf{ACQUISITION} phase (retry)
+    \item Possible causes: Poor contrast, target too small, target motion
+    \item Operator: Adjust gate size or abort and restart
+\end{itemize}
+
+\subsection{ACTIVE LOCK PHASE}
+
+\subsubsection{System Behavior}
+\begin{itemize}
+    \item Tracker follows target at 30 Hz (30 times/second)
+    \item Gimbal automatically moves to keep target centered
+    \item Reticle stays on target center
+    \item \textbf{Joystick axis inputs IGNORED} (tracking in control)
+\end{itemize}
+
+\subsubsection{Visual Indicators}
+\begin{itemize}
+    \item \textbf{Tracking Gate:} Green dashed outline around target
+    \item \textbf{OSD:} \osd{MODE: TRACKING} or \osd{ACTIVE LOCK}
+    \item \textbf{Control Panel:} TRACKING light ON (green)
+    \item \textbf{Track Confidence:} >70\% (good), 50-70\% (marginal), <50\% (poor)
+\end{itemize}
+
+\subsection{OPERATOR ROLE DURING ACTIVE LOCK}
+
+\textbf{Primary Role:} \textbf{MONITOR} - system is tracking automatically
+
+\subsubsection{Monitor For}
+
+\textbf{1. Track Quality:}
+\begin{itemize}
+    \item ✅ Green gate = Good track
+    \item ⚠️ Yellow gate = Marginal (may lose soon)
+    \item Track confidence >70\% (good), <50\% (prepare for coast)
+\end{itemize}
+
+\textbf{2. Target Status:}
+\begin{itemize}
+    \item Target correctly identified (didn't jump to wrong object)
+    \item Target still valid (meets engagement criteria)
+    \item Target not obscured or about to be obscured
+\end{itemize}
+
+\textbf{3. Gimbal Position:}
+\begin{itemize}
+    \item Staying within operational limits
+    \item Not approaching no-traverse zones
+    \item Elevation within -20\degree\ to +60\degree
+\end{itemize}
+
+\subsubsection{Controls Still Active}
+
+\spectable{
+\begin{tabular}{|L{0.30\textwidth}|L{0.60\textwidth}|}
+\hline
+\rowcolor{milgreen!20}
+\multicolumn{2}{|c|}{\textbf{ACTIVE CONTROLS}} \\
+\hline
+\button{Button 0} & Master Arm \\
+\hline
+\button{Button 2} & LAC toggle \\
+\hline
+\button{Button 3} & Dead Man Switch \\
+\hline
+\button{Button 4} & Double-click abort \\
+\hline
+\button{Button 5} & Fire \\
+\hline
+\button{Button 6/8} & Zoom (use cautiously, may affect track) \\
+\hline
+\hline
+\rowcolor{milred!20}
+\multicolumn{2}{|c|}{\textbf{BLOCKED CONTROLS}} \\
+\hline
+\button{Button 11/13} & Mode cycle - BLOCKED during tracking \\
+\hline
+Joystick axes (X/Y) & IGNORED during tracking \\
+\hline
+\end{tabular}
+}
+
+% ============================================================================
+\section{COAST MODE}
+
+\subsection{WHEN COAST ACTIVATES}
+
+\textbf{Triggers:}
+\begin{itemize}
+    \item Target temporarily obscured (passes behind object)
+    \item Target leaves field of view briefly
+    \item Tracker loses visual lock
+    \item Dust, smoke, or other obscurants
+\end{itemize}
+
+\subsection{System Behavior}
+\begin{itemize}
+    \item Tracker \textbf{predicts} target position based on last known velocity
+    \item Gimbal continues to predicted position
+    \item System attempts to re-acquire target
+    \item Tracking gate: Green → Yellow (dashed)
+\end{itemize}
+
+\subsection{Display Changes}
+\begin{itemize}
+    \item \textbf{OSD:} \osd{MODE: COAST} or \osd{TRACKING (COAST)}
+    \item \textbf{Gate:} Yellow/amber dashed outline
+    \item \textbf{Warning:} "COASTING - TARGET LOST" may display
+\end{itemize}
+
+\subsection{COAST OUTCOMES}
+
+\textbf{Typical Duration:} 1-5 seconds
+
+\subsubsection{Outcome 1: Target Re-Acquired (✅ Success)}
+\begin{itemize}
+    \item Target reappears in field of view
+    \item Tracker re-locks on target
+    \item System → \textbf{ACTIVE LOCK} phase
+    \item Gate: Yellow → Green
+    \item Tracking continues normally
+\end{itemize}
+
+\subsubsection{Outcome 2: Coast Timeout (❌ Failure)}
+\begin{itemize}
+    \item Target not re-acquired within timeout (~5 seconds)
+    \item System gives up
+    \item System → \textbf{OFF} phase
+    \item Tracking stops
+    \item Operator must restart tracking if desired
+\end{itemize}
+
+\subsection{Operator Action During Coast}
+
+\begin{itemize}
+    \item ✅ Wait patiently (system attempting re-acquisition)
+    \item ✅ Be ready for track to resume
+    \item ❌ Do NOT abort prematurely (give system time)
+    \item ❌ Do NOT make manual gimbal movements (joystick ignored)
+\end{itemize}
+
+\subsubsection{Abort Coast If:}
+\begin{itemize}
+    \item Target definitely not coming back (destroyed, permanently obscured)
+    \item Tracker coasting in wrong direction (confused)
+    \item Mission changed
+\end{itemize}
+
+% ============================================================================
+\section{TRACKING ABORT (EMERGENCY)}
+
+\subsection{WHEN TO ABORT TRACKING}
+
+Abort tracking \textbf{IMMEDIATELY} if:
+\begin{itemize}
+    \item ❌ Tracking wrong target (friendly, civilian, incorrect target)
+    \item ❌ Target no longer valid (fails ROE)
+    \item ❌ Safety concern (entering no-fire zone, gimbal obstruction)
+    \item ❌ Mission change (new priority, orders to cease)
+    \item ❌ Tracking erratic (unexpected gimbal behavior)
+\end{itemize}
+
+\subsection{ABORT PROCEDURE}
+
+\begin{procedurebox}[EMERGENCY ABORT]
+\textbf{Action:} \textbf{DOUBLE-CLICK \button{Button 4}} (<500ms between presses)
+
+\textbf{Effect (IMMEDIATE):}
+\begin{enumerate}
+    \item Tracking \textbf{STOPS}
+    \item System → \textbf{OFF} phase
+    \item Gimbal holds current position
+    \item Tracking gate disappears
+    \item Weapon fire \textbf{INHIBITED} (even if Master Arm engaged)
+    \item OSD: \osd{MODE: MANUAL}
+\end{enumerate}
+\end{procedurebox}
+
+\subsubsection{Timing}
+\begin{itemize}
+    \item Press 1 → Press 2 within \textbf{500 milliseconds} (half-second)
+    \item \textbf{Too slow} (>500ms): System interprets as two single presses (may restart tracking)
+\end{itemize}
+
+\begin{warningbox}[CRITICAL]
+Practice double-click timing during training until muscle memory established.
+\end{warningbox}
+
+\subsection{AFTER ABORT}
+
+\textbf{System State:}
+\begin{itemize}
+    \item Manual mode active
+    \item Joystick gimbal control restored
+    \item No tracking active
+\end{itemize}
+
+\textbf{Next Actions (mission-dependent):}
+\begin{itemize}
+    \item Re-acquire correct target and restart tracking
+    \item Return to surveillance mode
+    \item Engage different target
+    \item Follow commander's orders
+\end{itemize}
+
+% ============================================================================
+\section{WEAPONS ENGAGEMENT SEQUENCE}
+
+\subsection{PRE-ENGAGEMENT CHECKLIST}
+
+Before engaging, verify \textbf{ALL} items:
+
+\begin{checklist}
+    \item Target positively identified (\textbf{PID})
+    \item Target valid (meets ROE)
+    \item Fire authorization received (if required)
+    \item NOT in no-fire zone (check OSD for zone warnings)
+    \item Friendly forces clear
+    \item Weapon loaded and ready
+    \item Zeroing active (if applicable)
+    \item Environmental parameters set (if applicable)
+    \item Track established (if using tracking)
+\end{checklist}
+
+\begin{warningbox}
+IF ANY ITEM CANNOT BE CHECKED, DO NOT FIRE.
+\end{warningbox}
+
+\subsection{ENGAGEMENT PROCEDURE (STEP-BY-STEP)}
+
+\subsubsection{STEP 1: Acquire and Track Target}
+
+\begin{enumerate}
+    \item Detect and identify target (PID mandatory)
+    \item \button{Button 4} → Enter acquisition mode
+    \item \button{D-Pad} → Size gate to frame target (10-30\% margin)
+    \item \button{Button 4} → Request lock-on
+    \item Wait for \textbf{ACTIVE LOCK} (green gate, OSD: TRACKING)
+    \item Monitor track quality (confidence >70\%, green gate)
+\end{enumerate}
+
+\subsubsection{STEP 2: Range Target}
+
+\begin{enumerate}
+    \item Fire Laser Range Finder (LRF trigger)
+    \item Wait for range reading (OSD: \osd{RNG: xxxx m})
+    \item Verify range reasonable
+    \item Range used for ballistic calculations (CCIP)
+\end{enumerate}
+
+\begin{notebox}
+LRF may fire automatically during tracking (configuration-dependent). Verify range displayed.
+\end{notebox}
+
+\subsubsection{STEP 3: Enable Lead Angle Compensation (If Moving Target)}
+
+\textbf{If target is moving} (lateral motion, speed >5 m/s, range >100m):
+
+\begin{enumerate}
+    \item Hold \button{Dead Man Switch (Button 3)}
+    \item Press \button{LAC Toggle (Button 2)}
+    \item Verify LAC status:
+    \begin{itemize}
+        \item ✅ \textbf{"LEAD ANGLE ON"} (green) = Ready
+        \item ⚠️ \textbf{"LEAD ANGLE LAG"} (yellow) = Wait for tracking data
+        \item ❌ \textbf{"ZOOM OUT"} (red) = FOV too narrow, zoom out
+    \end{itemize}
+    \item Observe CCIP reticle offset ahead of target (lead point)
+\end{enumerate}
+
+\textbf{If target stationary:} LAC not necessary (CCIP at target center)
+
+\begin{notebox}
+Detailed LAC procedures in Lesson 6.
+\end{notebox}
+
+\subsubsection{STEP 4: Final Safety Checks}
+
+\begin{checklist}
+    \item Verify target still valid
+    \item Verify tracking active (green gate, good confidence)
+    \item Check OSD for warnings:
+    \begin{itemize}
+        \item ❌ \textbf{"ZONE VIOLATION"} = DO NOT FIRE
+        \item ❌ \textbf{"NO-FIRE ZONE"} = DO NOT FIRE
+        \item ✅ No warnings = Clear to fire
+    \end{itemize}
+    \item Verify friendly forces clear
+    \item Verify backstop (if required)
+\end{checklist}
+
+\subsubsection{STEP 5: Engage Master Arm}
+
+\begin{enumerate}
+    \item Pull trigger to \textbf{Stage 1} (half-pull) → \textbf{Master Arm} (\button{Button 0})
+    \begin{itemize}
+        \item OR toggle Master Arm switch on Control Panel
+    \end{itemize}
+    \item Verify \textbf{"ARMED"} indicator light ON (red)
+    \item OSD may display: \osd{WEAPON ARMED}
+\end{enumerate}
+
+\begin{warningbox}
+WEAPON IS NOW HOT
+\end{warningbox}
+
+\subsubsection{STEP 6: Fire Weapon}
+
+\begin{enumerate}
+    \item Final aim verification (CCIP on target or lead point)
+    \item Pull trigger to \textbf{Stage 2} (full-pull) → \textbf{Fire} (\button{Button 5})
+    \item Weapon fires
+    \item Hold trigger for desired burst:
+    \begin{itemize}
+        \item \textbf{Single Shot:} Quick press/release (1 round)
+        \item \textbf{Burst:} Hold 2-3 seconds (controlled burst)
+        \item \textbf{Sustained:} Hold longer (use cautiously)
+    \end{itemize}
+\end{enumerate}
+
+\textbf{During Firing:}
+\begin{itemize}
+    \item Tracking keeps reticle on target
+    \item Gimbal compensates for recoil
+    \item Observe rounds impacting
+    \item Adjust fire as needed
+\end{itemize}
+
+\textbf{System State:}
+\begin{itemize}
+    \item Tracking phase → \textbf{FIRING}
+    \item OSD: \osd{MODE: TRACKING (FIRING)}
+    \item Gate: Green solid outline
+    \item Enhanced stabilization active
+\end{itemize}
+
+\subsubsection{STEP 7: Cease Fire}
+
+\begin{enumerate}
+    \item Release \textbf{Fire button} (\button{Button 5} / trigger stage 2)
+    \item Weapon stops firing
+    \item Release \textbf{Master Arm} (\button{Button 0} / trigger stage 1)
+    \item Verify \textbf{"ARMED"} indicator OFF
+    \item Tracking continues (unless aborted)
+\end{enumerate}
+
+\subsubsection{STEP 8: Assess Target (BDA)}
+
+\textbf{Battle Damage Assessment:}
+\begin{itemize}
+    \item ✅ Target destroyed? → Stop tracking, report success
+    \item ⚠️ Target damaged? → Re-engage (repeat Steps 5-7)
+    \item ❌ Target missed? → Check zeroing/environmental/LAC, re-engage
+    \item �� Target suppressed? → Maintain track, ready to re-engage
+\end{itemize}
+
+\subsubsection{STEP 9: Post-Engagement Actions}
+
+\begin{enumerate}
+    \item If target neutralized: \textbf{Stop tracking} (double-click \button{Button 4})
+    \item Report engagement results to command
+    \item Update ammunition count
+    \item Scan for additional targets
+    \item Resume surveillance or follow orders
+\end{enumerate}
+
+% ============================================================================
+\section{ENGAGEMENT BEST PRACTICES}
+
+\subsection{TARGET SELECTION FOR TRACKING}
+
+\subsubsection{Good Targets}
+\begin{itemize}
+    \item ✅ High contrast against background
+    \item ✅ Clearly defined edges
+    \item ✅ Sufficient size (>30 pixels)
+    \item ✅ Relatively stable motion
+\end{itemize}
+
+\subsubsection{Difficult Targets}
+\begin{itemize}
+    \item ⚠️ Low contrast (camouflaged)
+    \item ⚠️ Very small (distant)
+    \item ⚠️ Erratic motion (evasive)
+    \item ⚠️ Partially obscured
+\end{itemize}
+
+\subsubsection{If Tracking Fails}
+\begin{itemize}
+    \item Try manual engagement (no tracking)
+    \item Improve contrast (switch camera or thermal LUT)
+    \item Wait for better tracking opportunity
+\end{itemize}
+
+\subsection{LEAD ANGLE COMPENSATION TIPS}
+
+\subsubsection{When to Use LAC}
+\begin{itemize}
+    \item ✅ Target moving laterally (crossing FOV)
+    \item ✅ Target speed >5 m/s (~10 mph)
+    \item ✅ Range >100 meters
+\end{itemize}
+
+\subsubsection{When NOT Needed}
+\begin{itemize}
+    \item ❌ Stationary targets
+    \item ❌ Targets moving radially (toward/away from you)
+    \item ❌ Very close range (<50m)
+\end{itemize}
+
+\subsubsection{LAC Limitations}
+\begin{itemize}
+    \item Requires tracking active
+    \item Requires sufficient FOV (may need to zoom out)
+    \item Assumes constant target velocity (less accurate if maneuvering)
+\end{itemize}
+
+\subsection{AMMUNITION CONSERVATION}
+
+\subsubsection{Fire Discipline}
+\begin{itemize}
+    \item Use controlled bursts (2-5 rounds) vs. full-auto spray
+    \item Assess after each burst before re-engaging
+    \item Precision over volume
+\end{itemize}
+
+\subsubsection{Round Count}
+\begin{itemize}
+    \item Track ammunition expenditure
+    \item Report when low (<20\% remaining)
+    \item Conserve for high-priority targets
+\end{itemize}
+
+\subsection{SAFETY REMINDERS}
+
+\subsubsection{ALWAYS}
+\begin{itemize}
+    \item ✅ Verify target before engaging (PID mandatory)
+    \item ✅ Check for friendly forces
+    \item ✅ Verify NOT in no-fire zone
+    \item ✅ Follow Rules of Engagement (ROE)
+    \item ✅ Have fire authorization (if required)
+\end{itemize}
+
+\subsubsection{NEVER}
+\begin{itemize}
+    \item ❌ Fire without positive identification
+    \item ❌ Fire into no-fire zones
+    \item ❌ Fire if friendlies potentially in line of fire
+    \item ❌ Fire without authorization (if required)
+    \item ❌ Assume tracking is infallible (monitor track quality)
+\end{itemize}
+
+% ============================================================================
+\section{TRACKING QUICK REFERENCE}
+
+\begin{quickref}
+\small
+\begin{longtable}{|L{0.25\textwidth}|L{0.35\textwidth}|L{0.25\textwidth}|}
+\hline
+\rowcolor{milblue!20}
+\textbf{Situation} & \textbf{Action} & \textbf{Button/Control} \\
+\hline
+\endfirsthead
+
+\hline
+\rowcolor{milblue!20}
+\textbf{Situation} & \textbf{Action} & \textbf{Button/Control} \\
+\hline
+\endhead
+
+Start tracking & Enter acquisition mode & \button{Button 4} (1st press) \\
+\hline
+Size gate larger & Increase dimensions & \button{D-Pad ▼} (height) / \button{►} (width) \\
+\hline
+Size gate smaller & Decrease dimensions & \button{D-Pad ▲} (height) / \button{◄} (width) \\
+\hline
+Request lock-on & Lock onto target & \button{Button 4} (2nd press) \\
+\hline
+Monitor track & Observe gate color \& confidence & Visual (OSD) \\
+\hline
+Track degrading & Prepare for coast or abort & Stand by \button{Button 4} \\
+\hline
+Emergency abort & Stop tracking immediately & \button{Button 4} (double-click <500ms) \\
+\hline
+Enable LAC & Activate lead compensation & \button{Button 3 + Button 2} \\
+\hline
+Arm weapon & Engage Master Arm & \button{Button 0} (or trigger stage 1) \\
+\hline
+Fire weapon & Discharge weapon & \button{Button 5} (or trigger stage 2) \\
+\hline
+Cease fire & Safe weapon & Release \button{Button 5 \& Button 0} \\
+\hline
+\end{longtable}
+\end{quickref}
+
+% ============================================================================
+% END OF LESSON 5
+% ============================================================================

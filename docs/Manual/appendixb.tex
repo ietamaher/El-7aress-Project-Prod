@@ -1,0 +1,535 @@
+% ============================================================================
+% APPENDIX B - TECHNICAL SPECIFICATIONS
+% ============================================================================
+\appendixchapter{B - TECHNICAL SPECIFICATIONS}
+
+\section{SYSTEM CAPABILITIES}
+
+\subsection{Gimbal Performance}
+
+\spectable{
+	\begin{tabular}{|L{0.35\textwidth}|L{0.55\textwidth}|}
+		\hline
+		\rowcolor{milblue!20}
+		\textbf{Parameter} & \textbf{Specification} \\
+		\hline
+		\textbf{Azimuth Range} & 360\degree\ continuous \\
+		\hline
+		\textbf{Elevation Range} & -20\degree\ to +60\degree \\
+		\hline
+		\textbf{Azimuth Speed} & 0-60\degree/sec \\
+		\hline
+		\textbf{Elevation Speed} & 0-45\degree/sec \\
+		\hline
+		\textbf{Pointing Accuracy} & ±0.5\degree \\
+		\hline
+		\textbf{Stabilization} & 3-axis (roll, pitch, yaw) \\
+		\hline
+		\textbf{Max Weapon Caliber} & 12.7mm (.50 cal) \\
+		\hline
+	\end{tabular}
+}
+
+\subsection{Performance Notes}
+
+\subsubsection{Azimuth Range}
+\begin{itemize}
+	\item Full 360\degree\ continuous rotation
+	\item No physical stops or cable wrap concerns
+	\item Slip ring technology for continuous rotation
+\end{itemize}
+
+\subsubsection{Elevation Range}
+\begin{itemize}
+	\item Depression: -20\degree\ (below horizon)
+	\item Elevation: +60\degree\ (above horizon)
+	\item Typical engagement range: -10\degree\ to +30\degree
+	\item Mechanical stops at limits
+\end{itemize}
+
+\subsubsection{Slew Rates}
+\begin{itemize}
+	\item Maximum slew rates achievable in manual mode
+	\item Tracking mode: typically 30-40\degree/sec maximum
+	\item Variable speed control via joystick
+	\item Acceleration limits protect mechanical components
+\end{itemize}
+
+% ============================================================================
+\section{ELECTRO-OPTICAL SYSTEM}
+
+\subsection{DAY CAMERA (SONY)}
+
+\spectable{
+	\begin{tabular}{|L{0.35\textwidth}|L{0.55\textwidth}|}
+		\hline
+		\rowcolor{milblue!20}
+		\textbf{Parameter} & \textbf{Specification} \\
+		\hline
+		\textbf{Resolution} & 1920×1080 (Full HD) \\
+		\hline
+		\textbf{Zoom} & Optical continuous \\
+		\hline
+		\textbf{FOV (Wide)} & ~15\degree\ H \\
+		\hline
+		\textbf{FOV (Tele)} & ~1.5\degree\ H \\
+		\hline
+		\textbf{Focus} & Autofocus / Manual \\
+		\hline
+		\textbf{Frame Rate} & 30 fps \\
+		\hline
+		\textbf{Low Light} & 0.01 lux (minimum) \\
+		\hline
+	\end{tabular}
+}
+
+\subsubsection{Day Camera Features}
+
+\textbf{Zoom Capabilities:}
+\begin{itemize}
+	\item Continuous optical zoom
+	\item 10:1 zoom ratio (approximately)
+	\item No discrete zoom steps
+	\item Digital zoom available (reduces quality)
+\end{itemize}
+
+\textbf{Focus System:}
+\begin{itemize}
+	\item Autofocus: Continuous or single-shot
+	\item Manual focus: Available via menu
+	\item Focus range: 10m to infinity
+	\item Close focus: 10m minimum
+\end{itemize}
+
+\textbf{Image Quality:}
+\begin{itemize}
+	\item Full HD resolution (1920×1080)
+	\item 30 frames per second
+	\item Wide dynamic range (WDR) capable
+	\item Low-light capable (0.01 lux)
+\end{itemize}
+
+% ----------------------------------------------------------------------------
+\subsection{THERMAL CAMERA (FLIR TAU 2)}
+
+\spectable{
+	\begin{tabular}{|L{0.35\textwidth}|L{0.55\textwidth}|}
+		\hline
+		\rowcolor{milblue!20}
+		\textbf{Parameter} & \textbf{Specification} \\
+		\hline
+		\textbf{Resolution} & 640×512 pixels \\
+		\hline
+		\textbf{Detector Type} & Uncooled VOx microbolometer \\
+		\hline
+		\textbf{FOV (Wide)} & 10.4\degree\ H × 8\degree\ V \\
+		\hline
+		\textbf{FOV (Narrow)} & 5.2\degree\ H × 4\degree\ V \\
+		\hline
+		\textbf{Digital Zoom} & 2× / 4× \\
+		\hline
+		\textbf{Spectral Range} & 7.5-13.5 μm (long-wave infrared) \\
+		\hline
+		\textbf{NETD} & <50 mK (thermal sensitivity) \\
+		\hline
+		\textbf{Frame Rate} & 30 Hz (60 Hz option) \\
+		\hline
+	\end{tabular}
+}
+
+\subsubsection{Thermal Camera Features}
+
+\textbf{Field of View:}
+\begin{itemize}
+	\item Wide FOV: 10.4\degree\ H × 8\degree\ V (default)
+	\item Narrow FOV: 5.2\degree\ H × 4\degree\ V (2× optical zoom)
+	\item Digital zoom: 2× and 4× available
+	\item Combined zoom: Up to 8× total (2× optical + 4× digital)
+\end{itemize}
+
+\textbf{Look-Up Tables (LUTs):}
+\begin{itemize}
+	\item White-Hot: Hot objects appear white
+	\item Black-Hot: Hot objects appear black
+	\item Rainbow: Color-coded temperature
+	\item Ironbow: Enhanced detail color-coding
+	\item Additional LUTs available
+\end{itemize}
+
+\textbf{Flat Field Correction (FFC):}
+\begin{itemize}
+	\item Automatic: Performed every 5-15 minutes
+	\item Manual: Can be triggered via menu
+	\item Duration: 1-2 second image freeze
+	\item Purpose: Recalibrate sensor for accurate temperature reading
+\end{itemize}
+
+% ----------------------------------------------------------------------------
+\subsection{LASER RANGE FINDER}
+
+\spectable{
+	\begin{tabular}{|L{0.35\textwidth}|L{0.55\textwidth}|}
+		\hline
+		\rowcolor{milblue!20}
+		\textbf{Parameter} & \textbf{Specification} \\
+		\hline
+		\textbf{Range (Hard Target)} & 20m - 5000m \\
+		\hline
+		\textbf{Range (Soft Target)} & 20m - 2000m (typical) \\
+		\hline
+		\textbf{Accuracy} & ±5m \\
+		\hline
+		\textbf{Wavelength} & 1550nm (eye-safe) \\
+		\hline
+		\textbf{Max Fire Rate} & ~1 Hz (continuous) \\
+		\hline
+		\textbf{Beam Divergence} & <0.5 mrad \\
+		\hline
+		\textbf{Laser Class} & Class 1M (eye-safe) \\
+		\hline
+	\end{tabular}
+}
+
+\subsubsection{LRF Performance Notes}
+
+\textbf{Range Performance:}
+\begin{itemize}
+	\item Hard targets (metal, concrete): Up to 5000m
+	\item Soft targets (vegetation, fabric): Up to 2000m
+	\item Minimum range: 20m
+	\item Accuracy: ±5m across entire range
+\end{itemize}
+
+\textbf{Environmental Factors:}
+\begin{itemize}
+	\item Fog/Rain: Reduces maximum range
+	\item Smoke: Severely degrades performance
+	\item Heat shimmer: May affect accuracy at long range
+	\item Target reflectivity: Dark/absorbent surfaces reduce range
+\end{itemize}
+
+\textbf{Eye Safety:}
+\begin{itemize}
+	\item 1550nm wavelength (eye-safe)
+	\item Class 1M laser (safe under normal conditions)
+	\item Do not view through magnifying optics
+	\item Safe for use near personnel
+\end{itemize}
+
+% ============================================================================
+\section{INERTIAL MEASUREMENT UNIT (IMU)}
+
+\subsection{IMU Specifications}
+
+\spectable{
+	\begin{tabular}{|L{0.35\textwidth}|L{0.55\textwidth}|}
+		\hline
+		\rowcolor{milblue!20}
+		\textbf{Parameter} & \textbf{Specification} \\
+		\hline
+		\textbf{Model} & MicroStrain 3DM-GX3-25 AHRS \\
+		\hline
+		\textbf{Update Rate} & 100 Hz \\
+		\hline
+		\textbf{Roll/Pitch Accuracy} & <0.5\degree\ (static), <2\degree\ (dynamic) \\
+		\hline
+		\textbf{Yaw Accuracy} & <2\degree\ (with magnetometer) \\
+		\hline
+		\textbf{Angular Rate Range} & ±300\degree/sec \\
+		\hline
+		\textbf{Acceleration Range} & ±5g \\
+		\hline
+		\textbf{Operating Temp} & -40\degree C to +85\degree C \\
+		\hline
+	\end{tabular}
+}
+
+\subsection{IMU Role in System}
+
+\textbf{Stabilization:}
+\begin{itemize}
+	\item Measures platform motion (roll, pitch, yaw)
+	\item Provides real-time orientation data
+	\item Enables gyrostabilization (compensates for vehicle motion)
+	\item Update rate: 100 Hz (100 times per second)
+\end{itemize}
+
+\textbf{Tracking Support:}
+\begin{itemize}
+	\item Provides angular rate data for target tracking
+	\item Compensates for platform motion during tracking
+	\item Essential for accurate lead angle calculation
+\end{itemize}
+
+\textbf{Ballistics:}
+\begin{itemize}
+	\item Platform tilt compensation
+	\item Motion compensation for moving platforms
+	\item Critical for accurate fire control
+\end{itemize}
+
+% ============================================================================
+\section{POWER REQUIREMENTS}
+
+\subsection{Power Specifications}
+
+\spectable{
+	\begin{tabular}{|L{0.35\textwidth}|L{0.55\textwidth}|}
+		\hline
+		\rowcolor{milblue!20}
+		\textbf{Parameter} & \textbf{Specification} \\
+		\hline
+		\textbf{Input Voltage} & 24-28 VDC \\
+		\hline
+		\textbf{Nominal Voltage} & 28 VDC \\
+		\hline
+		\textbf{Max Current} & 40A (peak), 20A (nominal) \\
+		\hline
+		\textbf{Power Consumption} & ~500W nominal, ~1000W peak \\
+		\hline
+		\textbf{Startup Inrush} & <60A for <1 second \\
+		\hline
+	\end{tabular}
+}
+
+\subsection{Power Distribution}
+
+\textbf{Power Consumers:}
+\begin{itemize}
+	\item Servo motors: 300-600W (depending on motion)
+	\item Main computer: 100W
+	\item Cameras: 50W total
+	\item LRF: 20W average, 50W peak (during firing)
+	\item Control panels: 30W
+	\item IMU and sensors: 20W
+\end{itemize}
+
+\textbf{Power Management:}
+\begin{itemize}
+	\item Soft-start circuitry limits inrush current
+	\item Over-current protection (60A trip)
+	\item Over-voltage protection (>32V trip)
+	\item Under-voltage warning (<22V)
+	\item Thermal management (reduces power if overheating)
+\end{itemize}
+
+% ============================================================================
+\section{ENVIRONMENTAL SPECIFICATIONS}
+
+\subsection{Operating Environment}
+
+\spectable{
+	\begin{tabular}{|L{0.35\textwidth}|L{0.55\textwidth}|}
+		\hline
+		\rowcolor{milblue!20}
+		\textbf{Parameter} & \textbf{Specification} \\
+		\hline
+		\textbf{Operating Temp} & -20\degree C to +55\degree C \\
+		\hline
+		\textbf{Storage Temp} & -40\degree C to +70\degree C \\
+		\hline
+		\textbf{Humidity} & 5\% to 95\% RH (non-condensing) \\
+		\hline
+		\textbf{Ingress Protection} & IP54 (dust/water splash protected) \\
+		\hline
+		\textbf{Altitude} & -500m to 4000m ASL \\
+		\hline
+		\textbf{Shock} & 20g (11ms, half-sine) \\
+		\hline
+		\textbf{Vibration} & MIL-STD-810G \\
+		\hline
+	\end{tabular}
+}
+
+\subsection{Environmental Notes}
+
+\textbf{Temperature:}
+\begin{itemize}
+	\item Operating range: -20\degree C to +55\degree C
+	\item Performance may degrade at temperature extremes
+	\item Servo torque increases at low temperatures
+	\item Thermal management active above 40\degree C
+\end{itemize}
+
+\textbf{Humidity:}
+\begin{itemize}
+	\item Sealed enclosures protect electronics
+	\item Lens fogging possible at temperature extremes
+	\item Desiccant packs in critical areas
+	\item Regular maintenance in high-humidity environments
+\end{itemize}
+
+\textbf{Ingress Protection:}
+\begin{itemize}
+	\item IP54 rating (dust/water splash)
+	\item Protected against rain and dust
+	\item NOT waterproof (do not submerge)
+	\item Pressure washing not recommended
+\end{itemize}
+
+% ============================================================================
+\section{MECHANICAL SPECIFICATIONS}
+
+\subsection{Physical Dimensions}
+
+\spectable{
+	\begin{tabular}{|L{0.35\textwidth}|L{0.55\textwidth}|}
+		\hline
+		\rowcolor{milblue!20}
+		\textbf{Parameter} & \textbf{Specification} \\
+		\hline
+		\textbf{Gimbal Diameter} & ~600mm \\
+		\hline
+		\textbf{Height (Stowed)} & ~500mm \\
+		\hline
+		\textbf{Total Weight} & ~80 kg (without weapon) \\
+		\hline
+		\textbf{Weapon Weight} & +25-35 kg (12.7mm MG) \\
+		\hline
+		\textbf{Mounting Interface} & 4× M12 bolts (square pattern) \\
+		\hline
+	\end{tabular}
+}
+
+\subsection{Materials}
+
+\textbf{Primary Structure:}
+\begin{itemize}
+	\item Aluminum alloy (7075-T6)
+	\item Stainless steel (fasteners, bearings)
+	\item Composite materials (non-structural covers)
+\end{itemize}
+
+\textbf{Coatings:}
+\begin{itemize}
+	\item Hard anodized aluminum (corrosion protection)
+	\item Powder coat (selected components)
+	\item Nickel-plated steel (high-wear areas)
+\end{itemize}
+
+% ============================================================================
+\section{COMMUNICATION INTERFACES}
+
+\subsection{Control Interfaces}
+
+\spectable{
+	\begin{tabular}{|L{0.35\textwidth}|L{0.55\textwidth}|}
+		\hline
+		\rowcolor{milblue!20}
+		\textbf{Interface} & \textbf{Specification} \\
+		\hline
+		\textbf{Joystick} & USB 2.0 (HID device) \\
+		\hline
+		\textbf{Control Panel} & RS-485 (Modbus RTU) \\
+		\hline
+		\textbf{Video Output} & HDMI 1.4 (1920×1080 @ 60Hz) \\
+		\hline
+		\textbf{Ethernet} & 10/100 Mbps (diagnostics, updates) \\
+		\hline
+	\end{tabular}
+}
+
+\subsection{Device Communication}
+
+\textbf{Internal Communications:}
+\begin{itemize}
+	\item Servo drives: CAN bus (1 Mbps)
+	\item IMU: RS-232 (115200 baud)
+	\item LRF: RS-232 (38400 baud)
+	\item Cameras: IP network (internal switch)
+\end{itemize}
+
+% ============================================================================
+\section{BALLISTIC SPECIFICATIONS}
+
+\subsection{Supported Ammunition}
+
+\textbf{Primary: 12.7×99mm NATO (.50 BMG)}
+\begin{itemize}
+	\item M2 Ball (standard)
+	\item M8 API (Armor Piercing Incendiary)
+	\item M20 APIT (Armor Piercing Incendiary Tracer)
+	\item Mk 211 Mod 0 (Multipurpose)
+\end{itemize}
+
+\subsection{Ballistic Computer}
+
+\spectable{
+	\begin{tabular}{|L{0.35\textwidth}|L{0.55\textwidth}|}
+		\hline
+		\rowcolor{milblue!20}
+		\textbf{Parameter} & \textbf{Specification} \\
+		\hline
+		\textbf{Range Calculation} & 20m to 2000m \\
+		\hline
+		\textbf{Update Rate} & 30 Hz \\
+		\hline
+		\textbf{Environmental Inputs} & Temp, altitude, wind \\
+		\hline
+		\textbf{Drag Model} & G1 (standard projectile) \\
+		\hline
+		\textbf{Ballistic Tables} & Pre-computed LUT \\
+		\hline
+	\end{tabular}
+}
+
+\subsection{Fire Control Accuracy}
+
+\textbf{Expected Accuracy (M2 Ball, 500m):}
+\begin{itemize}
+	\item With zeroing: ±0.5 mil (±25cm @ 500m)
+	\item With zeroing + environmental: ±0.3 mil (±15cm @ 500m)
+	\item With zeroing + environmental + LAC: ±0.5 mil (±25cm @ 500m, moving target)
+\end{itemize}
+
+\begin{notebox}
+	Accuracy specifications assume properly zeroed weapon, accurate range data, and good tracking (if using LAC). Operator skill and weapon dispersion also affect accuracy.
+\end{notebox}
+
+% ============================================================================
+\section{MEAN TIME BETWEEN FAILURES (MTBF)}
+
+\subsection{Reliability Estimates}
+
+\spectable{
+	\begin{tabular}{|L{0.40\textwidth}|L{0.50\textwidth}|}
+		\hline
+		\rowcolor{milblue!20}
+		\textbf{Component} & \textbf{MTBF (hours)} \\
+		\hline
+		\textbf{Servo Motors} & 10,000 hours \\
+		\hline
+		\textbf{IMU} & 50,000 hours \\
+		\hline
+		\textbf{Day Camera} & 20,000 hours \\
+		\hline
+		\textbf{Thermal Camera} & 15,000 hours \\
+		\hline
+		\textbf{LRF} & 10,000 hours (laser diode) \\
+		\hline
+		\textbf{Main Computer} & 40,000 hours \\
+		\hline
+		\textbf{Overall System} & 5,000 hours (operational) \\
+		\hline
+	\end{tabular}
+}
+
+\subsection{Maintenance Intervals}
+
+\textbf{Operator Maintenance:}
+\begin{itemize}
+	\item Daily: Pre-operation checks, cleaning
+	\item Weekly: Detailed inspection, zero verification
+	\item Monthly: Re-zeroing, lubrication (if authorized)
+\end{itemize}
+
+\textbf{Maintenance Personnel:}
+\begin{itemize}
+	\item Quarterly: Detailed inspection, calibration verification
+	\item Annually: Major service, component replacement as needed
+	\item As-needed: Fault repair, component replacement
+\end{itemize}
+
+% ============================================================================
+% END OF APPENDIX B
+% ============================================================================

@@ -1,0 +1,682 @@
+% ============================================================================
+% LESSON 2 - BASIC OPERATION
+% ============================================================================
+\lesson{2: BASIC OPERATION}
+
+\noindent
+\begin{tabular}{@{}ll@{}}
+\textbf{Duration:} & 4 hours \\
+\textbf{Type:} & Classroom + Practical \\
+\textbf{References:} & Operator manual, system startup checklist \\
+\end{tabular}
+
+\section{Introduction}
+
+\textbf{Lesson Purpose}: This lesson teaches complete system startup, DCU and joystick operations, OSD interpretation, and proper shutdown procedures.
+
+\textbf{Learning Objectives}:
+\begin{itemize}
+    \item Perform complete system startup procedure
+    \item Operate all DCU buttons, switches, and controls
+    \item Control gimbal movement using joystick
+    \item Switch between day and thermal cameras
+    \item Operate camera zoom controls
+    \item Interpret all OSD elements correctly
+    \item Perform normal system shutdown
+\end{itemize}
+
+\section{System Startup Procedure}
+
+\subsection{Pre-Startup Checklist}
+
+Before powering on the system, verify:
+
+\begin{checklist}
+    \item Walk-around inspection complete (Lesson 1) - all items GO
+    \item Weapon cleared per Appendix A
+    \item Ammunition removed or accounted for
+    \item All personnel clear of turret (minimum 2 meters)
+    \item Vehicle power available (check voltage: 20-30V DC nominal)
+    \item Operator qualified and authorized
+    \item Mission briefing received (zones, ROE, threats)
+    \item Communication established with command
+\end{checklist}
+
+\begin{warningbox}
+Do not start system if any checklist item is not complete.
+\end{warningbox}
+
+\subsection{Startup Sequence (10 Steps)}
+
+Perform steps in order. Do not skip steps.
+
+\begin{procedurebox}[STEP 1: INITIAL POWER-UP]
+\textbf{Action}:
+\begin{itemize}
+    \item Ensure \button{Station Enable} switch is in OFF position
+    \item Apply vehicle power to RCWS (circuit breaker ON or power cable connected)
+\end{itemize}
+
+\textbf{Expected Result}:
+\begin{itemize}
+    \item \textbf{Power} indicator light illuminates (Green)
+    \item DCU screen displays boot logo
+    \item System begins self-test (approximately 30 seconds)
+\end{itemize}
+
+\textbf{If NO Power Light}:
+\begin{itemize}
+    \item Check vehicle power supply (voltage 20-30V DC)
+    \item Check circuit breaker
+    \item Check cable connections
+    \item Report to maintenance if power available but no light
+\end{itemize}
+\end{procedurebox}
+
+\begin{procedurebox}[STEP 2: BOOT SELF-TEST]
+\textbf{Action}:
+\begin{itemize}
+    \item Observe DCU screen during boot
+    \item Wait for self-test to complete (DO NOT interrupt)
+\end{itemize}
+
+\textbf{Expected Display Sequence}:
+\begin{lstlisting}
+Checking Devices...
+[ OK ] Day Camera
+[ OK ] Thermal Camera
+[ OK ] Laser Rangefinder
+[ OK ] Azimuth Motor
+[ OK ] Elevation Motor
+[ OK ] Joystick Controller
+[ -- ] Weapon Actuator (if not installed)
+
+System Ready
+Press STATION ENABLE to continue
+\end{lstlisting}
+
+\textbf{If Any Device Shows [FAIL]}:
+\begin{itemize}
+    \item DO NOT PROCEED with startup
+    \item Note which device failed
+    \item Report to maintenance immediately
+    \item System may operate in degraded mode but requires supervisor approval
+\end{itemize}
+\end{procedurebox}
+
+\begin{procedurebox}[STEP 3: ENABLE STATION]
+\textbf{Action}:
+\begin{itemize}
+    \item Move \button{Station Enable} switch from OFF to ON
+\end{itemize}
+
+\textbf{Expected Result}:
+\begin{itemize}
+    \item \textbf{System Ready} light illuminates (Green)
+    \item Gimbal motors energize (you may hear a soft hum)
+    \item Video feed appears on DCU screen
+    \item OSD overlay displays system information
+    \item Gimbal automatically moves to Home Position (0\degree\ AZ, 0\degree\ EL)
+\end{itemize}
+
+\begin{cautionbox}
+Gimbal will move during this step. Ensure area is clear.
+\end{cautionbox}
+\end{procedurebox}
+
+\begin{procedurebox}[STEP 4: VERIFY HOME POSITION]
+\textbf{Action}:
+\begin{itemize}
+    \item Observe OSD azimuth and elevation readings
+    \item If not at home (AZ: 000\degree, EL: 00\degree), press \button{Home} button
+\end{itemize}
+
+\textbf{Expected Result}:
+\begin{itemize}
+    \item OSD displays: \osd{AZ: 000° EL: 00°} (±2\degree\ tolerance)
+    \item Reticle is centered on screen
+    \item Gimbal points directly forward relative to vehicle
+\end{itemize}
+\end{procedurebox}
+
+\begin{procedurebox}[STEP 5: SELECT CAMERA]
+\textbf{Action}:
+\begin{itemize}
+    \item Press \button{CAM} button on joystick to select Day or Thermal camera
+    \item Default camera is DAY (visible spectrum)
+\end{itemize}
+
+\textbf{Expected Result}:
+\begin{itemize}
+    \item OSD displays camera type: \osd{DAY} or \osd{THERMAL}
+    \item Video image switches between color (day) and grayscale/colorized (thermal)
+    \item FOV (Field of View) value updates on OSD
+\end{itemize}
+\end{procedurebox}
+
+\begin{procedurebox}[STEP 6: TEST GIMBAL MOVEMENT]
+\textbf{Action}:
+\begin{itemize}
+    \item Gently move joystick in all directions (left/right/up/down)
+    \item Verify gimbal responds smoothly
+    \item Return joystick to center (gimbal stops)
+\end{itemize}
+
+\textbf{Expected Result}:
+\begin{itemize}
+    \item Gimbal slews in direction of joystick movement
+    \item OSD azimuth/elevation values update in real-time
+    \item No grinding, binding, or unusual noises
+    \item Gimbal stops when joystick returns to center
+\end{itemize}
+\end{procedurebox}
+
+\begin{procedurebox}[STEP 7: TEST CAMERA ZOOM]
+\textbf{Action}:
+\begin{itemize}
+    \item Press Zoom Rocker UP (zoom in) and DOWN (zoom out)
+    \item Observe video image magnification change
+    \item Observe FOV value on OSD
+\end{itemize}
+
+\textbf{Expected Result}:
+\begin{itemize}
+    \item Image magnifies when zooming in (FOV decreases)
+    \item Image wide-angle when zooming out (FOV increases)
+    \item Zoom is smooth with no jerking
+    \item OSD FOV updates continuously
+\end{itemize}
+\end{procedurebox}
+
+\begin{procedurebox}[STEP 8: TEST LASER RANGEFINDER (LRF)]
+\textbf{Action}:
+\begin{itemize}
+    \item Aim reticle at a known object 100m+ away
+    \item Press and hold \button{LRF} button on joystick
+\end{itemize}
+
+\textbf{Expected Result}:
+\begin{itemize}
+    \item Laser fires (you will NOT see visible beam - infrared)
+    \item OSD displays range reading: \osd{RNG: XXXm}
+    \item Range updates within 1 second
+    \item LRF automatically times out after 5 seconds
+\end{itemize}
+
+\begin{warningbox}
+Do not aim LRF at people, animals, or reflective surfaces at close range. Eye damage can occur.
+\end{warningbox}
+\end{procedurebox}
+
+\begin{procedurebox}[STEP 9: ENABLE STABILIZATION]
+\textbf{Action}:
+\begin{itemize}
+    \item Set \button{Stabilization} switch to ON
+\end{itemize}
+
+\textbf{Expected Result}:
+\begin{itemize}
+    \item OSD displays \osd{STAB: ON}
+    \item Gimbal compensates for vehicle movement
+    \item Reticle remains steady on target even if vehicle rocks
+\end{itemize}
+\end{procedurebox}
+
+\begin{procedurebox}[STEP 10: SYSTEM READY - FINAL CHECK]
+\textbf{Verify all indicator lights}:
+\begin{itemize}
+    \item \textbf{Power}: Green (ON)
+    \item \textbf{System Ready}: Green (ON)
+    \item \textbf{Gun Armed}: OFF (system is SAFE)
+    \item \textbf{Fault/Alarm}: OFF (no errors)
+\end{itemize}
+
+\textbf{Verify OSD displays}:
+\begin{itemize}
+    \item Live video feed (day or thermal)
+    \item Azimuth and elevation values
+    \item Current FOV
+    \item System mode (Manual)
+    \item No warning messages
+\end{itemize}
+
+\textbf{If All Checks Pass}: System is ready for operation
+\end{procedurebox}
+
+\subsection{Startup Troubleshooting}
+
+\small
+\begin{longtable}{|L{0.25\textwidth}|L{0.30\textwidth}|L{0.38\textwidth}|}
+\hline
+\rowcolor{milblue!20}
+\textbf{Problem} & \textbf{Possible Cause} & \textbf{Action} \\
+\hline
+No power light & No vehicle power & Check circuit breaker, voltage \\
+\hline
+Self-test fails & Device malfunction & Note failed device, report to maintenance \\
+\hline
+No video feed & Camera error & Check camera connections, restart system \\
+\hline
+Gimbal won't move & Motors disabled or fault & Check Station Enable, check for faults \\
+\hline
+Erratic gimbal & Joystick calibration & Recalibrate joystick (maintenance task) \\
+\hline
+LRF no reading & Out of range or bad target & Aim at closer/better reflective target \\
+\hline
+Thermal frozen & FFC in progress & Wait 5 seconds for FFC to complete \\
+\hline
+\end{longtable}
+
+\section{Display and Control Unit (DCU) Operations}
+
+\subsection{DCU Button and Switch Functions}
+
+\subsubsection{Emergency Stop Button (RED)}
+
+\textbf{Location}: Top left of DCU panel, large RED button
+
+\textbf{Function}: Immediate system shutdown for safety emergencies
+
+\textbf{Operation}:
+\begin{enumerate}
+    \item Press button (no confirmation required)
+    \item System immediately:
+    \begin{itemize}
+        \item Stops all gimbal movement
+        \item Safes weapon (trigger disabled)
+        \item Locks servos in place
+        \item Displays "EMERGENCY STOP ACTIVE" on OSD
+    \end{itemize}
+\end{enumerate}
+
+\textbf{To Reset}:
+\begin{enumerate}
+    \item Twist/pull button to release
+    \item Verify emergency condition is resolved
+    \item Press \button{Station Enable} OFF then ON to restart
+\end{enumerate}
+
+\begin{warningbox}[CRITICAL]
+Do NOT hesitate to use Emergency Stop. Better safe than sorry.
+\end{warningbox}
+
+\subsubsection{Station Enable Switch}
+
+\textbf{Positions}: OFF / ON
+
+\textbf{OFF Position}:
+\begin{itemize}
+    \item Gimbal motors disabled (turret cannot move)
+    \item Video still displays (cameras remain powered)
+    \item Weapon is safed
+    \item Safe to approach turret for inspection
+\end{itemize}
+
+\textbf{ON Position}:
+\begin{itemize}
+    \item Gimbal motors enabled
+    \item All subsystems operational
+    \item Turret can move if joystick input received
+    \item Stay clear of turret
+\end{itemize}
+
+\subsubsection{Gun Arm/Safe Switch}
+
+\textbf{Positions}: SAFE / ARM
+
+\textbf{SAFE Position} (Default):
+\begin{itemize}
+    \item Weapon trigger disabled
+    \item Gun Armed light is OFF
+    \item Trigger pull has no effect
+    \item Safe for non-combat operations
+\end{itemize}
+
+\textbf{ARM Position}:
+\begin{itemize}
+    \item Weapon trigger enabled
+    \item Gun Armed light illuminates RED
+    \item Trigger pull will fire weapon (if other conditions met)
+    \item Only use during combat or live fire training
+\end{itemize}
+
+\begin{warningbox}
+When Gun Armed light is RED, treat weapon as HOT. One trigger pull away from firing.
+\end{warningbox}
+
+\subsubsection{Fire Mode Selector}
+
+\textbf{Positions}: SINGLE / SHORT BURST / LONG BURST
+
+\begin{twocol}
+\textbf{SINGLE}:
+\begin{itemize}
+    \item One round per trigger pull
+    \item Most accurate mode
+    \item Use for precision engagement
+\end{itemize}
+
+\textbf{SHORT BURST}:
+\begin{itemize}
+    \item 3-5 rounds per trigger pull
+    \item Good balance of accuracy and firepower
+    \item Use for moving targets
+\end{itemize}
+
+\textbf{LONG BURST}:
+\begin{itemize}
+    \item Continuous fire while trigger held
+    \item Less accurate due to recoil
+    \item Use for area suppression
+\end{itemize}
+\end{twocol}
+
+\subsubsection{Speed Select Switch}
+
+\textbf{Positions}: LOW / MEDIUM / HIGH
+
+\small
+\begin{longtable}{|L{0.20\textwidth}|L{0.35\textwidth}|L{0.38\textwidth}|}
+\hline
+\rowcolor{milblue!20}
+\textbf{Speed} & \textbf{Use Case} & \textbf{Max Slew Rate} \\
+\hline
+LOW & Zeroing, fine adjustments, precision & ~5\degree/second \\
+\hline
+MEDIUM & Normal surveillance, target acquisition & ~20\degree/second \\
+\hline
+HIGH & Close-range threats, emergencies & ~60\degree/second \\
+\hline
+\end{longtable}
+
+\subsection{DCU Indicator Lights}
+
+\begin{twocol}
+\begin{itemize}
+    \item \textbf{Power} (Green): Vehicle power supplied
+    \item \textbf{System Ready} (Green): All subsystems operational
+    \item \textbf{Gun Armed} (Red): Weapon is armed
+    \item \textbf{Ammo Loaded} (Yellow): Ammunition detected
+    \item \textbf{Authorized} (Green): Operator authorized
+    \item \textbf{Fault/Alarm} (Red): System error detected
+\end{itemize}
+\end{twocol}
+
+\section{Joystick Controller Operations}
+
+\subsection{Joystick Control Techniques}
+
+\subsubsection{Proper Grip}
+
+\textbf{Right Hand Position}:
+\begin{enumerate}
+    \item Wrap fingers around joystick grip
+    \item Index finger rests on trigger (outside trigger guard when not firing)
+    \item Thumb on top, near CAM and TRK buttons
+    \item Dead Man Switch on rear of grip - squeeze with palm/fingers to engage
+\end{enumerate}
+
+\subsubsection{Gimbal Slew Technique}
+
+\textbf{Small Movements} (Precision):
+\begin{itemize}
+    \item Deflect stick slightly from center (10-20\%)
+    \item Gimbal moves slowly
+    \item Good for: Tracking, zeroing, fine adjustments
+\end{itemize}
+
+\textbf{Large Movements} (Rapid Slew):
+\begin{itemize}
+    \item Deflect stick fully (80-100\%)
+    \item Gimbal moves at maximum speed
+    \item Good for: Searching, responding to threats, sector scans
+\end{itemize}
+
+\subsection{Joystick Button Functions}
+
+\small
+\begin{longtable}{|L{0.28\textwidth}|L{0.65\textwidth}|}
+\hline
+\rowcolor{milblue!20}
+\textbf{Control} & \textbf{Function} \\
+\hline
+\textbf{Main Stick} & Gimbal slew (left/right = azimuth, up/down = elevation) \\
+\hline
+\textbf{Trigger} & Fire weapon (when armed) \\
+\hline
+\textbf{Dead Man Switch} & Must be held for weapon operation \\
+\hline
+\textbf{CAM Button} & Toggle Day/Thermal camera \\
+\hline
+\textbf{TRK Button} & Initiate/abort tracking \\
+\hline
+\textbf{LRF Button} & Activate laser rangefinder \\
+\hline
+\textbf{FN Button} & Context-sensitive function \\
+\hline
+\textbf{Hat Switch} & Tracking box control / menu navigation \\
+\hline
+\textbf{Zoom Rocker} & Camera zoom in/out \\
+\hline
+\end{longtable}
+
+\subsubsection{Camera Switch (CAM Button)}
+
+\textbf{When to Use Day Camera}:
+\begin{itemize}
+    \item Good lighting conditions
+    \item Need color information
+    \item Need maximum zoom range (2\degree\ to 60\degree\ FOV)
+\end{itemize}
+
+\textbf{When to Use Thermal Camera}:
+\begin{itemize}
+    \item Darkness, dawn, dusk
+    \item Smoke, fog, dust
+    \item Detecting hidden personnel (heat signatures)
+    \item Identifying recently fired weapons (barrel heat)
+\end{itemize}
+
+\subsubsection{Laser Rangefinder (LRF Button)}
+
+\textbf{Operation}:
+\begin{enumerate}
+    \item Aim reticle at target
+    \item Press and hold LRF button
+    \item Laser fires (invisible infrared beam)
+    \item OSD displays range: \osd{RNG: XXXm}
+    \item Release button when done
+\end{enumerate}
+
+\textbf{Range}: 50m to 4000m\\
+\textbf{Accuracy}: ±5 meters
+
+\begin{warningbox}
+Class 3B laser. Do not aim at people or reflective surfaces at close range.
+\end{warningbox}
+
+\subsubsection{Dead Man Switch}
+
+\textbf{Location}: Rear of joystick grip
+
+\textbf{Purpose}:
+\begin{itemize}
+    \item Prevents accidental discharge if operator is incapacitated
+    \item Automatic safety if operator loses grip
+    \item Required safety interlock for firing
+\end{itemize}
+
+\begin{warningbox}[CRITICAL SAFETY RULE]
+Release Dead Man Switch immediately when not actively engaging a target.
+\end{warningbox}
+
+\section{On-Screen Display (OSD) Interpretation}
+
+\subsection{Complete OSD Layout}
+
+\begin{lstlisting}
+┌──────────────────────────────────────────────────────┐
+│ AZ: 045°  EL: +12°  | DAY  FOV: 9.0° ZOOM: 15× │ ← Top
+│                                                       │
+│                    [Target Box]                      │
+│                        ┌──┐                          │
+│                        └──┘                          │
+│                          + ← Reticle                 │
+│                         (*) ← CCIP Pipper            │
+│                                                       │
+│ RNG: 850m         MODE: Manual       STATUS: ARMED   │ ← Bottom
+│ TEMP: 35°C        TRACK: Off         AMMO: 450      │
+└──────────────────────────────────────────────────────┘
+\end{lstlisting}
+
+\subsection{Top Bar Elements}
+
+\begin{itemize}
+    \item \textbf{AZ: XXX\degree}: Current azimuth position (000\degree\ to 359\degree)
+    \item \textbf{EL: ±XX\degree}: Current elevation position (-20\degree\ to +60\degree)
+    \item \textbf{DAY / THERMAL}: Active camera type
+    \item \textbf{FOV: X.X\degree}: Current field of view
+    \item \textbf{ZOOM: XX×}: Zoom magnification factor
+\end{itemize}
+
+\subsection{Center Area Elements}
+
+\textbf{Reticle (+)}:
+\begin{itemize}
+    \item Main aiming point
+    \item Where the gun is currently aimed (with zeroing applied)
+    \item Fire weapon with reticle on target
+\end{itemize}
+
+\textbf{CCIP Pipper ((*))}:
+\begin{itemize}
+    \item Continuously Computed Impact Point
+    \item Shows where bullet will actually hit with all ballistic corrections
+    \item May be offset from reticle if ballistics are applied
+    \item Always aim with CCIP for accurate hits
+\end{itemize}
+
+\subsection{Bottom Bar Elements}
+
+\begin{twocol}
+\textbf{Left Side}:
+\begin{itemize}
+    \item \textbf{RNG: XXXm}: Distance to target
+    \item \textbf{TEMP: XX\degree C}: System temperature
+\end{itemize}
+
+\textbf{Center}:
+\begin{itemize}
+    \item \textbf{MODE}: Current motion mode
+    \item \textbf{TRACK}: Tracking status
+\end{itemize}
+
+\textbf{Right Side}:
+\begin{itemize}
+    \item \textbf{STATUS}: Weapon system status
+    \item \textbf{AMMO}: Remaining rounds
+    \item \textbf{STAB}: Stabilization status
+\end{itemize}
+\end{twocol}
+
+\subsection{Warning Messages}
+
+\textbf{Critical warnings appear in center screen}:
+
+\begin{itemize}
+    \item \textbf{NO-FIRE ZONE WARNING}: Red, flashing - Do NOT fire
+    \item \textbf{NO-TRAVERSE WARNING}: Yellow - Movement restricted
+    \item \textbf{EMERGENCY STOP ACTIVE}: Red, solid - System safed
+    \item \textbf{SYSTEM FAULT}: Red/yellow - Check status
+    \item \textbf{TARGET LOST}: Yellow - Tracking lost, coast mode
+\end{itemize}
+
+\section{System Shutdown Procedure}
+
+\subsection{Shutdown Sequence (7 Steps)}
+
+\begin{procedurebox}[STEP 1: SAFE THE WEAPON]
+\begin{itemize}
+    \item Move \button{Gun Arm/Safe} switch to SAFE
+    \item Verify Gun Armed light is OFF
+    \item Release Dead Man Switch on joystick
+\end{itemize}
+\end{procedurebox}
+
+\begin{procedurebox}[STEP 2: RETURN TO HOME POSITION]
+\begin{itemize}
+    \item Press \button{Home} button on DCU
+    \item Wait for gimbal to slew to 0\degree\ AZ, 0\degree\ EL
+\end{itemize}
+\end{procedurebox}
+
+\begin{procedurebox}[STEP 3: DISABLE STABILIZATION]
+\begin{itemize}
+    \item Move \button{Stabilization} switch to OFF
+\end{itemize}
+\end{procedurebox}
+
+\begin{procedurebox}[STEP 4: ACCESS SHUTDOWN MENU]
+\begin{itemize}
+    \item Press \button{MENU ✓} button
+    \item Navigate to SYSTEM → Shutdown
+    \item Select "Shutdown System"
+    \item Confirm shutdown
+    \item System performs orderly shutdown
+    \item Wait for "SHUTDOWN COMPLETE" message
+\end{itemize}
+\end{procedurebox}
+
+\begin{procedurebox}[STEP 5: DISABLE STATION]
+\begin{itemize}
+    \item Move \button{Station Enable} switch to OFF
+    \item System Ready light turns OFF
+    \item Gimbal motors de-energize
+\end{itemize}
+\end{procedurebox}
+
+\begin{procedurebox}[STEP 6: REMOVE VEHICLE POWER]
+\textbf{If end of mission/shift}:
+\begin{itemize}
+    \item Turn off circuit breaker, OR
+    \item Disconnect power cable (if external)
+    \item Power light turns OFF
+    \item DCU screen goes black
+\end{itemize}
+\end{procedurebox}
+
+\begin{procedurebox}[STEP 7: SECURE WEAPON AND EQUIPMENT]
+\begin{itemize}
+    \item Clear weapon per Appendix A (if required)
+    \item Remove ammunition (if required by SOP)
+    \item Install protective covers on cameras
+    \item Lock operator station (if applicable)
+    \item Complete operator log entry
+\end{itemize}
+\end{procedurebox}
+
+\subsection{Post-Shutdown Checks}
+
+\begin{checklist}
+    \item Gun Armed light is OFF
+    \item Gimbal is at home position (0\degree\ AZ, 0\degree\ EL)
+    \item Station Enable is OFF
+    \item Weapon is cleared (if required)
+    \item Covers installed (if required)
+    \item Operator log entry complete
+\end{checklist}
+
+\section{Student Review Questions}
+
+\begin{enumerate}
+    \item What is the first step in the system startup procedure?
+    \item What should you do if a device shows [FAIL] during self-test?
+    \item Where is the Emergency Stop button located?
+    \item What are the three fire mode settings?
+    \item What is the difference between the reticle and CCIP pipper?
+    \item When should you use the thermal camera instead of the day camera?
+    \item What is the purpose of the Dead Man Switch?
+    \item What does \osd{STAB: ON} indicate on the OSD?
+    \item What is the proper sequence for system shutdown?
+    \item What must be done before removing vehicle power?
+\end{enumerate}

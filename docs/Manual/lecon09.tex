@@ -1,0 +1,700 @@
+% ============================================================================
+% LESSON 9 - OPERATOR MAINTENANCE & TROUBLESHOOTING
+% ============================================================================
+\lesson{9 - OPERATOR MAINTENANCE \& TROUBLESHOOTING}
+
+\begin{tabular}{@{}ll@{}}
+\textbf{Duration:} & 3 hours (Classroom 1h + Practical 2h) \\
+\textbf{Type:} & Classroom + Practical \\
+\textbf{References:} & Maintenance manual, troubleshooting guide \\
+\end{tabular}
+
+\section{LEARNING OBJECTIVES}
+
+Upon completion of this lesson, operators will be able to:
+\begin{itemize}
+    \item Perform daily operator checks
+    \item Troubleshoot common issues
+    \item Apply systematic troubleshooting methodology
+    \item Determine when to escalate to maintenance
+\end{itemize}
+
+% ============================================================================
+\section{DAILY OPERATOR CHECKS}
+
+\subsection{PRE-OPERATION CHECKLIST}
+
+\textbf{Perform before each mission / daily:}
+
+\begin{longtable}{|L{0.15\textwidth}|L{0.25\textwidth}|L{0.25\textwidth}|L{0.25\textwidth}|}
+\hline
+\rowcolor{milblue!20}
+\textbf{System} & \textbf{Check} & \textbf{GO Criteria} & \textbf{NO-GO Criteria} \\
+\hline
+\endfirsthead
+
+\hline
+\rowcolor{milblue!20}
+\textbf{System} & \textbf{Check} & \textbf{GO Criteria} & \textbf{NO-GO Criteria} \\
+\hline
+\endhead
+
+\textbf{Power} & Main power, Station power & All ON, no alarms & Power OFF, alarms present \\
+\hline
+\textbf{Control Panel} & Buttons, switches, lights responsive & All functional & Non-responsive, lights out \\
+\hline
+\textbf{Joystick} & Axes, buttons, Dead Man Switch & Smooth motion, all buttons work & Sticky, unresponsive \\
+\hline
+\textbf{Gimbal} & Azimuth/Elevation motion & Smooth, quiet, full ROM & Grinding, jerky, limits hit \\
+\hline
+\textbf{Cameras} & Day \& Thermal video & Clear video, both cameras & No video, errors \\
+\hline
+\textbf{LRF} & Ranging test (known target) & Range within ±5m & No reading, error \\
+\hline
+\textbf{Tracking} & Acquisition test & Gate appears, tracking functional & No gate, tracking fails \\
+\hline
+\textbf{Weapon} & Arming, Safe & Arm/Safe switches functional & Switches stuck, no response \\
+\hline
+\textbf{System Status} & All devices connected & All ✓ Connected & Devices disconnected/faulted \\
+\hline
+\end{longtable}
+
+\begin{warningbox}[NO-GO CRITERIA]
+If NO-GO: Do NOT proceed with mission. Notify maintenance.
+\end{warningbox}
+
+\subsection{Pre-Operation Check Procedure}
+
+\begin{procedurebox}[DAILY PRE-OPERATION CHECK]
+\textbf{1. Visual Inspection}
+\begin{itemize}
+    \item Inspect gimbal for physical damage
+    \item Check cable connections (secure, not frayed)
+    \item Verify E-Stop button not engaged
+    \item Check for fluid leaks, corrosion, loose parts
+\end{itemize}
+
+\textbf{2. Power-Up Sequence}
+\begin{itemize}
+    \item Turn main power ON
+    \item Turn Station Enable ON
+    \item Observe startup sequence (all lights illuminate)
+    \item Wait for system initialization (~30 seconds)
+\end{itemize}
+
+\textbf{3. System Status Check}
+\begin{itemize}
+    \item Access System Status display
+    \item Verify all devices "Connected"
+    \item Check for fault flags (should be none)
+    \item Note baseline temperatures
+\end{itemize}
+
+\textbf{4. Functional Tests}
+\begin{itemize}
+    \item Joystick: Test all axes and buttons
+    \item Gimbal: Test azimuth/elevation motion (smooth, full range)
+    \item Cameras: Switch between day/thermal, verify clear video
+    \item LRF: Range test on known target (verify ±5m accuracy)
+    \item Tracking: Quick acquisition test (gate appears, lock achieved)
+    \item Weapon: Test arm/safe switches (DO NOT load weapon)
+\end{itemize}
+
+\textbf{5. Documentation}
+\begin{itemize}
+    \item Record check completion in logbook
+    \item Note any discrepancies or warnings
+    \item Sign off as "GO" or "NO-GO"
+\end{itemize}
+\end{procedurebox}
+
+% ============================================================================
+\section{TROUBLESHOOTING METHODOLOGY}
+
+\subsection{STOP-LOOK-ASSESS-FIX (SLAF) METHOD}
+
+\subsubsection{S - STOP}
+\textbf{Don't rush to "fix" without understanding}
+\begin{itemize}
+    \item Take E-Stop if safety concern
+    \item Document symptoms precisely
+    \item Don't make random changes hoping for improvement
+    \item Pause and think before acting
+\end{itemize}
+
+\subsubsection{L - LOOK}
+\textbf{Observe all symptoms carefully}
+\begin{itemize}
+    \item Check System Status display
+    \item Review recent actions (what changed?)
+    \item Note all error messages and alarms
+    \item Observe physical indicators (lights, sounds, motion)
+\end{itemize}
+
+\subsubsection{A - ASSESS}
+\textbf{Narrow down to specific subsystem}
+\begin{itemize}
+    \item Check simplest causes first (power, connections, switches)
+    \item Consult troubleshooting charts
+    \item Eliminate possibilities systematically
+    \item Determine if problem is operator-level or maintenance-level
+\end{itemize}
+
+\subsubsection{F - FIX}
+\textbf{Apply appropriate solution}
+\begin{itemize}
+    \item Apply operator-level fix if authorized
+    \item Escalate to maintenance if needed
+    \item Verify fix resolved issue
+    \item Document actions taken
+\end{itemize}
+
+\subsection{Troubleshooting Best Practices}
+
+\begin{itemize}
+    \item \textbf{Start simple:} Check power, cables, switches before assuming complex failure
+    \item \textbf{Change one thing at a time:} If you change multiple things, you won't know what fixed it
+    \item \textbf{Verify the fix:} Test that the problem is actually resolved
+    \item \textbf{Document everything:} What was the symptom? What did you try? What worked?
+\end{itemize}
+
+% ============================================================================
+\section{COMMON ISSUES \& FIXES}
+
+\subsection{JOYSTICK NOT RESPONDING}
+
+\subsubsection{Symptoms}
+\begin{itemize}
+    \item No gimbal motion when joystick moved
+    \item Buttons not working
+    \item Joystick LED off
+\end{itemize}
+
+\subsubsection{Diagnosis}
+
+\begin{procedurebox}[JOYSTICK DIAGNOSIS]
+\begin{enumerate}
+    \item Check USB cable (both ends firmly connected)
+    \item Check joystick power LED (should be illuminated)
+    \item Check System Status → Joystick Connected
+    \item Try moving joystick (any response?)
+\end{enumerate}
+\end{procedurebox}
+
+\subsubsection{Operator-Level Fixes}
+
+\begin{checklist}
+    \item Reconnect USB cable firmly (both ends)
+    \item Power cycle system (turn Station OFF, wait 10 seconds, turn ON)
+    \item Try different USB port (if available)
+    \item Check for physical damage to cable or joystick
+\end{checklist}
+
+\textbf{Escalate if:} Still not detected after power cycle.
+
+% ----------------------------------------------------------------------------
+\subsection{NO VIDEO FROM CAMERA}
+
+\subsubsection{Symptoms}
+\begin{itemize}
+    \item Black screen
+    \item "No Signal" message
+    \item Frozen image
+    \item Severe pixelation or artifacts
+\end{itemize}
+
+\subsubsection{Diagnosis}
+
+\begin{procedurebox}[CAMERA DIAGNOSIS]
+\begin{enumerate}
+    \item Check camera selection (Day vs. Night - Button 10/12)
+    \item Check System Status → Camera Connected
+    \item Verify lens cap removed (if applicable)
+    \item Check for obstructions in front of lens
+\end{enumerate}
+\end{procedurebox}
+
+\subsubsection{Operator-Level Fixes}
+
+\begin{checklist}
+    \item Switch cameras (\button{Button 10/12})
+    \item Power cycle system
+    \item Check video cable connections (if accessible)
+    \item Clean lens (if dirty/foggy)
+    \item Adjust focus (if autofocus failed)
+\end{checklist}
+
+\textbf{Escalate if:} Both cameras offline.
+
+% ----------------------------------------------------------------------------
+\subsection{TRACKING FAILS TO LOCK}
+
+\subsubsection{Symptoms}
+\begin{itemize}
+    \item Stays in LOCK PENDING indefinitely
+    \item Returns to ACQUISITION after lock attempt
+    \item Gate flickers or disappears
+    \item Lock achieved but immediately lost
+\end{itemize}
+
+\subsubsection{Diagnosis}
+
+\begin{procedurebox}[TRACKING DIAGNOSIS]
+\begin{enumerate}
+    \item Check target contrast (clearly visible on screen?)
+    \item Check acquisition gate sizing (10-30\% margin?)
+    \item Check gimbal stability (holding steady during lock?)
+    \item Check target motion (stationary or slow-moving?)
+\end{enumerate}
+\end{procedurebox}
+
+\subsubsection{Operator-Level Fixes}
+
+\begin{checklist}
+    \item Improve target contrast (switch camera, adjust thermal LUT)
+    \item Re-size acquisition gate (ensure 10-30\% margin around target)
+    \item Hold gimbal steady during lock attempt (no joystick input)
+    \item Select better target (higher contrast, larger, clearer edges)
+    \item Switch to manual engagement (no tracking)
+\end{checklist}
+
+\textbf{Escalate if:} Tracking fails on all targets (tracker malfunction).
+
+% ----------------------------------------------------------------------------
+\subsection{GIMBAL NOT MOVING}
+
+\subsubsection{Symptoms}
+\begin{itemize}
+    \item Joystick input has no effect
+    \item Gimbal completely frozen
+    \item Only one axis moving (azimuth OR elevation)
+    \item Very slow, sluggish motion
+\end{itemize}
+
+\subsubsection{Diagnosis}
+
+\begin{procedurebox}[GIMBAL DIAGNOSIS]
+\begin{enumerate}
+    \item Check E-Stop (engaged/latched?)
+    \item Check Station Enable switch (ON?)
+    \item Check motion mode (Manual mode selected?)
+    \item Check System Status → Servos Connected
+    \item Check for gimbal limit switches (at mechanical limit?)
+\end{enumerate}
+\end{procedurebox}
+
+\subsubsection{Operator-Level Fixes}
+
+\begin{checklist}
+    \item Reset E-Stop (if engaged)
+    \item Turn Station Enable ON
+    \item Cycle to Manual mode (\button{Button 11/13})
+    \item Move gimbal away from limits (if at limit switch)
+    \item Power cycle system
+\end{checklist}
+
+\textbf{Escalate if:} Servos disconnected or faulted.
+
+% ----------------------------------------------------------------------------
+\subsection{LRF NOT RANGING}
+
+\subsubsection{Symptoms}
+\begin{itemize}
+    \item No range reading displayed
+    \item "NO ECHO" message (persistent)
+    \item Range reading frozen/stale
+    \item Wildly inaccurate range (e.g., 50,000m)
+\end{itemize}
+
+\subsubsection{Diagnosis}
+
+\begin{procedurebox}[LRF DIAGNOSIS]
+\begin{enumerate}
+    \item Check target distance (within max range ~5km for hard targets?)
+    \item Check target reflectivity (solid surface, not transparent/absorbent?)
+    \item Check LRF temperature (System Status - overheated?)
+    \item Check atmospheric conditions (fog, smoke, heavy rain?)
+    \item Check for obstructions between LRF and target
+\end{enumerate}
+\end{procedurebox}
+
+\subsubsection{Operator-Level Fixes}
+
+\begin{checklist}
+    \item Re-fire LRF (multiple attempts - 3-5 tries)
+    \item Aim at different target (more reflective surface)
+    \item Allow LRF to cool (if overheated - wait 5-10 minutes)
+    \item Switch to manual range estimation (map, known landmarks)
+    \item Wait for atmospheric conditions to improve
+\end{checklist}
+
+\textbf{Escalate if:} LRF disconnected or constant fault flag.
+
+% ----------------------------------------------------------------------------
+\subsection{HIGH TEMPERATURE WARNING}
+
+\subsubsection{Symptoms}
+\begin{itemize}
+    \item "HIGH TEMP" alarm (yellow or red)
+    \item Device temperature >60\degree C in System Status
+    \item Thermal shutdown (device stops functioning)
+\end{itemize}
+
+\subsubsection{Diagnosis}
+
+\begin{procedurebox}[HIGH TEMPERATURE DIAGNOSIS]
+\begin{enumerate}
+    \item Check System Status → which device is overheating?
+    \item Check ambient temperature (extreme heat environment?)
+    \item Check operation tempo (continuous motion/firing?)
+    \item Check ventilation (blocked air intakes?)
+\end{enumerate}
+\end{procedurebox}
+
+\subsubsection{Operator-Level Fixes}
+
+\begin{checklist}
+    \item Reduce operations (slower movements, less frequent firing)
+    \item Allow cooling period (5-15 minutes, depending on device)
+    \item Limit continuous motion/firing (use intermittent operations)
+    \item Increase ventilation (if possible - open vents, improve airflow)
+    \item Monitor temperature trend (should decrease during cooldown)
+\end{checklist}
+
+\textbf{Escalate if:} Temperature remains >80\degree C after cooldown period.
+
+\subsubsection{Temperature Management}
+
+\textbf{Prevention:}
+\begin{itemize}
+    \item Avoid sustained high-tempo operations in hot environments
+    \item Allow periodic cooling breaks (5 minutes every 30 minutes in extreme heat)
+    \item Monitor temperature trends proactively
+    \item Plan operations during cooler times of day (if possible)
+\end{itemize}
+
+% ============================================================================
+\section{TROUBLESHOOTING QUICK REFERENCE}
+
+\begin{longtable}{|L{0.18\textwidth}|L{0.22\textwidth}|L{0.25\textwidth}|L{0.25\textwidth}|}
+\hline
+\rowcolor{milblue!20}
+\textbf{Symptom} & \textbf{Likely Cause} & \textbf{Operator Fix} & \textbf{Escalate If} \\
+\hline
+\endfirsthead
+
+\hline
+\rowcolor{milblue!20}
+\textbf{Symptom} & \textbf{Likely Cause} & \textbf{Operator Fix} & \textbf{Escalate If} \\
+\hline
+\endhead
+
+\textbf{No joystick response} & USB disconnected & Reconnect USB, reboot & Still offline after reboot \\
+\hline
+\textbf{Black video} & Camera fault & Switch cameras & Both cameras offline \\
+\hline
+\textbf{Tracking won't lock} & Poor contrast, bad gate & Improve contrast, resize gate & Fails on all targets \\
+\hline
+\textbf{Gimbal frozen} & E-Stop, Station OFF & Reset E-Stop, Station ON & Servo fault flag \\
+\hline
+\textbf{LRF no reading} & Target too far/obscured & Re-fire, different target & LRF disconnected \\
+\hline
+\textbf{High temp} & Overuse & Reduce ops, cool down & Temp stays >80\degree C \\
+\hline
+\textbf{Weapon won't arm} & Safety interlocks & Check switches, authorization & Switches non-functional \\
+\hline
+\textbf{Lost zero accuracy} & Drift, maintenance & Re-zero weapon & Persistent after re-zero \\
+\hline
+\end{longtable}
+
+% ============================================================================
+\section{ADVANCED TROUBLESHOOTING}
+
+\subsection{INTERMITTENT PROBLEMS}
+
+\subsubsection{Characteristics}
+\begin{itemize}
+    \item Problem appears and disappears randomly
+    \item Works sometimes, fails other times
+    \item Difficult to reproduce consistently
+\end{itemize}
+
+\subsubsection{Troubleshooting Approach}
+
+\textbf{Document the Pattern:}
+\begin{itemize}
+    \item When does it occur? (time of day, temperature, specific operation)
+    \item What makes it better/worse?
+    \item How often does it happen?
+    \item Any common factors when it occurs?
+\end{itemize}
+
+\textbf{Common Causes:}
+\begin{itemize}
+    \item Loose connections (intermittent contact)
+    \item Temperature-related (works cold, fails hot)
+    \item Software timing issues (race conditions)
+    \item Electrical interference (when other systems operating)
+\end{itemize}
+
+\begin{cautionbox}
+Intermittent problems often indicate impending failure. Report immediately even if problem self-clears.
+\end{cautionbox}
+
+% ----------------------------------------------------------------------------
+\subsection{MULTIPLE SIMULTANEOUS FAULTS}
+
+\subsubsection{Diagnosis Strategy}
+
+When multiple systems fail simultaneously:
+
+\begin{enumerate}
+    \item \textbf{Look for common cause:}
+    \begin{itemize}
+        \item Power supply issue (affects all systems)
+        \item Main computer failure (affects all subsystems)
+        \item Communication bus failure (multiple devices offline)
+    \end{itemize}
+    
+    \item \textbf{Prioritize troubleshooting:}
+    \begin{itemize}
+        \item Start with power (most fundamental)
+        \item Then communication (affects device connectivity)
+        \item Then individual devices
+    \end{itemize}
+    
+    \item \textbf{Consider cascade failures:}
+    \begin{itemize}
+        \item One device failure may cause others
+        \item Example: IMU failure → tracking fails → LAC fails
+    \end{itemize}
+\end{enumerate}
+
+\textbf{Escalate immediately if:}
+\begin{itemize}
+    \item >3 devices offline simultaneously
+    \item Power supply issues suspected
+    \item Unknown common cause
+\end{itemize}
+
+% ----------------------------------------------------------------------------
+\subsection{DEGRADED PERFORMANCE}
+
+\subsubsection{Symptoms}
+\begin{itemize}
+    \item System works, but not as well as before
+    \item Slower response times
+    \item Reduced accuracy
+    \item Increased errors/retries needed
+\end{itemize}
+
+\subsubsection{Investigation}
+
+\textbf{Compare to Baseline:}
+\begin{itemize}
+    \item Check tracking confidence (was 90\%, now 70\%?)
+    \item Check ranging accuracy (was ±2m, now ±10m?)
+    \item Check gimbal smoothness (jerky vs. smooth)
+    \item Check response time (lag vs. immediate)
+\end{itemize}
+
+\textbf{Possible Causes:}
+\begin{itemize}
+    \item Mechanical wear (servos, bearings)
+    \item Sensor degradation (camera, LRF, IMU)
+    \item Software configuration drift
+    \item Environmental factors (temperature, contamination)
+\end{itemize}
+
+\textbf{Operator Actions:}
+\begin{itemize}
+    \item Document specific performance degradation
+    \item Attempt re-calibration (re-zero, re-configure)
+    \item Report to maintenance (even if still operational)
+\end{itemize}
+
+% ============================================================================
+\section{PREVENTIVE MAINTENANCE}
+
+\subsection{OPERATOR-LEVEL MAINTENANCE}
+
+\subsubsection{Daily Tasks}
+\begin{itemize}
+    \item Clean camera lenses (soft cloth, approved cleaner)
+    \item Inspect cables and connectors (secure, no damage)
+    \item Check fluid levels (if applicable)
+    \item Wipe down control panels (remove dirt, moisture)
+    \item Visual inspection for damage or corrosion
+\end{itemize}
+
+\subsubsection{Weekly Tasks}
+\begin{itemize}
+    \item Verify zero accuracy (test shot at known range)
+    \item Exercise full range of motion (azimuth/elevation)
+    \item Test all emergency procedures (E-Stop, tracking abort)
+    \item Check backup systems (backup radio, backup camera)
+    \item Review system logs (check for recurring errors)
+\end{itemize}
+
+\subsubsection{Monthly Tasks (or as directed)}
+\begin{itemize}
+    \item Re-zero weapon
+    \item Full system health check (all devices, all functions)
+    \item Update system software (if authorized and available)
+    \item Lubricate moving parts (if authorized and trained)
+\end{itemize}
+
+\begin{notebox}
+Preventive maintenance prevents failures. Regular checks catch problems before they become critical.
+\end{notebox}
+
+% ----------------------------------------------------------------------------
+\subsection{WHAT OPERATORS SHOULD NOT DO}
+
+\textbf{Operators are NOT authorized to:}
+\begin{itemize}
+    \item ❌ Open sealed enclosures
+    \item ❌ Repair circuit boards or electronics
+    \item ❌ Replace major components (servos, cameras, computers)
+    \item ❌ Modify software or configuration files
+    \item ❌ Perform calibrations beyond re-zeroing
+    \item ❌ Disable safety interlocks
+\end{itemize}
+
+\textbf{Operators ARE authorized to:}
+\begin{itemize}
+    \item ✅ Clean external surfaces and lenses
+    \item ✅ Reconnect loose cables (external only)
+    \item ✅ Re-zero weapon
+    \item ✅ Adjust user settings (zoom, brightness, environmental parameters)
+    \item ✅ Power cycle system
+    \item ✅ Replace batteries (if trained and authorized)
+\end{itemize}
+
+% ============================================================================
+\section{MAINTENANCE ESCALATION}
+
+\subsection{WHEN TO CALL MAINTENANCE}
+
+\textbf{Call maintenance immediately for:}
+\begin{itemize}
+    \item Device disconnected (doesn't reconnect after reboot)
+    \item Persistent fault flags
+    \item Servo malfunction (erratic motion, no motion, unusual noises)
+    \item Physical damage observed
+    \item Thermal runaway (temperature >80\degree C, not decreasing)
+    \item Electrical issues (burning smell, smoke, arcing)
+    \item Weapon malfunction (jam, accidental discharge, failure to fire)
+    \item Safety system failure (E-Stop, interlocks not working)
+\end{itemize}
+
+\subsection{INFORMATION TO PROVIDE}
+
+When calling maintenance, provide:
+
+\begin{checklist}
+    \item System serial number / unit identifier
+    \item Specific symptoms (be detailed)
+    \item When problem first occurred
+    \item Frequency (constant, intermittent, getting worse?)
+    \item Recent events (maintenance, configuration changes, incidents)
+    \item System Status information (which devices faulted?)
+    \item Error messages or alarm codes
+    \item Troubleshooting already attempted
+    \item Current system state (powered on, E-Stopped, etc.)
+\end{checklist}
+
+\subsection{MAINTENANCE RESPONSE PRIORITIES}
+
+\textbf{Priority 1 - Immediate Response:}
+\begin{itemize}
+    \item Safety system failure
+    \item Fire/smoke/electrical hazard
+    \item Weapon malfunction
+    \item Multiple critical systems offline
+\end{itemize}
+
+\textbf{Priority 2 - Same Day Response:}
+\begin{itemize}
+    \item Single critical system offline (LRF, camera, servo)
+    \item Degraded but operational (reduced capability)
+\end{itemize}
+
+\textbf{Priority 3 - Scheduled Maintenance:}
+\begin{itemize}
+    \item Minor issues (cosmetic damage, non-critical warnings)
+    \item Preventive maintenance tasks
+    \item Performance optimization
+\end{itemize}
+
+% ============================================================================
+\section{TROUBLESHOOTING CASE STUDIES}
+
+\subsection{CASE STUDY 1: Tracking Works Initially, Then Fails}
+
+\textbf{Symptoms:}
+\begin{itemize}
+    \item Tracking locks successfully
+    \item After 5-10 minutes, tracking becomes erratic
+    \item Eventually loses lock completely
+    \item Problem recurs each mission
+\end{itemize}
+
+\textbf{SLAF Analysis:}
+\begin{itemize}
+    \item \textbf{Stop:} Problem is intermittent, temperature-related?
+    \item \textbf{Look:} Check System Status → Camera temperature rising
+    \item \textbf{Assess:} Camera overheating, thermal FFC becoming more frequent
+    \item \textbf{Fix:} Report to maintenance - camera cooling system fault
+\end{itemize}
+
+\textbf{Lesson:} Intermittent problems that worsen over time indicate component failure. Don't ignore!
+
+% ----------------------------------------------------------------------------
+\subsection{CASE STUDY 2: Gimbal Moves Slowly in One Direction}
+
+\textbf{Symptoms:}
+\begin{itemize}
+    \item Azimuth movement slow when turning left
+    \item Normal speed turning right
+    \item Elevation normal
+    \item No fault flags in System Status
+\end{itemize}
+
+\textbf{SLAF Analysis:}
+\begin{itemize}
+    \item \textbf{Stop:} Asymmetric problem suggests mechanical issue
+    \item \textbf{Look:} Check torque readings → high torque on left turns
+    \item \textbf{Assess:} Mechanical resistance (bearing wear, obstruction)
+    \item \textbf{Fix:} Escalate to maintenance - mechanical inspection needed
+\end{itemize}
+
+\textbf{Lesson:} Directional or asymmetric problems often indicate mechanical issues, not software/electrical.
+
+% ----------------------------------------------------------------------------
+\subsection{CASE STUDY 3: System Won't Power Up}
+
+\textbf{Symptoms:}
+\begin{itemize}
+    \item Main power switch ON, but no lights
+    \item No response from any system
+    \item Complete dead system
+\end{itemize}
+
+\textbf{SLAF Analysis:}
+\begin{itemize}
+    \item \textbf{Stop:} Total power failure - electrical issue
+    \item \textbf{Look:} Check external power source (generator, battery)
+    \item \textbf{Assess:} External power available? Cables connected? Circuit breaker tripped?
+    \item \textbf{Fix:} 
+    \begin{itemize}
+        \item If external power issue: Restore external power
+        \item If external power OK: Escalate - internal power supply fault
+    \end{itemize}
+\end{itemize}
+
+\textbf{Lesson:} Start troubleshooting from the outside in. Check simplest causes (external power) before assuming complex internal failures.
+
+% ============================================================================
+% END OF LESSON 9
+% ============================================================================

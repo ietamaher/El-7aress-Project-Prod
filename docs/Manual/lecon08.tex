@@ -1,0 +1,597 @@
+% ============================================================================
+% LESSON 8 - EMERGENCY PROCEDURES
+% ============================================================================
+\lesson{8 - EMERGENCY PROCEDURES}
+
+\begin{tabular}{@{}ll@{}}
+\textbf{Duration:} & 3 hours (Classroom 1h + Practical 2h) \\
+\textbf{Type:} & Classroom + Practical \\
+\textbf{References:} & Emergency procedures manual, safety guidelines \\
+\end{tabular}
+
+\section{LEARNING OBJECTIVES}
+
+Upon completion of this lesson, operators will be able to:
+\begin{itemize}
+    \item Execute Emergency Stop (E-Stop)
+    \item Perform emergency tracking abort
+    \item Respond to weapon malfunctions
+    \item Handle runaway gimbal
+    \item Execute emergency system shutdown
+\end{itemize}
+
+% ============================================================================
+\section{EMERGENCY STOP (E-STOP)}
+
+\subsection{E-STOP BUTTON}
+
+\subsubsection{Location}
+\textbf{Red mushroom button on Control Panel}
+
+\subsubsection{When to Use}
+
+Use E-Stop \textbf{IMMEDIATELY} when:
+\begin{itemize}
+    \item ❌ Personnel in line of fire
+    \item ❌ Gimbal moving toward restricted area
+    \item ❌ Runaway/uncontrolled motion
+    \item ❌ Any immediate danger
+\end{itemize}
+
+\subsection{E-STOP ACTIVATION}
+
+\begin{procedurebox}[EMERGENCY STOP ACTIVATION]
+\textbf{Action:} \textbf{STRIKE E-STOP BUTTON}
+
+\textbf{Effect (IMMEDIATE):}
+\begin{enumerate}
+    \item All gimbal motion halted
+    \item Weapon fire control disabled
+    \item Tracking stopped
+    \item System functions locked out
+    \item OSD: \textcolor{milred}{\osd{EMERGENCY STOP ACTIVE}} (RED)
+\end{enumerate}
+\end{procedurebox}
+
+\begin{warningbox}[E-STOP IS IRREVERSIBLE]
+Once activated, E-Stop cannot be overridden. System remains locked until manually reset.
+\end{warningbox}
+
+\subsubsection{E-Stop System Behavior}
+
+\textbf{What Stops:}
+\begin{itemize}
+    \item All servo motor power
+    \item Weapon arming circuits
+    \item Tracking algorithms
+    \item Automatic motion modes
+\end{itemize}
+
+\textbf{What Continues:}
+\begin{itemize}
+    \item Power to cameras (video feed maintained)
+    \item Power to control panels
+    \item System monitoring (can view System Status)
+    \item Communication systems
+\end{itemize}
+
+% ----------------------------------------------------------------------------
+\subsection{E-STOP RESET}
+
+\subsubsection{Pre-Reset Safety Verification}
+
+Only reset after verifying \textbf{ALL} items:
+
+\begin{checklist}
+    \item Immediate danger cleared
+    \item Personnel clear
+    \item No equipment damage
+    \item Cause identified
+    \item Safe to resume
+\end{checklist}
+
+\begin{procedurebox}[E-STOP RESET PROCEDURE]
+\begin{enumerate}
+    \item Twist E-STOP button clockwise
+    \item Button pops out
+    \item System resets (takes 5-10 seconds)
+    \item Check System Status for faults
+    \item Perform health check before resuming ops
+\end{enumerate}
+\end{procedurebox}
+
+\begin{warningbox}[DO NOT RESET IF]
+\textbf{DO NOT RESET E-STOP IF:}
+\begin{itemize}
+    \item Cause unknown
+    \item Damage visible
+    \item Personnel in danger
+    \item Maintenance required
+\end{itemize}
+\end{warningbox}
+
+\subsubsection{Post-Reset Verification}
+
+After E-Stop reset, verify:
+\begin{checklist}
+    \item All devices show "Connected" in System Status
+    \item No fault flags present
+    \item Gimbal responds to joystick inputs (test in manual mode)
+    \item Tracking system functional (test acquisition)
+    \item Safety systems operational (test Master Arm/Disarm)
+\end{checklist}
+
+% ============================================================================
+\section{EMERGENCY TRACKING ABORT}
+
+\subsection{WHEN TO ABORT TRACKING}
+
+Abort tracking \textbf{immediately} when:
+
+\begin{itemize}
+    \item ❌ Tracking wrong target
+    \item ❌ Target enters restricted zone
+    \item ❌ Friendlies near target
+    \item ❌ Lost positive ID
+    \item ❌ System erratic
+    \item ❌ Civilian identified
+\end{itemize}
+
+\subsection{TRACKING ABORT PROCEDURE}
+
+\begin{procedurebox}[EMERGENCY TRACKING ABORT]
+\textbf{Procedure:} \textbf{DOUBLE-CLICK \button{Button 4}} (<500ms)
+
+\textbf{Effect:}
+\begin{itemize}
+    \item Tracking stops immediately
+    \item Tracking gate disappears
+    \item Returns to Manual mode
+    \item Weapon fire inhibited
+\end{itemize}
+\end{procedurebox}
+
+\begin{notebox}
+No Dead Man Switch required for abort. Works from any phase.
+\end{notebox}
+
+\subsubsection{Tracking Abort vs. E-Stop}
+
+\textbf{Use Tracking Abort When:}
+\begin{itemize}
+    \item Wrong target being tracked
+    \item Need to quickly disengage tracking
+    \item System otherwise functioning normally
+\end{itemize}
+
+\textbf{Use E-Stop When:}
+\begin{itemize}
+    \item Immediate danger to personnel
+    \item System malfunction (runaway gimbal)
+    \item Need to halt \textbf{all} system motion
+\end{itemize}
+
+\subsection{Post-Abort Actions}
+
+After aborting tracking:
+
+\begin{enumerate}
+    \item Verify gimbal in Manual mode
+    \item Assess situation (why was abort necessary?)
+    \item Re-acquire correct target (if applicable)
+    \item Report incident (if target misidentification occurred)
+\end{enumerate}
+
+% ============================================================================
+\section{WEAPON EMERGENCY PROCEDURES}
+
+\subsection{ACCIDENTAL DISCHARGE}
+
+\subsubsection{Recognition}
+
+\textbf{If weapon fires unintentionally:}
+\begin{itemize}
+    \item Fire button not pressed, but weapon firing
+    \item Single shot when burst intended (or vice versa)
+    \item Weapon fires on Master Arm engagement
+\end{itemize}
+
+\subsubsection{Immediate Actions}
+
+\begin{procedurebox}[ACCIDENTAL DISCHARGE RESPONSE]
+\textbf{Immediate Actions (in order):}
+\begin{enumerate}
+    \item \textbf{Release \button{Button 5}} (Fire) - cease fire
+    \item \textbf{Release \button{Button 0}} (Master Arm) - disarm
+    \item \textbf{Point gimbal to safe direction} (skyward)
+    \item \textbf{E-STOP} if motion continues
+    \item \textbf{Turn Station power OFF}
+\end{enumerate}
+\end{procedurebox}
+
+\begin{warningbox}[CRITICAL SAFETY VIOLATION]
+Accidental discharge is a \textbf{CRITICAL SAFETY EVENT}. All operations must cease until investigation complete.
+\end{warningbox}
+
+\subsubsection{Post-Incident Actions}
+
+\begin{checklist}
+    \item Ensure weapon safe
+    \item Check for damage/casualties
+    \item Notify chain of command immediately
+    \item Preserve system logs
+    \item Do NOT resume operations until investigation complete
+\end{checklist}
+
+\textbf{Investigation Requirements:}
+\begin{itemize}
+    \item Maintenance personnel must inspect fire control circuits
+    \item Software logs must be reviewed
+    \item Trigger mechanism must be tested
+    \item Safety interlocks must be verified
+    \item Commander's authorization required before resuming operations
+\end{itemize}
+
+% ----------------------------------------------------------------------------
+\subsection{WEAPON JAM / MALFUNCTION}
+
+\subsubsection{Symptoms}
+
+\begin{itemize}
+    \item Weapon fires then stops mid-burst
+    \item Unusual sounds (click, no firing)
+    \item Fire button pressed, no response
+    \item Partial firing (rounds not feeding properly)
+\end{itemize}
+
+\subsubsection{Immediate Actions}
+
+\begin{procedurebox}[WEAPON JAM RESPONSE]
+\begin{enumerate}
+    \item \textbf{Release Fire button} (cease trigger)
+    \item \textbf{Release Master Arm} (disarm)
+    \item \textbf{Turn Gun Arm switch to SAFE}
+    \item \textbf{Point gimbal to safe direction}
+    \item \textbf{Notify command} - weapon malfunction
+\end{enumerate}
+\end{procedurebox}
+
+\begin{warningbox}[DO NOT ATTEMPT TO CLEAR JAM]
+\textbf{DO NOT:}
+\begin{itemize}
+    \item ❌ Attempt to clear jam from operator station
+    \item ❌ Continue firing attempts
+    \item ❌ Inspect weapon without proper clearance
+\end{itemize}
+
+\textbf{Action:} Weapon maintenance personnel required.
+\end{warningbox}
+
+\subsubsection{Operator Limitations}
+
+\textbf{Operators are NOT authorized to:}
+\begin{itemize}
+    \item Clear weapon jams
+    \item Perform weapon maintenance
+    \item Inspect weapon mechanisms
+    \item Override weapon safety interlocks
+\end{itemize}
+
+\textbf{Operators ARE authorized to:}
+\begin{itemize}
+    \item Safe the weapon (Gun Arm to SAFE)
+    \item Report malfunction symptoms
+    \item Secure the area
+    \item Await maintenance personnel
+\end{itemize}
+
+% ============================================================================
+\section{RUNAWAY GIMBAL}
+
+\subsection{SYMPTOMS}
+
+\textbf{Runaway gimbal indicators:}
+\begin{itemize}
+    \item Gimbal moves without joystick input
+    \item Cannot stop gimbal with joystick
+    \item Gimbal moving toward no-traverse zone
+    \item Erratic, unpredictable motion
+    \item Gimbal oscillating rapidly
+\end{itemize}
+
+\subsection{IMMEDIATE ACTIONS}
+
+\begin{procedurebox}[RUNAWAY GIMBAL RESPONSE]
+\textbf{Immediate Actions (in order):}
+\begin{enumerate}
+    \item \textbf{E-STOP} (strike immediately)
+    \item \textbf{Verify E-Stop engaged} (button latched, motion stopped)
+    \item \textbf{Turn Station power OFF}
+    \item \textbf{Notify maintenance} - servo malfunction
+\end{enumerate}
+\end{procedurebox}
+
+\begin{warningbox}[DO NOT RESET]
+Do NOT reset E-Stop until:
+\begin{itemize}
+    \item Maintenance personnel inspect system
+    \item Cause identified and resolved
+    \item Safety verified
+\end{itemize}
+\end{warningbox}
+
+\subsection{Runaway Gimbal Causes}
+
+\textbf{Common Causes:}
+\begin{itemize}
+    \item Servo driver malfunction
+    \item Software control loop error
+    \item Encoder feedback failure
+    \item Electrical short circuit
+    \item Control signal interference
+\end{itemize}
+
+\textbf{All require maintenance intervention.}
+
+\subsection{Prevention}
+
+\textbf{Reduce risk of runaway gimbal:}
+\begin{itemize}
+    \item Perform daily pre-operation checks
+    \item Monitor servo torque and temperature
+    \item Report unusual gimbal behavior immediately
+    \item Keep E-Stop button clear and accessible
+    \item Practice E-Stop activation during training
+\end{itemize}
+
+% ============================================================================
+\section{LOST COMMUNICATION}
+
+\subsection{OPERATOR TO COMMAND}
+
+\subsubsection{Symptoms}
+\begin{itemize}
+    \item Radio/intercom dead
+    \item No response to radio calls
+    \item Static or interference on all channels
+\end{itemize}
+
+\subsubsection{Actions}
+
+\begin{procedurebox}[LOST COMMUNICATION WITH COMMAND]
+\begin{checklist}
+    \item Switch to backup radio
+    \item Use hand signals (if line of sight)
+    \item Continue mission per SOP (if applicable)
+    \item Return to safe position (if no comms recovery)
+\end{checklist}
+\end{procedurebox}
+
+\textbf{Standing Orders:}
+\begin{itemize}
+    \item If communications lost during active engagement: Complete engagement, then return to safe position
+    \item If communications lost during surveillance: Continue surveillance, attempt recovery every 5 minutes
+    \item If communications not recovered within 30 minutes: Return to base/rally point
+\end{itemize}
+
+% ----------------------------------------------------------------------------
+\subsection{SYSTEM TO DEVICES}
+
+\subsubsection{Symptoms}
+\begin{itemize}
+    \item Device disconnected (LRF, Camera, Servo)
+    \item "Device Offline" message in System Status
+    \item Loss of specific functionality (ranging, video, motion)
+\end{itemize}
+
+\subsubsection{Actions}
+
+\begin{procedurebox}[LOST DEVICE COMMUNICATION]
+\begin{enumerate}
+    \item Check System Status (identify device)
+    \item Power cycle system (soft reboot)
+    \item If device does not reconnect: Operate without device (degraded mode)
+    \item Notify maintenance
+\end{enumerate}
+\end{procedurebox}
+
+\subsubsection{Mission Impact}
+
+\spectable{
+\begin{tabular}{|L{0.25\textwidth}|L{0.65\textwidth}|}
+\hline
+\rowcolor{milblue!20}
+\textbf{Device Offline} & \textbf{Mission Impact} \\
+\hline
+\textbf{LRF offline} & Manual range estimation only, no LAC. Reduced accuracy at long range. \\
+\hline
+\textbf{Camera offline} & Switch to alternate camera. If both offline: mission abort. \\
+\hline
+\textbf{Servo offline} & Mission abort - cannot control gimbal. \\
+\hline
+\textbf{IMU offline} & No stabilization. Manual mode only. Degraded tracking. \\
+\hline
+\textbf{Joystick offline} & Use DCU backup controls (limited functionality). \\
+\hline
+\end{tabular}
+}
+
+% ============================================================================
+\section{EMERGENCY SYSTEM SHUTDOWN}
+
+\subsection{WHEN TO PERFORM FULL SHUTDOWN}
+
+Perform emergency shutdown when:
+\begin{itemize}
+    \item Fire/smoke from system
+    \item Multiple critical faults
+    \item Safety concern requiring immediate powerdown
+    \item Ordered by command
+    \item Electrical burning smell
+    \item Unusual arcing or sparking
+\end{itemize}
+
+\subsection{EMERGENCY SHUTDOWN PROCEDURE}
+
+\begin{procedurebox}[EMERGENCY SYSTEM SHUTDOWN]
+\begin{enumerate}
+    \item \textbf{E-STOP} (if not already engaged)
+    \item \textbf{Turn Gun Arm to SAFE}
+    \item \textbf{Turn Station Enable switch to OFF}
+    \item \textbf{Turn main power switch to OFF}
+    \item \textbf{Disconnect external power} (if directed)
+\end{enumerate}
+\end{procedurebox}
+
+\subsection{Post-Shutdown Actions}
+
+\begin{checklist}
+    \item Ensure all motion stopped
+    \item Ensure weapon safe
+    \item Notify command/maintenance
+    \item Secure area (prevent unauthorized restart)
+    \item Document circumstances leading to shutdown
+\end{checklist}
+
+\begin{warningbox}[DO NOT RESTART]
+Do NOT attempt to restart system until:
+\begin{itemize}
+    \item Cause of emergency identified
+    \item Maintenance personnel inspect system
+    \item Commander authorizes restart
+\end{itemize}
+\end{warningbox}
+
+\subsection{Fire Response}
+
+\textbf{If fire or smoke observed:}
+\begin{enumerate}
+    \item Perform emergency shutdown (above procedure)
+    \item Evacuate immediate area
+    \item Alert fire response team
+    \item Use fire extinguisher if:
+    \begin{itemize}
+        \item Fire is small and contained
+        \item Safe to approach
+        \item Proper extinguisher type available (electrical fires: CO2 or dry chemical)
+    \end{itemize}
+    \item Do NOT use water on electrical fires
+\end{enumerate}
+
+% ============================================================================
+\section{EMERGENCY QUICK REFERENCE}
+
+\begin{quickref}
+\begin{longtable}{|L{0.22\textwidth}|L{0.35\textwidth}|L{0.30\textwidth}|}
+\hline
+\rowcolor{milred!20}
+\textbf{Emergency} & \textbf{Action} & \textbf{Button/Switch} \\
+\hline
+\endfirsthead
+
+\hline
+\rowcolor{milred!20}
+\textbf{Emergency} & \textbf{Action} & \textbf{Button/Switch} \\
+\hline
+\endhead
+
+\textbf{Immediate Danger} & Emergency Stop & E-STOP (red mushroom) \\
+\hline
+\textbf{Wrong Target} & Tracking Abort & \button{Button 4} (double-click) \\
+\hline
+\textbf{Accidental Fire} & Cease Fire, Disarm & Release \button{Button 5}, Release \button{Button 0} \\
+\hline
+\textbf{Weapon Jam} & Disarm, Safe Weapon & Release \button{Button 0}, Gun Arm SAFE \\
+\hline
+\textbf{Runaway Gimbal} & Emergency Stop, Power Off & E-STOP, Station Power OFF \\
+\hline
+\textbf{Fire/Smoke} & Full Shutdown & E-STOP → Station OFF → Main Power OFF \\
+\hline
+\end{longtable}
+\end{quickref}
+
+% ============================================================================
+\section{EMERGENCY RESPONSE TRAINING}
+
+\subsection{Required Emergency Drills}
+
+All operators must practice the following emergency responses:
+
+\subsubsection{Drill 1: E-Stop Activation}
+\begin{itemize}
+    \item Practice striking E-Stop button from operating position
+    \item Time to E-Stop: <1 second from recognition
+    \item Verify system lockout
+    \item Practice reset procedure
+\end{itemize}
+
+\subsubsection{Drill 2: Tracking Abort}
+\begin{itemize}
+    \item Practice double-click abort during tracking exercise
+    \item Time to abort: <500ms
+    \item Verify tracking stops immediately
+    \item Practice re-acquisition after abort
+\end{itemize}
+
+\subsubsection{Drill 3: Accidental Discharge Response}
+\begin{itemize}
+    \item Simulated accidental discharge scenario
+    \item Practice immediate cease-fire and disarm sequence
+    \item Practice safe gimbal positioning
+    \item Practice emergency shutdown
+\end{itemize}
+
+\subsubsection{Drill 4: Runaway Gimbal Response}
+\begin{itemize}
+    \item Simulated runaway gimbal (instructor-initiated)
+    \item Practice immediate E-Stop
+    \item Practice emergency shutdown
+    \item Verify no attempt to reset without authorization
+\end{itemize}
+
+\subsection{Emergency Response Evaluation Criteria}
+
+\textbf{Proficiency Standards:}
+\begin{itemize}
+    \item E-Stop activation: <1 second recognition-to-action time
+    \item Tracking abort: <500ms double-click execution
+    \item Correct procedure selection: 100\% (no procedural errors)
+    \item Post-emergency verification: All steps completed
+\end{itemize}
+
+\begin{warningbox}[TRAINING REQUIREMENT]
+Operators must demonstrate proficiency in all emergency procedures before operational qualification.
+\end{warningbox}
+
+% ============================================================================
+\section{STRESS MANAGEMENT IN EMERGENCIES}
+
+\subsection{Staying Calm Under Pressure}
+
+\textbf{Emergency Response Psychology:}
+\begin{itemize}
+    \item Recognize stress response (tunnel vision, rapid heartbeat, loss of fine motor control)
+    \item Focus on immediate action (don't overthink)
+    \item Trust your training (muscle memory)
+    \item Breathe (deliberate breathing reduces stress)
+\end{itemize}
+
+\subsection{Decision Making in Emergencies}
+
+\textbf{Priority Framework:}
+\begin{enumerate}
+    \item \textbf{Life Safety:} Prevent injury to personnel (highest priority)
+    \item \textbf{Equipment Protection:} Prevent damage to system (secondary)
+    \item \textbf{Mission Continuity:} Resume operations (lowest priority)
+\end{enumerate}
+
+\textbf{When in Doubt:}
+\begin{itemize}
+    \item Default to most conservative action (E-Stop)
+    \item Request guidance from command
+    \item Do NOT resume operations until safe
+\end{itemize}
+
+% ============================================================================
+% END OF LESSON 8
+% ============================================================================

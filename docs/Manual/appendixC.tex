@@ -1,0 +1,366 @@
+% ============================================================================
+% APPENDIX C - ACRONYMS & GLOSSARY
+% ============================================================================
+\appendixchapter{C - ACRONYMS \& GLOSSARY}
+
+\section{ACRONYMS}
+
+\begin{longtable}{|L{0.20\textwidth}|L{0.70\textwidth}|}
+\hline
+\rowcolor{milblue!20}
+\textbf{Acronym} & \textbf{Definition} \\
+\hline
+\endfirsthead
+
+\hline
+\rowcolor{milblue!20}
+\textbf{Acronym} & \textbf{Definition} \\
+\hline
+\endhead
+
+\textbf{AHRS} & Attitude and Heading Reference System \\
+\hline
+\textbf{API} & Armor Piercing Incendiary \\
+\hline
+\textbf{APIT} & Armor Piercing Incendiary Tracer \\
+\hline
+\textbf{ASL} & Above Sea Level \\
+\hline
+\textbf{BDA} & Battle Damage Assessment \\
+\hline
+\textbf{BMG} & Browning Machine Gun (12.7×99mm cartridge) \\
+\hline
+\textbf{CCIP} & Continuously Computed Impact Point \\
+\hline
+\textbf{DCU} & Display and Control Unit \\
+\hline
+\textbf{E-Stop} & Emergency Stop \\
+\hline
+\textbf{FFC} & Flat Field Correction (Thermal camera calibration) \\
+\hline
+\textbf{FLIR} & Forward Looking Infrared \\
+\hline
+\textbf{FOV} & Field of View \\
+\hline
+\textbf{HD} & High Definition \\
+\hline
+\textbf{HFOV} & Horizontal Field of View \\
+\hline
+\textbf{HID} & Human Interface Device \\
+\hline
+\textbf{Hz} & Hertz (cycles per second) \\
+\hline
+\textbf{IMU} & Inertial Measurement Unit \\
+\hline
+\textbf{IP} & Ingress Protection (dust/water resistance rating) \\
+\hline
+\textbf{LAC} & Lead Angle Compensation \\
+\hline
+\textbf{LRF} & Laser Range Finder \\
+\hline
+\textbf{LUT} & Look-Up Table (Thermal imaging color palette) \\
+\hline
+\textbf{LWIR} & Long Wave Infrared \\
+\hline
+\textbf{MG} & Machine Gun \\
+\hline
+\textbf{MTBF} & Mean Time Between Failures \\
+\hline
+\textbf{NATO} & North Atlantic Treaty Organization \\
+\hline
+\textbf{NETD} & Noise Equivalent Temperature Difference \\
+\hline
+\textbf{OSD} & On-Screen Display \\
+\hline
+\textbf{PID} & Positive Identification \\
+\hline
+\textbf{RCWS} & Remote Controlled Weapon Station \\
+\hline
+\textbf{RH} & Relative Humidity \\
+\hline
+\textbf{ROE} & Rules of Engagement \\
+\hline
+\textbf{ROM} & Range of Motion \\
+\hline
+\textbf{RTU} & Remote Terminal Unit (Modbus protocol) \\
+\hline
+\textbf{SLAF} & Stop-Look-Assess-Fix (troubleshooting methodology) \\
+\hline
+\textbf{SOP} & Standard Operating Procedure \\
+\hline
+\textbf{TOF} & Time of Flight \\
+\hline
+\textbf{TRP} & Target Reference Point \\
+\hline
+\textbf{USB} & Universal Serial Bus \\
+\hline
+\textbf{VFOV} & Vertical Field of View \\
+\hline
+\textbf{VOx} & Vanadium Oxide (thermal detector material) \\
+\hline
+\textbf{WDR} & Wide Dynamic Range \\
+\hline
+\end{longtable}
+
+% ============================================================================
+\section{GLOSSARY}
+
+\subsection{A}
+
+\textbf{Acquisition}: The phase where operator positions and sizes the tracking gate over the target before requesting lock-on. The tracking gate is adjustable using the D-Pad controls to ensure proper target framing with appropriate margin.
+
+\textbf{Active Lock}: Tracking phase where the tracking algorithm has successfully locked onto the target and is automatically following it. Indicated by a green dashed tracking gate and "TRACKING" status on the OSD.
+
+\textbf{Azimuth}: Horizontal angle, measured in degrees (0-360\degree). 0\degree=North, 90\degree=East, 180\degree=South, 270\degree=West. Controlled by the joystick X-axis.
+
+% ----------------------------------------------------------------------------
+\subsection{B}
+
+\textbf{Ballistic Computer}: The computational system that calculates projectile trajectory based on range, environmental conditions, and ammunition type to provide accurate CCIP reticle positioning.
+
+\textbf{Boresight}: The alignment between the camera line-of-sight and the weapon bore axis. Without correction, these are offset due to physical separation. Zeroing corrects boresight offset.
+
+\textbf{Battle Damage Assessment (BDA)}: Post-engagement evaluation to determine if target was destroyed, damaged, or missed. Critical for determining if re-engagement is necessary.
+
+% ----------------------------------------------------------------------------
+\subsection{C}
+
+\textbf{CCIP (Continuously Computed Impact Point)}: The reticle that shows where the weapon will impact, accounting for zeroing, ballistics, environmental conditions, and (if active) lead angle compensation. Updated at 30 Hz.
+
+\textbf{Coast Mode}: Tracking phase where the target is temporarily lost (obscured, leaves FOV, etc.) and the system predicts target position based on last known velocity to maintain track. Indicated by yellow dashed tracking gate.
+
+\textbf{Crosswind}: Wind component perpendicular to the direction of fire. Causes lateral projectile drift. Environmental parameters menu allows input of crosswind speed for ballistic correction.
+
+% ----------------------------------------------------------------------------
+\subsection{D}
+
+\textbf{Dead Man Switch}: Safety interlock requiring continuous operator pressure to enable certain functions. Button 3 on joystick must be held when activating/deactivating LAC. Prevents accidental activation.
+
+\textbf{Drag Function}: Mathematical model of projectile air resistance. G1 drag function used for standard projectiles. Different drag functions exist for different projectile shapes (G7 for boat-tail bullets, etc.).
+
+% ----------------------------------------------------------------------------
+\subsection{E}
+
+\textbf{Elevation}: Vertical angle, measured in degrees. 0\degree=horizon, +90\degree=zenith (straight up), -90\degree=nadir (straight down). Controlled by joystick Y-axis. System range: -20\degree\ to +60\degree.
+
+\textbf{Emergency Stop (E-Stop)}: Red mushroom button on control panel that immediately halts all gimbal motion, disables weapon fire control, and locks out system functions. Used when personnel in danger or system malfunction.
+
+\textbf{Environmental Parameters}: Atmospheric conditions (temperature, altitude, wind) that affect projectile trajectory. Can be input into system for ballistic corrections via Environmental Parameters menu.
+
+% ----------------------------------------------------------------------------
+\subsection{F}
+
+\textbf{Field of View (FOV)}: The angular extent of the observable area through the camera. Measured in degrees horizontal and vertical. Wider FOV = more area visible but less detail. Narrower FOV = more detail but smaller area.
+
+\textbf{Flat Field Correction (FFC)}: Thermal camera recalibration process that corrects for sensor non-uniformities. Causes brief (1-2 second) image freeze. Occurs automatically every 5-15 minutes or can be triggered manually.
+
+\textbf{Firing Phase}: Special tracking phase active during weapon discharge. Enhanced stabilization and gimbal hold active. Indicated by solid green tracking gate.
+
+% ----------------------------------------------------------------------------
+\subsection{G}
+
+\textbf{Gimbal}: The stabilized platform that holds the camera and weapon, allowing azimuth and elevation motion. Provides 3-axis stabilization (roll, pitch, yaw) to compensate for platform motion.
+
+\textbf{Gyrostabilization}: The system's ability to use IMU angular rate data to compensate for platform motion, keeping the gimbal pointed at the target despite vehicle movement, ship roll/pitch, etc.
+
+% ----------------------------------------------------------------------------
+\subsection{I}
+
+\textbf{IMU (Inertial Measurement Unit)}: Sensor package that measures platform orientation (roll, pitch, yaw) and angular rates. Essential for stabilization, tracking, and ballistic calculations. MicroStrain 3DM-GX3-25 AHRS used in El 7arress.
+
+\textbf{Ingress Protection (IP)}: Rating system for enclosure protection against dust and water. IP54 = Protected against dust (5) and water splash from any direction (4). Not waterproof.
+
+% ----------------------------------------------------------------------------
+\subsection{L}
+
+\textbf{LAC (Lead Angle Compensation)}: Automatic calculation and application of angular offset to compensate for target motion. Predicts where moving target will be when projectile arrives (after TOF) and positions CCIP reticle at intercept point.
+
+\textbf{Laser Range Finder (LRF)}: 1550nm eye-safe laser that measures distance to target by timing laser pulse return. Range: 20-5000m (hard targets), accuracy: ±5m. Essential for ballistic calculations and LAC.
+
+\textbf{Lead Angle}: The angular offset between a moving target's current position and the predicted intercept point, compensating for projectile time-of-flight. Larger lead angles required for faster targets, longer ranges, and slower projectiles.
+
+\textbf{Lock Pending}: Brief tracking phase where the system is initializing the tracker algorithm on the target. Typically lasts 0.5-2 seconds. Indicated by cyan solid or flashing tracking gate.
+
+\textbf{Look-Up Table (LUT)}: In thermal imaging, a color palette that maps thermal intensities to display colors. Examples: White-Hot (hot=white), Black-Hot (hot=black), Rainbow (color-coded temperatures).
+
+% ----------------------------------------------------------------------------
+\subsection{M}
+
+\textbf{Master Arm}: Safety control (Button 0 or trigger Stage 1) that must be engaged before weapon can fire. "ARMED" indicator light illuminates when active. Critical safety interlock.
+
+\textbf{Motion Mode}: Operating mode determining how gimbal responds to inputs. Manual mode: Direct joystick control. Tracking mode: Automatic target following. Other modes: Sector scan, TRP scan, stabilization.
+
+% ----------------------------------------------------------------------------
+\subsection{N}
+
+\textbf{No-Fire Zone}: Geographically defined area where weapon discharge is prohibited. System provides "ZONE VIOLATION" warning if gimbal enters no-fire zone with weapon armed.
+
+\textbf{No-Traverse Zone}: Area where gimbal motion is restricted to prevent damage (e.g., pointing at own vehicle structure, antenna, personnel). Software and/or mechanical limits enforce.
+
+% ----------------------------------------------------------------------------
+\subsection{O}
+
+\textbf{On-Screen Display (OSD)}: Text and graphical overlays on video feed showing system status, indicators, and information. Examples: Reticle, range reading, tracking status, zeroing indicator, alarms.
+
+% ----------------------------------------------------------------------------
+\subsection{P}
+
+\textbf{Positive Identification (PID)**: Confirmation that target is hostile and meets Rules of Engagement before engagement. Mandatory before firing. Visual identification, radio confirmation, or other means.
+
+\textbf{Projectile}: Bullet or round fired from weapon. For El 7arress RCWS: 12.7×99mm NATO (.50 BMG). Various types: Ball (standard), API (armor piercing), APIT (AP tracer), Mk 211 (multipurpose).
+
+% ----------------------------------------------------------------------------
+\subsection{R}
+
+\textbf{Range**: Distance from weapon to target. Measured by LRF in meters. Essential input for ballistic calculations. Manual estimation possible if LRF unavailable.
+
+\textbf{RCWS (Remote Controlled Weapon Station)**: Remotely operated weapon system allowing operator to engage targets from protected position. Includes camera, weapon, stabilization, and fire control.
+
+\textbf{Reticle}: The aiming point displayed on the video feed, showing where the weapon will impact (with zeroing/ballistics applied). CCIP reticle continuously updated at 30 Hz.
+
+\textbf{Rules of Engagement (ROE)**: Military directives defining when, where, and how force can be used. Operators must verify targets meet ROE before engagement.
+
+% ----------------------------------------------------------------------------
+\subsection{S}
+
+\textbf{Slew Rate**: Speed of gimbal motion, measured in degrees per second. Maximum: 60\degree/sec azimuth, 45\degree/sec elevation. Variable via joystick deflection.
+
+\textbf{Stabilization**: The system's ability to compensate for platform motion (vehicle movement, ship roll/pitch) to keep the gimbal pointed at the target. Uses IMU data and servo control loops.
+
+\textbf{System Status**: Menu display showing real-time status of all devices (servos, IMU, LRF, cameras, control panels). Shows connection status, temperatures, torque levels, and fault flags.
+
+% ----------------------------------------------------------------------------
+\subsection{T}
+
+\textbf{Target Reference Point (TRP)**: Pre-defined geographical point used for navigation or scanning. Can be programmed with azimuth/elevation coordinates for rapid gimbal positioning.
+
+\textbf{Thermal Imaging**: Detection of infrared radiation (heat) emitted by objects. FLIR TAU 2 uncooled microbolometer camera. Useful for night operations and obscurant penetration.
+
+\textbf{Time of Flight (TOF)**: Duration from projectile launch to target impact. Longer TOF requires more lead angle for moving targets. Typical: 0.5-2 seconds for 500-1500m engagements.
+
+\textbf{Torque**: Rotational force exerted by servo motors to move gimbal. Monitored in System Status. High sustained torque (>80\%) indicates mechanical resistance or servo overload.
+
+\textbf{Tracking**: Automatic target following mode where system uses computer vision algorithms to lock onto and follow a target. Frees operator from manual gimbal control during engagement.
+
+\textbf{Tracking Confidence**: Numerical measure (0-100\%) of tracking algorithm's certainty that it is correctly following the target. >70\% = good, 50-70\% = marginal, <50\% = poor/imminent loss.
+
+\textbf{Tracking Gate**: Colored box displayed on OSD showing tracked target area. Color indicates tracking phase: Yellow (Acquisition), Cyan (Lock Pending), Green (Active Lock), Yellow dashed (Coast).
+
+% ----------------------------------------------------------------------------
+\subsection{Z}
+
+\textbf{Zenith**: Point directly overhead (elevation = +90\degree). Opposite of nadir (directly below, elevation = -90\degree).
+
+\textbf{Zeroing**: The process of correcting the offset between the camera aim point and weapon impact point, ensuring the reticle accurately represents where rounds will hit. Applies angular offsets (azimuth and elevation) to CCIP reticle. Must be performed before first operational use and periodically verified.
+
+\textbf{Zoom**: Magnification of camera image. Day camera: Continuous optical zoom (10:1 ratio). Thermal camera: 2× optical zoom plus 2×/4× digital zoom. Zoom affects FOV: higher zoom = narrower FOV (more detail, less area).
+
+% ============================================================================
+\section{COMMON TERMS \& PHRASES}
+
+\subsection{Operator Communications}
+
+\textbf{Standard Radio Calls:}
+\begin{itemize}
+    \item \textbf{"TRACKING"}: Target is locked, automatic following engaged
+    \item \textbf{"RANGE xxxx"}: Laser range reading in meters
+    \item \textbf{"LEAD ANGLE ON"}: LAC active for moving target
+    \item \textbf{"ARMED"}: Master Arm engaged, weapon hot
+    \item \textbf{"FIRING"}: Weapon discharge in progress
+    \item \textbf{"CEASE FIRE"}: Weapon discharge stopped
+    \item \textbf{"CLEAR"}: No friendlies in line of fire
+    \item \textbf{"ZONE VIOLATION"}: Gimbal entering restricted area
+    \item \textbf{"E-STOP"}: Emergency Stop activated
+\end{itemize}
+
+\subsection{Battle Damage Assessment Terms}
+
+\begin{itemize}
+    \item \textbf{"DESTROYED"}: Target neutralized, no threat
+    \item \textbf{"DAMAGED"}: Target hit but still functional
+    \item \textbf{"MISSED"}: Rounds impacted off-target
+    \item \textbf{"SUPPRESSED"}: Target not moving/firing (status uncertain)
+    \item \textbf{"MOBILITY KILL"}: Target immobilized but may still fire
+    \item \textbf{"FIREPOWER KILL"}: Target unable to fire but may still move
+\end{itemize}
+
+\subsection{System Status Terms}
+
+\begin{itemize}
+    \item \textbf{"GO"}: System operational, ready for mission
+    \item \textbf{"NO-GO"}: System not operational, maintenance required
+    \item \textbf{"DEGRADED"}: System operational with reduced capability
+    \item \textbf{"FAULT"}: Device or subsystem failure
+    \item \textbf{"OFFLINE"}: Device disconnected or not responding
+    \item \textbf{"OVERTEMP"}: Device temperature exceeds safe operating limits
+\end{itemize}
+
+% ============================================================================
+\section{UNITS OF MEASUREMENT}
+
+\subsection{Angular Measurements}
+
+\begin{itemize}
+    \item \textbf{Degrees (\degree)**: 360\degree\ = full circle. Standard unit for azimuth and elevation.
+    \item \textbf{Milliradians (mil)**: 6400 mil = full circle (NATO). 1 mil ≈ 0.0565\degree. Used for fine angular measurements.
+    \item \textbf{Minutes of Angle (MOA)**: 60 MOA = 1\degree. 1 MOA ≈ 1 inch at 100 yards. Used in shooting accuracy.
+\end{itemize}
+
+\subsection{Distance Measurements}
+
+\begin{itemize}
+    \item \textbf{Meters (m)**: Primary distance unit. Range measurements in meters.
+    \item \textbf{Kilometers (km)**: 1 km = 1000 m. Used for long ranges.
+    \item \textbf{Yards (yd)**: 1 yd ≈ 0.914 m. Some operators may use yards.
+\end{itemize}
+
+\subsection{Speed Measurements}
+
+\begin{itemize}
+    \item \textbf{Meters per second (m/s)**: Wind speed, target velocity.
+    \item \textbf{Knots (kt)**: Wind speed. 1 kt ≈ 0.514 m/s.
+    \item \textbf{Kilometers per hour (km/h)**: Target velocity. 1 km/h ≈ 0.278 m/s.
+    \item \textbf{Miles per hour (mph)**: 1 mph ≈ 0.447 m/s.
+\end{itemize}
+
+\subsection{Temperature Measurements}
+
+\begin{itemize}
+    \item \textbf{Celsius (\degree C)**: Primary temperature unit. 0\degree C = freezing, 100\degree C = boiling.
+    \item \textbf{Fahrenheit (\degree F)**: \degree F = (\degree C × 9/5) + 32. Some operators may use Fahrenheit.
+\end{itemize}
+
+% ============================================================================
+\section{CONVERSION FACTORS}
+
+\subsection{Quick Reference Conversions}
+
+\spectable{
+\small
+\begin{tabular}{|L{0.40\textwidth}|L{0.50\textwidth}|}
+\hline
+\rowcolor{milblue!20}
+\textbf{Conversion} & \textbf{Formula / Factor} \\
+\hline
+Degrees to milliradians & \degree\ × 17.778 = mil \\
+\hline
+Milliradians to degrees & mil × 0.0562 = \degree \\
+\hline
+Meters to yards & m × 1.094 = yd \\
+\hline
+Yards to meters & yd × 0.914 = m \\
+\hline
+Meters per second to knots & m/s × 1.944 = kt \\
+\hline
+Knots to meters per second & kt × 0.514 = m/s \\
+\hline
+Celsius to Fahrenheit & (\degree C × 9/5) + 32 = \degree F \\
+\hline
+Fahrenheit to Celsius & (\degree F - 32) × 5/9 = \degree C \\
+\hline
+\end{tabular}
+}
+
+% ============================================================================
+% END OF APPENDIX C
+% ============================================================================

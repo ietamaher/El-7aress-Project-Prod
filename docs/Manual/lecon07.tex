@@ -1,0 +1,504 @@
+% ============================================================================
+% LESSON 7 - SYSTEM STATUS & MONITORING
+% ============================================================================
+\lesson{7 - SYSTEM STATUS \& MONITORING}
+
+\begin{tabular}{@{}ll@{}}
+\textbf{Duration:} & 2 hours \\
+\textbf{Type:} & Classroom \\
+\textbf{References:} & System status manual, device specifications \\
+\end{tabular}
+
+\section{LEARNING OBJECTIVES}
+
+Upon completion of this lesson, operators will be able to:
+\begin{itemize}
+    \item Access System Status display
+    \item Interpret device status indicators
+    \item Identify fault conditions
+    \item Determine when to escalate to maintenance
+\end{itemize}
+
+% ============================================================================
+\section{ACCESSING SYSTEM STATUS}
+
+\subsection{SYSTEM STATUS MENU ACCESS}
+
+\begin{procedurebox}[ACCESSING SYSTEM STATUS]
+\begin{enumerate}
+    \item Press \button{MENU ✓}
+    \item Navigate to \textbf{"System Status"}
+    \item Press \button{VAL}
+\end{enumerate}
+\end{procedurebox}
+
+\subsection{Display Sections}
+
+The System Status display provides real-time monitoring of all critical subsystems:
+
+\begin{itemize}
+    \item Azimuth/Elevation Servos
+    \item IMU (Inertial Measurement Unit)
+    \item Laser Range Finder (LRF)
+    \item Day/Night Cameras
+    \item Control Panels
+    \item Servo Actuator
+    \item Alarms/Warnings
+\end{itemize}
+
+% ============================================================================
+\section{DEVICE STATUS REFERENCE}
+
+\subsection{GIMBAL SERVOS (AZIMUTH \& ELEVATION)}
+
+\begin{longtable}{|L{0.18\textwidth}|L{0.15\textwidth}|L{0.15\textwidth}|L{0.15\textwidth}|L{0.28\textwidth}|}
+\hline
+\rowcolor{milblue!20}
+\textbf{Parameter} & \textbf{Normal} & \textbf{Warning} & \textbf{Fault} & \textbf{Action} \\
+\hline
+\endfirsthead
+
+\hline
+\rowcolor{milblue!20}
+\textbf{Parameter} & \textbf{Normal} & \textbf{Warning} & \textbf{Fault} & \textbf{Action} \\
+\hline
+\endhead
+
+\textbf{Connected} & ✓ & - & ✗ & Notify maintenance \\
+\hline
+\textbf{Torque} & 0-50\% & 50-80\% & >80\% sustained & Allow cooling, reduce motion \\
+\hline
+\textbf{Motor Temp} & 20-60\degree C & 60-70\degree C & >70\degree C & Halt operations, allow cooling \\
+\hline
+\textbf{Driver Temp} & 20-60\degree C & 60-70\degree C & >70\degree C & Halt operations, allow cooling \\
+\hline
+\textbf{Fault Flag} & No & - & Yes & E-Stop, notify maintenance \\
+\hline
+\end{longtable}
+
+\subsubsection{Servo Monitoring Guidelines}
+
+\textbf{Normal Operation:}
+\begin{itemize}
+    \item Torque values fluctuate with gimbal motion
+    \item Higher torque during rapid movements or when carrying loads
+    \item Temperatures rise gradually during extended operations
+\end{itemize}
+
+\textbf{Warning Signs:}
+\begin{itemize}
+    \item Sustained high torque (>50\%) during light movements
+    \item Rapidly rising temperatures
+    \item Unusual vibrations or noises
+\end{itemize}
+
+% ----------------------------------------------------------------------------
+\subsection{IMU (INERTIAL MEASUREMENT UNIT)}
+
+\begin{longtable}{|L{0.18\textwidth}|L{0.15\textwidth}|L{0.15\textwidth}|L{0.15\textwidth}|L{0.28\textwidth}|}
+\hline
+\rowcolor{milblue!20}
+\textbf{Parameter} & \textbf{Normal} & \textbf{Warning} & \textbf{Fault} & \textbf{Action} \\
+\hline
+\endfirsthead
+
+\hline
+\rowcolor{milblue!20}
+\textbf{Parameter} & \textbf{Normal} & \textbf{Warning} & \textbf{Fault} & \textbf{Action} \\
+\hline
+\endhead
+
+\textbf{Connected} & ✓ & - & ✗ & Stabilization offline, notify maint \\
+\hline
+\textbf{Roll/Pitch} & ±30\degree & ±30-45\degree & >45\degree & Platform unstable, secure vessel \\
+\hline
+\textbf{Temperature} & 20-60\degree C & 60-70\degree C & >70\degree C & Allow cooling \\
+\hline
+\end{longtable}
+
+\begin{warningbox}[IMU CRITICAL FUNCTION]
+IMU offline = No stabilization. Manual mode only.
+\end{warningbox}
+
+\subsubsection{IMU Role in System}
+
+The IMU provides:
+\begin{itemize}
+    \item Platform orientation data (roll, pitch, yaw)
+    \item Angular rate measurements for stabilization
+    \item Motion compensation for tracking
+    \item Essential data for ballistic calculations
+\end{itemize}
+
+\textbf{Impact of IMU Failure:}
+\begin{itemize}
+    \item No gyrostabilization (image shake during platform motion)
+    \item Degraded tracking performance
+    \item Reduced ballistic accuracy
+    \item Manual mode operations only
+\end{itemize}
+
+% ----------------------------------------------------------------------------
+\subsection{LASER RANGE FINDER (LRF)}
+
+\begin{longtable}{|L{0.18\textwidth}|L{0.15\textwidth}|L{0.15\textwidth}|L{0.15\textwidth}|L{0.28\textwidth}|}
+\hline
+\rowcolor{milblue!20}
+\textbf{Parameter} & \textbf{Normal} & \textbf{Warning} & \textbf{Fault} & \textbf{Action} \\
+\hline
+\endfirsthead
+
+\hline
+\rowcolor{milblue!20}
+\textbf{Parameter} & \textbf{Normal} & \textbf{Warning} & \textbf{Fault} & \textbf{Action} \\
+\hline
+\endhead
+
+\textbf{Connected} & ✓ & - & ✗ & Manual range estimation, notify maint \\
+\hline
+\textbf{Temperature} & 20-50\degree C & 50-60\degree C & >60\degree C & Reduce firing rate, allow cooling \\
+\hline
+\textbf{Laser Count} & Incrementing & - & Not incrementing & LRF malfunction \\
+\hline
+\textbf{No Echo} & Occasional & Frequent & Always & Target too far, obscured, or LRF fault \\
+\hline
+\end{longtable}
+
+\begin{warningbox}[LRF CRITICAL FUNCTION]
+LRF offline = No ballistics, no LAC. Manual engagement only.
+\end{warningbox}
+
+\subsubsection{LRF Status Interpretation}
+
+\textbf{Laser Count:}
+\begin{itemize}
+    \item Increments with each successful ranging attempt
+    \item Should increment even if "NO ECHO" received
+    \item If frozen: LRF communication failure
+\end{itemize}
+
+\textbf{"NO ECHO" Conditions:}
+\begin{itemize}
+    \item Target beyond maximum range (~5km for hard targets)
+    \item Target obscured by smoke, fog, rain
+    \item Target surface non-reflective (absorbs laser)
+    \item Laser beam blocked by obstruction
+    \item LRF receiver malfunction (if persistent)
+\end{itemize}
+
+% ----------------------------------------------------------------------------
+\subsection{CAMERAS (DAY \& THERMAL)}
+
+\begin{longtable}{|L{0.18\textwidth}|L{0.15\textwidth}|L{0.15\textwidth}|L{0.15\textwidth}|L{0.28\textwidth}|}
+\hline
+\rowcolor{milblue!20}
+\textbf{Parameter} & \textbf{Normal} & \textbf{Warning} & \textbf{Fault} & \textbf{Action} \\
+\hline
+\endfirsthead
+
+\hline
+\rowcolor{milblue!20}
+\textbf{Parameter} & \textbf{Normal} & \textbf{Warning} & \textbf{Fault} & \textbf{Action} \\
+\hline
+\endhead
+
+\textbf{Connected} & ✓ & - & ✗ & Switch cameras if available \\
+\hline
+\textbf{Error Flag} & No & - & Yes & Switch cameras, notify maint \\
+\hline
+\textbf{Thermal FFC} & Occasional & Frequent (<5min) & Constant & Thermal camera fault \\
+\hline
+\textbf{Focus} & Clear & Slightly blurred & Very blurred & Autofocus off, manual focus \\
+\hline
+\end{longtable}
+
+\begin{warningbox}[CAMERA CRITICAL FUNCTION]
+Both cameras offline = Mission abort. Cannot engage without visual.
+\end{warningbox}
+
+\subsubsection{Camera Status Notes}
+
+\textbf{Thermal FFC (Flat Field Correction):}
+\begin{itemize}
+    \item Normal: Occurs every 5-15 minutes
+    \item Recalibrates thermal sensor for accurate temperature readings
+    \item Brief image freeze (1-2 seconds) during FFC
+    \item Frequent FFC (<5 min intervals): Sensor instability
+\end{itemize}
+
+\textbf{Focus Issues:}
+\begin{itemize}
+    \item Autofocus may struggle with low-contrast scenes
+    \item Manual focus available via menu controls
+    \item Persistent blur: Lens contamination or camera fault
+\end{itemize}
+
+% ----------------------------------------------------------------------------
+\subsection{CONTROL PANELS}
+
+\spectable{
+\begin{tabular}{|L{0.15\textwidth}|L{0.28\textwidth}|L{0.25\textwidth}|L{0.23\textwidth}|}
+\hline
+\rowcolor{milblue!20}
+\textbf{Device} & \textbf{Function} & \textbf{Fault Impact} & \textbf{Action} \\
+\hline
+\textbf{DCU} & Buttons, switches, lights & No local control, joystick only & Notify maint (ops continue) \\
+\hline
+\textbf{Joystick} & Gimbal control, tracking, fire & Mission abort if no backup & Emergency: Use DCU manual control \\
+\hline
+\end{tabular}
+}
+
+\subsubsection{Control Panel Redundancy}
+
+\textbf{Primary Control: Joystick}
+\begin{itemize}
+    \item All operator functions accessible
+    \item Preferred for normal operations
+    \item Ergonomic, intuitive control
+\end{itemize}
+
+\textbf{Backup Control: DCU (Direct Control Unit)}
+\begin{itemize}
+    \item Limited functionality (basic gimbal control)
+    \item Use if joystick fails
+    \item Slower, less precise than joystick
+\end{itemize}
+
+% ============================================================================
+\section{ALARM INTERPRETATION}
+
+\subsection{CRITICAL ALARMS (RED)}
+
+\begin{longtable}{|L{0.28\textwidth}|L{0.30\textwidth}|L{0.32\textwidth}|}
+\hline
+\rowcolor{milred!20}
+\textbf{Alarm} & \textbf{Meaning} & \textbf{Immediate Action} \\
+\hline
+\endfirsthead
+
+\hline
+\rowcolor{milred!20}
+\textbf{Alarm} & \textbf{Meaning} & \textbf{Immediate Action} \\
+\hline
+\endhead
+
+\textbf{EMERGENCY STOP ACTIVE} & E-Stop engaged & Identify cause, reset when safe \\
+\hline
+\textbf{WEAPON ARMED (NO AUTH)} & Safety violation & Disarm immediately, investigate \\
+\hline
+\textbf{ZONE VIOLATION} & Entering No-Fire/No-Traverse & Halt motion, verify zone config \\
+\hline
+\textbf{SERVO FAULT} & Gimbal malfunction & E-Stop, notify maintenance \\
+\hline
+\end{longtable}
+
+\subsubsection{Critical Alarm Response Priority}
+
+\textbf{Priority 1: Immediate Safety Threats}
+\begin{enumerate}
+    \item \textbf{WEAPON ARMED (NO AUTH):} Disarm weapon immediately
+    \item \textbf{ZONE VIOLATION:} Halt all motion, assess situation
+    \item \textbf{SERVO FAULT:} E-Stop if gimbal behaving erratically
+\end{enumerate}
+
+\textbf{Priority 2: System Protection}
+\begin{enumerate}
+    \item \textbf{EMERGENCY STOP ACTIVE:} Determine if intentional or fault-triggered
+\end{enumerate}
+
+% ----------------------------------------------------------------------------
+\subsection{WARNING ALARMS (YELLOW)}
+
+\begin{longtable}{|L{0.28\textwidth}|L{0.30\textwidth}|L{0.32\textwidth}|}
+\hline
+\rowcolor{milyellow!20}
+\textbf{Alarm} & \textbf{Meaning} & \textbf{Action} \\
+\hline
+\endfirsthead
+
+\hline
+\rowcolor{milyellow!20}
+\textbf{Alarm} & \textbf{Meaning} & \textbf{Action} \\
+\hline
+\endhead
+
+\textbf{HIGH TEMPERATURE} & Device overheating & Reduce operations, monitor \\
+\hline
+\textbf{LOW CONFIDENCE TRACKING} & Track quality poor & Verify target, consider manual \\
+\hline
+\textbf{ZOOM OUT} & LAC FOV insufficient & Zoom out (\button{Button 8}) \\
+\hline
+\textbf{LEAD ANGLE LAG} & Tracking data insufficient & Wait 2-5 seconds \\
+\hline
+\end{longtable}
+
+\subsubsection{Warning Alarm Management}
+
+\textbf{HIGH TEMPERATURE:}
+\begin{itemize}
+    \item Identify which device is overheating (check System Status)
+    \item Reduce operational tempo (slower movements, less frequent firing)
+    \item Monitor temperature trend (rising or stabilizing?)
+    \item If temperature continues to rise: Cease operations, allow cooling
+\end{itemize}
+
+\textbf{LOW CONFIDENCE TRACKING:}
+\begin{itemize}
+    \item Verify target is still visible and properly framed
+    \item Check for obstructions or lighting changes
+    \item Consider switching to manual engagement
+    \item Re-acquire track if confidence drops below 50\%
+\end{itemize}
+
+% ----------------------------------------------------------------------------
+\subsection{INFO MESSAGES (GREEN/BLUE)}
+
+\begin{longtable}{|L{0.28\textwidth}|L{0.30\textwidth}|L{0.32\textwidth}|}
+\hline
+\rowcolor{milgreen!20}
+\textbf{Message} & \textbf{Meaning} & \textbf{Action} \\
+\hline
+\endfirsthead
+
+\hline
+\rowcolor{milgreen!20}
+\textbf{Message} & \textbf{Meaning} & \textbf{Action} \\
+\hline
+\endhead
+
+\textbf{ZEROING APPLIED} & Zero active & Normal ops \\
+\hline
+\textbf{ENV APPLIED} & Environmental settings active & Normal ops \\
+\hline
+\textbf{TRACKING} & Tracking active & Monitor \\
+\hline
+\end{longtable}
+
+\subsubsection{Informational Message Interpretation}
+
+These messages confirm that optional features are active:
+\begin{itemize}
+    \item \textbf{ZEROING APPLIED:} Weapon boresight correction in effect
+    \item \textbf{ENV APPLIED:} Ballistic corrections for temperature, altitude, wind active
+    \item \textbf{TRACKING:} Automatic target tracking engaged
+\end{itemize}
+
+\textbf{No Action Required:} These are status confirmations, not warnings.
+
+% ============================================================================
+\section{WHEN TO ESCALATE TO MAINTENANCE}
+
+\subsection{OPERATOR-LEVEL ISSUES (Fix Yourself)}
+
+The following issues can be resolved by the operator:
+
+\begin{itemize}
+    \item ✅ Reset E-Stop (after clearing danger)
+    \item ✅ Power cycle system (soft reboot)
+    \item ✅ Switch cameras (if available)
+    \item ✅ Adjust zoom/focus
+    \item ✅ Re-zero weapon (if needed)
+\end{itemize}
+
+\subsection{MAINTENANCE-LEVEL ISSUES (Notify Immediately)}
+
+The following issues require maintenance personnel:
+
+\begin{itemize}
+    \item ❌ Device disconnected (and doesn't reconnect after reboot)
+    \item ❌ Persistent fault flags
+    \item ❌ Servo malfunction (erratic motion, no motion)
+    \item ❌ Physical damage observed
+    \item ❌ Thermal runaway (temperature >80\degree C)
+    \item ❌ Unusual noises (grinding, clicking, squealing)
+\end{itemize}
+
+\subsection{Escalation Decision Matrix}
+
+\spectable{
+\small
+\begin{tabular}{|L{0.25\textwidth}|L{0.30\textwidth}|L{0.35\textwidth}|}
+\hline
+\rowcolor{milblue!20}
+\textbf{Symptom} & \textbf{Operator Action} & \textbf{Escalate If} \\
+\hline
+Device offline & Power cycle, check connections & Still offline after reboot \\
+\hline
+High temperature & Reduce operations, allow cooling & Temp >80\degree C or rising \\
+\hline
+Tracking failure & Adjust gate, improve contrast & Fails on all targets \\
+\hline
+LRF no reading & Re-fire, try different target & Persistent "NO ECHO" on all targets \\
+\hline
+Poor video & Switch cameras, adjust focus & Both cameras offline or error \\
+\hline
+Servo slow/jerky & Check torque, allow cooling & Fault flag or erratic motion \\
+\hline
+Unusual noises & Identify source, check status & Grinding, clicking, or squealing \\
+\hline
+\end{tabular}
+}
+
+\subsection{Documentation for Maintenance}
+
+When escalating to maintenance, provide:
+
+\begin{checklist}
+    \item Specific symptoms observed
+    \item When problem first occurred
+    \item Any recent changes (maintenance, configuration, environment)
+    \item System Status screenshot (if possible)
+    \item Any error messages or alarm codes
+    \item Operator-level troubleshooting already attempted
+\end{checklist}
+
+\begin{notebox}
+Better documentation = Faster repair. Be specific and thorough.
+\end{notebox}
+
+% ============================================================================
+\section{SYSTEM STATUS MONITORING BEST PRACTICES}
+
+\subsection{Regular Monitoring Schedule}
+
+\textbf{Before Each Mission:}
+\begin{itemize}
+    \item Check System Status display
+    \item Verify all devices connected
+    \item Note any warnings or elevated temperatures
+    \item Document baseline status
+\end{itemize}
+
+\textbf{During Operations:}
+\begin{itemize}
+    \item Monitor temperature trends (especially during extended operations)
+    \item Watch for new alarms or warnings
+    \item Check device status after any unusual events
+\end{itemize}
+
+\textbf{After Mission:}
+\begin{itemize}
+    \item Final System Status check
+    \item Note any new faults or warnings
+    \item Document any issues for maintenance
+    \item Report any degraded performance
+\end{itemize}
+
+\subsection{Proactive Monitoring}
+
+\textbf{Prevent Problems Before They Occur:}
+\begin{itemize}
+    \item Monitor temperature trends (rising temps indicate potential issues)
+    \item Note gradual performance degradation (slower tracking, reduced accuracy)
+    \item Report intermittent faults (even if they self-clear)
+    \item Watch torque levels (sustained high torque indicates mechanical problems)
+\end{itemize}
+
+\begin{cautionbox}
+Don't ignore intermittent problems. They often become permanent failures.
+\end{cautionbox}
+
+% ============================================================================
+% END OF LESSON 7
+% ============================================================================

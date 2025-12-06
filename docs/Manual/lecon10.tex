@@ -1,0 +1,812 @@
+% ============================================================================
+% LESSON 10 - PRACTICAL TRAINING & EVALUATION
+% ============================================================================
+\lesson{10 - PRACTICAL TRAINING \& EVALUATION}
+
+\begin{tabular}{@{}ll@{}}
+\textbf{Duration:} & 8 hours (Hands-On Training \& Evaluation) \\
+\textbf{Type:} & Practical + Evaluation \\
+\textbf{References:} & All previous lessons, evaluation checklist \\
+\end{tabular}
+
+\section{LEARNING OBJECTIVES}
+
+Upon completion of this lesson, operators will be able to:
+\begin{itemize}
+    \item Demonstrate proficiency in all operator tasks
+    \item Pass written examination (80\% minimum)
+    \item Pass practical performance evaluation
+    \item Qualify for operational duty
+\end{itemize}
+
+% ============================================================================
+\section{PRACTICAL TRAINING EXERCISES}
+
+\subsection{EXERCISE 1: SYSTEM STARTUP \& HEALTH CHECK}
+
+\textbf{Duration:} 30 minutes
+
+\subsubsection{Task}
+Power up system, perform pre-operation checks
+
+\subsubsection{Performance Standards}
+
+\begin{checklist}
+    \item Correct power-up sequence
+    \item All devices detected and connected
+    \item Pre-operation checklist 100\% complete
+    \item Ready for operations within 5 minutes
+\end{checklist}
+
+\subsubsection{Evaluation Criteria}
+
+\spectable{
+\begin{tabular}{|L{0.40\textwidth}|C{0.15\textwidth}|L{0.35\textwidth}|}
+\hline
+\rowcolor{milblue!20}
+\textbf{Task Element} & \textbf{Weight} & \textbf{Standard} \\
+\hline
+Power-up sequence & 25\% & All steps in correct order \\
+\hline
+Device verification & 25\% & All devices confirmed online \\
+\hline
+Checklist completion & 30\% & All items checked, documented \\
+\hline
+Time to ready & 20\% & <5 minutes from power-on \\
+\hline
+\end{tabular}
+}
+
+\subsubsection{Common Errors to Avoid}
+\begin{itemize}
+    \item Skipping System Status check
+    \item Not documenting baseline temperatures
+    \item Failing to test all motion axes
+    \item Rushing through checklist (missing items)
+\end{itemize}
+
+% ----------------------------------------------------------------------------
+\subsection{EXERCISE 2: MANUAL GIMBAL CONTROL}
+
+\textbf{Duration:} 30 minutes
+
+\subsubsection{Task}
+Navigate gimbal to designated azimuth/elevation coordinates
+
+\subsubsection{Performance Standards}
+
+\begin{checklist}
+    \item Smooth, controlled movements
+    \item Accuracy: ±2\degree\ azimuth, ±2\degree\ elevation
+    \item Complete 5 targets within 3 minutes
+\end{checklist}
+
+\subsubsection{Target Coordinates}
+
+\spectable{
+\begin{tabular}{|C{0.15\textwidth}|C{0.25\textwidth}|C{0.25\textwidth}|C{0.20\textwidth}|}
+\hline
+\rowcolor{milblue!20}
+\textbf{Target} & \textbf{Azimuth} & \textbf{Elevation} & \textbf{Time Limit} \\
+\hline
+Target 1 & 45\degree & +10\degree & 30 seconds \\
+\hline
+Target 2 & 180\degree & +20\degree & 30 seconds \\
+\hline
+Target 3 & 270\degree & -5\degree & 40 seconds \\
+\hline
+Target 4 & 90\degree & +30\degree & 40 seconds \\
+\hline
+Target 5 & 0\degree & 0\degree & 40 seconds \\
+\hline
+\end{tabular}
+}
+
+\subsubsection{Evaluation Criteria}
+
+\textbf{GO Criteria:}
+\begin{itemize}
+    \item All targets acquired within ±2\degree
+    \item No jerky or erratic motion
+    \item No gimbal limit violations
+    \item Completed within time limit
+\end{itemize}
+
+\textbf{NO-GO Criteria:}
+\begin{itemize}
+    \item Accuracy >±5\degree\ on any target
+    \item Exceeds time limit by >50\%
+    \item Gimbal limit violation
+    \item Unsafe control (rapid, uncontrolled movements)
+\end{itemize}
+
+% ----------------------------------------------------------------------------
+\subsection{EXERCISE 3: TARGET ACQUISITION \& TRACKING}
+
+\textbf{Duration:} 1 hour
+
+\subsubsection{Task}
+Acquire and track stationary and moving targets
+
+\subsubsection{Performance Standards}
+
+\begin{checklist}
+    \item Acquisition gate correctly sized (10-30\% margin)
+    \item Lock achieved within 10 seconds
+    \item Track maintained >30 seconds
+    \item Clean abort on command
+\end{checklist}
+
+\subsubsection{Scenarios}
+
+\textbf{Scenario A: Stationary Target}
+\begin{enumerate}
+    \item Instructor designates stationary target
+    \item Student acquires and locks tracking
+    \item Maintain track for 30 seconds
+    \item Abort tracking on command
+\end{enumerate}
+
+\textbf{Scenario B: Slow-Moving Target}
+\begin{enumerate}
+    \item Instructor designates moving target (vehicle, simulated)
+    \item Student acquires and locks tracking
+    \item Maintain track through target motion
+    \item Monitor track confidence (should remain >70\%)
+\end{enumerate}
+
+\textbf{Scenario C: Fast-Moving Target}
+\begin{enumerate}
+    \item Instructor designates fast-moving target
+    \item Student adjusts FOV (zoom out if needed)
+    \item Acquire and lock tracking
+    \item Manage "LEAD ANGLE LAG" warning (wait for green)
+\end{enumerate}
+
+\subsubsection{Evaluation Criteria}
+
+\spectable{
+\begin{tabular}{|L{0.40\textwidth}|C{0.15\textwidth}|L{0.35\textwidth}|}
+\hline
+\rowcolor{milblue!20}
+\textbf{Task Element} & \textbf{Weight} & \textbf{Standard} \\
+\hline
+Gate sizing & 20\% & 10-30\% margin, target fully visible \\
+\hline
+Lock achievement & 30\% & <10 seconds from gate sizing \\
+\hline
+Track maintenance & 30\% & >30 seconds, confidence >70\% \\
+\hline
+Abort execution & 20\% & Immediate, clean, returns to manual \\
+\hline
+\end{tabular}
+}
+
+% ----------------------------------------------------------------------------
+\subsection{EXERCISE 4: SIMULATED ENGAGEMENT}
+
+\textbf{Duration:} 1 hour
+
+\subsubsection{Task}
+Complete engagement sequence (no live fire)
+
+\subsubsection{Performance Standards}
+
+\begin{checklist}
+    \item PID confirmed before engagement
+    \item Tracking established (Active Lock)
+    \item LAC activated (moving target)
+    \item Safety checks complete
+    \item Simulated fire (correct procedure)
+    \item BDA (Battle Damage Assessment)
+\end{checklist}
+
+\subsubsection{Engagement Sequence}
+
+\begin{procedurebox}[SIMULATED ENGAGEMENT]
+\textbf{Phase 1: Target Detection \& Identification}
+\begin{enumerate}
+    \item Instructor designates target (verbal or visual cue)
+    \item Student detects and slews to target
+    \item Student identifies target (announces type, description)
+    \item Student confirms PID and ROE compliance
+\end{enumerate}
+
+\textbf{Phase 2: Target Acquisition}
+\begin{enumerate}
+    \item Enter acquisition mode (\button{Button 4})
+    \item Size gate appropriately
+    \item Request lock-on (\button{Button 4})
+    \item Achieve Active Lock (green gate)
+\end{enumerate}
+
+\textbf{Phase 3: Fire Control Setup}
+\begin{enumerate}
+    \item Range target (LRF or manual estimation)
+    \item Enable LAC if target moving (\button{Button 3 + Button 2})
+    \item Verify LAC status (LEAD ANGLE ON if applicable)
+    \item Announce range and lead status
+\end{enumerate}
+
+\textbf{Phase 4: Safety Checks}
+\begin{enumerate}
+    \item Verify no zone violations (check OSD)
+    \item Verify friendlies clear (announce "CLEAR")
+    \item Verify target still valid
+    \item Announce "READY TO ENGAGE"
+\end{enumerate}
+
+\textbf{Phase 5: Simulated Engagement}
+\begin{enumerate}
+    \item Engage Master Arm (\button{Button 0})
+    \item Announce "ARMED"
+    \item Simulate fire (\textit{do not press Button 5, announce "FIRE"})
+    \item Announce "CEASE FIRE"
+    \item Disarm (\button{Button 0})
+\end{enumerate}
+
+\textbf{Phase 6: Battle Damage Assessment}
+\begin{enumerate}
+    \item Observe simulated impact
+    \item Announce BDA result (destroyed/damaged/missed)
+    \item Stop tracking if target neutralized
+\end{enumerate}
+\end{procedurebox}
+
+\subsubsection{Critical Errors (Automatic Failure)}
+
+\begin{itemize}
+    \item ❌ No PID before engagement
+    \item ❌ Zone violation not recognized
+    \item ❌ Friendlies not checked
+    \item ❌ Wrong target engaged
+    \item ❌ Skipped safety checks
+\end{itemize}
+
+% ----------------------------------------------------------------------------
+\subsection{EXERCISE 5: WEAPON ZEROING}
+
+\textbf{Duration:} 1 hour
+
+\subsubsection{Task}
+Zero weapon at 200m range
+
+\subsubsection{Performance Standards}
+
+\begin{checklist}
+    \item Correct zeroing procedure
+    \item Zero applied successfully
+    \item Verification shot within ±5cm
+    \item "Z" indicator appears on OSD
+\end{checklist}
+
+\subsubsection{Zeroing Procedure}
+
+\begin{enumerate}
+    \item Access Zeroing menu (\button{MENU ✓} → Zeroing → \button{VAL})
+    \item Aim at target center (200m range)
+    \item Fire test shot (observe impact location)
+    \item Move reticle to impact point (joystick)
+    \item Apply zero (\button{MENU ✓})
+    \item Verify "Z" indicator on OSD
+    \item Fire verification shot (should hit reticle center)
+\end{enumerate}
+
+\subsubsection{Evaluation Criteria}
+
+\textbf{GO Criteria:}
+\begin{itemize}
+    \item Correct procedure followed
+    \item Zero applied (Z indicator visible)
+    \item Verification shot within ±5cm of aim point
+\end{itemize}
+
+\textbf{NO-GO Criteria:}
+\begin{itemize}
+    \item Incorrect procedure (steps out of order)
+    \item Zero not applied (no Z indicator)
+    \item Verification shot >±10cm from aim point
+\end{itemize}
+
+\begin{notebox}
+If verification shot fails, student may retry zeroing procedure once.
+\end{notebox}
+
+% ----------------------------------------------------------------------------
+\subsection{EXERCISE 6: EMERGENCY PROCEDURES}
+
+\textbf{Duration:} 1 hour
+
+\subsubsection{Task}
+Respond to simulated emergencies
+
+\subsubsection{Scenarios}
+
+\textbf{Scenario 1: Wrong Target Identified}
+\begin{itemize}
+    \item \textbf{Setup:} Student tracking target
+    \item \textbf{Event:} Instructor announces "FRIENDLY FORCES IN TRACKING GATE"
+    \item \textbf{Required Action:} Immediate tracking abort (\button{Button 4} double-click)
+    \item \textbf{Standard:} Abort within 500ms of announcement
+\end{itemize}
+
+\textbf{Scenario 2: Runaway Gimbal}
+\begin{itemize}
+    \item \textbf{Setup:} Instructor simulates runaway gimbal (unexpected motion)
+    \item \textbf{Event:} Gimbal moves erratically without joystick input
+    \item \textbf{Required Action:} Immediate E-Stop, then Station Power OFF
+    \item \textbf{Standard:} E-Stop within 1 second, power OFF within 3 seconds
+\end{itemize}
+
+\textbf{Scenario 3: Accidental Discharge}
+\begin{itemize}
+    \item \textbf{Setup:} Simulated weapon armed
+    \item \textbf{Event:} Instructor announces "WEAPON FIRING" (unintended)
+    \item \textbf{Required Action:} Release fire, release Master Arm, point safe, E-Stop, power OFF
+    \item \textbf{Standard:} All steps within 5 seconds
+\end{itemize}
+
+\textbf{Scenario 4: Lost Communication}
+\begin{itemize}
+    \item \textbf{Setup:} Operator performing surveillance
+    \item \textbf{Event:} Instructor simulates radio failure
+    \item \textbf{Required Action:} Switch backup radio, attempt recovery, follow SOP
+    \item \textbf{Standard:} Backup radio within 30 seconds, correct SOP followed
+\end{itemize}
+
+\subsubsection{Performance Standards}
+
+\begin{checklist}
+    \item Immediate recognition of emergency (<2 seconds)
+    \item Correct procedure executed
+    \item Reaction time <2 seconds (critical emergencies)
+    \item All safety steps completed
+\end{checklist}
+
+% ----------------------------------------------------------------------------
+\subsection{EXERCISE 7: TROUBLESHOOTING}
+
+\textbf{Duration:} 1 hour
+
+\subsubsection{Task}
+Diagnose and resolve simulated faults
+
+\subsubsection{Faults Presented}
+
+\textbf{Fault 1: Joystick Disconnected}
+\begin{itemize}
+    \item \textbf{Symptom:} No gimbal response, no joystick LED
+    \item \textbf{Expected Diagnosis:} USB cable disconnected
+    \item \textbf{Expected Fix:} Reconnect USB, verify System Status
+\end{itemize}
+
+\textbf{Fault 2: Camera Offline}
+\begin{itemize}
+    \item \textbf{Symptom:} Black screen, "No Signal"
+    \item \textbf{Expected Diagnosis:} Camera disconnected or fault
+    \item \textbf{Expected Fix:} Switch to alternate camera, power cycle if both offline
+\end{itemize}
+
+\textbf{Fault 3: Tracking Failure}
+\begin{itemize}
+    \item \textbf{Symptom:} Cannot achieve lock, stays in LOCK PENDING
+    \item \textbf{Expected Diagnosis:} Poor target contrast or gate sizing
+    \item \textbf{Expected Fix:} Improve contrast (switch camera/LUT), resize gate
+\end{itemize}
+
+\textbf{Fault 4: LRF No Reading}
+\begin{itemize}
+    \item \textbf{Symptom:} Persistent "NO ECHO"
+    \item \textbf{Expected Diagnosis:} Target too far or obscured
+    \item \textbf{Expected Fix:} Re-fire on closer/more reflective target, or manual range estimation
+\end{itemize}
+
+\subsubsection{Performance Standards}
+
+\begin{checklist}
+    \item Correct diagnosis using SLAF method
+    \item Operator-level fix applied (if applicable)
+    \item Proper escalation to maintenance (if needed)
+    \item Solution verified (problem resolved)
+\end{checklist}
+
+\subsubsection{Evaluation Criteria}
+
+\spectable{
+\begin{tabular}{|L{0.40\textwidth}|C{0.15\textwidth}|L{0.35\textwidth}|}
+\hline
+\rowcolor{milblue!20}
+\textbf{Task Element} & \textbf{Weight} & \textbf{Standard} \\
+\hline
+Problem diagnosis & 40\% & Correct root cause identified \\
+\hline
+Troubleshooting method & 20\% & SLAF method applied correctly \\
+\hline
+Fix application & 30\% & Appropriate fix attempted \\
+\hline
+Escalation decision & 10\% & Correct escalation if needed \\
+\hline
+\end{tabular}
+}
+
+% ============================================================================
+\section{WRITTEN EXAMINATION}
+
+\subsection{EXAMINATION FORMAT}
+
+\textbf{Format:} 50 multiple-choice questions
+
+\textbf{Passing Score:} 80\% (40/50 correct)
+
+\textbf{Time Limit:} 60 minutes
+
+\subsection{Topics Covered}
+
+\spectable{
+\begin{tabular}{|L{0.50\textwidth}|C{0.25\textwidth}|C{0.15\textwidth}|}
+\hline
+\rowcolor{milblue!20}
+\textbf{Topic} & \textbf{Questions} & \textbf{Weight} \\
+\hline
+Safety procedures & 10 & 20\% \\
+\hline
+Basic operation & 10 & 20\% \\
+\hline
+Tracking \& engagement & 10 & 20\% \\
+\hline
+Ballistics \& fire control & 10 & 20\% \\
+\hline
+Emergency procedures & 5 & 10\% \\
+\hline
+System status \& troubleshooting & 5 & 10\% \\
+\hline
+\textbf{TOTAL} & \textbf{50} & \textbf{100\%} \\
+\hline
+\end{tabular}
+}
+
+\subsection{Sample Questions}
+
+\subsubsection{Safety Procedures}
+\begin{enumerate}
+    \item When should the E-Stop button be activated?
+    \begin{itemize}
+        \item A) Only when ordered by command
+        \item B) When personnel are in line of fire
+        \item C) After every mission
+        \item D) Only during maintenance
+    \end{itemize}
+    \textbf{Correct Answer: B}
+\end{enumerate}
+
+\subsubsection{Tracking \& Engagement}
+\begin{enumerate}
+    \item What is the correct acquisition gate sizing margin around the target?
+    \begin{itemize}
+        \item A) 0-5\% margin
+        \item B) 10-30\% margin
+        \item C) 50-75\% margin
+        \item D) Gate should be as tight as possible
+    \end{itemize}
+    \textbf{Correct Answer: B}
+\end{enumerate}
+
+\subsubsection{Emergency Procedures}
+\begin{enumerate}
+    \item How do you perform an emergency tracking abort?
+    \begin{itemize}
+        \item A) Press E-Stop button
+        \item B) Single-click Button 4
+        \item C) Double-click Button 4 (<500ms)
+        \item D) Turn Station Power OFF
+    \end{itemize}
+    \textbf{Correct Answer: C}
+\end{enumerate}
+
+\subsection{Examination Rules}
+
+\begin{itemize}
+    \item Closed book (no reference materials)
+    \item No electronic devices
+    \item Questions may be asked for clarification (instructor will not provide answers)
+    \item Review allowed if time permits
+    \item Minimum 80\% required to pass
+\end{itemize}
+
+% ============================================================================
+\section{PERFORMANCE EVALUATION}
+
+\subsection{EVALUATION FORMAT}
+
+\textbf{Format:} Instructor-observed practical assessment
+
+\textbf{Duration:} 2-3 hours
+
+\textbf{Passing Standard:} 80\% overall, NO critical errors
+
+\subsection{Evaluation Criteria}
+
+\begin{longtable}{|L{0.35\textwidth}|C{0.15\textwidth}|L{0.40\textwidth}|}
+\hline
+\rowcolor{milblue!20}
+\textbf{Task} & \textbf{Weight} & \textbf{GO/NO-GO Criteria} \\
+\hline
+\endfirsthead
+
+\hline
+\rowcolor{milblue!20}
+\textbf{Task} & \textbf{Weight} & \textbf{GO/NO-GO Criteria} \\
+\hline
+\endhead
+
+\textbf{System Startup} & 10\% & All steps correct, <5 min \\
+\hline
+\textbf{Manual Control} & 10\% & Smooth, accurate (±2\degree) \\
+\hline
+\textbf{Tracking} & 20\% & Lock achieved, maintained >30s \\
+\hline
+\textbf{Simulated Engagement} & 25\% & Full sequence, all safety checks \\
+\hline
+\textbf{Zeroing} & 15\% & Correct procedure, accurate \\
+\hline
+\textbf{Emergency Response} & 15\% & Immediate, correct procedure \\
+\hline
+\textbf{Troubleshooting} & 5\% & Correct diagnosis \& action \\
+\hline
+\textbf{TOTAL} & \textbf{100\%} & \textbf{≥80\% required} \\
+\hline
+\end{longtable}
+
+\subsection{Critical Errors (Automatic Failure)}
+
+\textbf{Any of the following results in automatic NO-GO:}
+
+\begin{itemize}
+    \item ❌ Safety violation (no-fire zone, friendly fire)
+    \item ❌ Failed to E-Stop when required
+    \item ❌ Accidental discharge (simulated)
+    \item ❌ Wrong target engagement
+    \item ❌ Bypassed safety interlocks
+    \item ❌ Damaged equipment through negligence
+\end{itemize}
+
+\subsection{Scoring}
+
+\subsubsection{Individual Task Scoring}
+
+Each task scored 0-100\%:
+\begin{itemize}
+    \item \textbf{100\%:} Flawless execution
+    \item \textbf{90\%:} Minor errors, corrected immediately
+    \item \textbf{80\%:} Meets minimum standard
+    \item \textbf{70\%:} Below standard, requires additional training
+    \item \textbf{<70\%:} Unsatisfactory, significant deficiencies
+\end{itemize}
+
+\subsubsection{Overall Score Calculation}
+
+\begin{enumerate}
+    \item Calculate weighted score for each task
+    \item Sum all weighted scores = Overall Score
+    \item Check for critical errors (automatic failure if any)
+    \item Final result: GO (≥80\%, no critical errors) or NO-GO (<80\% or critical error)
+\end{enumerate}
+
+\textbf{Example Calculation:}
+\begin{itemize}
+    \item System Startup: 90\% × 10\% = 9 points
+    \item Manual Control: 85\% × 10\% = 8.5 points
+    \item Tracking: 95\% × 20\% = 19 points
+    \item Simulated Engagement: 80\% × 25\% = 20 points
+    \item Zeroing: 90\% × 15\% = 13.5 points
+    \item Emergency Response: 100\% × 15\% = 15 points
+    \item Troubleshooting: 75\% × 5\% = 3.75 points
+    \item \textbf{Overall Score: 88.75\% = GO}
+\end{itemize}
+
+% ============================================================================
+\section{QUALIFICATION REQUIREMENTS}
+
+\subsection{TO QUALIFY AS EL 7ARRESS RCWS OPERATOR}
+
+\textbf{Must pass ALL:}
+
+\begin{checklist}
+    \item Written examination (≥80\%)
+    \item Practical evaluation (≥80\%)
+    \item Zero critical errors
+    \item Instructor recommendation
+\end{checklist}
+
+\subsection{Qualification Certificate}
+
+Upon successful completion, operator receives:
+\begin{itemize}
+    \item Certificate of Qualification
+    \item Operator ID card
+    \item Entry in training records
+    \item Authorization for operational duty
+\end{itemize}
+
+\textbf{Qualification Valid:} 12 months from date of issue
+
+% ----------------------------------------------------------------------------
+\subsection{REQUALIFICATION REQUIREMENTS}
+
+Requalification required:
+\begin{itemize}
+    \item \textbf{Annually} (refresher training + re-test)
+    \item \textbf{After >6 months away from system}
+    \item \textbf{After major system upgrade}
+    \item \textbf{If unsafe practices observed}
+    \item \textbf{Upon commander's discretion}
+\end{itemize}
+
+\subsubsection{Requalification Process}
+
+\textbf{Annual Requalification:}
+\begin{enumerate}
+    \item 4-hour refresher training (classroom)
+    \item Abbreviated written exam (25 questions, 80\% required)
+    \item Practical evaluation (key tasks only: engagement, emergencies)
+    \item Verification of zero proficiency
+\end{enumerate}
+
+\textbf{Extended Absence (>6 months):}
+\begin{enumerate}
+    \item Full course review recommended
+    \item Full written examination
+    \item Full practical evaluation
+    \item May require full re-qualification at instructor's discretion
+\end{enumerate}
+
+% ============================================================================
+\section{REMEDIAL TRAINING}
+
+\subsection{IF STUDENT FAILS QUALIFICATION}
+
+\textbf{Failed Written Exam:}
+\begin{itemize}
+    \item Review incorrect answers with instructor
+    \item Additional study (weak areas identified)
+    \item Re-test after minimum 24 hours
+    \item Maximum 2 re-test attempts
+\end{itemize}
+
+\textbf{Failed Practical Evaluation:}
+\begin{itemize}
+    \item Review performance with instructor (identify deficiencies)
+    \item Additional practice on failed tasks
+    \item Re-test after minimum 48 hours
+    \item Maximum 2 re-test attempts
+\end{itemize}
+
+\textbf{Critical Error:}
+\begin{itemize}
+    \item Immediate training halt
+    \item Safety review with instructor and commander
+    \item Mandatory additional training (duration determined by commander)
+    \item Re-start evaluation from beginning
+\end{itemize}
+
+\subsection{Maximum Attempts}
+
+\begin{itemize}
+    \item \textbf{Written Exam:} 3 attempts maximum (initial + 2 retakes)
+    \item \textbf{Practical Eval:} 3 attempts maximum (initial + 2 retakes)
+    \item \textbf{If failed after 3 attempts:} Student removed from training, command decision on future training
+\end{itemize}
+
+% ============================================================================
+\section{POST-QUALIFICATION}
+
+\subsection{CONTINUING EDUCATION}
+
+Qualified operators are expected to:
+\begin{itemize}
+    \item Maintain proficiency through regular operations
+    \item Attend quarterly refresher training sessions
+    \item Review operator manual periodically
+    \item Stay current on system updates and modifications
+    \item Mentor junior operators (once experienced)
+\end{itemize}
+
+\subsection{ADVANCED TRAINING}
+
+Experienced operators may qualify for advanced courses:
+\begin{itemize}
+    \item \textbf{Instructor Operator:} Train new operators
+    \item \textbf{Maintainer Cross-Training:} Operator-level maintenance
+    \item \textbf{Tactics Development:} Advanced employment techniques
+    \item \textbf{System Specialist:} Deep technical expertise
+\end{itemize}
+
+\subsection{PERFORMANCE TRACKING}
+
+Operator performance tracked through:
+\begin{itemize}
+    \item Mission logs (accuracy, efficiency)
+    \item Incident reports (any safety issues)
+    \item Peer evaluations (teamwork, professionalism)
+    \item Annual requalification scores
+\end{itemize}
+
+\textbf{Outstanding performance may result in:}
+\begin{itemize}
+    \item Commendation
+    \item Selection for advanced training
+    \item Instructor duty assignment
+    \item Leadership positions
+\end{itemize}
+
+% ============================================================================
+\section{FINAL CHECKLIST}
+
+\subsection{BEFORE FINAL EVALUATION}
+
+\textbf{Student should verify:}
+
+\begin{checklist}
+    \item Attended all lessons (1-10)
+    \item Completed all practical exercises
+    \item Reviewed all reference materials
+    \item Practiced emergency procedures
+    \item Comfortable with all system functions
+    \item Any questions answered by instructor
+    \item Well-rested and prepared for evaluation day
+\end{checklist}
+
+\subsection{ON EVALUATION DAY}
+
+\textbf{Bring:}
+\begin{itemize}
+    \item Government-issued ID
+    \item Training record
+    \item Writing materials (pen/pencil for written exam)
+    \item Appropriate uniform
+    \item Positive attitude and confidence
+\end{itemize}
+
+\textbf{Arrive:}
+\begin{itemize}
+    \item 15 minutes before scheduled time
+    \item Well-rested and alert
+    \item Ready to demonstrate proficiency
+\end{itemize}
+
+% ============================================================================
+\section{CONCLUSION}
+
+\subsection{IMPORTANCE OF QUALIFICATION}
+
+El 7arress RCWS operators hold a position of great responsibility:
+\begin{itemize}
+    \item Control of lethal weapon system
+    \item Protection of friendly forces
+    \item Engagement of hostile threats
+    \item Safety of personnel and equipment
+\end{itemize}
+
+Qualification ensures operators are:
+\begin{itemize}
+    \item Technically proficient
+    \item Safety-conscious
+    \item Tactically sound
+    \item Ready for operational duty
+\end{itemize}
+
+\subsection{FINAL WORDS}
+
+\begin{quotation}
+\textit{``A qualified operator is not just someone who knows how to operate the system - it is someone who can be trusted with a weapon, who makes sound decisions under pressure, and who puts safety and mission accomplishment above all else.''}
+
+\hfill --- El 7arress Training Doctrine
+\end{quotation}
+
+\vspace{1cm}
+
+\textbf{Good luck on your qualification!}
+
+% ============================================================================
+% END OF LESSON 10
+% ============================================================================
