@@ -1,0 +1,1304 @@
+% ============================================================================
+% LESSON 2 - BASIC OPERATION (UPDATED FOR QT6)
+% ============================================================================
+\lesson{2: BASIC OPERATION}
+
+\noindent
+\begin{tabular}{@{}ll@{}}
+\textbf{Duration:} & 4 hours \\
+\textbf{Type:} & Classroom + Practical \\
+\textbf{References:} & Operator manual, system startup checklist \\
+\end{tabular}
+
+\section{Introduction}
+
+\textbf{Lesson Purpose}: This lesson teaches complete system startup, ammunition loading, DCU and joystick operations, OSD interpretation, and proper shutdown procedures.
+
+\textbf{Learning Objectives}:
+\begin{itemize}
+    \item Perform complete system startup procedure
+    \item Execute ammunition feed cycle
+    \item Operate all DCU buttons, switches, and controls
+    \item Control gimbal movement using joystick
+    \item Utilize all 19 joystick buttons effectively
+    \item Switch between day and thermal cameras
+    \item Operate camera zoom and LUT controls
+    \item Interpret all OSD elements correctly including LAC status
+    \item Perform normal system shutdown
+\end{itemize}
+
+\section{System Startup Procedure}
+
+\subsection{Pre-Startup Checklist}
+
+Before powering on the system, verify:
+
+\begin{checklist}
+    \item Walk-around inspection complete (Lesson 1) - all items GO
+    \item Weapon cleared per Appendix A
+    \item Ammunition removed or accounted for
+    \item All personnel clear of turret (minimum 2 meters)
+    \item Vehicle power available (check voltage: 20-30V DC nominal)
+    \item Operator qualified and authorized
+    \item Mission briefing received (zones, ROE, threats)
+    \item Communication established with command
+\end{checklist}
+
+\begin{warningbox}
+Do not start system if any checklist item is not complete.
+\end{warningbox}
+
+\subsection{Startup Sequence (10 Steps)}
+
+Perform steps in order. Do not skip steps.
+
+\begin{procedurebox}[STEP 1: INITIAL POWER-UP]
+\textbf{Action}:
+\begin{itemize}
+    \item Ensure \button{Station Enable} switch is in OFF position
+    \item Apply vehicle power to RCWS (circuit breaker ON or power cable connected)
+\end{itemize}
+
+\textbf{Expected Result}:
+\begin{itemize}
+    \item \textbf{Power} indicator light illuminates (Green)
+    \item DCU screen displays boot logo: "El 7arress RCWS"
+    \item System begins self-test (approximately 30 seconds)
+\end{itemize}
+
+\textbf{If NO Power Light}:
+\begin{itemize}
+    \item Check vehicle power supply (voltage 20-30V DC)
+    \item Check circuit breaker
+    \item Check cable connections
+    \item Report to maintenance if power available but no light
+\end{itemize}
+\end{procedurebox}
+
+\begin{procedurebox}[STEP 2: BOOT SELF-TEST]
+\textbf{Action}:
+\begin{itemize}
+    \item Observe DCU screen during boot
+    \item Wait for self-test to complete (DO NOT interrupt)
+\end{itemize}
+
+\textbf{Expected Display Sequence}:
+\begin{lstlisting}
+El 7arress RCWS - System Initialization
+
+Checking Devices...
+[ OK ] Day Camera (Sony)
+[ OK ] Thermal Camera (FLIR TAU 2)
+[ OK ] Laser Rangefinder
+[ OK ] IMU/AHRS (Attitude System)
+[ OK ] Azimuth Servo
+[ OK ] Elevation Servo
+[ OK ] Servo Actuator
+[ OK ] Joystick Controller
+[ OK ] PLC21 (Control Panel)
+[ OK ] PLC42 (Gimbal Station)
+
+System Ready
+Press STATION ENABLE to continue
+\end{lstlisting}
+
+\textbf{If Any Device Shows [FAIL]}:
+\begin{itemize}
+    \item DO NOT PROCEED with startup
+    \item Note which device failed
+    \item Report to maintenance immediately
+    \item System may operate in degraded mode but requires supervisor approval
+\end{itemize}
+\end{procedurebox}
+
+\begin{procedurebox}[STEP 3: ENABLE STATION]
+\textbf{Action}:
+\begin{itemize}
+    \item Move \button{Station Enable} switch from OFF to ON
+\end{itemize}
+
+\textbf{Expected Result}:
+\begin{itemize}
+    \item \textbf{System Ready} light illuminates (Green)
+    \item Gimbal motors energize (you may hear a soft hum)
+    \item Video feed appears on DCU screen
+    \item OSD overlay displays system information
+    \item OSD displays: \osd{SYSTEM INIT...}
+    \item Gimbal automatically initiates homing sequence
+\end{itemize}
+
+\begin{cautionbox}
+Gimbal will move during this step. Ensure area is clear.
+\end{cautionbox}
+\end{procedurebox}
+
+\begin{procedurebox}[STEP 4: AUTOMATIC HOMING SEQUENCE]
+\textbf{System automatically executes homing to calibrate gimbal position.}
+
+\textbf{Homing Sequence (50ms control loop cycles)}:
+
+\begin{enumerate}
+    \item \textbf{Cycle 0 - Initialization}:
+    \begin{itemize}
+        \item System enters \texttt{Requested} state
+        \item OSD displays: \osd{homing init} (orange text)
+    \end{itemize}
+
+    \item \textbf{Cycle 1 - Command Sent} (50ms later):
+    \begin{itemize}
+        \item GimbalController sends HOME command to PLC42
+        \item PLC42 sends HOME signal to Oriental Motor servo drives
+        \item Servo drives begin mechanical homing sequence
+    \end{itemize}
+
+    \item \textbf{Cycle 2 - In Progress} (100ms total):
+    \begin{itemize}
+        \item State transitions to \texttt{InProgress}
+        \item OSD displays: \osd{HOMING...} (yellow text)
+        \item 30-second timeout timer starts
+        \item Gimbal begins moving to mechanical home positions
+    \end{itemize}
+
+    \item \textbf{Waiting for HOME-END Signals}:
+    \begin{itemize}
+        \item Azimuth servo completes homing → sends HOME-END signal (DI6)
+        \item Elevation servo completes homing → sends HOME-END signal (DI7)
+        \item Both signals must be received for completion
+    \end{itemize}
+
+    \item \textbf{Completion}:
+    \begin{itemize}
+        \item Both HOME-END signals received
+        \item State = \texttt{Completed}
+        \item OSD displays: \osd{HOME COMPLETE} (green text, 2 seconds)
+        \item Gimbal positions now calibrated to mechanical home
+        \item System transitions to operational mode
+    \end{itemize}
+\end{enumerate}
+
+\textbf{Expected Result}:
+\begin{itemize}
+    \item OSD displays: \osd{AZ: 000° EL: 00°} (±2° tolerance)
+    \item Reticle centered on screen
+    \item Gimbal points directly forward relative to vehicle
+    \item \textbf{Normal completion time}: 5-15 seconds
+\end{itemize}
+
+\textbf{Manual Homing (if needed)}:
+\begin{itemize}
+    \item If gimbal position drifts or after maintenance, press \button{HOME} button on DCU
+    \item Same homing sequence executes as described above
+\end{itemize}
+
+\begin{warningbox}[HOMING TIMEOUT]
+If homing does not complete within \textbf{30 seconds}, system enters FAULT state:
+\begin{itemize}
+    \item OSD displays: \osd{HOMING TIMEOUT - FAULT} (red flashing)
+    \item Gimbal stops movement
+    \item System safes all operations
+\end{itemize}
+
+\textbf{Possible Causes}:
+\begin{itemize}
+    \item Mechanical obstruction preventing movement
+    \item Servo drive failure or power loss
+    \item HOME sensor failure on Oriental Motor drive
+    \item Cable disconnection (DI6/DI7 signals)
+    \item Excessive mechanical friction
+\end{itemize}
+
+\textbf{Recovery Action}:
+\begin{enumerate}
+    \item Press \button{EMERGENCY STOP}
+    \item Inspect gimbal for obstructions (Station Enable OFF)
+    \item Clear any obstructions
+    \item Verify cable connections to servo drives
+    \item Reset system: Station Enable OFF → ON
+    \item System will retry homing
+    \item If fault persists after 2 attempts: Report to maintenance
+\end{enumerate}
+\end{warningbox}
+
+\begin{notebox}[TECHNICAL NOTE]
+The Oriental Motor servo drives use optical HOME sensors. When HOME command is sent, each servo rotates until it detects the HOME sensor mark, then sends a HOME-END signal back to PLC42. This ensures absolute position calibration on every startup.
+\end{notebox}
+\end{procedurebox}
+
+\begin{procedurebox}[STEP 5: SELECT CAMERA]
+\textbf{Action}:
+\begin{itemize}
+    \item System defaults to DAY camera on startup
+    \item To switch: Press joystick button (camera toggle - see Section 2.4)
+\end{itemize}
+
+\textbf{Expected Result}:
+\begin{itemize}
+    \item OSD displays camera type: \osd{DAY} or \osd{THERMAL}
+    \item Video image switches between color (day) and grayscale/colorized (thermal)
+    \item FOV (Field of View) value updates on OSD based on camera type
+\end{itemize}
+\end{procedurebox}
+
+\begin{procedurebox}[STEP 6: TEST GIMBAL MOVEMENT]
+\textbf{Action}:
+\begin{itemize}
+    \item Gently move joystick in all directions (left/right/up/down)
+    \item Verify gimbal responds smoothly
+    \item Return joystick to center (gimbal stops)
+\end{itemize}
+
+\textbf{Expected Result}:
+\begin{itemize}
+    \item Gimbal slews in direction of joystick movement
+    \item OSD azimuth/elevation values update in real-time
+    \item No grinding, binding, or unusual noises
+    \item Gimbal stops when joystick returns to center
+\end{itemize}
+\end{procedurebox}
+
+\begin{procedurebox}[STEP 7: TEST CAMERA ZOOM]
+\textbf{Action}:
+\begin{itemize}
+    \item Press \button{Button 6} (Zoom +) to zoom in
+    \item Press \button{Button 8} (Zoom -) to zoom out
+    \item Observe video image magnification change
+    \item Observe FOV value on OSD
+\end{itemize}
+
+\textbf{Expected Result}:
+\begin{itemize}
+    \item Image magnifies when zooming in (FOV decreases)
+    \item Image wide-angle when zooming out (FOV increases)
+    \item Zoom is smooth with no jerking
+    \item OSD FOV updates continuously
+\end{itemize}
+\end{procedurebox}
+
+\begin{procedurebox}[STEP 8: TEST LASER RANGEFINDER (LRF)]
+\textbf{Action}:
+\begin{itemize}
+    \item Aim reticle at a known object 100m+ away
+    \item Press \button{Button 1} (single-click for single measurement)
+\end{itemize}
+
+\textbf{Expected Result}:
+\begin{itemize}
+    \item Laser fires (you will NOT see visible beam - infrared)
+    \item OSD displays range reading: \osd{RNG: XXXm}
+    \item Range updates within 1 second
+    \item LRF automatically times out after 5 seconds
+\end{itemize}
+
+\begin{warningbox}
+Do not aim LRF at people, animals, or reflective surfaces at close range. Class 3B laser - eye damage can occur.
+\end{warningbox}
+\end{procedurebox}
+
+\begin{procedurebox}[STEP 9: ENABLE STABILIZATION]
+\textbf{Action}:
+\begin{itemize}
+    \item Set \button{Stabilization} switch to ON
+\end{itemize}
+
+\textbf{Expected Result}:
+\begin{itemize}
+    \item OSD displays \osd{STAB: ON}
+    \item AHRS (Attitude and Heading Reference System) activates
+    \item Gimbal compensates for vehicle movement (roll, pitch, yaw)
+    \item Reticle remains steady on target even if vehicle rocks
+\end{itemize}
+
+\begin{notebox}[AHRS STABILIZATION]
+The system uses IMU (Inertial Measurement Unit) data to stabilize the gimbal. When the vehicle is \textbf{stationary} (detected automatically), stabilization accuracy improves significantly. The system displays \osd{VEHICLE STATIONARY} on OSD when enhanced stabilization is active.
+\end{notebox}
+\end{procedurebox}
+
+\begin{procedurebox}[STEP 10: SYSTEM READY - FINAL CHECK]
+\textbf{Verify all indicator lights}:
+\begin{itemize}
+    \item \textbf{Power}: Green (ON)
+    \item \textbf{System Ready}: Green (ON)
+    \item \textbf{Gun Armed}: OFF (system is SAFE)
+    \item \textbf{Fault/Alarm}: OFF (no errors)
+\end{itemize}
+
+\textbf{Verify OSD displays}:
+\begin{itemize}
+    \item Live video feed (day or thermal)
+    \item Azimuth and elevation values (near 000°/00°)
+    \item Current FOV
+    \item System mode: \osd{MODE: Manual}
+    \item Ammunition status: \osd{IDLE} (gray - no belt loaded)
+    \item No warning messages
+\end{itemize}
+
+\textbf{If All Checks Pass}: System is ready for operation
+\end{procedurebox}
+
+\subsection{Startup Troubleshooting}
+
+\small
+\begin{longtable}{|L{0.25\textwidth}|L{0.30\textwidth}|L{0.38\textwidth}|}
+\hline
+\rowcolor{milblue!20}
+\textbf{Problem} & \textbf{Possible Cause} & \textbf{Action} \\
+\hline
+No power light & No vehicle power & Check circuit breaker, voltage \\
+\hline
+Self-test fails & Device malfunction & Note failed device, report to maintenance \\
+\hline
+No video feed & Camera error & Check camera connections, restart system \\
+\hline
+Gimbal won't move & Motors disabled or fault & Check Station Enable, check for faults \\
+\hline
+Homing timeout & Obstruction, sensor fail & Clear obstruction, check HOME sensors (DI6/DI7) \\
+\hline
+Erratic gimbal & Joystick calibration & Recalibrate joystick (maintenance task) \\
+\hline
+LRF no reading & Out of range or bad target & Aim at closer/better reflective target \\
+\hline
+Thermal frozen & FFC in progress & Wait 5 seconds for FFC to complete \\
+\hline
+\end{longtable}
+
+% ============================================================================
+\section{Ammunition Feed Procedure}
+% ============================================================================
+
+\subsection{Ammunition Feed System Overview}
+
+\textbf{System Type}: Servo-actuator based belt feed with encoder position detection
+
+\textbf{Detection Method}:
+\begin{itemize}
+    \item \textbf{NO physical belt sensor exists}
+    \item System confirms ammunition loading via \textbf{servo encoder position feedback}
+    \item Servo actuator extends to engage belt, then retracts to home position
+    \item Encoder verifies servo reached target positions
+\end{itemize}
+
+\subsection{OSD Ammunition Status Indicators}
+
+The OSD displays current ammunition feed status using color-coded indicators:
+
+\small
+\begin{longtable}{|L{0.18\textwidth}|C{0.15\textwidth}|L{0.60\textwidth}|}
+\hline
+\rowcolor{milblue!20}
+\textbf{Status} & \textbf{Color} & \textbf{Meaning} \\
+\hline
+\osd{IDLE} & Gray & No ammunition loaded, feed cycle not run yet \\
+\hline
+\osd{FEED...} & Orange & Feed cycle in progress (extending/retracting) \\
+\hline
+\osd{BELT} & Green & Belt successfully loaded (encoder confirms seated position) \\
+\hline
+\osd{FAULT} & Red (flash) & Timeout occurred, operator reset required \\
+\hline
+\end{longtable}
+
+\subsection{Ammunition Loading Procedure}
+
+\begin{procedurebox}[LOADING AMMUNITION BELT]
+\textbf{Prerequisites}:
+\begin{checklist}
+    \item System powered and initialized
+    \item Station Enable: ON
+    \item Weapon system: SAFE
+    \item Operator authorized
+\end{checklist}
+
+\textbf{Procedure}:
+\begin{enumerate}
+    \item Manually feed ammunition belt into weapon receiver (per weapon manual)
+    \item Press \button{AMMO LOAD} button on DCU panel
+    \item System begins automatic feed cycle:
+    \begin{itemize}
+        \item OSD displays: \osd{FEED...} (orange)
+        \item Servo actuator extends to \textbf{63,000 encoder counts} (belt engagement)
+        \item Encoder confirms position reached
+        \item Servo actuator retracts to \textbf{2,048 encoder counts} (home position)
+        \item Encoder confirms return to home
+    \end{itemize}
+    \item When cycle completes successfully:
+    \begin{itemize}
+        \item OSD displays: \osd{BELT} (green)
+        \item \textbf{Ammo Loaded} indicator light illuminates (yellow)
+        \item System ready for firing (when armed)
+    \end{itemize}
+    \item \textbf{Total cycle time}: 2-5 seconds (normal operation)
+\end{enumerate}
+
+\textbf{Expected Result}:
+\begin{itemize}
+    \item Belt firmly seated in weapon receiver
+    \item Servo actuator at home position
+    \item OSD shows \osd{BELT} status
+    \item Ready for engagement
+\end{itemize}
+\end{procedurebox}
+
+\begin{warningbox}[CYCLE IN PROGRESS]
+\textbf{Do NOT interrupt the ammunition feed cycle}. Once started:
+\begin{itemize}
+    \item Cycle runs to completion automatically (MIL-STD compliant)
+    \item Button release is IGNORED during cycle
+    \item Servo must complete extend → retract sequence
+    \item Interruption can cause jam or fault condition
+\end{itemize}
+\end{warningbox}
+
+\subsection{Fault Recovery}
+
+\textbf{If FAULT Occurs}:
+
+\begin{procedurebox}[AMMUNITION FEED FAULT RECOVERY]
+\textbf{Fault Indication}:
+\begin{itemize}
+    \item OSD displays: \osd{FAULT} (red flashing)
+    \item Servo did not reach expected position within 6 seconds (watchdog timeout)
+    \item System safes weapon automatically
+\end{itemize}
+
+\textbf{Possible Causes}:
+\begin{itemize}
+    \item Belt jam or misalignment
+    \item Servo actuator mechanical obstruction
+    \item Servo drive fault or power loss
+    \item Encoder feedback error
+\end{itemize}
+
+\textbf{Recovery Procedure}:
+\begin{enumerate}
+    \item Press \button{RESET FEED FAULT} button on DCU
+    \item System attempts safe retraction to home position
+    \item If retraction successful:
+    \begin{itemize}
+        \item OSD returns to \osd{IDLE} (gray)
+        \item Inspect weapon receiver for jams
+        \item Clear any obstructions
+        \item Retry ammunition loading procedure
+    \end{itemize}
+    \item If retraction fails or fault persists:
+    \begin{itemize}
+        \item Press \button{EMERGENCY STOP}
+        \item Set \button{Station Enable} to OFF
+        \item Manually inspect servo actuator and weapon receiver
+        \item Report to maintenance
+    \end{itemize}
+\end{enumerate}
+\end{procedurebox}
+
+\begin{notebox}[TECHNICAL NOTE - ENCODER DETECTION]
+The ammunition feed system uses \textbf{servo encoder position feedback} to confirm belt loading:
+\begin{itemize}
+    \item \textbf{Extended position (63,000 counts)}: Belt engagement verified
+    \item \textbf{Home position (2,048 counts)}: Ready state confirmed
+    \item \textbf{Position tolerance}: ±200 counts
+    \item \textbf{No belt sensor}: System does NOT use a physical "belt seated" sensor
+\end{itemize}
+
+This method provides reliable detection without additional sensors that can fail or give false positives.
+\end{notebox}
+
+% ============================================================================
+\section{Display and Control Unit (DCU) Operations}
+% ============================================================================
+
+\subsection{DCU Button and Switch Functions}
+
+\subsubsection{Emergency Stop Button (RED)}
+
+\textbf{Location}: Top left of DCU panel, large RED button
+
+\textbf{Function}: Immediate system shutdown for safety emergencies
+
+\textbf{Operation}:
+\begin{enumerate}
+    \item Press button (no confirmation required)
+    \item System immediately:
+    \begin{itemize}
+        \item Stops all gimbal movement
+        \item Safes weapon (trigger disabled)
+        \item Locks servos in place
+        \item Aborts any active operations (homing, tracking, ammunition feed)
+        \item Displays "EMERGENCY STOP ACTIVE" on OSD
+    \end{itemize}
+\end{enumerate}
+
+\textbf{To Reset}:
+\begin{enumerate}
+    \item Twist/pull button to release (mechanical latch)
+    \item Verify emergency condition is resolved
+    \item Press \button{Station Enable} OFF then ON to restart
+    \item System will re-execute homing sequence
+\end{enumerate}
+
+\begin{warningbox}[CRITICAL]
+Do NOT hesitate to use Emergency Stop. Better safe than sorry. Emergency Stop aborts ALL operations including homing and ammunition feed cycles.
+\end{warningbox}
+
+\subsubsection{Station Enable Switch}
+
+\textbf{Positions}: OFF / ON
+
+\textbf{OFF Position}:
+\begin{itemize}
+    \item Gimbal motors disabled (turret cannot move)
+    \item Video still displays (cameras remain powered)
+    \item Weapon is safed
+    \item Safe to approach turret for inspection
+\end{itemize}
+
+\textbf{ON Position}:
+\begin{itemize}
+    \item Gimbal motors enabled
+    \item All subsystems operational
+    \item Turret can move if joystick input received
+    \item Stay clear of turret
+\end{itemize}
+
+\subsubsection{Gun Arm/Safe Switch}
+
+\textbf{Positions}: SAFE / ARM
+
+\textbf{SAFE Position} (Default):
+\begin{itemize}
+    \item Weapon trigger disabled
+    \item Gun Armed light is OFF
+    \item Trigger pull has no effect
+    \item Safe for non-combat operations
+\end{itemize}
+
+\textbf{ARM Position}:
+\begin{itemize}
+    \item Weapon trigger enabled
+    \item Gun Armed light illuminates RED
+    \item Trigger pull will fire weapon (if other conditions met)
+    \item Only use during combat or live fire training
+\end{itemize}
+
+\begin{warningbox}
+When Gun Armed light is RED, treat weapon as HOT. One trigger pull away from firing.
+\end{warningbox}
+
+\subsubsection{Fire Mode Selector}
+
+\textbf{Positions}: SINGLE / SHORT BURST / LONG BURST
+
+\begin{twocol}
+\textbf{SINGLE}:
+\begin{itemize}
+    \item One round per trigger pull
+    \item Most accurate mode
+    \item Use for precision engagement
+\end{itemize}
+
+\textbf{SHORT BURST}:
+\begin{itemize}
+    \item 3-5 rounds per trigger pull
+    \item Good balance of accuracy and firepower
+    \item Use for moving targets
+\end{itemize}
+
+\textbf{LONG BURST}:
+\begin{itemize}
+    \item Continuous fire while trigger held
+    \item Less accurate due to recoil
+    \item Use for area suppression
+\end{itemize}
+\end{twocol}
+
+\subsubsection{Speed Select Switch}
+
+\textbf{Positions}: LOW / MEDIUM / HIGH
+
+\small
+\begin{longtable}{|L{0.20\textwidth}|L{0.35\textwidth}|L{0.38\textwidth}|}
+\hline
+\rowcolor{milblue!20}
+\textbf{Speed} & \textbf{Use Case} & \textbf{Max Slew Rate} \\
+\hline
+LOW & Zeroing, fine adjustments, precision & ~5\degree/second \\
+\hline
+MEDIUM & Normal surveillance, target acquisition & ~20\degree/second \\
+\hline
+HIGH & Close-range threats, emergencies & ~60\degree/second \\
+\hline
+\end{longtable}
+
+\subsection{DCU Indicator Lights}
+
+\begin{twocol}
+\begin{itemize}
+    \item \textbf{Power} (Green): Vehicle power supplied
+    \item \textbf{System Ready} (Green): All subsystems operational
+    \item \textbf{Gun Armed} (Red): Weapon is armed
+    \item \textbf{Ammo Loaded} (Yellow): Belt loaded (encoder confirmed)
+    \item \textbf{Authorized} (Green): Operator authorized
+    \item \textbf{Fault/Alarm} (Red): System error detected
+\end{itemize}
+\end{twocol}
+
+% ============================================================================
+\section{Joystick Controller Operations}
+% ============================================================================
+
+\subsection{Joystick Control Techniques}
+
+\subsubsection{Proper Grip}
+
+\textbf{Right Hand Position}:
+\begin{enumerate}
+    \item Wrap fingers around joystick grip
+    \item Index finger rests on \button{Button 5} trigger (outside trigger guard when not firing)
+    \item Thumb on top, near top buttons
+    \item \button{Button 3} Dead Man Switch on rear of grip - squeeze with palm/fingers to engage
+\end{enumerate}
+
+\subsubsection{Gimbal Slew Technique}
+
+\textbf{Small Movements} (Precision):
+\begin{itemize}
+    \item Deflect stick slightly from center (10-20\%)
+    \item Gimbal moves slowly
+    \item Good for: Tracking, zeroing, fine adjustments
+\end{itemize}
+
+\textbf{Large Movements} (Rapid Slew):
+\begin{itemize}
+    \item Deflect stick fully (80-100\%)
+    \item Gimbal moves at maximum speed (depends on Speed Select switch)
+    \item Good for: Searching, responding to threats, sector scans
+\end{itemize}
+
+\subsection{Complete Joystick Button Reference (19 Buttons)}
+
+The joystick has **19 programmable buttons** (Button 0 through Button 18). This section provides the complete button mapping.
+
+\subsubsection{Primary Combat Controls}
+
+\small
+\begin{longtable}{|C{0.12\textwidth}|L{0.28\textwidth}|L{0.53\textwidth}|}
+\hline
+\rowcolor{milblue!20}
+\textbf{Button} & \textbf{Function} & \textbf{Operation} \\
+\hline
+\textbf{Button 0} & Engagement Mode & START/STOP engagement sequence (lesson 5) \\
+\hline
+\textbf{Button 1} & Laser Rangefinder (LRF) &
+\textbf{Single-click}: Single measurement \\
+\textbf{Double-click} (<500ms): Continuous ranging mode \\
+\hline
+\textbf{Button 2} & Lead Angle Compensation (LAC) &
+Toggle LAC ON/OFF for moving targets (Lesson 6) \\
+OSD displays LAC status \\
+\hline
+\textbf{Button 3} & Dead Man Switch &
+\textbf{MUST HOLD} for weapon operation \\
+Safety interlock - release to safe weapon \\
+\hline
+\textbf{Button 4} & Tracking Control &
+\textbf{Single-click}: Enter acquisition / size gate \\
+\textbf{Double-click} (<500ms): Start/stop tracking \\
+\hline
+\textbf{Button 5} & Fire Weapon &
+Weapon trigger (when armed) \\
+Respects fire mode selector setting \\
+\hline
+\end{longtable}
+
+\begin{warningbox}[MEMORIZE THESE BUTTONS]
+Buttons 0-5 are CRITICAL for combat operations. Operators must be able to activate these buttons instinctively without looking at the joystick.
+\end{warningbox}
+
+\subsubsection{Camera \& Display Controls}
+
+\small
+\begin{longtable}{|C{0.12\textwidth}|L{0.28\textwidth}|L{0.53\textwidth}|}
+\hline
+\rowcolor{milblue!20}
+\textbf{Button} & \textbf{Function} & \textbf{Operation} \\
+\hline
+\textbf{Button 6} & Zoom In &
+Increase camera magnification \\
+FOV decreases, zoom factor increases \\
+\hline
+\textbf{Button 7} & Thermal LUT + &
+Next video Look-Up Table (thermal camera only) \\
+Cycles through: White Hot, Black Hot, Ironbow, etc. \\
+\hline
+\textbf{Button 8} & Zoom Out &
+Decrease camera magnification \\
+FOV increases, zoom factor decreases \\
+\hline
+\textbf{Button 9} & Thermal LUT - &
+Previous video Look-Up Table (thermal camera only) \\
+Reverse cycle through thermal palettes \\
+\hline
+\textbf{Button 10} & LRF Clear &
+Clear displayed range reading from OSD \\
+Stops continuous ranging if active \\
+\hline
+\end{longtable}
+
+\subsubsection{Motion Mode \& Surveillance Controls}
+
+\small
+\begin{longtable}{|C{0.12\textwidth}|L{0.28\textwidth}|L{0.53\textwidth}|}
+\hline
+\rowcolor{milblue!20}
+\textbf{Button} & \textbf{Function} & \textbf{Operation} \\
+\hline
+\textbf{Button 11} & Mode Cycle &
+Cycle motion modes: Manual → AutoSectorScan → TRP Scan → Manual \\
+OSD displays current mode \\
+\hline
+\textbf{Button 12} & \textit{Available} &
+Reserved for future use \\
+Currently unassigned \\
+\hline
+\textbf{Button 13} & Mode Cycle &
+Duplicate of Button 11 (ergonomic placement) \\
+Same function, different location on joystick \\
+\hline
+\textbf{Button 14} & Select Next TRP/Scan &
+During TRP Scan or AutoSectorScan modes: \\
+Advance to next TRP page or scan zone \\
+\hline
+\textbf{Button 15} & \textit{Reserved} &
+Reserved for future use \\
+\hline
+\textbf{Button 16} & Select Previous TRP/Scan &
+During TRP Scan or AutoSectorScan modes: \\
+Return to previous TRP page or scan zone \\
+\hline
+\textbf{Button 17} & \textit{Reserved} &
+Reserved for future use \\
+\hline
+\textbf{Button 18} & \textit{Reserved} &
+Reserved for future use \\
+\hline
+\end{longtable}
+
+\subsection{Detailed Button Operations}
+
+\subsubsection{Button 1: Laser Rangefinder (LRF)}
+
+\textbf{Location}: Front grip, easily accessible with index/middle finger
+
+\textbf{Two Operating Modes}:
+
+\textbf{1. Single Measurement Mode (Single-Click)}:
+\begin{procedurebox}[SINGLE LRF MEASUREMENT]
+\begin{enumerate}
+    \item Aim reticle at target
+    \item \textbf{Single-click} Button 1
+    \item Laser fires (invisible infrared beam)
+    \item OSD displays range: \osd{RNG: XXXm}
+    \item Range value remains displayed for reference
+    \item LRF automatically times out after 5 seconds
+\end{enumerate}
+\end{procedurebox}
+
+\textbf{2. Continuous Ranging Mode (Double-Click)}:
+\begin{procedurebox}[CONTINUOUS LRF MODE]
+\begin{enumerate}
+    \item Aim at target area or moving target
+    \item \textbf{Double-click} Button 1 (within 500ms)
+    \item LRF enters continuous mode
+    \item Laser fires repeatedly (2-5 Hz update rate)
+    \item OSD displays: \osd{RNG: XXXm (CONT)} - note "CONT" indicator
+    \item Range updates continuously as you track target
+    \item \textbf{To exit}: Single-click Button 1 OR press Button 10 (LRF Clear)
+\end{enumerate}
+\end{procedurebox}
+
+\textbf{When to Use Each Mode}:
+\begin{itemize}
+    \item \textbf{Single Mode}: Static targets, pre-engagement checks, verification shots
+    \item \textbf{Continuous Mode}: Moving targets, scanning area, tracking, ballistics updates
+\end{itemize}
+
+\textbf{Button 10 - LRF Clear}:
+\begin{itemize}
+    \item Press Button 10 to clear range display from OSD
+    \item Stops continuous ranging if active
+    \item Range indicator (\osd{RNG: XXXm}) disappears
+    \item Use when range data is no longer relevant
+\end{itemize}
+
+\textbf{Range Performance}:
+\begin{itemize}
+    \item \textbf{Minimum range}: 50 meters
+    \item \textbf{Maximum range}: 4000 meters
+    \item \textbf{Accuracy}: ±5 meters
+    \item \textbf{Update rate (continuous)}: 2-5 Hz
+\end{itemize}
+
+\begin{warningbox}[LASER SAFETY]
+Class 3B laser device. Do not aim at people, animals, or reflective surfaces at close range. Eye damage can occur. Laser beam is invisible (infrared 1550nm wavelength).
+\end{warningbox}
+
+\subsubsection{Button 2: Lead Angle Compensation (LAC)}
+
+\textbf{Location}: Front grip, near Button 1
+
+\textbf{Function}: Toggle Lead Angle Compensation ON/OFF for engaging moving targets
+
+\textbf{Operation}:
+\begin{procedurebox}[LAC ACTIVATION/DEACTIVATION]
+\begin{enumerate}
+    \item Press \button{Button 2} (single-click)
+    \item LAC toggles between OFF and ON
+    \item OSD displays current LAC status (see OSD section below)
+    \item System calculates motion lead when ON and tracking active
+\end{enumerate}
+\end{procedurebox}
+
+\textbf{LAC Status Display on OSD}:
+
+The OSD displays LAC status in the bottom-right area:
+
+\begin{itemize}
+    \item \osd{LAC: OFF} (gray) - Lead angle compensation disabled
+    \item \osd{LAC: ON} (green) - Lead angle active and functioning normally
+    \item \osd{LAC: LAG} (yellow) - Lead angle at maximum limit
+    \item \osd{LAC: ZOOM OUT} (red) - Lead angle too large for current FOV, zoom out required
+\end{itemize}
+
+\textbf{When to Use LAC}:
+\begin{itemize}
+    \item \textbf{Enable} when engaging moving targets (vehicles, personnel)
+    \item \textbf{Disable} for static targets (to avoid unnecessary corrections)
+    \item System automatically calculates lead based on:
+    \begin{itemize}
+        \item Target velocity (from tracking system)
+        \item Current range (from LRF)
+        \item Muzzle velocity (configured)
+    \end{itemize}
+\end{itemize}
+
+\begin{notebox}[IMPORTANT - JOYSTICK ONLY]
+LAC can \textbf{ONLY} be toggled via \button{Button 2} on the joystick. There is NO menu option for LAC activation. This allows rapid LAC toggling during combat without accessing menus.
+\end{notebox}
+
+\textbf{Detailed LAC operation covered in Lesson 6 (Ballistics \& Fire Control).}
+
+\subsubsection{Button 3: Dead Man Switch}
+
+\textbf{Location}: Rear of joystick grip (palm/finger squeeze activation)
+
+\textbf{Purpose}:
+\begin{itemize}
+    \item Critical safety interlock
+    \item Prevents accidental discharge if operator is incapacitated
+    \item Automatic safety if operator loses grip on joystick
+    \item Required safety condition for weapon firing
+\end{itemize}
+
+\textbf{Operation}:
+\begin{itemize}
+    \item Squeeze grip to engage Dead Man Switch
+    \item Switch must be held continuously when weapon is armed
+    \item Release switch → weapon immediately safes (trigger disabled)
+    \item Spring-loaded return ensures automatic release
+\end{itemize}
+
+\begin{warningbox}[CRITICAL SAFETY RULE]
+\textbf{Release Dead Man Switch immediately} when:
+\begin{itemize}
+    \item Not actively engaging a target
+    \item Threat eliminated or abort engagement
+    \item Any unsafe condition develops
+    \item Friendly forces enter area
+    \item Communication lost with command
+\end{itemize}
+Dead Man Switch release is your \textbf{primary immediate weapon safe action}.
+\end{warningbox}
+
+\subsubsection{Button 4: Tracking Control}
+
+\textbf{Two Functions (Single vs. Double-Click)}:
+
+\textbf{Single-Click}: Enter acquisition mode / size gate
+\begin{itemize}
+    \item Enters tracking acquisition mode (yellow gate appears)
+    \item During acquisition: Use D-Pad to size gate around target
+\end{itemize}
+
+\textbf{Double-Click (<500ms)}: Start tracking / Emergency abort
+\begin{itemize}
+    \item In acquisition: Initiates tracker lock-on attempt
+    \item While tracking: \textbf{Emergency abort} (stops tracking immediately)
+\end{itemize}
+
+\textbf{Detailed tracking procedures covered in Lesson 5.}
+
+\subsubsection{Buttons 6/8: Zoom Control}
+
+\textbf{Button 6}: Zoom In (increase magnification)
+\begin{itemize}
+    \item FOV decreases (narrower field of view)
+    \item Image magnification increases
+    \item OSD displays updated zoom factor (e.g., \osd{ZOOM: 15×})
+\end{itemize}
+
+\textbf{Button 8}: Zoom Out (decrease magnification)
+\begin{itemize}
+    \item FOV increases (wider field of view)
+    \item Image magnification decreases
+    \item OSD displays updated zoom factor
+\end{itemize}
+
+\textbf{Zoom Ranges}:
+\begin{itemize}
+    \item \textbf{Day camera}: 2° to 60° FOV (continuous optical zoom)
+    \item \textbf{Thermal camera}: Wide (10.4° HFOV) or Narrow (5.2° HFOV) + digital zoom
+\end{itemize}
+
+\subsubsection{Buttons 7/9: Thermal Video LUT}
+
+\textbf{LUT} = Look-Up Table (color palette for thermal imaging)
+
+\textbf{Button 7}: Next LUT (cycle forward through palettes)
+\textbf{Button 9}: Previous LUT (cycle backward)
+
+\textbf{Available Thermal LUTs}:
+\begin{enumerate}
+    \item \textbf{White Hot} - Hot objects appear white (default)
+    \item \textbf{Black Hot} - Hot objects appear black
+    \item \textbf{Ironbow} - Rainbow color mapping (red=hot, blue=cold)
+    \item \textbf{Lava} - Red/orange gradient
+    \item \textbf{Rainbow} - Full spectrum color mapping
+\end{enumerate}
+
+\textbf{When to Change LUT}:
+\begin{itemize}
+    \item Improve target contrast in different environments
+    \item Operator preference
+    \item Specific mission requirements (e.g., White Hot for urban, Ironbow for vehicle detection)
+\end{itemize}
+
+\begin{notebox}
+LUT buttons only affect thermal camera. No effect when day camera is active. Current LUT is saved and restored when switching cameras.
+\end{notebox}
+
+\subsubsection{Buttons 11/13: Motion Mode Cycle}
+
+\textbf{Function}: Cycle through available motion modes
+
+\textbf{Mode Sequence}:
+\begin{lstlisting}
+Manual → AutoSectorScan → TRP Scan → Manual (repeats)
+\end{lstlisting}
+
+\textbf{Current mode displayed on OSD}: \osd{MODE: Manual}, \osd{MODE: Sector Scan}, \osd{MODE: TRP}
+
+\textbf{Why Two Buttons (11 and 13)?}:
+\begin{itemize}
+    \item Ergonomic placement on different parts of joystick
+    \item Allows mode change regardless of hand position
+    \item Redundancy for critical function
+\end{itemize}
+
+\textbf{Restriction}: Cannot change modes during tracking acquisition. Must abort tracking first (Button 4 double-click).
+
+\textbf{Detailed motion mode operations covered in Lesson 4.}
+
+\subsubsection{Buttons 14/16: TRP/Scan Zone Selection}
+
+\textbf{Active Modes}: AutoSectorScan, TRP Scan
+
+\textbf{Button 14}: Select Next TRP page or scan zone
+\textbf{Button 16}: Select Previous TRP page or scan zone
+
+\textbf{During AutoSectorScan Mode}:
+\begin{itemize}
+    \item If multiple sector scan zones are defined
+    \item Press Button 14 → System slews to next sector zone
+    \item Press Button 16 → System slews to previous sector zone
+    \item OSD displays current zone name (e.g., \osd{SECTOR 2: East Perimeter})
+\end{itemize}
+
+\textbf{During TRP Scan Mode}:
+\begin{itemize}
+    \item If multiple TRP pages are defined
+    \item Press Button 14 → Load next TRP page
+    \item Press Button 16 → Load previous TRP page
+    \item OSD displays current page (e.g., \osd{TRP PAGE 2})
+    \item System begins visiting TRPs from new page
+\end{itemize}
+
+\textbf{Benefits}:
+\begin{itemize}
+    \item Rapid zone/page switching without menu access
+    \item Hands stay on joystick, eyes on video
+    \item Faster reaction to threats in different sectors
+\end{itemize}
+
+\textbf{If only one zone/page defined}: Buttons have no effect, OSD shows current zone name.
+
+% ============================================================================
+\section{On-Screen Display (OSD) Interpretation}
+% ============================================================================
+
+\subsection{Complete OSD Layout}
+
+\begin{lstlisting}
+┌──────────────────────────────────────────────────────────┐
+│ AZ: 045°  EL: +12°  | DAY  FOV: 9.0° ZOOM: 15×      │ ← Top
+│                                                           │
+│                    [Tracking Box]                        │
+│                        ┌──────┐                          │
+│                        │      │                          │
+│                        └──────┘                          │
+│                          +      ← Reticle                │
+│                         (*)     ← CCIP Pipper            │
+│                                                           │
+│ RNG: 850m         MODE: Manual       BELT               │ ← Bottom
+│ LAC: ON           TRACK: Off         STAB: ON           │
+└──────────────────────────────────────────────────────────┘
+\end{lstlisting}
+
+\subsection{Top Bar Elements}
+
+\begin{itemize}
+    \item \textbf{AZ: XXX\degree}: Current azimuth position (000\degree\ to 359\degree, relative to vehicle forward)
+    \item \textbf{EL: ±XX\degree}: Current elevation position (-20\degree\ to +60\degree, relative to horizon)
+    \item \textbf{DAY / THERMAL}: Active camera type
+    \item \textbf{FOV: X.X\degree}: Current horizontal field of view in degrees
+    \item \textbf{ZOOM: XX×}: Zoom magnification factor (calculated from FOV)
+\end{itemize}
+
+\subsection{Center Area Elements}
+
+\textbf{Reticle (+)}:
+\begin{itemize}
+    \item Main aiming point with zeroing applied
+    \item Where the gun bore axis is aimed
+    \item \textbf{Zeroing} correction shifts reticle from optical center
+    \item Fire weapon with reticle on target (static targets)
+\end{itemize}
+
+\textbf{CCIP Pipper ((*))}:
+\begin{itemize}
+    \item \textbf{Continuously Computed Impact Point}
+    \item Shows where bullet will actually hit with \textbf{ALL ballistic corrections}:
+    \begin{itemize}
+        \item Zeroing offset
+        \item Ballistic drop (gravity + wind deflection)
+        \item Motion lead (if LAC active and tracking)
+    \end{itemize}
+    \item May be offset from reticle if ballistics are applied
+    \item \textbf{Always aim with CCIP pipper for accurate hits} (moving or long-range targets)
+\end{itemize}
+
+\textbf{Tracking Box}:
+\begin{itemize}
+    \item Appears during tracking acquisition and active tracking
+    \item Color indicates tracking state (yellow, cyan, green, red - see Lesson 5)
+    \item Size adjustable with D-Pad during acquisition
+\end{itemize}
+
+\subsection{Bottom Bar Elements}
+
+\subsubsection{Left Side}
+
+\begin{itemize}
+    \item \textbf{RNG: XXXm}: Distance to target from laser rangefinder
+    \begin{itemize}
+        \item Single measurement: \osd{RNG: 850m}
+        \item Continuous mode: \osd{RNG: 850m (CONT)}
+        \item No reading: \osd{RNG: ---}
+    \end{itemize}
+
+    \item \textbf{LAC Status}: Lead Angle Compensation status (Button 2)
+    \begin{itemize}
+        \item \osd{LAC: OFF} (gray) - Disabled
+        \item \osd{LAC: ON} (green) - Active and functioning
+        \item \osd{LAC: LAG} (yellow) - Lead at maximum limit
+        \item \osd{LAC: ZOOM OUT} (red) - Lead too large, zoom out required
+    \end{itemize}
+\end{itemize}
+
+\subsubsection{Center}
+
+\begin{itemize}
+    \item \textbf{MODE}: Current motion mode
+    \begin{itemize}
+        \item \osd{MODE: Manual} - Direct joystick control
+        \item \osd{MODE: Sector Scan} - Automatic sector scanning
+        \item \osd{MODE: TRP} - Target Reference Point scanning
+    \end{itemize}
+
+    \item \textbf{TRACK}: Tracking system status
+    \begin{itemize}
+        \item \osd{TRACK: Off} - Not tracking
+        \item \osd{TRACK: Acquisition} - Sizing gate
+        \item \osd{TRACK: Lock Pending} - Attempting lock
+        \item \osd{TRACK: Active} - Locked on target
+        \item \osd{TRACK: Coast} - Temporary target loss
+    \end{itemize}
+\end{itemize}
+
+\subsubsection{Right Side}
+
+\begin{itemize}
+    \item \textbf{Ammunition Status}: Belt loading state
+    \begin{itemize}
+        \item \osd{IDLE} (gray) - No belt loaded
+        \item \osd{FEED...} (orange) - Feed cycle in progress
+        \item \osd{BELT} (green) - Belt loaded and ready
+        \item \osd{FAULT} (red flash) - Feed fault, reset required
+    \end{itemize}
+
+    \item \textbf{STAB}: Stabilization status
+    \begin{itemize}
+        \item \osd{STAB: OFF} - Stabilization disabled
+        \item \osd{STAB: ON} - AHRS stabilization active
+        \item \osd{VEHICLE STATIONARY} - Enhanced stabilization (vehicle not moving)
+    \end{itemize}
+\end{itemize}
+
+\subsection{Warning Messages}
+
+\textbf{Critical warnings appear in center screen (overlay on video)}:
+
+\begin{itemize}
+    \item \textbf{NO-FIRE ZONE WARNING} (Red, flashing) - Reticle in no-fire zone, trigger disabled
+    \item \textbf{NO-TRAVERSE WARNING} (Yellow) - Gimbal approaching no-traverse zone
+    \item \textbf{EMERGENCY STOP ACTIVE} (Red, solid) - System safed, all motion stopped
+    \item \textbf{SYSTEM FAULT} (Red/yellow) - Check system status menu
+    \item \textbf{TARGET LOST} (Yellow) - Tracking lost, coasting mode active
+    \item \textbf{HOMING TIMEOUT} (Red) - Homing failed, fault condition
+    \item \textbf{AMMO FEED FAULT} (Red flash) - Ammunition feed cycle timeout
+\end{itemize}
+
+% ============================================================================
+\section{System Shutdown Procedure}
+% ============================================================================
+
+\subsection{Shutdown Sequence (7 Steps)}
+
+\begin{procedurebox}[STEP 1: SAFE THE WEAPON]
+\begin{itemize}
+    \item Move \button{Gun Arm/Safe} switch to SAFE
+    \item Verify Gun Armed light is OFF
+    \item Release Dead Man Switch on joystick (Button 3)
+\end{itemize}
+\end{procedurebox}
+
+\begin{procedurebox}[STEP 2: RETURN TO HOME POSITION]
+\begin{itemize}
+    \item Press \button{HOME} button on DCU
+    \item System executes homing sequence (same as startup)
+    \item Wait for gimbal to complete homing (5-15 seconds)
+    \item Verify OSD displays: \osd{AZ: 000° EL: 00°}
+\end{itemize}
+\end{procedurebox}
+
+\begin{procedurebox}[STEP 3: DISABLE STABILIZATION]
+\begin{itemize}
+    \item Move \button{Stabilization} switch to OFF
+    \item OSD displays: \osd{STAB: OFF}
+\end{itemize}
+\end{procedurebox}
+
+\begin{procedurebox}[STEP 4: ACCESS SHUTDOWN MENU]
+\begin{itemize}
+    \item Press \button{MENU ✓} button on DCU
+    \item Navigate to \textbf{SYSTEM} → \textbf{Shutdown} (use ▲/▼ buttons)
+    \item Select "Shutdown System"
+    \item Confirmation prompt appears: "SHUTDOWN SYSTEM?"
+    \item Select "YES, Shutdown"
+    \item Press \button{MENU ✓} to confirm
+\end{itemize}
+
+\textbf{System Shutdown Sequence}:
+\begin{itemize}
+    \item OSD displays: \osd{SHUTTING DOWN...}
+    \item Progress indicator shows shutdown steps
+    \item Cameras power off (video feed stops)
+    \item Motors de-energize
+    \item Configuration saved to non-volatile memory
+    \item Log files closed properly
+    \item OSD displays: \osd{SHUTDOWN COMPLETE - Safe to power off}
+\end{itemize}
+\end{procedurebox}
+
+\begin{procedurebox}[STEP 5: DISABLE STATION]
+\begin{itemize}
+    \item Move \button{Station Enable} switch to OFF
+    \item System Ready light turns OFF
+    \item Gimbal motors de-energize (if not already)
+\end{itemize}
+\end{procedurebox}
+
+\begin{procedurebox}[STEP 6: REMOVE VEHICLE POWER]
+\textbf{If end of mission/shift}:
+\begin{itemize}
+    \item Turn off circuit breaker, OR
+    \item Disconnect power cable (if external)
+    \item Power light turns OFF
+    \item DCU screen goes black
+\end{itemize}
+\end{procedurebox}
+
+\begin{procedurebox}[STEP 7: SECURE WEAPON AND EQUIPMENT]
+\begin{itemize}
+    \item Clear weapon per Appendix A (if required)
+    \item Remove ammunition (if required by SOP)
+    \item Install protective covers on cameras
+    \item Lock operator station (if applicable)
+    \item Complete operator log entry
+\end{itemize}
+\end{procedurebox}
+
+\begin{warningbox}[IMPORTANT - WAIT FOR SHUTDOWN COMPLETE]
+Always wait for \osd{SHUTDOWN COMPLETE} message before cutting power. Interrupting shutdown can:
+\begin{itemize}
+    \item Corrupt configuration files (lose zeroing, zone data)
+    \item Prevent proper log file closure
+    \item Require configuration re-initialization on next startup
+\end{itemize}
+\end{warningbox}
+
+\subsection{Post-Shutdown Checks}
+
+\begin{checklist}
+    \item Gun Armed light is OFF
+    \item Gimbal is at home position (0\degree\ AZ, 0\degree\ EL)
+    \item Station Enable is OFF
+    \item Weapon is cleared (if required)
+    \item Camera protective covers installed (if required)
+    \item Operator log entry complete with:
+    \begin{itemize}
+        \item Mission start/end time
+        \item Rounds fired (if any)
+        \item Any faults or anomalies encountered
+        \item Operator name and signature
+    \end{itemize}
+\end{checklist}
+
+% ============================================================================
+\section{Student Review Questions}
+% ============================================================================
+
+\begin{enumerate}
+    \item What is the first step in the system startup procedure?
+    \item What should you do if a device shows [FAIL] during self-test?
+    \item Describe the automatic homing sequence including timing and HOME-END signals.
+    \item What are the 4 OSD ammunition status indicators and their meanings?
+    \item How does the system confirm ammunition loading without a physical belt sensor?
+    \item Name the joystick button numbers for: LRF, LAC, Dead Man Switch, Fire, Tracking
+    \item How do you activate continuous LRF mode?
+    \item What are the 4 LAC status display states on the OSD?
+    \item What is the difference between the reticle and CCIP pipper?
+    \item What joystick buttons (by number) control zoom in/out?
+    \item What is the purpose of Buttons 14 and 16?
+    \item What does \osd{STAB: ON} indicate and what technology does it use?
+    \item What happens if homing times out after 30 seconds?
+    \item Why must you wait for "SHUTDOWN COMPLETE" before cutting power?
+    \item What is the recovery procedure for ammunition feed FAULT?
+\end{enumerate}
