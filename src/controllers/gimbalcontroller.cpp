@@ -364,6 +364,18 @@ void GimbalController::onSystemStateChanged(const SystemStateData& newData)
                     double targetAngularVelAz_dps = angularVelocity.x();
                     double targetAngularVelEl_dps = angularVelocity.y();
 
+                    // ================================================================
+                    // BUG FIX #1: Update target angular rates for LAC calculation
+                    // ================================================================
+                    // Store angular rates in SystemStateData so WeaponController
+                    // can use them to calculate motion lead (rate × TOF).
+                    // Without this, LAC motion lead is always zero!
+                    // ================================================================
+                    m_stateModel->updateTargetAngularRates(
+                        static_cast<float>(targetAngularVelAz_dps),
+                        static_cast<float>(targetAngularVelEl_dps)
+                    );
+
                     // Emit queued signal (thread-safe, prevents race conditions)
                     emit trackingTargetUpdated(
                         targetGimbalAz, targetGimbalEl,
@@ -371,11 +383,21 @@ void GimbalController::onSystemStateChanged(const SystemStateData& newData)
                         true
                     );
                 } else {
-                    // Target lost - emit invalid signal
+                    // Target lost - clear angular rates and emit invalid signal
+                    m_stateModel->updateTargetAngularRates(0.0f, 0.0f);
                     emit trackingTargetUpdated(0, 0, 0, 0, false);
                 }
             }
         }
+    } else if (m_oldState.motionMode == MotionMode::AutoTrack &&
+               newData.motionMode != MotionMode::AutoTrack) {
+        // ================================================================
+        // BUG FIX #1: Clear angular rates when exiting tracking mode
+        // ================================================================
+        // Ensures rates are zeroed when tracking stops, so LAC doesn't
+        // continue using stale velocity data.
+        // ================================================================
+        m_stateModel->updateTargetAngularRates(0.0f, 0.0f);
     }
 
     // Reconfigure motion mode if type or parameters changed

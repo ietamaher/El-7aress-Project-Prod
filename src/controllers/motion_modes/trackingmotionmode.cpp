@@ -151,8 +151,20 @@ void TrackingMotionMode::update(GimbalController* controller, double dt)
         aimEl += data.ballisticDropOffsetEl;
     }
 
+    // ========================================================================
+    // BUG FIX #2: Apply motion lead for both On AND Lag status
+    // ========================================================================
+    // Per CROWS M153 and professional FCS behavior:
+    // - On:      Apply full lead angle
+    // - Lag:     Apply clamped lead angle (5° max) - gimbal still aims at lead!
+    // - ZoomOut: Don't apply lead (CCIP would be off-screen, warn operator)
+    //
+    // Previous bug: Only checked for On status, so Lag was ignored and
+    // gimbal aimed at visual target instead of clamped lead position.
+    // ========================================================================
     if (data.leadAngleCompensationActive &&
-        data.currentLeadAngleStatus == LeadAngleStatus::On)
+        (data.currentLeadAngleStatus == LeadAngleStatus::On ||
+         data.currentLeadAngleStatus == LeadAngleStatus::Lag))
     {
         aimAz += data.motionLeadOffsetAz;
         aimEl += data.motionLeadOffsetEl;
@@ -282,7 +294,10 @@ void TrackingMotionMode::update(GimbalController* controller, double dt)
     }
 
     // STEP 2: Apply motion lead (only when LAC toggle active)
-    if (data.leadAngleCompensationActive && data.currentLeadAngleStatus == LeadAngleStatus::On) {
+    // BUG FIX #2: Include Lag status (clamped lead is still applied)
+    if (data.leadAngleCompensationActive &&
+        (data.currentLeadAngleStatus == LeadAngleStatus::On ||
+         data.currentLeadAngleStatus == LeadAngleStatus::Lag)) {
         aimPointAz += static_cast<double>(data.motionLeadOffsetAz);
         aimPointEl += static_cast<double>(data.motionLeadOffsetEl);
 
@@ -290,7 +305,7 @@ void TrackingMotionMode::update(GimbalController* controller, double dt)
         //         << m_smoothedTargetAz << "," << m_smoothedTargetEl
        //         << ") + Drop(" << data.ballisticDropOffsetAz << "," << data.ballisticDropOffsetEl
         //         << ") + Lead(" << data.motionLeadOffsetAz << "," << data.motionLeadOffsetEl
-         //        << ") = Aim Point(" << aimPointAz << "," << aimPointEl << ")"; 
+         //        << ") = Aim Point(" << aimPointAz << "," << aimPointEl << ")";
     }
 
     // 3. Calculate Position Error (using aim point, NOT visual target)
