@@ -1123,7 +1123,6 @@ Item {
                 anchors.verticalCenter: parent.verticalCenter
             }*/
 
-            Rectangle { width: 2; height: 20; color: accentColor }
             Rectangle {
                 width: 18
                 height: 18
@@ -1141,6 +1140,8 @@ Item {
                 color: viewModel.ammunitionLevel ? "#00FF00" : "#FF0000"
                 anchors.verticalCenter: parent.verticalCenter
             }
+
+            Rectangle { width: 2; height: 20; color: accentColor }
 
             // ========================================================================
             // AMMUNITION FEED STATUS INDICATOR (Always Visible)
@@ -1190,13 +1191,13 @@ Item {
                 id: ammoFeedText
                 visible: true  // Always visible
                 text: {
-                    if (!viewModel) return "FEED:---"
+                    if (!viewModel) return "CHARGE:---"
                     // Fault state = FAULT
                     if (viewModel.ammoFeedState === 3) return "FAULT"
                     // Extending/Retracting = FEED...
-                    if (viewModel.ammoFeedState === 1 || viewModel.ammoFeedState === 2) return "FEED..."
+                    if (viewModel.ammoFeedState === 1 || viewModel.ammoFeedState === 2) return "CHARGING..."
                     // Loaded sensor = BELT
-                    if (viewModel.ammoLoaded) return "BELT"
+                    if (viewModel.ammoLoaded) return "CHARGED"
                     // Idle = IDLE
                     return "IDLE"
                 }

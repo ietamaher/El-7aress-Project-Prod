@@ -5,9 +5,9 @@ import QtQuick.Effects
 Rectangle {
     id: mainmenuroot
     property var osdViewModel: null
-    width: 380
+    width: 340
     height: 500
-    radius: 8
+    radius: 0
     color: "#0A0A0A"  // Deep black background like BMW
     border.color: "#1A1A1A"
     border.width: 1
@@ -32,7 +32,7 @@ Rectangle {
         // Header section
         Item {
             width: parent.width
-            height: 80
+            height: 60
 
             Column {
                 anchors.centerIn: parent
@@ -158,7 +158,7 @@ Rectangle {
 
                 contentItem: Rectangle {
                     implicitWidth: 6
-                    radius: 3
+                    radius: 0
                     color: "#40FFFFFF"
                     opacity: parent.active ? 1 : 0.5
 

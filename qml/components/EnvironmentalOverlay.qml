@@ -6,7 +6,7 @@ Rectangle {
     id: environmentalRoot
     width: 500
     height: 400
-    radius: 8
+    radius: 0
     color: "#0A0A0A"
 
     border.width: 1

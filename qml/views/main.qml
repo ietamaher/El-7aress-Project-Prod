@@ -63,7 +63,7 @@ Window {
         osdViewModel: osdViewModelInstance
         anchors.top: parent.top
         anchors.left: parent.left
-        anchors.topMargin: 150
+        anchors.topMargin: 120
         anchors.leftMargin: 10
         z: 100
     }
@@ -75,7 +75,7 @@ Window {
         height: 300
         anchors.top: parent.top
         anchors.left: parent.left
-        anchors.topMargin: 150
+        anchors.topMargin: 120
         anchors.leftMargin: 10
         z: 100
     }
@@ -88,7 +88,7 @@ Window {
         height: 300
         anchors.top: parent.top
         anchors.left: parent.left
-        anchors.topMargin: 150
+        anchors.topMargin: 120
         anchors.leftMargin: 10
         z: 100
     }
@@ -98,7 +98,7 @@ Window {
         id: zeroingOverlay
         anchors.top: parent.top
         anchors.left: parent.left
-        anchors.topMargin: 150
+        anchors.topMargin: 120
         anchors.leftMargin: 10
         z: 100
     }
@@ -108,7 +108,7 @@ Window {
         id: windageOverlay
         anchors.top: parent.top
         anchors.left: parent.left
-        anchors.topMargin: 150
+        anchors.topMargin: 120
         anchors.leftMargin: 10
         z: 100
     }
@@ -118,7 +118,7 @@ Window {
         id: environmentalOverlay
         anchors.top: parent.top
         anchors.left: parent.left
-        anchors.topMargin: 150
+        anchors.topMargin: 120
         anchors.leftMargin: 10
         z: 100
     }

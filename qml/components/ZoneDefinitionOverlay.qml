@@ -23,7 +23,7 @@ Rectangle {
         color: "#0A0A0A"
         border.color: "#1A1A1A"
         border.width: 1
-        radius: 8
+        radius: 0
 
         layer.enabled: true
         layer.effect: MultiEffect {
