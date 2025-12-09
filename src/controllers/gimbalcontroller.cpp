@@ -205,6 +205,64 @@ void GimbalController::update()
     dt = std::clamp(dt, 0.001, 0.050);               // Clamp between 1-50 ms
 
     // ========================================================================
+    // MANUAL MODE LAC SUPPORT (CROWS-like behavior)
+    // ========================================================================
+    // Per CROWS TM 9-1090-225-10-2, page 2-26:
+    // "The computer is constantly monitoring the change in rotation of the
+    //  elevation and azimuth axes and measuring the speed."
+    //
+    // In Manual mode, the operator manually tracks a moving target with the
+    // joystick. The gimbal's angular velocity IS the target's apparent angular
+    // velocity (since the operator is compensating for target motion).
+    //
+    // This allows LAC to work in BOTH modes:
+    // - AutoTrack: Uses tracker-measured target angular velocity
+    // - Manual:    Uses gimbal angular velocity (operator tracking speed)
+    // ========================================================================
+    SystemStateData currentState = m_stateModel->data();
+
+    if (m_gimbalVelocityInitialized && dt > 0.001) {
+        // Calculate gimbal angular velocity from position derivative
+        double gimbalAngularVelAz = (currentState.gimbalAz - m_prevGimbalAz) / dt;
+        double gimbalAngularVelEl = (currentState.gimbalEl - m_prevGimbalEl) / dt;
+
+        // Low-pass filter to smooth out measurement noise (tau = 100ms)
+        static double filteredGimbalVelAz = 0.0;
+        static double filteredGimbalVelEl = 0.0;
+        const double filterTau = 0.1;  // 100ms time constant
+        double alpha = dt / (filterTau + dt);
+        filteredGimbalVelAz = alpha * gimbalAngularVelAz + (1.0 - alpha) * filteredGimbalVelAz;
+        filteredGimbalVelEl = alpha * gimbalAngularVelEl + (1.0 - alpha) * filteredGimbalVelEl;
+
+        // Apply Manual mode LAC when:
+        // 1. In Manual motion mode (not AutoTrack)
+        // 2. LAC toggle is active
+        // 3. Not in any scan modes or other automated modes
+        if (currentState.motionMode == MotionMode::Manual &&
+            currentState.leadAngleCompensationActive) {
+            // Use gimbal angular velocity as "target angular rate" for LAC
+            // This matches CROWS behavior where operator tracking speed is used
+            m_stateModel->updateTargetAngularRates(
+                static_cast<float>(filteredGimbalVelAz),
+                static_cast<float>(filteredGimbalVelEl)
+            );
+
+            // Debug output (throttled)
+            static int manualLacLogCounter = 0;
+            if (++manualLacLogCounter % 40 == 0) {  // Every 2 seconds @ 20Hz
+                qDebug() << "[GimbalController] MANUAL MODE LAC:"
+                         << "Gimbal velocity Az:" << filteredGimbalVelAz << "°/s"
+                         << "El:" << filteredGimbalVelEl << "°/s";
+            }
+        }
+    }
+
+    // Store current position for next cycle's velocity calculation
+    m_prevGimbalAz = currentState.gimbalAz;
+    m_prevGimbalEl = currentState.gimbalEl;
+    m_gimbalVelocityInitialized = true;
+
+    // ========================================================================
     // Update Loop Timing Diagnostics
     // ========================================================================
     static auto lastUpdateTime = std::chrono::high_resolution_clock::now();
@@ -398,6 +456,21 @@ void GimbalController::onSystemStateChanged(const SystemStateData& newData)
         // continue using stale velocity data.
         // ================================================================
         m_stateModel->updateTargetAngularRates(0.0f, 0.0f);
+    }
+
+    // ========================================================================
+    // MANUAL MODE LAC: Clear angular rates when exiting Manual mode or
+    // when LAC is deactivated while in Manual mode
+    // ========================================================================
+    bool wasManualWithLAC = (m_oldState.motionMode == MotionMode::Manual &&
+                             m_oldState.leadAngleCompensationActive);
+    bool isManualWithLAC = (newData.motionMode == MotionMode::Manual &&
+                            newData.leadAngleCompensationActive);
+
+    if (wasManualWithLAC && !isManualWithLAC) {
+        // Exited Manual mode or LAC was deactivated - clear angular rates
+        m_stateModel->updateTargetAngularRates(0.0f, 0.0f);
+        qDebug() << "[GimbalController] Manual mode LAC ended - angular rates cleared";
     }
 
     // Reconfigure motion mode if type or parameters changed

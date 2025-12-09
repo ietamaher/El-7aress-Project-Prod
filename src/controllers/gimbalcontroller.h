@@ -183,6 +183,18 @@ private:
     // ========================================================================
     bool m_wasInFreeMode = false;
     bool m_wasInEmergencyStop = false;
+
+    // ========================================================================
+    // Manual Mode LAC Support (CROWS-like behavior)
+    // Tracks previous gimbal positions to calculate angular velocity for LAC
+    // when operator is manually tracking a moving target with joystick.
+    // See: CROWS TM 9-1090-225-10-2, page 2-26
+    // "The computer is constantly monitoring the change in rotation of the
+    //  elevation and azimuth axes and measuring the speed."
+    // ========================================================================
+    double m_prevGimbalAz = 0.0;
+    double m_prevGimbalEl = 0.0;
+    bool m_gimbalVelocityInitialized = false;
 };
 
 #endif // GIMBALCONTROLLER_H
