@@ -232,6 +232,20 @@ public:
      */
     void updateCalculatedLeadOffsets(float offsetAz, float offsetEl, LeadAngleStatus status);
 
+    /**
+     * @brief Updates the target angular rates from tracker for LAC motion lead calculation.
+     *
+     * This method is called by GimbalController when tracking is active to provide
+     * the target's angular velocity to WeaponController for motion lead calculation.
+     * When tracking is lost or inactive, rates should be set to zero.
+     *
+     * @param rateAzDegS Target angular rate in azimuth (degrees/second)
+     * @param rateElDegS Target angular rate in elevation (degrees/second)
+     *
+     * @note Only updates state if rates actually changed to minimize dataChanged signals.
+     */
+    void updateTargetAngularRates(float rateAzDegS, float rateElDegS);
+
     // =================================
     // AREA ZONE MANAGEMENT
     // =================================

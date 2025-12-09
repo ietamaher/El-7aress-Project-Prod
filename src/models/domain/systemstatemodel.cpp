@@ -1527,6 +1527,43 @@ void SystemStateModel::updateCalculatedLeadOffsets(float angularLeadAz, float an
     updateData(m_currentStateData);
 }
 
+void SystemStateModel::updateTargetAngularRates(float rateAzDegS, float rateElDegS) {
+    // ========================================================================
+    // BUG FIX #1: Target Angular Rates for LAC Motion Lead Calculation
+    // ========================================================================
+    // This method is called by GimbalController when tracking is active.
+    // It provides the target's angular velocity (deg/s) to WeaponController
+    // for calculating motion lead compensation.
+    //
+    // Data Flow:
+    // 1. Tracker provides pixel velocity (px/s) from visual tracking
+    // 2. GimbalController converts to angular velocity (deg/s) using FOV
+    // 3. This method stores the angular rates in SystemStateData
+    // 4. WeaponController reads rates and calculates motion lead = rate × TOF
+    //
+    // Critical: Without this update, currentTargetAngularRateAz/El remain 0,
+    // and LAC motion lead will never be calculated!
+    // ========================================================================
+
+    bool changed = false;
+
+    // Only update if values actually changed (avoid unnecessary dataChanged signals)
+    if (!qFuzzyCompare(m_currentStateData.currentTargetAngularRateAz, rateAzDegS)) {
+        m_currentStateData.currentTargetAngularRateAz = rateAzDegS;
+        changed = true;
+    }
+    if (!qFuzzyCompare(m_currentStateData.currentTargetAngularRateEl, rateElDegS)) {
+        m_currentStateData.currentTargetAngularRateEl = rateElDegS;
+        changed = true;
+    }
+
+    if (changed) {
+        qDebug() << "[SystemStateModel] Target angular rates updated:"
+                 << "Az:" << rateAzDegS << "°/s"
+                 << "El:" << rateElDegS << "°/s";
+        emit dataChanged(m_currentStateData);
+    }
+}
 
 // Helper for Azimuth checks considering wrap-around
 bool isAzimuthInRange(float targetAz, float startAz, float endAz) {
