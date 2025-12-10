@@ -38,8 +38,11 @@ std::vector<MessagePtr> ServoActuatorProtocolParser::parse(const QByteArray& raw
         
         // Parse based on response type (ACK or NACK)
         if (mainResponse.startsWith('A')) { // ACK
-            QStringList parts = mainResponse.split(QRegularExpression("\\s+"), Qt::SkipEmptyParts);
-            QString dataPart = (parts.size() > 1) ? parts[1] : "";
+            // Extract payload: everything after the 'A' prefix
+            // Hardware format: "A5000" (no space between A and payload)
+            // NOT "A 5000" (space-separated)
+            QString dataPart = mainResponse.mid(1).trimmed(); // Skip 'A', get rest
+            qDebug() << "[Parser] ACK parsed: mainResponse='" << mainResponse << "' dataPart='" << dataPart << "'";
 
             // ⭐ Update ONLY the relevant field in accumulated m_data based on pending command
             if (m_pendingCommand == "SR") {
