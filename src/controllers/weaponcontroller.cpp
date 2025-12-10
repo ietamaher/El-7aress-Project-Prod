@@ -68,6 +68,9 @@ WeaponController::WeaponController(SystemStateModel* stateModel,
         connect(m_servoActuator, &ServoActuatorDevice::actuatorDataChanged,
                 this, &WeaponController::onActuatorFeedback,
                 Qt::QueuedConnection);
+        qDebug() << "[WeaponController] SIGNAL CONNECTED: actuatorDataChanged -> onActuatorFeedback";
+    } else {
+        qCritical() << "[WeaponController] CRITICAL: m_servoActuator is NULL - feedback will never work!";
     }
 
     // ========================================================================
@@ -356,6 +359,10 @@ void WeaponController::onActuatorFeedback(const ServoActuatorData& data)
 {
     // Extract position (adjust field name to match your ServoActuatorData struct)
     double pos = data.position_mm;  // or data.position_countsposition_mm if using mm
+
+    qDebug() << "[WeaponController][FEEDBACK] onActuatorFeedback CALLED! pos=" << pos
+             << "isConnected=" << data.isConnected
+             << "feedState=" << feedStateName(m_feedState);
 
     processActuatorPosition(pos);
 }

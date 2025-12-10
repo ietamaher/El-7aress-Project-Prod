@@ -115,10 +115,13 @@ void ServoActuatorDevice::onFrameReceived(const QByteArray& frame) {
 void ServoActuatorDevice::processMessage(const Message& message) {
     if (message.typeId() == Message::Type::ServoActuatorDataType) {
         auto const* dataMsg = static_cast<const ServoActuatorDataMessage*>(&message);
+        qDebug() << "[ServoActuator][RX] Received position data: pos=" << dataMsg->data().position_mm;
         mergePartialData(dataMsg->data());
         
     } else if (message.typeId() == Message::Type::ServoActuatorAckType) {
         auto const* ackMsg = static_cast<const ServoActuatorAckMessage*>(&message);
+
+        qDebug() << "[ServoActuator][ACK] Command '" << ackMsg->command() << "' ACKed. Queue size:" << m_commandQueue.size();
 
         // Stop timeout timer
         m_commandTimeoutTimer->stop();
@@ -129,8 +132,11 @@ void ServoActuatorDevice::processMessage(const Message& message) {
 
         // Process next command if any
         if (!m_commandQueue.isEmpty()) {
+            qDebug() << "[ServoActuator][ACK] Processing next command in" << INTER_COMMAND_DELAY_MS << "ms";
             QTimer::singleShot(INTER_COMMAND_DELAY_MS, this,
                                &ServoActuatorDevice::processNextCommand);
+        } else {
+            qDebug() << "[ServoActuator][ACK] Queue empty, no more commands";
         }
         
     } else if (message.typeId() == Message::Type::ServoActuatorNackType) {
@@ -200,7 +206,14 @@ void ServoActuatorDevice::mergePartialData(const ServoActuatorData& partialData)
 
     if (dataChanged) {
         updateData(newData);
+        qDebug() << "[ServoActuator][SIGNAL] EMITTING actuatorDataChanged! pos=" << newData->position_mm
+                 << "vel=" << newData->velocity_mm_s
+                 << "isConnected=" << newData->isConnected;
         emit actuatorDataChanged(*newData);
+    } else {
+        // DEBUG: Log when data hasn't changed (signal NOT emitted)
+        qDebug() << "[ServoActuator][NO_CHANGE] Data unchanged, signal NOT emitted. Current pos="
+                 << currentData->position_mm;
     }
 }
 
@@ -212,6 +225,7 @@ void ServoActuatorDevice::sendCommand(const QString& command) {
 
     // If a command is already pending, queue this one
     if (!m_pendingCommand.isEmpty()) {
+        qDebug() << "[ServoActuator][CMD] Command '" << command << "' QUEUED (pending:" << m_pendingCommand << ")";
         m_commandQueue.enqueue(command);
         return;
     }
@@ -221,6 +235,7 @@ void ServoActuatorDevice::sendCommand(const QString& command) {
 
     m_pendingCommand = command;
     m_parser->setPendingCommand(command);  // Set pending command in parser for response routing
+    qDebug() << "[ServoActuator][CMD] SENDING command '" << command << "' (timeout=" << COMMAND_TIMEOUT_MS << "ms)";
     m_transport->sendFrame(fullCommand);
     m_commandTimeoutTimer->start(COMMAND_TIMEOUT_MS);
 }
@@ -291,10 +306,17 @@ void ServoActuatorDevice::checkAllStatus() {
     //m_commandQueue.enqueue("TQ");  // Torque
     //m_commandQueue.enqueue("RT1"); // Temperature
     //m_commandQueue.enqueue("BV");  // Bus voltage
-    
+
+    qDebug() << "[ServoActuator][POLL] AP queued. PendingCmd:" << m_pendingCommand
+             << "QueueSize after:" << m_commandQueue.size();
+
     // Start processing if no command is pending
     if (m_pendingCommand.isEmpty()) {
+        qDebug() << "[ServoActuator][POLL] No pending command, processing next immediately";
         processNextCommand();
+    } else {
+        qDebug() << "[ServoActuator][POLL] Command pending (" << m_pendingCommand
+                 << "), AP poll will wait in queue";
     }
 }
 
@@ -340,6 +362,8 @@ void ServoActuatorDevice::reboot() {
 
 void ServoActuatorDevice::checkActuatorStatus() {
     // Periodically query all status parameters
+    qDebug() << "[ServoActuator][POLL] checkActuatorStatus timer fired. PendingCmd:" << m_pendingCommand
+             << "QueueSize:" << m_commandQueue.size();
     checkAllStatus();
 }
 
