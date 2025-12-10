@@ -265,9 +265,9 @@ void ServoActuatorDevice::handleCommandTimeout() {
 //================================================================================
 
 void ServoActuatorDevice::moveToPosition(double position_mm) {
-    // Use parser for unit conversion
-    //int counts = m_parser->millimetersToSensorCounts(position_mm);
-    int counts=position_mm;
+    // Use parser for unit conversion (mm → counts for hardware command)
+    int counts = m_parser->millimetersToSensorCounts(position_mm);
+    qDebug() << "[ServoActuator][MOVE] moveToPosition(" << position_mm << "mm) → TA" << counts << "counts";
     sendCommand(QString("TA%1").arg(counts));
 }
 

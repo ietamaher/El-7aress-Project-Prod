@@ -344,7 +344,7 @@ void WeaponController::startAmmoFeedCycle()
     emit ammoFeedCycleStarted();
 
     // Command full extension
-    qDebug() << "[WeaponController] Commanding actuator to EXTEND to" << FEED_EXTEND_POS;
+    qDebug() << "[WeaponController] Commanding actuator to EXTEND to" << FEED_EXTEND_POS << "mm";
     m_servoActuator->moveToPosition(FEED_EXTEND_POS);
 
     // Start watchdog
@@ -367,33 +367,32 @@ void WeaponController::onActuatorFeedback(const ServoActuatorData& data)
     processActuatorPosition(pos);
 }
 
-void WeaponController::processActuatorPosition(double posCounts)
+void WeaponController::processActuatorPosition(double posMM)
 {
- 
- qDebug() << "[WeaponController][FEED DEBUG] state =" << feedStateName(m_feedState)
-         << "| reportedPos =" << posCounts
-         << "| FEED_EXTEND_POS =" << FEED_EXTEND_POS
-         << "| FEED_RETRACT_POS =" << FEED_RETRACT_POS
-         << "| TOLERANCE =" << FEED_POSITION_TOLERANCE;
+    qDebug() << "[WeaponController][FEED DEBUG] state =" << feedStateName(m_feedState)
+             << "| reportedPos =" << posMM << "mm"
+             << "| FEED_EXTEND_POS =" << FEED_EXTEND_POS << "mm"
+             << "| FEED_RETRACT_POS =" << FEED_RETRACT_POS << "mm"
+             << "| TOLERANCE =" << FEED_POSITION_TOLERANCE << "mm";
     switch (m_feedState) {
     case AmmoFeedState::Extending:
-        if (posCounts >= (FEED_EXTEND_POS - FEED_POSITION_TOLERANCE)) {
-            qDebug() << "[WeaponController] Extension confirmed at pos =" << posCounts;
+        if (posMM >= (FEED_EXTEND_POS - FEED_POSITION_TOLERANCE)) {
+            qDebug() << "[WeaponController] Extension confirmed at pos =" << posMM << "mm";
 
             // Extension reached - now retract
             transitionFeedState(AmmoFeedState::Retracting);
 
-            qDebug() << "[WeaponController] Commanding actuator to RETRACT to" << FEED_RETRACT_POS;
+            qDebug() << "[WeaponController] Commanding actuator to RETRACT to" << FEED_RETRACT_POS << "mm";
             m_servoActuator->moveToPosition(FEED_RETRACT_POS);
-qDebug() << "[WEAPON][FEED DEBUG] commanded EXTEND ->" << FEED_EXTEND_POS;
-m_feedTimer->start(FEED_TIMEOUT_MS);
-qDebug() << "[WEAPON][FEED DEBUG] watchdog started:" << FEED_TIMEOUT_MS << "ms";
+
+            // Restart watchdog for retraction
+            m_feedTimer->start(FEED_TIMEOUT_MS);
         }
         break;
 
     case AmmoFeedState::Retracting:
-        if (posCounts <= (FEED_RETRACT_POS + FEED_POSITION_TOLERANCE)) {
-            qDebug() << "[WeaponController] Retraction confirmed at pos =" << posCounts;
+        if (posMM <= (FEED_RETRACT_POS + FEED_POSITION_TOLERANCE)) {
+            qDebug() << "[WeaponController] Retraction confirmed at pos =" << posMM << "mm";
 
             // Cycle complete
             transitionFeedState(AmmoFeedState::Idle);
