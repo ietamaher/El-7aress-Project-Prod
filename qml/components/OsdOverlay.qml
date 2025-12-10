@@ -1194,9 +1194,9 @@ Item {
                     if (!viewModel) return "CHARGE:---"
                     // Fault state = FAULT
                     if (viewModel.ammoFeedState === 3) return "FAULT"
-                    // Extending/Retracting = FEED...
+                    // Extending/Retracting = CHARGING...
                     if (viewModel.ammoFeedState === 1 || viewModel.ammoFeedState === 2) return "CHARGING..."
-                    // Loaded sensor = BELT
+                    // Loaded sensor = CHARGED
                     if (viewModel.ammoLoaded) return "CHARGED"
                     // Idle = IDLE
                     return "IDLE"

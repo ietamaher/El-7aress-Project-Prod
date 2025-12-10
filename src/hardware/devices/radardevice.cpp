@@ -155,7 +155,7 @@ void RadarDevice::setConnectionState(bool connected) {
 }
 
 void RadarDevice::onCommunicationWatchdogTimeout() {
-    qWarning() << m_identifier << "Communication timeout - no data received for"
-               << COMMUNICATION_TIMEOUT_MS << "ms";
+    //qWarning() << m_identifier << "Communication timeout - no data received for"
+    //           << COMMUNICATION_TIMEOUT_MS << "ms";
     setConnectionState(false);
 }

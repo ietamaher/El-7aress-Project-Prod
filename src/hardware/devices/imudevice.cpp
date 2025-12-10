@@ -214,7 +214,7 @@ void ImuDevice::setConnectionState(bool connected) {
 }
 
 void ImuDevice::onCommunicationWatchdogTimeout() {
-    qWarning() << m_identifier << "Communication timeout - no data received for"
-               << COMMUNICATION_TIMEOUT_MS << "ms";
+    //qWarning() << m_identifier << "Communication timeout - no data received for"
+     //          << COMMUNICATION_TIMEOUT_MS << "ms";
     setConnectionState(false);
 }

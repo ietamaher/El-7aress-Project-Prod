@@ -204,8 +204,8 @@ void NightCameraControlDevice::setConnectionState(bool connected) {
 }
 
 void NightCameraControlDevice::onCommunicationWatchdogTimeout() {
-    qWarning() << m_identifier << "Communication timeout - no data received for"
-               << COMMUNICATION_TIMEOUT_MS << "ms";
+    //qWarning() << m_identifier << "Communication timeout - no data received for"
+     //          << COMMUNICATION_TIMEOUT_MS << "ms";
     setConnectionState(false);
 }
 

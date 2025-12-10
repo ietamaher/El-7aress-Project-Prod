@@ -232,7 +232,7 @@ void ServoActuatorDevice::processNextCommand() {
 }
 
 void ServoActuatorDevice::handleCommandTimeout() {
-    qWarning() << m_identifier << "Timeout waiting for response to:" << m_pendingCommand;
+    //qWarning() << m_identifier << "Timeout waiting for response to:" << m_pendingCommand;
     emit commandError(QString("Timeout on command: %1").arg(m_pendingCommand));
 
     m_pendingCommand.clear();
@@ -374,7 +374,7 @@ void ServoActuatorDevice::onTransportDisconnected() {
 }
 
 void ServoActuatorDevice::onCommunicationWatchdogTimeout() {
-    qWarning() << m_identifier << "Communication timeout - no data received for"
-               << COMMUNICATION_TIMEOUT_MS << "ms";
+    //qWarning() << m_identifier << "Communication timeout - no data received for"
+   //            << COMMUNICATION_TIMEOUT_MS << "ms";
     setConnectionState(false);
 }

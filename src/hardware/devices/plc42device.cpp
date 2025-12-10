@@ -138,7 +138,7 @@ void Plc42Device::onModbusReplyReady(QModbusReply* reply) {
     }
 
     if (reply->error() != QModbusDevice::NoError) {
-        qWarning() << m_identifier << "Modbus error:" << reply->errorString();
+        //qWarning() << m_identifier << "Modbus error:" << reply->errorString();
         setConnectionState(false);
         reply->deleteLater();
         m_waitingForResponse = false;
@@ -328,7 +328,7 @@ void Plc42Device::sendWriteHoldingRegisters() {
         connect(reply, &QModbusReply::finished, this, [this, reply]() {
             bool success = (reply->error() == QModbusDevice::NoError);
             if (!success) {
-                qWarning() << m_identifier << "Write error:" << reply->errorString();
+                //qWarning() << m_identifier << "Write error:" << reply->errorString();
             }
             m_hasPendingWrites = false;
             emit registerWritten(success);
@@ -380,7 +380,7 @@ void Plc42Device::sendNextPendingRequest() {
 }
 
 void Plc42Device::onCommunicationWatchdogTimeout() {
-    qWarning() << m_identifier << "Communication timeout - no data received for"
-               << COMMUNICATION_TIMEOUT_MS << "ms";
+    //qWarning() << m_identifier << "Communication timeout - no data received for"
+     //          << COMMUNICATION_TIMEOUT_MS << "ms";
     setConnectionState(false);
 }

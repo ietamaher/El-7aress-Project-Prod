@@ -141,7 +141,7 @@ void Plc21Device::onModbusReplyReady(QModbusReply* reply) {
     }
 
     if (reply->error() != QModbusDevice::NoError) {
-        qWarning() << m_identifier << "Modbus error:" << reply->errorString();
+        //qWarning() << m_identifier << "Modbus error:" << reply->errorString();
         setConnectionState(false);
         reply->deleteLater();
         m_waitingForResponse = false;
@@ -292,7 +292,7 @@ void Plc21Device::sendWriteRequest(int startAddress, const QVector<bool>& values
         connect(reply, &QModbusReply::finished, this, [this, reply]() {
             bool success = (reply->error() == QModbusDevice::NoError);
             if (!success) {
-                qWarning() << m_identifier << "Write error:" << reply->errorString();
+                //qWarning() << m_identifier << "Write error:" << reply->errorString();
             }
             emit digitalOutputWritten(success);
             reply->deleteLater();
@@ -343,7 +343,7 @@ void Plc21Device::sendNextPendingRequest() {
 }
 
 void Plc21Device::onCommunicationWatchdogTimeout() {
-    qWarning() << m_identifier << "Communication timeout - no data received for"
-               << COMMUNICATION_TIMEOUT_MS << "ms";
+    //qWarning() << m_identifier << "Communication timeout - no data received for"
+    //           << COMMUNICATION_TIMEOUT_MS << "ms";
     setConnectionState(false);
 }

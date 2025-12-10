@@ -157,7 +157,7 @@ void LRFDevice::processMessage(const Message& message) {
 }
 
 void LRFDevice::handleCommandResponseTimeout() {
-    qWarning() << "LRF command response timeout!";
+    //qWarning() << "LRF command response timeout!";
 
     auto currentData = data();
     auto newData = std::make_shared<LrfData>(*currentData);
@@ -171,8 +171,8 @@ void LRFDevice::handleCommandResponseTimeout() {
 }
 
 void LRFDevice::onCommunicationWatchdogTimeout() {
-    qWarning() << "LRF Communication timeout - no data received for"
-               << COMMUNICATION_TIMEOUT_MS << "ms";
+    //qWarning() << "LRF Communication timeout - no data received for"
+      //         << COMMUNICATION_TIMEOUT_MS << "ms";
     setConnectionState(false);
 }
 void LRFDevice::resetCommunicationWatchdog() {

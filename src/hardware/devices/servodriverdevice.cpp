@@ -146,7 +146,7 @@ void ServoDriverDevice::onModbusReplyReady(QModbusReply* reply) {
     }
 
     if (reply->error() != QModbusDevice::NoError) {
-        qWarning() << m_identifier << "Modbus error:" << reply->errorString();
+        //qWarning() << m_identifier << "Modbus error:" << reply->errorString();
         setConnectionState(false);  // Only emits if state actually changes
         reply->deleteLater();
         return;
@@ -372,7 +372,7 @@ void ServoDriverDevice::resetCommunicationWatchdog() {
 }
 
 void ServoDriverDevice::onCommunicationWatchdogTimeout() {
-    qWarning() << m_identifier << "Communication timeout - no data received for"
-               << COMMUNICATION_TIMEOUT_MS << "ms";
+    //qWarning() << m_identifier << "Communication timeout - no data received for"
+    //           << COMMUNICATION_TIMEOUT_MS << "ms";
     setConnectionState(false);
 }

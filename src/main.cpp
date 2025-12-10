@@ -9,36 +9,38 @@
 #include "config/ConfigurationValidator.h"
 #include <gst/gst.h>
 
-
 int main(int argc, char *argv[])
 {
     // ========================================================================
-    // JETSON ORIN AGX PERFORMANCE OPTIMIZATIONS
+    // CRITICAL: Configure Qt BEFORE QGuiApplication is created
     // ========================================================================
-    // Use RHI (Rendering Hardware Interface) with OpenGL ES for Jetson
-    qputenv("QT_QUICK_BACKEND", "rhi");
-    qputenv("QSG_RHI_BACKEND", "gles2");
-
-    // Enable QML compiler optimizations
-    qputenv("QML_DISABLE_DISK_CACHE", "0");
-
-    // Use basic render loop (safer than threaded for this embedded application)
-    qputenv("QSG_RENDER_LOOP", "basic");
-
-    QGuiApplication app(argc, argv);
-    gst_init(&argc, &argv);
     
-    // Check for command-line arguments
-    bool fullscreen = false;  // Default to fullscreen for deployment
-    QStringList args = app.arguments();
-    if (args.contains("--windowed") || args.contains("-w")) {
-        fullscreen = false;
-        qInfo() << "Running in windowed mode (for development)";
+    // Check if running in production (systemd service)
+    bool isProduction = qEnvironmentVariableIsSet("RCWS_PRODUCTION");
+    
+    if (isProduction || !qEnvironmentVariableIsSet("DISPLAY")) {
+        // PRODUCTION MODE: EGLFS
+        qputenv("QT_QPA_PLATFORM", "eglfs");
+        qputenv("QT_QPA_EGLFS_INTEGRATION", "eglfs_kms");
+        qputenv("QT_QPA_EGLFS_ALWAYS_SET_MODE", "1");
+        qputenv("QT_QPA_EGLFS_FORCE_888", "1");
+        qInfo() << "EGLFS mode configured";
     }
     
+    // Always set these optimizations
+    qputenv("QT_QUICK_BACKEND", "rhi");
+    qputenv("QSG_RHI_BACKEND", "opengl");
+    qputenv("QSG_RENDER_LOOP", "basic");
+    
+    // NOW create QGuiApplication (reads environment variables above)
+    QGuiApplication app(argc, argv);
+    
+    qInfo() << "QPA Platform:" << app.platformName();
+    
+    gst_init(&argc, &argv);
+    
     // ========================================================================
-    // CONFIGURATION LOADING - HYBRID APPROACH
-    // Try filesystem first (for field updates), fallback to embedded resources
+    // CONFIGURATION LOADING
     // ========================================================================
 
     QString configDir = QCoreApplication::applicationDirPath() + "/config";
@@ -53,7 +55,6 @@ int main(int argc, char *argv[])
 
     if (!DeviceConfiguration::load(devicesPath)) {
         qCritical() << "Failed to load device configuration from:" << devicesPath;
-        qCritical() << "Cannot start without valid hardware configuration!";
         return -1;
     }
     qInfo() << "Loaded devices.json from:" << devicesPath;
@@ -67,8 +68,6 @@ int main(int argc, char *argv[])
 
     if (!MotionTuningConfig::load(motionTuningPath)) {
         qWarning() << "Failed to load motion tuning config from:" << motionTuningPath;
-        qWarning() << "Using default values";
-        // Continue anyway - defaults are loaded
     } else {
         qInfo() << "Loaded motion_tuning.json from:" << motionTuningPath;
     }
@@ -76,7 +75,6 @@ int main(int argc, char *argv[])
     // Validate all configurations
     if (!ConfigurationValidator::validateAll()) {
         qCritical() << "Configuration validation FAILED!";
-        qCritical() << "Please fix configuration errors before continuing.";
         return -1;
     }
 
@@ -99,18 +97,8 @@ int main(int argc, char *argv[])
     QQuickWindow *window = qobject_cast<QQuickWindow*>(rootObject);
     
     if (window) {
-        if (fullscreen) {
-            qInfo() << "Starting in FULLSCREEN mode";
-            window->showFullScreen();
-        } else {
-            qInfo() << "Starting in WINDOWED mode";
-            window->show();
-        }
-    } else {
-        qWarning() << "Could not access window - using QML property fallback";
-        if (fullscreen) {
-            rootObject->setProperty("visibility", "FullScreen");
-        }
+        qInfo() << "Showing window (fullscreen in EGLFS)";
+        window->show();  // In EGLFS, show() is always fullscreen
     }
     
     // Start hardware
