@@ -284,13 +284,13 @@ void GimbalController::update()
                                 / static_cast<long long>(updateIntervals.size());
         double jitter = (maxInterval - minInterval) / 1000.0;
 
-        qDebug() << "[UPDATE LOOP] 50 cycles |"
+        /*qDebug() << "[UPDATE LOOP] 50 cycles |"
                  << "Target: 50.0ms |"
                  << "Actual avg:" << (avgInterval / 1000.0) << "ms |"
                  << "Min:" << (minInterval / 1000.0) << "ms |"
                  << "Max:" << (maxInterval / 1000.0) << "ms |"
                  << "Jitter:" << jitter << "ms"
-                 << (jitter > 10 ? "[HIGH]" : "[OK]");
+                 << (jitter > 10 ? "[HIGH]" : "[OK]");*/
     }
 
     lastUpdateTime = now;

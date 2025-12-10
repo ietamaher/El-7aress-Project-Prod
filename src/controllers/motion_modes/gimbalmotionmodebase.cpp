@@ -94,8 +94,8 @@ void GimbalMotionModeBase::updateGyroBias(const SystemStateData& systemState)
             sumX = sumY = sumZ = 0;       
             count = 0;
             lastResetTime = QDateTime::currentDateTime();
-            qDebug() << "[Gimbal] New Gyro Bias - X:" << m_gyroBiasX 
-                     << "Y:" << m_gyroBiasY << "Z:" << m_gyroBiasZ;   
+            /*qDebug() << "[Gimbal] New Gyro Bias - X:" << m_gyroBiasX 
+                     << "Y:" << m_gyroBiasY << "Z:" << m_gyroBiasZ;   */
         }
     } else {
         sumX = sumY = sumZ = 0;   

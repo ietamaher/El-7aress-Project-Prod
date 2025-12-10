@@ -1,81 +1,50 @@
 QT += quick serialbus serialport dbus
 
 # =================================
-# PRODUCTION BUILD CONFIGURATION
+# LATENCY FIX: Disable debug logging in release builds
 # =================================
+# qDebug() statements block the Qt event loop causing massive jitter
+# During device disconnections, 12+ log statements can freeze the loop for 2.5 seconds
+# This disables qDebug/qInfo in release builds while keeping qWarning/qCritical
 CONFIG(release, debug|release) {
-    # Disable debug logging
     DEFINES += QT_NO_DEBUG_OUTPUT
     DEFINES += QT_NO_INFO_OUTPUT
-    DEFINES += NDEBUG
-    
-    # Aggressive optimization for Jetson Orin AGX
-    QMAKE_CXXFLAGS_RELEASE -= -O2
-    QMAKE_CXXFLAGS_RELEASE += -O3 -march=armv8.2-a+fp16+dotprod -mtune=cortex-a78
-    QMAKE_CXXFLAGS_RELEASE += -ffast-math -funroll-loops
-    
-    # Link-time optimization
-    QMAKE_CXXFLAGS_RELEASE += -flto
-    QMAKE_LFLAGS_RELEASE += -flto
-    QMAKE_LFLAGS_RELEASE += -Wl,-O1 -Wl,--as-needed
-    
-    message("Release build: Optimized for Jetson Orin AGX")
+    message("Release build: Debug logging disabled for optimal performance")
 }
 
 CONFIG(debug, debug|release) {
     message("Debug build: All logging enabled")
 }
 
-# =================================
-# GSTREAMER
-# =================================
-CONFIG += link_pkgconfig
-PKGCONFIG += gstreamer-1.0 gstreamer-video-1.0 gstreamer-gl-1.0
-
+#LIBS += -L/usr/lib/x86_64-linux-gnu/gstreamer-1.0 -lgstxvimagesink
 INCLUDEPATH += "/usr/include/gstreamer-1.0"
-INCLUDEPATH += "/usr/include/glib-2.0"
-INCLUDEPATH += "/usr/lib/aarch64-linux-gnu/glib-2.0/include"
+INCLUDEPATH += src
 
-LIBS += -lgstreamer-1.0 -lgstapp-1.0 -lgstbase-1.0 -lgobject-2.0 -lglib-2.0
+CONFIG += link_pkgconfig
+PKGCONFIG += gstreamer-1.0
+PKGCONFIG += gstreamer-video-1.0
 
-# =================================
-# NVIDIA LIBRARIES (Jetson-specific paths)
-# =================================
-# VPI (Vision Programming Interface)
+INCLUDEPATH += "/usr/include/vpi3"
 INCLUDEPATH += "/opt/nvidia/vpi3/include"
-LIBS += -L/opt/nvidia/vpi3/lib/aarch64-linux-gnu -lnvvpi
-
-# CUDA
-INCLUDEPATH += /usr/local/cuda/include
-LIBS += -L/usr/local/cuda/lib64 -lcudart
-
-# =================================
-# OPENCV
-# =================================
-INCLUDEPATH += "/usr/local/include/opencv4"
-LIBS += -L/usr/local/lib \
-    -lopencv_core \
-    -lopencv_imgproc \
-    -lopencv_imgcodecs \
-    -lopencv_highgui \
-    -lopencv_dnn \
-    -lopencv_videoio
-
-# =================================
-# OTHER DEPENDENCIES
-# =================================
-INCLUDEPATH += "/usr/include/eigen3"
 INCLUDEPATH += /usr/include/SDL2
+LIBS += -L/opt/nvidia/vpi3/lib/x86_64-linux-gnu -lnvvpi
 LIBS += -lSDL2
 
-# =================================
-# RUNTIME LIBRARY PATHS
-# =================================
-QMAKE_LFLAGS += -Wl,-rpath,/usr/local/cuda/lib64
-QMAKE_LFLAGS += -Wl,-rpath,/opt/nvidia/vpi3/lib/aarch64-linux-gnu
-QMAKE_LFLAGS += -Wl,-rpath,/usr/local/lib
-QMAKE_LFLAGS += -Wl,-rpath,/usr/lib/aarch64-linux-gnu/tegra
+LIBS += -lgstreamer-1.0 -lgstapp-1.0 -lgstbase-1.0 -lgobject-2.0 -lglib-2.0
+PKGCONFIG += gstreamer-gl-1.0
 
+# Common configurations
+#INCLUDEPATH += "/usr/include/opencv4"
+INCLUDEPATH += "/usr/local/include/opencv4"
+INCLUDEPATH += "/usr/include/eigen3"
+INCLUDEPATH += "/usr/include/glib-2.0"
+
+LIBS += -L/usr/local/lib -lopencv_core -lopencv_imgcodecs -lopencv_highgui -lopencv_imgproc
+LIBS += -L/usr/local/lib -lopencv_core   -lopencv_dnn -lopencv_videoio
+PKGCONFIG += gstreamer-gl-1.0
+
+INCLUDEPATH += /usr/local/cuda/include
+LIBS += -L/usr/local/cuda/lib64 -lcudart
 
 SOURCES += \
     src/config/MotionTuningConfig.cpp \
@@ -285,6 +254,5 @@ HEADERS += \
     src/hardware/messages/RadarMessage.h \
     src/hardware/messages/ServoActuatorMessage.h \
     src/hardware/messages/ServoDriverMessage.h
-
 
 

@@ -285,12 +285,12 @@ void ServoActuatorDevice::holdCurrentPosition() {
 
 void ServoActuatorDevice::checkAllStatus() {
     // Queue up all polling commands
-    m_commandQueue.enqueue("SR");  // Status register
+    //m_commandQueue.enqueue("SR");  // Status register
     m_commandQueue.enqueue("AP");  // Position
-    m_commandQueue.enqueue("VL");  // Velocity
-    m_commandQueue.enqueue("TQ");  // Torque
-    m_commandQueue.enqueue("RT1"); // Temperature
-    m_commandQueue.enqueue("BV");  // Bus voltage
+    //m_commandQueue.enqueue("VL");  // Velocity
+    //m_commandQueue.enqueue("TQ");  // Torque
+    //m_commandQueue.enqueue("RT1"); // Temperature
+    //m_commandQueue.enqueue("BV");  // Bus voltage
     
     // Start processing if no command is pending
     if (m_pendingCommand.isEmpty()) {

@@ -362,6 +362,12 @@ void WeaponController::onActuatorFeedback(const ServoActuatorData& data)
 
 void WeaponController::processActuatorPosition(double posCounts)
 {
+ 
+ qDebug() << "[WeaponController][FEED DEBUG] state =" << feedStateName(m_feedState)
+         << "| reportedPos =" << posCounts
+         << "| FEED_EXTEND_POS =" << FEED_EXTEND_POS
+         << "| FEED_RETRACT_POS =" << FEED_RETRACT_POS
+         << "| TOLERANCE =" << FEED_POSITION_TOLERANCE;
     switch (m_feedState) {
     case AmmoFeedState::Extending:
         if (posCounts >= (FEED_EXTEND_POS - FEED_POSITION_TOLERANCE)) {
@@ -372,9 +378,9 @@ void WeaponController::processActuatorPosition(double posCounts)
 
             qDebug() << "[WeaponController] Commanding actuator to RETRACT to" << FEED_RETRACT_POS;
             m_servoActuator->moveToPosition(FEED_RETRACT_POS);
-
-            // Restart watchdog for retraction phase
-            m_feedTimer->start(FEED_TIMEOUT_MS);
+qDebug() << "[WEAPON][FEED DEBUG] commanded EXTEND ->" << FEED_EXTEND_POS;
+m_feedTimer->start(FEED_TIMEOUT_MS);
+qDebug() << "[WEAPON][FEED DEBUG] watchdog started:" << FEED_TIMEOUT_MS << "ms";
         }
         break;
 
