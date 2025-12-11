@@ -115,6 +115,20 @@ SystemStateModel::SystemStateModel(QObject *parent)
     updateData(initialData);
 }
 
+SystemStateModel::~SystemStateModel() {
+    // ✅ CRITICAL FIX: Save zones to file on application shutdown
+    // This ensures zones persist even if app closes unexpectedly
+    QString zonesPath = QCoreApplication::applicationDirPath() + "/config/zones.json";
+
+    qInfo() << "SystemStateModel: Shutting down, saving zones to" << zonesPath;
+
+    if (saveZonesToFile(zonesPath)) {
+        qInfo() << "✓ Zones saved successfully on shutdown";
+    } else {
+        qWarning() << "✗ Failed to save zones on shutdown!";
+    }
+}
+
 // --- General Data Update ---
 void SystemStateModel::updateData(const SystemStateData &newState) {
 
@@ -585,6 +599,8 @@ bool SystemStateModel::loadZonesFromFile(const QString& filePath) {
     updateNextIdsAfterLoad();
 
     qDebug() << "Zones loaded successfully from" << filePath;
+    // ✅ CRITICAL FIX: Emit dataChanged so all controllers know about loaded zones
+    emit dataChanged(m_currentStateData);
     emit zonesChanged(); // Notify UI about the loaded zones
     return true;
 }
