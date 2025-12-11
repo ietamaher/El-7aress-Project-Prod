@@ -42,7 +42,6 @@ std::vector<MessagePtr> ServoActuatorProtocolParser::parse(const QByteArray& raw
             // Hardware format: "A5000" (no space between A and payload)
             // NOT "A 5000" (space-separated)
             QString dataPart = mainResponse.mid(1).trimmed(); // Skip 'A', get rest
-            qDebug() << "[Parser] ACK parsed: mainResponse='" << mainResponse << "' dataPart='" << dataPart << "'";
 
             // ⭐ Update ONLY the relevant field in accumulated m_data based on pending command
             if (m_pendingCommand == "SR") {

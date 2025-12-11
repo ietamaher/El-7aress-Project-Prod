@@ -68,9 +68,6 @@ WeaponController::WeaponController(SystemStateModel* stateModel,
         connect(m_servoActuator, &ServoActuatorDevice::actuatorDataChanged,
                 this, &WeaponController::onActuatorFeedback,
                 Qt::QueuedConnection);
-        qDebug() << "[WeaponController] SIGNAL CONNECTED: actuatorDataChanged -> onActuatorFeedback";
-    } else {
-        qCritical() << "[WeaponController] CRITICAL: m_servoActuator is NULL - feedback will never work!";
     }
 
     // ========================================================================
@@ -344,7 +341,6 @@ void WeaponController::startAmmoFeedCycle()
     emit ammoFeedCycleStarted();
 
     // Command full extension
-    qDebug() << "[WeaponController] Commanding actuator to EXTEND to" << FEED_EXTEND_POS << "mm";
     m_servoActuator->moveToPosition(FEED_EXTEND_POS);
 
     // Start watchdog
@@ -357,32 +353,17 @@ void WeaponController::startAmmoFeedCycle()
 
 void WeaponController::onActuatorFeedback(const ServoActuatorData& data)
 {
-    // Extract position (adjust field name to match your ServoActuatorData struct)
-    double pos = data.position_mm;  // or data.position_countsposition_mm if using mm
-
-    qDebug() << "[WeaponController][FEEDBACK] onActuatorFeedback CALLED! pos=" << pos
-             << "isConnected=" << data.isConnected
-             << "feedState=" << feedStateName(m_feedState);
-
-    processActuatorPosition(pos);
+    processActuatorPosition(data.position_mm);
 }
 
 void WeaponController::processActuatorPosition(double posMM)
 {
-    qDebug() << "[WeaponController][FEED DEBUG] state =" << feedStateName(m_feedState)
-             << "| reportedPos =" << posMM << "mm"
-             << "| FEED_EXTEND_POS =" << FEED_EXTEND_POS << "mm"
-             << "| FEED_RETRACT_POS =" << FEED_RETRACT_POS << "mm"
-             << "| TOLERANCE =" << FEED_POSITION_TOLERANCE << "mm";
     switch (m_feedState) {
     case AmmoFeedState::Extending:
         if (posMM >= (FEED_EXTEND_POS - FEED_POSITION_TOLERANCE)) {
-            qDebug() << "[WeaponController] Extension confirmed at pos =" << posMM << "mm";
 
             // Extension reached - now retract
             transitionFeedState(AmmoFeedState::Retracting);
-
-            qDebug() << "[WeaponController] Commanding actuator to RETRACT to" << FEED_RETRACT_POS << "mm";
             m_servoActuator->moveToPosition(FEED_RETRACT_POS);
 
             // Restart watchdog for retraction
@@ -392,8 +373,6 @@ void WeaponController::processActuatorPosition(double posMM)
 
     case AmmoFeedState::Retracting:
         if (posMM <= (FEED_RETRACT_POS + FEED_POSITION_TOLERANCE)) {
-            qDebug() << "[WeaponController] Retraction confirmed at pos =" << posMM << "mm";
-
             // Cycle complete
             transitionFeedState(AmmoFeedState::Idle);
 
