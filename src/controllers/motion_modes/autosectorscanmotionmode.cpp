@@ -147,7 +147,8 @@ void AutoSectorScanMotionMode::update(GimbalController* controller, double dt) {
     const auto& cfg = MotionTuningConfig::instance();
 
     // Calculate errors - use encoder for Az, IMU pitch for El
-    double errAz = m_targetAz - data.gimbalAz;
+    // ✅ CRITICAL FIX: Normalize azimuth error to handle 0°/360° wraparound
+    double errAz = normalizeAngle180(m_targetAz - data.gimbalAz);
     double errEl = m_targetEl - data.imuPitchDeg;
 
     // ✅ ROBUSTNESS: Use hypot for proper 2D distance
@@ -172,7 +173,8 @@ void AutoSectorScanMotionMode::update(GimbalController* controller, double dt) {
         m_elPid.reset();
 
         // Recalculate for new target
-        errAz = m_targetAz - data.gimbalAz;
+        // ✅ CRITICAL FIX: Normalize azimuth error to handle 0°/360° wraparound
+        errAz = normalizeAngle180(m_targetAz - data.gimbalAz);
         errEl = m_targetEl - data.imuPitchDeg;
         distanceToTarget = std::hypot(errAz, errEl);
     }
