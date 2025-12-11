@@ -30,6 +30,8 @@ void ManualMotionMode::enterMode(GimbalController* controller)
     if (auto elServo = controller->elevationServo()) {
         setAcceleration(elServo);
     }
+    // Add acceleration !!!!!
+    
 }
 
 void ManualMotionMode::exitMode(GimbalController* controller)

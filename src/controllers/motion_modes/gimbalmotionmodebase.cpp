@@ -116,53 +116,63 @@ void GimbalMotionModeBase::sendStabilizedServoCommands(GimbalController* control
     double finalAzVelocity = desiredAzVelocity;
     double finalElVelocity = desiredElVelocity;
 
+    // Debug: show inputs
+    /*qDebug().nospace() << "[DBG SEND] in: desiredAz=" << desiredAzVelocity
+                       << " desiredEl=" << desiredElVelocity
+                       << " enableStab=" << enableStabilization
+                       << " encAz=" << systemState.gimbalAz
+                       << " encEl=" << systemState.gimbalEl;*/
+
     // --- Step 2: Apply stabilization if enabled ---
-    // FLAG SEMANTICS:
-    //   enableStabilization (param): Mode-level stabilization request (e.g., tracking wants it, manual doesn't)
-    //   systemState.enableStabilization: User-level global stabilization toggle (GUI button)
-    //   Both must be true to apply stabilization (AND logic)
     if (enableStabilization && systemState.enableStabilization) {
-        // ✅ NEW ARCHITECTURE: Use velocity-based GimbalStabilizer
-        // Control Law: ω_cmd = ω_user + ω_feedforward + Kp × (angle_error)
-        //
-        // When stabilization is active, we ALWAYS enable world-frame target holding
-        // (position correction + rate feed-forward). The stabilizer handles both
-        // AHRS-based drift compensation and gyro-based transient compensation.
         auto [stabAz_dps, stabEl_dps] = s_stabilizer.computeStabilizedVelocity(
-            desiredAzVelocity,                      // User-commanded velocity
+            desiredAzVelocity,
             desiredElVelocity,
-            systemState.imuRollDeg,                 // Platform attitude (AHRS)
+            systemState.imuRollDeg,
             systemState.imuPitchDeg,
             systemState.imuYawDeg,
-            systemState.GyroX,                      // Platform rates (gyros)
+            systemState.GyroX,
             systemState.GyroY,
             systemState.GyroZ,
-            systemState.gimbalAz,                   // Current gimbal position
+            systemState.gimbalAz,
             systemState.gimbalEl,
-            systemState.targetAzimuth_world,        // World-frame target
+            systemState.targetAzimuth_world,
             systemState.targetElevation_world,
-            true,                                   // Always enable world target holding when stabilizing
+            true,
             dt
         );
 
         finalAzVelocity = stabAz_dps;
         finalElVelocity = stabEl_dps;
+
+        //qDebug().nospace() << "[DBG SEND] stabilization applied: stabAz=" << stabAz_dps
+         //                  << " stabEl=" << stabEl_dps;
     }
 
-    // --- Step 3: Apply system-wide velocity limits (from config) ---
+    // Step 3: limits
     finalAzVelocity = qBound(-MAX_VELOCITY(), finalAzVelocity, MAX_VELOCITY());
     finalElVelocity = qBound(-MAX_VELOCITY(), finalElVelocity, MAX_VELOCITY());
 
+    //qDebug().nospace() << "[DBG SEND] final(before write) Az=" << finalAzVelocity
+     //                  << " El=" << finalElVelocity;
+
     // --- Step 4: Convert to servo steps and send commands (AZD-KD velocity mode) ---
-    // Send velocity commands to AZD-KD drivers (Operation Type 16)
-    // Now with change detection to prevent redundant Modbus writes!
     if (auto azServo = controller->azimuthServo()) {
+        // Log what we will write (before any sign inversion)
+       // qDebug().nospace() << "[DBG SEND] writeAz (pre-negation)=" << finalAzVelocity;
+        // Current behavior: negate when writing (keep it for now)
+        qint32 lastAz = m_lastAzSpeedHz;
         writeVelocityCommand(azServo, -finalAzVelocity, AZ_STEPS_PER_DEGREE(), m_lastAzSpeedHz);
+       // qDebug().nospace() << "[DBG SEND] wroteAz (post-negation) lastHz=" << m_lastAzSpeedHz << " (prev=" << lastAz << ")";
     }
     if (auto elServo = controller->elevationServo()) {
+        //qDebug().nospace() << "[DBG SEND] writeEl (pre-negation)=" << finalElVelocity;
+        qint32 lastEl = m_lastElSpeedHz;
         writeVelocityCommand(elServo, -finalElVelocity, EL_STEPS_PER_DEGREE(), m_lastElSpeedHz);
+       // qDebug().nospace() << "[DBG SEND] wroteEl (post-negation) lastHz=" << m_lastElSpeedHz << " (prev=" << lastEl << ")";
     }
 }
+
 
 double GimbalMotionModeBase::pidCompute(PIDController& pid, double error, double setpoint, double measurement, bool derivativeOnMeasurement, double dt)
 {
