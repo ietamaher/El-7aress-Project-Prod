@@ -250,9 +250,8 @@ void ServoActuatorDevice::handleCommandTimeout() {
 //================================================================================
 
 void ServoActuatorDevice::moveToPosition(double position_mm) {
-    // Use parser for unit conversion
-    //int counts = m_parser->millimetersToSensorCounts(position_mm);
-    int counts=position_mm;
+    // Use parser for unit conversion (mm → counts for hardware command)
+    int counts = m_parser->millimetersToSensorCounts(position_mm);
     sendCommand(QString("TA%1").arg(counts));
 }
 
@@ -291,7 +290,7 @@ void ServoActuatorDevice::checkAllStatus() {
     //m_commandQueue.enqueue("TQ");  // Torque
     //m_commandQueue.enqueue("RT1"); // Temperature
     //m_commandQueue.enqueue("BV");  // Bus voltage
-    
+
     // Start processing if no command is pending
     if (m_pendingCommand.isEmpty()) {
         processNextCommand();
