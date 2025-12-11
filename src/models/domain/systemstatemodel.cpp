@@ -616,8 +616,10 @@ void SystemStateModel::updateNextIdsAfterLoad() {
 
 
 void SystemStateModel::onServoAzDataChanged(const ServoDriverData &azData) {
-
-    double mechAz = azData.position * ( 0.009/(174/34));      // raw mechanical angle
+    double gearRatio = 174.0/34.0;
+    double motorStepDeg = 0.009;
+    double degPerSteimbpGal = motorStepDeg / gearRatio;
+    double mechAz = azData.position * degPerSteimbpGal;      // raw mechanical angle
     double displayAz = std::fmod(mechAz, 360.0);
     if (displayAz < 0) displayAz += 360.0;                   // keep in [0, 360)
 
