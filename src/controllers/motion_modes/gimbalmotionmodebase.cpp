@@ -154,12 +154,14 @@ void GimbalMotionModeBase::sendStabilizedServoCommands(GimbalController* control
     finalElVelocity = qBound(-MAX_VELOCITY(), finalElVelocity, MAX_VELOCITY());
 
     // ========================================================================
-    // STEP 3.5: NO-TRAVERSE ZONE ENFORCEMENT (CRITICAL SAFETY)
+    // STEP 3.5: NO-TRAVERSE ZONE ENFORCEMENT (CRITICAL SAFETY - BUG FIX)
     // ========================================================================
     // Check if intended azimuth movement would enter a No-Traverse zone
     // If so, block the azimuth motion by clamping velocity to zero
     // This prevents gimbal from moving through restricted areas
     // ========================================================================
+    static bool wasBlocked = false;  // Track state changes for logging
+
     if (std::abs(finalAzVelocity) > 0.01) {  // Only check if there's actual azimuth motion
         double intendedAzMove = finalAzVelocity * dt;  // degrees of movement this cycle
 
@@ -170,14 +172,26 @@ void GimbalMotionModeBase::sendStabilizedServoCommands(GimbalController* control
                 intendedAzMove)) {
 
             // BLOCK the azimuth motion - safety critical!
-            static int logThrottle = 0;
-            if (++logThrottle % 20 == 0) {  // Log every 1 second @ 20Hz
-                qWarning() << "[MotionMode] BLOCKED by NO-TRAVERSE ZONE:"
-                           << "Current Az=" << systemState.gimbalAz
-                           << "° Intended move=" << intendedAzMove << "°";
+            if (!wasBlocked) {
+                // Log when blocking STARTS (only once per continuous block)
+                qCritical() << "========================================";
+                qCritical() << "  NO-TRAVERSE ZONE BLOCKING ACTIVE";
+                qCritical() << "========================================";
+                qCritical() << "[MotionMode] Current Az:" << systemState.gimbalAz << "°";
+                qCritical() << "[MotionMode] Current El:" << systemState.gimbalEl << "°";
+                qCritical() << "[MotionMode] Intended move:" << intendedAzMove << "°";
+                qCritical() << "[MotionMode] Motion BLOCKED to prevent zone entry";
+                wasBlocked = true;
             }
             finalAzVelocity = 0.0;  // Stop azimuth movement
+        } else if (wasBlocked) {
+            // Log when blocking ENDS
+            qInfo() << "[MotionMode] NO-TRAVERSE zone blocking cleared - motion resumed";
+            wasBlocked = false;
         }
+    } else if (wasBlocked) {
+        // No motion command, clear blocked state
+        wasBlocked = false;
     }
 
     // --- Step 4: Convert to servo steps and send commands (AZD-KD velocity mode) ---

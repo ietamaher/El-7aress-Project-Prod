@@ -1649,17 +1649,15 @@ void SystemStateModel::setPointInNoTraverseZone(bool inZone) {
 
 bool SystemStateModel::isAtNoTraverseZoneLimit(float currentAz, float currentEl, float intendedMoveAz) const {
     // ========================================================================
-    // NO-TRAVERSE ZONE LIMIT DETECTION
+    // NO-TRAVERSE ZONE LIMIT DETECTION (CRITICAL FIX)
     // ========================================================================
-    // This method checks if an intended azimuth movement would cross into a
-    // no-traverse zone boundary. It's used to prevent gimbal motion into
-    // restricted areas.
+    // BUG FIX: Previous logic allowed movement once inside the zone!
     //
-    // Logic:
-    // 1. Check if current position is already in a no-traverse zone
-    //    - If yes, allow movement OUT of the zone but not deeper IN
-    // 2. If not currently in a zone, check if intended movement would enter one
-    //    - If yes, block the movement
+    // NEW LOGIC:
+    // - If intended position would be in a No-Traverse zone -> BLOCK
+    // - If intended position would be outside all zones -> ALLOW
+    //
+    // This prevents ALL motion within restricted zones.
     // ========================================================================
 
     // Calculate the intended new azimuth position
@@ -1669,23 +1667,11 @@ bool SystemStateModel::isAtNoTraverseZoneLimit(float currentAz, float currentEl,
     while (newAz >= 360.0f) newAz -= 360.0f;
     while (newAz < 0.0f) newAz += 360.0f;
 
-    // Check current position status
-    bool currentlyInZone = isPointInNoTraverseZone(currentAz, currentEl);
-
-    // Check intended position status
+    // Check if intended position would be in a No-Traverse zone
     bool wouldBeInZone = isPointInNoTraverseZone(newAz, currentEl);
 
-    // Block movement if:
-    // - Currently NOT in zone AND intended position IS in zone (entering zone)
-    // - Currently IN zone AND still would be in zone (moving deeper/staying in zone)
-    //   (We allow movement OUT of the zone)
-    if (!currentlyInZone && wouldBeInZone) {
-        // Trying to enter a no-traverse zone - BLOCK
-        return true;
-    }
-
-    // Allow movement (either staying out of zone or exiting zone)
-    return false;
+    // BLOCK if intended position is in restricted zone
+    return wouldBeInZone;
 }
 
 void SystemStateModel::updateCurrentScanName() {

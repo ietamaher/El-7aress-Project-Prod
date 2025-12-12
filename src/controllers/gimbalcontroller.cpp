@@ -501,10 +501,22 @@ void GimbalController::onSystemStateChanged(const SystemStateData& newData)
     if (newData.isReticleInNoFireZone != inNFZ) {
         m_stateModel->setPointInNoFireZone(inNFZ);
 
-        // Log zone transitions for safety awareness
+        // Log zone transitions for safety awareness (both entry and exit)
         if (inNFZ) {
-            qWarning() << "[GimbalController] ENTERED NO-FIRE ZONE: Az="
-                       << newData.reticleAz << "° El=" << newData.reticleEl << "°";
+            qCritical() << "========================================";
+            qCritical() << "  ENTERED NO-FIRE ZONE";
+            qCritical() << "========================================";
+            qCritical() << "[GimbalController] Reticle Az:" << newData.reticleAz << "°";
+            qCritical() << "[GimbalController] Reticle El:" << newData.reticleEl << "°";
+            qCritical() << "[GimbalController] Range:" << newData.currentTargetRange << "m";
+            qCritical() << "[GimbalController] WEAPON FIRING IS BLOCKED";
+        } else {
+            qInfo() << "========================================";
+            qInfo() << "  EXITED NO-FIRE ZONE";
+            qInfo() << "========================================";
+            qInfo() << "[GimbalController] Reticle Az:" << newData.reticleAz << "°";
+            qInfo() << "[GimbalController] Reticle El:" << newData.reticleEl << "°";
+            qInfo() << "[GimbalController] Weapon firing is now allowed";
         }
     }
 
