@@ -496,6 +496,22 @@ void WeaponController::startFiring()
         qDebug() << "[WeaponController] Cannot fire: system is not armed";
         return;
     }
+
+    // ========================================================================
+    // CRITICAL SAFETY CHECK: No-Fire Zone Protection
+    // ========================================================================
+    if (m_stateModel) {
+        SystemStateData currentState = m_stateModel->data();
+
+        // Check if reticle is in a No-Fire zone
+        if (currentState.isReticleInNoFireZone) {
+            qCritical() << "[WeaponController] FIRE BLOCKED: Reticle is in NO-FIRE ZONE";
+            qCritical() << "[WeaponController] Current position: Az="
+                        << currentState.reticleAz << "° El=" << currentState.reticleEl << "°";
+            return;
+        }
+    }
+
     m_plc42->setSolenoidState(1);
 }
 

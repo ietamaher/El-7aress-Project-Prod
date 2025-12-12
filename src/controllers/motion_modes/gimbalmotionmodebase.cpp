@@ -153,8 +153,32 @@ void GimbalMotionModeBase::sendStabilizedServoCommands(GimbalController* control
     finalAzVelocity = qBound(-MAX_VELOCITY(), finalAzVelocity, MAX_VELOCITY());
     finalElVelocity = qBound(-MAX_VELOCITY(), finalElVelocity, MAX_VELOCITY());
 
-    //qDebug().nospace() << "[DBG SEND] final(before write) Az=" << finalAzVelocity
-     //                  << " El=" << finalElVelocity;
+    // ========================================================================
+    // STEP 3.5: NO-TRAVERSE ZONE ENFORCEMENT (CRITICAL SAFETY)
+    // ========================================================================
+    // Check if intended azimuth movement would enter a No-Traverse zone
+    // If so, block the azimuth motion by clamping velocity to zero
+    // This prevents gimbal from moving through restricted areas
+    // ========================================================================
+    if (std::abs(finalAzVelocity) > 0.01) {  // Only check if there's actual azimuth motion
+        double intendedAzMove = finalAzVelocity * dt;  // degrees of movement this cycle
+
+        // Check if this movement would hit a no-traverse zone boundary
+        if (controller->systemStateModel()->isAtNoTraverseZoneLimit(
+                systemState.gimbalAz,
+                systemState.gimbalEl,
+                intendedAzMove)) {
+
+            // BLOCK the azimuth motion - safety critical!
+            static int logThrottle = 0;
+            if (++logThrottle % 20 == 0) {  // Log every 1 second @ 20Hz
+                qWarning() << "[MotionMode] BLOCKED by NO-TRAVERSE ZONE:"
+                           << "Current Az=" << systemState.gimbalAz
+                           << "° Intended move=" << intendedAzMove << "°";
+            }
+            finalAzVelocity = 0.0;  // Stop azimuth movement
+        }
+    }
 
     // --- Step 4: Convert to servo steps and send commands (AZD-KD velocity mode) ---
     if (auto azServo = controller->azimuthServo()) {
