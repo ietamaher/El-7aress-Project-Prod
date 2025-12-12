@@ -1598,6 +1598,10 @@ bool isAzimuthInRange(float targetAz, float startAz, float endAz) {
 }
 
 bool SystemStateModel::isPointInNoFireZone(float targetAz, float targetEl, float targetRange) const {
+    // DEBUG: Log every check (throttled to reduce spam)
+    static int checkCounter = 0;
+    bool debugThis = (++checkCounter % 100 == 0);  // Log every 5 seconds @ 20Hz
+
     for (const auto& zone : m_currentStateData.areaZones) {
         if (zone.isEnabled && zone.type == ZoneType::NoFire) {
             bool azMatch = isAzimuthInRange(targetAz, zone.startAzimuth, zone.endAzimuth);
@@ -1606,6 +1610,15 @@ bool SystemStateModel::isPointInNoFireZone(float targetAz, float targetEl, float
             /*if (targetRange != -1.0f && (zone.minRange > 0 || zone.maxRange > 0)) {
                 rangeMatch = (targetRange >= zone.minRange && (zone.maxRange == 0 || targetRange <= zone.maxRange));
             }*/
+
+            if (debugThis) {
+                qDebug() << "=== NO-FIRE ZONE CHECK (Zone" << zone.id << ") ===";
+                qDebug() << "  Target: Az=" << targetAz << "° El=" << targetEl << "° Range=" << targetRange << "m";
+                qDebug() << "  Zone:   Az=" << zone.startAzimuth << "-" << zone.endAzimuth
+                         << "° El=" << zone.minElevation << "-" << zone.maxElevation << "°";
+                qDebug() << "  Checks: azMatch=" << azMatch << " elMatch=" << elMatch << " rangeMatch=" << rangeMatch;
+                qDebug() << "  Result: IN_ZONE=" << (azMatch && elMatch && rangeMatch);
+            }
 
             if (azMatch && elMatch && rangeMatch) {
                 // TODO: Consider 'isOverridable' if you have an override switch state
