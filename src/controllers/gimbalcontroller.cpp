@@ -493,11 +493,29 @@ void GimbalController::onSystemStateChanged(const SystemStateData& newData)
     // Check if current reticle position is in any enabled No-Fire zone
     // Uses reticleAz/reticleEl which includes all ballistic corrections
     // ========================================================================
+
+    // DEBUG: Log the check values every 50 cycles (~2.5 seconds @ 20Hz)
+    static int debugCounter = 0;
+    if (++debugCounter % 50 == 0) {
+        qDebug() << "[NoFireZone] Checking: Reticle Az=" << newData.reticleAz
+                 << "° El=" << newData.reticleEl << "° Range=" << newData.currentTargetRange << "m";
+
+        // Show active zones
+        for (const auto& zone : m_stateModel->data().areaZones) {
+            if (zone.isEnabled && zone.type == ZoneType::NoFire) {
+                qDebug() << "[NoFireZone] Active Zone" << zone.id << ":"
+                         << "Az" << zone.startAzimuth << "-" << zone.endAzimuth
+                         << "° El" << zone.minElevation << "-" << zone.maxElevation << "°";
+            }
+        }
+    }
+
     bool inNFZ = m_stateModel->isPointInNoFireZone(
         newData.reticleAz,
         newData.reticleEl,
         newData.currentTargetRange
     );
+
     if (newData.isReticleInNoFireZone != inNFZ) {
         m_stateModel->setPointInNoFireZone(inNFZ);
 

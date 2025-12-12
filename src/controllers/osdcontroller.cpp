@@ -382,7 +382,7 @@ void OsdController::onFrameDataReady(const FrameData& frmdata)
     // === ZONE WARNINGS ===
     m_viewModel->updateZoneWarning(
         frmdata.isReticleInNoFireZone,
-        frmdata.gimbalStoppedAtNTZLimit
+        frmdata.isReticleInNoTraverseZone  // FIXED: was using non-existent gimbalStoppedAtNTZLimit
         );
 
     // === LEAD ANGLE STATUS TEXT ===

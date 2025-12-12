@@ -154,11 +154,12 @@ void GimbalMotionModeBase::sendStabilizedServoCommands(GimbalController* control
     finalElVelocity = qBound(-MAX_VELOCITY(), finalElVelocity, MAX_VELOCITY());
 
     // ========================================================================
-    // STEP 3.5: NO-TRAVERSE ZONE ENFORCEMENT (CRITICAL SAFETY - BUG FIX)
+    // STEP 3.5: NO-TRAVERSE ZONE ENFORCEMENT (CROWS M153 Standard)
     // ========================================================================
-    // Check if intended azimuth movement would enter a No-Traverse zone
-    // If so, block the azimuth motion by clamping velocity to zero
-    // This prevents gimbal from moving through restricted areas
+    // MILITARY BEHAVIOR:
+    // - BLOCKS entry into restricted zones from outside
+    // - ALLOWS exit from zones if already inside
+    // - Creates a "one-way barrier" that protects zones from outside intrusion
     // ========================================================================
     static bool wasBlocked = false;  // Track state changes for logging
 
@@ -166,11 +167,12 @@ void GimbalMotionModeBase::sendStabilizedServoCommands(GimbalController* control
         double intendedAzMove = finalAzVelocity * dt;  // degrees of movement this cycle
 
         // Check if this movement would hit a no-traverse zone boundary
-        if (controller->systemStateModel()->isAtNoTraverseZoneLimit(
+        bool blocked = controller->systemStateModel()->isAtNoTraverseZoneLimit(
                 systemState.gimbalAz,
                 systemState.gimbalEl,
-                intendedAzMove)) {
+                intendedAzMove);
 
+        if (blocked) {
             // BLOCK the azimuth motion - safety critical!
             if (!wasBlocked) {
                 // Log when blocking STARTS (only once per continuous block)
@@ -179,15 +181,24 @@ void GimbalMotionModeBase::sendStabilizedServoCommands(GimbalController* control
                 qCritical() << "========================================";
                 qCritical() << "[MotionMode] Current Az:" << systemState.gimbalAz << "°";
                 qCritical() << "[MotionMode] Current El:" << systemState.gimbalEl << "°";
+                qCritical() << "[MotionMode] Velocity:" << finalAzVelocity << " deg/s";
                 qCritical() << "[MotionMode] Intended move:" << intendedAzMove << "°";
-                qCritical() << "[MotionMode] Motion BLOCKED to prevent zone entry";
+                qCritical() << "[MotionMode] Direction:" << (intendedAzMove > 0 ? "CW (+)" : "CCW (-)");
+                qCritical() << "[MotionMode] Motion BLOCKED - cannot enter zone from outside";
+                qCritical() << "[MotionMode] REVERSE DIRECTION to exit and resume motion";
                 wasBlocked = true;
             }
             finalAzVelocity = 0.0;  // Stop azimuth movement
-        } else if (wasBlocked) {
-            // Log when blocking ENDS
-            qInfo() << "[MotionMode] NO-TRAVERSE zone blocking cleared - motion resumed";
-            wasBlocked = false;
+        } else {
+            if (wasBlocked) {
+                // Log when blocking ENDS
+                qInfo() << "========================================";
+                qInfo() << "[MotionMode] NO-TRAVERSE BLOCKING CLEARED";
+                qInfo() << "[MotionMode] Current Az:" << systemState.gimbalAz << "°";
+                qInfo() << "[MotionMode] Motion resumed - outside restricted zone";
+                qInfo() << "========================================";
+                wasBlocked = false;
+            }
         }
     } else if (wasBlocked) {
         // No motion command, clear blocked state

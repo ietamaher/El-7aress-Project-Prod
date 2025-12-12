@@ -1649,15 +1649,15 @@ void SystemStateModel::setPointInNoTraverseZone(bool inZone) {
 
 bool SystemStateModel::isAtNoTraverseZoneLimit(float currentAz, float currentEl, float intendedMoveAz) const {
     // ========================================================================
-    // NO-TRAVERSE ZONE LIMIT DETECTION (CRITICAL FIX)
+    // NO-TRAVERSE ZONE LIMIT DETECTION (CROWS M153 Standard Behavior)
     // ========================================================================
-    // BUG FIX: Previous logic allowed movement once inside the zone!
+    // MILITARY STANDARD BEHAVIOR:
+    // - BLOCK motion when crossing INTO zone from outside (prevent entry)
+    // - ALLOW motion when EXITING zone (escape route)
+    // - ALLOW motion when already inside (free movement inside)
     //
-    // NEW LOGIC:
-    // - If intended position would be in a No-Traverse zone -> BLOCK
-    // - If intended position would be outside all zones -> ALLOW
-    //
-    // This prevents ALL motion within restricted zones.
+    // This implements a "one-way barrier" - the zone boundary acts as a wall
+    // from the outside, but allows free exit if somehow inside.
     // ========================================================================
 
     // Calculate the intended new azimuth position
@@ -1667,11 +1667,19 @@ bool SystemStateModel::isAtNoTraverseZoneLimit(float currentAz, float currentEl,
     while (newAz >= 360.0f) newAz -= 360.0f;
     while (newAz < 0.0f) newAz += 360.0f;
 
-    // Check if intended position would be in a No-Traverse zone
+    // Check current and intended positions
+    bool currentlyInZone = isPointInNoTraverseZone(currentAz, currentEl);
     bool wouldBeInZone = isPointInNoTraverseZone(newAz, currentEl);
 
-    // BLOCK if intended position is in restricted zone
-    return wouldBeInZone;
+    // BLOCK only when crossing FROM outside TO inside
+    if (!currentlyInZone && wouldBeInZone) {
+        return true;  // BLOCK - attempting to enter restricted zone
+    }
+
+    // ALLOW in all other cases:
+    // - Staying outside zone
+    // - Already inside and moving (including exit)
+    return false;
 }
 
 void SystemStateModel::updateCurrentScanName() {
