@@ -1,249 +1,229 @@
 #include "autosectorscanmotionmode.h"
-#include "controllers/gimbalcontroller.h" // For GimbalController
-#include "hardware/devices/servodriverdevice.h" // For ServoDriverDevice
+#include "controllers/gimbalcontroller.h"
+#include "hardware/devices/servodriverdevice.h"
 #include <QDebug>
-#include <QDateTime>  // For throttling model updates
-#include <cmath>    // For std::abs, std::hypot
-#include <QtGlobal> // For qBound
+#include <cmath>
+#include <algorithm>
 
-AutoSectorScanMotionMode::AutoSectorScanMotionMode(QObject* parent)
-    : GimbalMotionModeBase(parent), m_scanZoneSet(false), m_movingToPoint2(true)
-{
-    // ✅ Load PID gains from runtime config (field-tunable without rebuild)
-    const auto& cfg = MotionTuningConfig::instance();
-    m_azPid.Kp = cfg.autoScanAz.kp;
-    m_azPid.Ki = cfg.autoScanAz.ki;
-    m_azPid.Kd = cfg.autoScanAz.kd;
-    m_azPid.maxIntegral = cfg.autoScanAz.maxIntegral;
+// =========================================================
+// CONSTANTS
+// =========================================================
+static const double ARRIVAL_TOLERANCE_DEG     = 2.0;
+static const double ELEVATION_TOLERANCE_DEG   = 0.5;
+static const double TURN_AROUND_DELAY_SEC     = 0.5;
+static const double DEFAULT_ACCEL_DEG_S2       = 15.0;
+static const double SMOOTHING_TAU_S            = 0.06;
 
-    m_elPid.Kp = cfg.autoScanEl.kp;
-    m_elPid.Ki = cfg.autoScanEl.ki;
-    m_elPid.Kd = cfg.autoScanEl.kd;
-    m_elPid.maxIntegral = cfg.autoScanEl.maxIntegral;
+// =========================================================
+// ANGLE HELPERS
+// =========================================================
+static double norm360(double a) {
+    double r = fmod(a, 360.0);
+    return (r < 0.0) ? r + 360.0 : r;
 }
 
-void AutoSectorScanMotionMode::enterMode(GimbalController* controller) {
-    qDebug() << "[AutoSectorScanMotionMode] Enter";
+static double shortestDiff(double target, double current) {
+    double diff = norm360(target) - norm360(current);
+    if (diff > 180.0) diff -= 360.0;
+    if (diff <= -180.0) diff += 360.0;
+    return diff;
+}
+
+// =========================================================
+// CONSTRUCTOR
+// =========================================================
+AutoSectorScanMotionMode::AutoSectorScanMotionMode(QObject* parent)
+    : GimbalMotionModeBase(parent)
+{
+    const auto& cfg = MotionTuningConfig::instance();
+    m_azPid.Kp = cfg.autoScanAz.kp;
+    m_azPid.maxIntegral = cfg.autoScanAz.maxIntegral;
+
+    // You can optionally read hardware polarity here:
+    // m_azHardwareSign = cfg.hardwareSettings.azSign;
+}
+
+// =========================================================
+// ENTER MODE
+// =========================================================
+void AutoSectorScanMotionMode::enterMode(GimbalController* controller)
+{
+    qDebug() << "[AutoScan] ENTER";
+
     if (!m_scanZoneSet || !m_activeScanZone.isEnabled) {
-        qWarning() << "AutoSectorScanMotionMode: No active scan zone set or zone disabled. Exiting scan.";
         if (controller) controller->setMotionMode(MotionMode::Idle);
         return;
     }
 
-    // Reset PID controllers to start fresh
-    m_azPid.reset();
-    m_elPid.reset();
+    SystemStateData cur = controller->systemStateModel()->data();
 
-    // Reset rate limiting state
+    // --- Choose elevation midpoint (CROWS style) ---
+    m_targetEl = 0.5 * (m_activeScanZone.el1 + m_activeScanZone.el2);
+
+    // --- Determine closest az endpoint ---
+    double d1 = std::abs(shortestDiff(m_activeScanZone.az1, cur.gimbalAz));
+    double d2 = std::abs(shortestDiff(m_activeScanZone.az2, cur.gimbalAz));
+
+    if (d1 < d2) {
+        m_movingToPoint2 = false;
+        m_targetAz = m_activeScanZone.az1;
+    } else {
+        m_movingToPoint2 = true;
+        m_targetAz = m_activeScanZone.az2;
+    }
+
+    // Reset motion memory
     m_previousDesiredAzVel = 0.0;
-    m_previousDesiredElVel = 0.0;
+    m_timeAtTarget = 0.0;
 
-    // Set the initial direction and target
-    m_movingToPoint2 = true; // Always start by moving towards point 2
-    m_targetAz = m_activeScanZone.az2;
-    m_targetEl = m_activeScanZone.el2;
+    // Always align elevation first
+    m_state = AlignElevation;
 
-    // ✅ CRITICAL: Start velocity timer for dt measurement
-    startVelocityTimer();
-
+    // Smooth accel setting if needed
     if (controller) {
-        // Set a slower, smoother acceleration for scanning motion
-        if (auto azServo = controller->azimuthServo()) setAcceleration(azServo, 1000000);
-        if (auto elServo = controller->elevationServo()) setAcceleration(elServo, 1000000);
+        if (auto az = controller->azimuthServo())
+            setAcceleration(az, 100000);
+        if (auto el = controller->elevationServo())
+            setAcceleration(el, 100000);
     }
+
+    qDebug() << "[AutoScan] Will align elevation to:" << m_targetEl
+             << " then scan azimuth to:" << m_targetAz;
 }
 
-void AutoSectorScanMotionMode::exitMode(GimbalController* controller) {
-    qDebug() << "[AutoSectorScanMotionMode] Exit";
+// =========================================================
+// EXIT
+// =========================================================
+void AutoSectorScanMotionMode::exitMode(GimbalController* controller)
+{
+    qDebug() << "[AutoScan] EXIT";
     stopServos(controller);
-    m_scanZoneSet = false; // Reset state for the next time the mode is activated
+    m_scanZoneSet = false;
 }
 
-void AutoSectorScanMotionMode::setActiveScanZone(const AutoSectorScanZone& scanZone) {
+// =========================================================
+// CONFIGURE SCAN ZONE
+// =========================================================
+void AutoSectorScanMotionMode::setActiveScanZone(const AutoSectorScanZone& scanZone)
+{
     m_activeScanZone = scanZone;
+    m_activeScanZone.az1 = norm360(scanZone.az1);
+    m_activeScanZone.az2 = norm360(scanZone.az2);
     m_scanZoneSet = true;
-    qDebug() << "[AutoSectorScanMotionMode] Active scan zone set to ID:" << scanZone.id;
+
+    qDebug() << "[AutoScan] Zone Set:" 
+             << m_activeScanZone.az1 << "to" << m_activeScanZone.az2
+             << "EL:" << m_activeScanZone.el1 << m_activeScanZone.el2;
 }
 
-
-// ===================================================================================
-// =================== FULLY UPDATED AND UNIFORM UPDATE METHOD =====================
-// ===================================================================================
-/*void AutoSectorScanMotionMode::update(GimbalController* controller, double dt) {
-    // Top-level guard clauses for mode-specific state
-    if (!controller || !m_scanZoneSet || !m_activeScanZone.isEnabled) {
-        // If the scan zone is disabled while we are in this mode, stop and let the
-        // main controller logic switch to Idle.
-        stopServos(controller);
-        if (controller && m_scanZoneSet && !m_activeScanZone.isEnabled) {
-            controller->setMotionMode(MotionMode::Idle);
-        }
+// =========================================================
+// UPDATE (Main State Machine)
+// =========================================================
+void AutoSectorScanMotionMode::update(GimbalController* controller, double dt)
+{
+    if (!controller || !m_scanZoneSet || !m_activeScanZone.isEnabled)
         return;
-    }
+
+    if (dt <= 0.0) dt = 1e-3;
 
     SystemStateData data = controller->systemStateModel()->data();
-    double errAz = m_targetAz - data.gimbalAz;
-    double errEl = m_targetEl - data.gimbalEl;
-
-    // --- ROBUSTNESS: Use a 2D distance check for arrival ---
-    double distanceToTarget = std::sqrt( errEl * errEl); //errAz * errAz +
-
-    if (distanceToTarget < ARRIVAL_THRESHOLD_DEG) {
-        qDebug() << "AutoSectorScan: Reached point" << (m_movingToPoint2 ? "2" : "1");
-        
-        // Toggle direction
-        m_movingToPoint2 = !m_movingToPoint2;
-        if (m_movingToPoint2) {
-            m_targetAz = m_activeScanZone.az2;
-            m_targetEl = m_activeScanZone.el2;
-        } else {
-            m_targetAz = m_activeScanZone.az1;
-            m_targetEl = m_activeScanZone.el1;
-        }
-        
-        // Reset PID controllers to prevent integral windup from any previous steady-state error
-        m_azPid.reset();
-        m_elPid.reset();
-        
-        // Recalculate error for the new target for this update cycle
-        errAz = m_targetAz - data.gimbalAz;
-        errEl = m_targetEl - data.gimbalEl;
-    }
-
-    // --- UNIFORMITY: This block is now identical in pattern to other modes ---
-    // Outer Loop: PID calculates the DESIRED world velocity to move to the next scan point
-    double desiredAzVelocity = 0; //pidCompute(m_azPid, errAz, UPDATE_INTERVAL_S);
-    double desiredElVelocity = pidCompute(m_elPid, errEl, UPDATE_INTERVAL_S);
-    
-    // Limit the velocity vector's magnitude to the defined scan speed
-    double desiredSpeedDegS = m_activeScanZone.scanSpeed;
-    double totalVelocityMag = std::sqrt(desiredAzVelocity * desiredAzVelocity + desiredElVelocity * desiredElVelocity);
-    if (totalVelocityMag > desiredSpeedDegS && desiredSpeedDegS > 0) {
-        desiredAzVelocity = (desiredAzVelocity / totalVelocityMag) * desiredSpeedDegS;
-        desiredElVelocity = (desiredElVelocity / totalVelocityMag) * desiredSpeedDegS;
-    }
-     qDebug() << "AreaScan: desiredElVelocity " << desiredElVelocity << " totalVelocityMag " << totalVelocityMag   ;    
-    // Pass the final desired world velocity to the base class for stabilization and hardware output.
-    sendStabilizedServoCommands(controller, desiredAzVelocity, desiredElVelocity);
-}
-*/
-
-// ===================================================================================
-// =================== REFACTORED UPDATE METHOD WITH MOTION PROFILING ================
-// ===================================================================================
-void AutoSectorScanMotionMode::update(GimbalController* controller, double dt) {
-    // Top-level guard clauses
-    if (!controller || !m_scanZoneSet || !m_activeScanZone.isEnabled) {
-        stopServos(controller);
-        if (controller && m_scanZoneSet && !m_activeScanZone.isEnabled) {
-            controller->setMotionMode(MotionMode::Idle);
-        }
-        return;
-    }
-
-    SystemStateData data = controller->systemStateModel()->data();
-
-    // ✅ EXPERT REVIEW FIX: dt is now passed from GimbalController (centralized measurement)
     const auto& cfg = MotionTuningConfig::instance();
 
-    // Calculate errors - use encoder for Az, IMU pitch for El
-    double errAz = m_targetAz - data.gimbalAz;
-    double errEl = m_targetEl - data.imuPitchDeg;
+    // =========================================================
+    // STATE 1 — Align Elevation
+    // =========================================================
+    if (m_state == AlignElevation)
+    {
+        double elErr = -(m_targetEl - data.gimbalEl);
 
-    // ✅ ROBUSTNESS: Use hypot for proper 2D distance
-    double distanceToTarget = std::hypot(errAz, errEl);
+        if (std::abs(elErr) <= ELEVATION_TOLERANCE_DEG) {
+            qDebug() << "[AutoScan] Elevation aligned → switching to azimuth scan";
+            m_state = ScanAzimuth;
+            m_previousDesiredAzVel = 0.0;
+            return;
+        }
 
-    // --- 1. ENDPOINT HANDLING LOGIC ---
-    if (distanceToTarget < cfg.autoScanParams.arrivalThresholdDeg) {
-        qDebug() << "AutoSectorScan: Reached point" << (m_movingToPoint2 ? "2" : "1");
+        // Move ONLY elevation
+        double kp_el = 1.0; // you may place in config
+        double elVel = kp_el * elErr;
 
-        // Toggle direction for next sweep
-        m_movingToPoint2 = !m_movingToPoint2;
-        if (m_movingToPoint2) {
-            m_targetAz = m_activeScanZone.az2;
-            m_targetEl = m_activeScanZone.el2;
+        sendStabilizedServoCommands(controller, 
+                                    0.0,           // no azimuth motion
+                                    elVel, 
+                                    true, dt);
+        return;
+    }
+
+    // =========================================================
+    // STATE 2 — Azimuth scanning
+    // =========================================================
+    if (m_state == ScanAzimuth)
+    {
+        double errAz  = shortestDiff(m_targetAz, data.gimbalAz);
+        double distAz = std::abs(errAz);
+
+        // Arrival logic
+        if (distAz <= ARRIVAL_TOLERANCE_DEG) {
+
+            m_timeAtTarget += dt;
+            m_previousDesiredAzVel = 0.0;
+
+            sendStabilizedServoCommands(controller, 0.0, 0.0, false, dt);
+
+            if (m_timeAtTarget >= TURN_AROUND_DELAY_SEC) {
+                m_movingToPoint2 = !m_movingToPoint2;
+                m_targetAz = m_movingToPoint2 ? m_activeScanZone.az2
+                                              : m_activeScanZone.az1;
+
+                m_timeAtTarget = 0.0;
+                m_previousDesiredAzVel = 0.0;
+
+                qDebug() << "[AutoScan] Switch direction → New target:" << m_targetAz;
+            }
+            return;
+        }
+
+        m_timeAtTarget = 0.0;
+
+        // Motion profile
+        double v_max = std::abs(m_activeScanZone.scanSpeed);
+        if (v_max < 0.5) v_max = 5.0;
+
+        double accel = (cfg.motion.scanMaxAccelDegS2 > 0.0)
+                     ? cfg.motion.scanMaxAccelDegS2
+                     : DEFAULT_ACCEL_DEG_S2;
+
+        double decelDist = (v_max * v_max) / (2.0 * accel);
+        double direction = (errAz > 0 ? 1.0 : -1.0);
+
+        double desiredVel;
+        if (distAz <= decelDist) {
+            double v_dec = std::sqrt(2.0 * accel * distAz);
+            desiredVel = direction * std::min(v_max, v_dec);
         } else {
-            m_targetAz = m_activeScanZone.az1;
-            m_targetEl = m_activeScanZone.el1;
+            desiredVel = direction * v_max;
         }
 
-        // Reset PIDs for new sweep
-        m_azPid.reset();
-        m_elPid.reset();
+        // Rate-limit
+        double maxDelta = accel * dt;
+        desiredVel = std::clamp(desiredVel,
+                                m_previousDesiredAzVel - maxDelta,
+                                m_previousDesiredAzVel + maxDelta);
 
-        // Recalculate for new target
-        errAz = m_targetAz - data.gimbalAz;
-        errEl = m_targetEl - data.imuPitchDeg;
-        distanceToTarget = std::hypot(errAz, errEl);
+        // Smoothing (adaptive alpha)
+        double alpha = dt / (SMOOTHING_TAU_S + dt);
+        double smoothedVel = alpha * desiredVel + (1.0 - alpha) * m_previousDesiredAzVel;
+        m_previousDesiredAzVel = smoothedVel;
+
+        // Hardware polarity
+        double finalCmd = m_azHardwareSign * smoothedVel;
+
+        // Clamp to global limit
+        double globalMax = (cfg.motion.maxVelocityDegS > 0.0)
+                         ? cfg.motion.maxVelocityDegS
+                         : v_max * 1.5;
+        finalCmd = std::clamp(finalCmd, -globalMax, globalMax);
+
+        sendStabilizedServoCommands(controller, finalCmd, 0.0, false, dt);
     }
-
-    // --- 2. MOTION PROFILE LOGIC ---
-    double desiredAzVelocity = 0.0;
-    double desiredElVelocity = 0.0;
-
-    if (m_activeScanZone.scanSpeed <= 0) {
-        // Scan speed zero - use PID to hold position
-        desiredAzVelocity = pidCompute(m_azPid, errAz, dt);
-        desiredElVelocity = pidCompute(m_elPid, errEl, dt);
-    } else {
-        // ✅ CRITICAL FIX: Compute deceleration distance from kinematics (from config)
-        const double a = cfg.motion.scanMaxAccelDegS2;
-        const double v = m_activeScanZone.scanSpeed;
-        double decelDist = (v * v) / (2.0 * std::max(a, 1e-3));
-
-        // Allow overriding decelDist from config if specified
-        if (cfg.autoScanParams.decelerationDistanceDeg > 0) {
-            decelDist = cfg.autoScanParams.decelerationDistanceDeg;
-        }
-
-        if (distanceToTarget < decelDist) {
-            // DECELERATION ZONE: Use PID to slow down smoothly
-            qDebug() << "AreaScan: Decelerating. Distance:" << distanceToTarget;
-            desiredAzVelocity = pidCompute(m_azPid, errAz, dt);
-            desiredElVelocity = pidCompute(m_elPid, errEl, dt);
-        } else {
-            // CRUISING ZONE: Move at constant scan speed
-            double dirAz = errAz / distanceToTarget;
-            double dirEl = errEl / distanceToTarget;
-
-            // ✅ CRITICAL BUG FIX: REMOVE MAGIC * 0.1 MULTIPLIER!
-            // Use actual scanSpeed, not 10% of it!
-            desiredAzVelocity = dirAz * v;
-            desiredElVelocity = dirEl * v;
-
-            // ✅ SOFT PID RESET: Reset integrator only (keep derivative history)
-            m_azPid.integral = 0.0;
-            m_elPid.integral = 0.0;
-        }
-    }
-
-    // ✅ CRITICAL FIX: Apply time-based rate limiting (from config)
-    double maxDelta = cfg.motion.scanMaxAccelDegS2 * dt;  // deg/s^2 * s = deg/s
-    desiredAzVelocity = applyRateLimitTimeBased(desiredAzVelocity, m_previousDesiredAzVel, maxDelta);
-    desiredElVelocity = applyRateLimitTimeBased(desiredElVelocity, m_previousDesiredElVel, maxDelta);
-
-    // Update previous velocities for next cycle
-    m_previousDesiredAzVel = desiredAzVelocity;
-    m_previousDesiredElVel = desiredElVelocity;
-
-    // Throttle world-target publish to 10 Hz
-    static qint64 lastPublishMs = 0;
-    qint64 nowMs = QDateTime::currentMSecsSinceEpoch();
-    if (nowMs - lastPublishMs >= 100 && data.imuConnected) {
-        double worldAz, worldEl;
-        convertGimbalToWorldFrame(m_targetAz, m_targetEl,
-                                  data.imuRollDeg, data.imuPitchDeg, data.imuYawDeg,
-                                  worldAz, worldEl);
-
-        auto stateModel = controller->systemStateModel();
-        SystemStateData updatedState = stateModel->data();
-        updatedState.targetAzimuth_world = worldAz;
-        updatedState.targetElevation_world = worldEl;
-        updatedState.useWorldFrameTarget = true;
-        stateModel->updateData(updatedState);
-        lastPublishMs = nowMs;
-    }
-
-    // Send stabilized commands
-    sendStabilizedServoCommands(controller, desiredAzVelocity, desiredElVelocity, true, dt);
 }

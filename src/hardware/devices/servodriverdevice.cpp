@@ -329,11 +329,11 @@ void ServoDriverDevice::sendWriteRequest(int startAddress, const QVector<quint16
         double avgMs = (m_modbusWriteTotalNs / (double)m_modbusWriteCount) / 1000000.0;
         double maxMs = m_modbusWriteMaxNs / 1000000.0;
         double minMs = m_modbusWriteMinNs / 1000000.0;
-        qDebug() << "⚙️ [MODBUS WRITE]" << m_identifier << "100 writes |"
+        /*qDebug() << "⚙️ [MODBUS WRITE]" << m_identifier << "100 writes |"
                  << "Avg:" << QString::number(avgMs, 'f', 3) << "ms"
                  << "Min:" << QString::number(minMs, 'f', 3) << "ms"
                  << "Max:" << QString::number(maxMs, 'f', 3) << "ms"
-                 << "| Total:" << m_modbusWriteCount;
+                 << "| Total:" << m_modbusWriteCount;*/
 
         // Reset for next batch
         m_modbusWriteTotalNs = 0;

@@ -115,16 +115,30 @@ SystemStateModel::SystemStateModel(QObject *parent)
     updateData(initialData);
 }
 
+SystemStateModel::~SystemStateModel() {
+    // ✅ CRITICAL FIX: Save zones to file on application shutdown
+    // This ensures zones persist even if app closes unexpectedly
+    QString zonesPath = QCoreApplication::applicationDirPath() + "/config/zones.json";
+
+    qInfo() << "SystemStateModel: Shutting down, saving zones to" << zonesPath;
+
+    if (saveZonesToFile(zonesPath)) {
+        qInfo() << "✓ Zones saved successfully on shutdown";
+    } else {
+        qWarning() << "✗ Failed to save zones on shutdown!";
+    }
+}
+
 // --- General Data Update ---
 void SystemStateModel::updateData(const SystemStateData &newState) {
 
     SystemStateData oldData = m_currentStateData;
     static int count = 0;
-    if (++count % 100 == 0) qDebug() << "dataChanged signals:" << count;
+    /*if (++count % 100 == 0) qDebug() << "dataChanged signals:" << count;
     // Check if anything has actually changed to avoid unnecessary signals/updates
     if (oldData == newState) { // Assumes you have operator== for SystemStateData
         return;
-    }
+    }*/
     if (m_currentStateData != newState) {
         // Check specifically if gimbal position changed before updating m_currentStateData
         bool gimbalChanged = !qFuzzyCompare(m_currentStateData.gimbalAz, newState.gimbalAz) ||
@@ -585,6 +599,8 @@ bool SystemStateModel::loadZonesFromFile(const QString& filePath) {
     updateNextIdsAfterLoad();
 
     qDebug() << "Zones loaded successfully from" << filePath;
+    // ✅ CRITICAL FIX: Emit dataChanged so all controllers know about loaded zones
+    emit dataChanged(m_currentStateData);
     emit zonesChanged(); // Notify UI about the loaded zones
     return true;
 }
@@ -794,9 +810,9 @@ void SystemStateModel::onJoystickAxisChanged(int axis, float normalizedValue)
     
     // Update axis value
     if (axis == 0) {
-        newData.joystickAzValue = normalizedValue;
+        newData.joystickAzValue = - normalizedValue;
     } else if (axis == 1){
-        newData.joystickElValue = normalizedValue;
+        newData.joystickElValue = - normalizedValue;
     }
     
     // Check if change is significant

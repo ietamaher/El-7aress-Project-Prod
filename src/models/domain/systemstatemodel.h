@@ -92,6 +92,7 @@ class SystemStateModel : public QObject
 
 public:
     explicit SystemStateModel(QObject *parent = nullptr);
+    ~SystemStateModel();
 
     // =================================
     // CORE SYSTEM DATA MANAGEMENT
