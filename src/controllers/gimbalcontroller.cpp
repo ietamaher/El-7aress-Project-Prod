@@ -478,10 +478,34 @@ void GimbalController::onSystemStateChanged(const SystemStateData& newData)
         setMotionMode(newData.motionMode);
     }
 
+    // ========================================================================
+    // SAFETY ZONE CHECKS (Updated every cycle to ensure real-time protection)
+    // ========================================================================
+
     // Update no-traverse zone status
     bool inNTZ = m_stateModel->isPointInNoTraverseZone(newData.gimbalAz, newData.gimbalEl);
     if (newData.isReticleInNoTraverseZone != inNTZ) {
         m_stateModel->setPointInNoTraverseZone(inNTZ);
+    }
+
+    // ========================================================================
+    // CRITICAL FIX: Update no-fire zone status
+    // Check if current reticle position is in any enabled No-Fire zone
+    // Uses reticleAz/reticleEl which includes all ballistic corrections
+    // ========================================================================
+    bool inNFZ = m_stateModel->isPointInNoFireZone(
+        newData.reticleAz,
+        newData.reticleEl,
+        newData.currentTargetRange
+    );
+    if (newData.isReticleInNoFireZone != inNFZ) {
+        m_stateModel->setPointInNoFireZone(inNFZ);
+
+        // Log zone transitions for safety awareness
+        if (inNFZ) {
+            qWarning() << "[GimbalController] ENTERED NO-FIRE ZONE: Az="
+                       << newData.reticleAz << "° El=" << newData.reticleEl << "°";
+        }
     }
 
     m_oldState = newData;

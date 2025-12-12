@@ -23,7 +23,7 @@
             "maxElevation": 10,
             "maxRange": 0,
             "minElevation": 0,
-            "minRange": -5,
+            "minRange": 0,
             "name": "",
             "startAzimuth": 100,
             "type": 3
