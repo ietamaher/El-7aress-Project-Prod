@@ -2,7 +2,7 @@
 #define AUTOSECTORSCANMOTIONMODE_H
 
 #include "gimbalmotionmodebase.h"
-#include "models/domain/systemstatemodel.h" // For AutoSectorScanZone struct
+#include "models/domain/systemstatemodel.h"
 
 class AutoSectorScanMotionMode : public GimbalMotionModeBase
 {
@@ -12,30 +12,39 @@ public:
     explicit AutoSectorScanMotionMode(QObject* parent = nullptr);
     ~AutoSectorScanMotionMode() override = default;
 
-    // GimbalMotionModeBase interface
     void enterMode(GimbalController* controller) override;
     void exitMode(GimbalController* controller) override;
     void update(GimbalController* controller, double dt) override;
-    //MotionMode::Type type() const override { return MotionMode::AutoSectorScan; }
 
-    // Configuration
     void setActiveScanZone(const AutoSectorScanZone& scanZone);
 
 private:
-    AutoSectorScanZone m_activeScanZone;
-    bool m_scanZoneSet;
-    
-    // State variables
-    bool m_movingToPoint2;       // true = moving to az2, false = moving to az1
-    double m_targetAz;           // Current target angle
-    double m_previousDesiredAzVel;
-    
-    // Fix for "Short Range": Timer to hold at endpoint
-    double m_timeAtTarget;
 
-    // PIDs (Used for config loading, though logic is profile-based)
+    enum ScanState {
+        AlignElevation,
+        ScanAzimuth
+    };
+
+    ScanState m_state = AlignElevation;
+
+    AutoSectorScanZone m_activeScanZone;
+    bool m_scanZoneSet = false;
+
+    // Targets
+    double m_targetAz = 0.0;
+    double m_targetEl = 0.0;
+
+    // Tracking state
+    bool   m_movingToPoint2 = true;
+    double m_previousDesiredAzVel = 0.0;
+    double m_timeAtTarget = 0.0;
+
+    // PID (optional, kept for future tuning)
     PIDController m_azPid;
     PIDController m_elPid;
+
+    // Motor direction sign (central inversion)
+    int m_azHardwareSign = +1;
 };
 
 #endif // AUTOSECTORSCANMOTIONMODE_H

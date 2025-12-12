@@ -1,52 +1,59 @@
 #ifndef TRPSCANMOTIONMODE_H
 #define TRPSCANMOTIONMODE_H
 
-#include "gimbalmotionmodebase.h"
-#include "models/domain/systemstatemodel.h" // For TargetReferencePoint struct
-#include <vector>
-#include <QElapsedTimer> // Include for the halt timer
 
+#include "gimbalmotionmodebase.h"
+#include "models/domain/systemstatemodel.h"
+#include <QVector>
+
+/*struct TargetReferencePoint {
+    int id = 0;
+    int locationPage = 0;
+    int trpInPage = 0;
+    double azimuth = 0.0;
+    double elevation = 0.0;
+    double haltTime = 0.0;
+};
+*/
 class TRPScanMotionMode : public GimbalMotionModeBase
 {
-public:
-    TRPScanMotionMode();
+    Q_OBJECT
 
-    // Overridden methods from the base class
+public:
+    explicit TRPScanMotionMode(QObject* parent = nullptr);
+    ~TRPScanMotionMode() override = default;
+
     void enterMode(GimbalController* controller) override;
     void exitMode(GimbalController* controller) override;
     void update(GimbalController* controller, double dt) override;
 
-    // This method is called by GimbalController to give us the path
-    void setActiveTRPPage(const std::vector<TargetReferencePoint>& trpPage);
+    void setTrpList(const QVector<TargetReferencePoint>& trps);
+    void setTrpList(const std::vector<TargetReferencePoint>& trps);
+    bool selectPage(int locationPage);
 
 private:
-    // --- State Machine for managing the path execution ---
-    enum class State {
-        Idle,       // Not running, path finished, or no path set.
-        Moving,     // Moving towards the current waypoint.
-        Halted      // Paused at a waypoint for the specified halt time.
+    enum State {
+        SlewToPoint,
+        HoldPoint
     };
-    State m_currentState;
-    double m_targetAz, m_targetEl; // Current intermediate target for PID
 
-    // --- Path Data & Progress ---
-    std::vector<TargetReferencePoint> m_trpPage;
-    int m_currentTrpIndex;
-    QElapsedTimer m_haltTimer; // Timer to manage the halt duration
+    State m_state = SlewToPoint;
 
-    // --- PID Controllers for smooth stopping ---
-    PIDController m_azPid;
-    PIDController m_elPid;
+    QVector<TargetReferencePoint> m_trps;
+    QVector<int> m_pageOrder;   // indexes of TRPs in this page
 
-    // Rate limiting - track previous velocities for time-based acceleration control
-    double m_previousDesiredAzVel = 0.0;
-    double m_previousDesiredElVel = 0.0;
+    int m_currentIndex = 0;     // index inside pageOrder
+    double m_targetAz = 0.0;
+    double m_targetEl = 0.0;
+    double m_holdRemaining = 0.0;
 
-    // --- Motion Tuning Parameters ---
-    // Distance from target to switch from cruising to PID-controlled deceleration.
-    static constexpr double DECELERATION_DISTANCE_DEG = 3.0;
-    // Position tolerance to consider the gimbal "arrived" at a waypoint.
-    static constexpr double ARRIVAL_THRESHOLD_DEG = 0.1;
+    double m_prevAzVel = 0.0;
+
+    static double norm360(double a);
+    static double shortestDiff(double t, double c);
+
+    void startCurrentTarget();
+    void advanceToNextPoint();
 };
 
 #endif // TRPSCANMOTIONMODE_H

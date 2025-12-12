@@ -810,9 +810,9 @@ void SystemStateModel::onJoystickAxisChanged(int axis, float normalizedValue)
     
     // Update axis value
     if (axis == 0) {
-        newData.joystickAzValue = normalizedValue;
+        newData.joystickAzValue = - normalizedValue;
     } else if (axis == 1){
-        newData.joystickElValue = normalizedValue;
+        newData.joystickElValue = - normalizedValue;
     }
     
     // Check if change is significant

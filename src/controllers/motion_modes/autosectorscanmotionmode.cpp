@@ -6,60 +6,65 @@
 #include <algorithm>
 
 // =========================================================
-// TUNING PARAMETERS
+// CONSTANTS
 // =========================================================
-static const double ARRIVAL_TOLERANCE_DEG = 2.0; // Tolerance to consider "arrived"
-static const double TURN_AROUND_DELAY_SEC = 0.5; // Wait 0.5s at edge (fixes short range)
+static const double ARRIVAL_TOLERANCE_DEG     = 2.0;
+static const double ELEVATION_TOLERANCE_DEG   = 0.5;
+static const double TURN_AROUND_DELAY_SEC     = 0.5;
+static const double DEFAULT_ACCEL_DEG_S2       = 15.0;
+static const double SMOOTHING_TAU_S            = 0.06;
 
-// 🔥 CRITICAL FIX: Set this to TRUE because your log shows Positive Command = Negative Motion
-static const bool   INVERT_MOTOR_DIRECTION = true; 
-
-// Helper: Normalize angle to [0, 360)
+// =========================================================
+// ANGLE HELPERS
+// =========================================================
 static double norm360(double a) {
     double r = fmod(a, 360.0);
     return (r < 0.0) ? r + 360.0 : r;
 }
 
-// Helper: Get shortest signed difference [-180, 180]
-// Positive Result = Target is CW (Right)
-static double getShortestDiff(double target, double current) {
+static double shortestDiff(double target, double current) {
     double diff = norm360(target) - norm360(current);
     if (diff > 180.0) diff -= 360.0;
     if (diff <= -180.0) diff += 360.0;
     return diff;
 }
 
+// =========================================================
+// CONSTRUCTOR
+// =========================================================
 AutoSectorScanMotionMode::AutoSectorScanMotionMode(QObject* parent)
-    : GimbalMotionModeBase(parent), 
-      m_scanZoneSet(false), 
-      m_movingToPoint2(true),
-      m_timeAtTarget(0.0)
+    : GimbalMotionModeBase(parent)
 {
     const auto& cfg = MotionTuningConfig::instance();
-    m_azPid.Kp = cfg.autoScanAz.kp; 
+    m_azPid.Kp = cfg.autoScanAz.kp;
     m_azPid.maxIntegral = cfg.autoScanAz.maxIntegral;
+
+    // You can optionally read hardware polarity here:
+    // m_azHardwareSign = cfg.hardwareSettings.azSign;
 }
 
-void AutoSectorScanMotionMode::enterMode(GimbalController* controller) {
-    qDebug() << "[AutoSectorScan] ENTER";
+// =========================================================
+// ENTER MODE
+// =========================================================
+void AutoSectorScanMotionMode::enterMode(GimbalController* controller)
+{
+    qDebug() << "[AutoScan] ENTER";
+
     if (!m_scanZoneSet || !m_activeScanZone.isEnabled) {
         if (controller) controller->setMotionMode(MotionMode::Idle);
         return;
     }
 
-    // Reset state
-    m_previousDesiredAzVel = 0.0;
-    m_timeAtTarget = 0.0;
-    
-    // --- SMART START: Pick closest endpoint ---
-    SystemStateData cur = controller ? controller->systemStateModel()->data() : SystemStateData();
-    
-    // Calculate distance to both points
-    double dist1 = std::abs(getShortestDiff(m_activeScanZone.az1, cur.gimbalAz));
-    double dist2 = std::abs(getShortestDiff(m_activeScanZone.az2, cur.gimbalAz));
+    SystemStateData cur = controller->systemStateModel()->data();
 
-    // Determine initial target
-    if (dist1 < dist2) {
+    // --- Choose elevation midpoint (CROWS style) ---
+    m_targetEl = 0.5 * (m_activeScanZone.el1 + m_activeScanZone.el2);
+
+    // --- Determine closest az endpoint ---
+    double d1 = std::abs(shortestDiff(m_activeScanZone.az1, cur.gimbalAz));
+    double d2 = std::abs(shortestDiff(m_activeScanZone.az2, cur.gimbalAz));
+
+    if (d1 < d2) {
         m_movingToPoint2 = false;
         m_targetAz = m_activeScanZone.az1;
     } else {
@@ -67,88 +72,158 @@ void AutoSectorScanMotionMode::enterMode(GimbalController* controller) {
         m_targetAz = m_activeScanZone.az2;
     }
 
-    qDebug() << "[AutoSectorScan] Start. Heading to:" << m_targetAz;
-    
-    // Set acceleration for smooth turn-around
+    // Reset motion memory
+    m_previousDesiredAzVel = 0.0;
+    m_timeAtTarget = 0.0;
+
+    // Always align elevation first
+    m_state = AlignElevation;
+
+    // Smooth accel setting if needed
     if (controller) {
-        if (auto azServo = controller->azimuthServo()) setAcceleration(azServo, 100000); 
+        if (auto az = controller->azimuthServo())
+            setAcceleration(az, 100000);
+        if (auto el = controller->elevationServo())
+            setAcceleration(el, 100000);
     }
+
+    qDebug() << "[AutoScan] Will align elevation to:" << m_targetEl
+             << " then scan azimuth to:" << m_targetAz;
 }
 
-void AutoSectorScanMotionMode::exitMode(GimbalController* controller) {
-    qDebug() << "[AutoSectorScan] EXIT";
+// =========================================================
+// EXIT
+// =========================================================
+void AutoSectorScanMotionMode::exitMode(GimbalController* controller)
+{
+    qDebug() << "[AutoScan] EXIT";
     stopServos(controller);
+    m_scanZoneSet = false;
 }
 
-void AutoSectorScanMotionMode::setActiveScanZone(const AutoSectorScanZone& scanZone) {
+// =========================================================
+// CONFIGURE SCAN ZONE
+// =========================================================
+void AutoSectorScanMotionMode::setActiveScanZone(const AutoSectorScanZone& scanZone)
+{
     m_activeScanZone = scanZone;
-    m_scanZoneSet = true;
-    
-    // Normalize inputs immediately
     m_activeScanZone.az1 = norm360(scanZone.az1);
     m_activeScanZone.az2 = norm360(scanZone.az2);
+    m_scanZoneSet = true;
 
-    qDebug() << "[AutoSectorScan] Zone Set:" << m_activeScanZone.az1 << "to" << m_activeScanZone.az2;
+    qDebug() << "[AutoScan] Zone Set:" 
+             << m_activeScanZone.az1 << "to" << m_activeScanZone.az2
+             << "EL:" << m_activeScanZone.el1 << m_activeScanZone.el2;
 }
 
+// =========================================================
+// UPDATE (Main State Machine)
+// =========================================================
 void AutoSectorScanMotionMode::update(GimbalController* controller, double dt)
 {
-    if (!controller || !m_scanZoneSet || !m_activeScanZone.isEnabled) return;
+    if (!controller || !m_scanZoneSet || !m_activeScanZone.isEnabled)
+        return;
+
+    if (dt <= 0.0) dt = 1e-3;
 
     SystemStateData data = controller->systemStateModel()->data();
-    
-    // 1. Calculate Error (Shortest path)
-    double errAz = getShortestDiff(m_targetAz, data.gimbalAz);
-    double distAz = std::abs(errAz);
+    const auto& cfg = MotionTuningConfig::instance();
 
-    // 2. Arrival Logic (With Hold Time)
-    // This fixes "Short Range" by ensuring we actually STOP at the target before reversing
-    if (distAz <= ARRIVAL_TOLERANCE_DEG) {
-        m_timeAtTarget += dt;
-        
-        // Hold position (send 0 velocity)
-        sendStabilizedServoCommands(controller, 0.0, 0.0, false, dt);
+    // =========================================================
+    // STATE 1 — Align Elevation
+    // =========================================================
+    if (m_state == AlignElevation)
+    {
+        double elErr = -(m_targetEl - data.gimbalEl);
 
-        if (m_timeAtTarget >= TURN_AROUND_DELAY_SEC) {
-            // Switch target after delay
-            m_movingToPoint2 = !m_movingToPoint2;
-            m_targetAz = m_movingToPoint2 ? m_activeScanZone.az2 : m_activeScanZone.az1;
-            m_timeAtTarget = 0.0; 
-            qDebug() << "[AutoSectorScan] Reached Endpoint. Switching to:" << m_targetAz;
+        if (std::abs(elErr) <= ELEVATION_TOLERANCE_DEG) {
+            qDebug() << "[AutoScan] Elevation aligned → switching to azimuth scan";
+            m_state = ScanAzimuth;
+            m_previousDesiredAzVel = 0.0;
+            return;
         }
-        return; 
-    } else {
+
+        // Move ONLY elevation
+        double kp_el = 1.0; // you may place in config
+        double elVel = kp_el * elErr;
+
+        sendStabilizedServoCommands(controller, 
+                                    0.0,           // no azimuth motion
+                                    elVel, 
+                                    true, dt);
+        return;
+    }
+
+    // =========================================================
+    // STATE 2 — Azimuth scanning
+    // =========================================================
+    if (m_state == ScanAzimuth)
+    {
+        double errAz  = shortestDiff(m_targetAz, data.gimbalAz);
+        double distAz = std::abs(errAz);
+
+        // Arrival logic
+        if (distAz <= ARRIVAL_TOLERANCE_DEG) {
+
+            m_timeAtTarget += dt;
+            m_previousDesiredAzVel = 0.0;
+
+            sendStabilizedServoCommands(controller, 0.0, 0.0, false, dt);
+
+            if (m_timeAtTarget >= TURN_AROUND_DELAY_SEC) {
+                m_movingToPoint2 = !m_movingToPoint2;
+                m_targetAz = m_movingToPoint2 ? m_activeScanZone.az2
+                                              : m_activeScanZone.az1;
+
+                m_timeAtTarget = 0.0;
+                m_previousDesiredAzVel = 0.0;
+
+                qDebug() << "[AutoScan] Switch direction → New target:" << m_targetAz;
+            }
+            return;
+        }
+
         m_timeAtTarget = 0.0;
+
+        // Motion profile
+        double v_max = std::abs(m_activeScanZone.scanSpeed);
+        if (v_max < 0.5) v_max = 5.0;
+
+        double accel = (cfg.motion.scanMaxAccelDegS2 > 0.0)
+                     ? cfg.motion.scanMaxAccelDegS2
+                     : DEFAULT_ACCEL_DEG_S2;
+
+        double decelDist = (v_max * v_max) / (2.0 * accel);
+        double direction = (errAz > 0 ? 1.0 : -1.0);
+
+        double desiredVel;
+        if (distAz <= decelDist) {
+            double v_dec = std::sqrt(2.0 * accel * distAz);
+            desiredVel = direction * std::min(v_max, v_dec);
+        } else {
+            desiredVel = direction * v_max;
+        }
+
+        // Rate-limit
+        double maxDelta = accel * dt;
+        desiredVel = std::clamp(desiredVel,
+                                m_previousDesiredAzVel - maxDelta,
+                                m_previousDesiredAzVel + maxDelta);
+
+        // Smoothing (adaptive alpha)
+        double alpha = dt / (SMOOTHING_TAU_S + dt);
+        double smoothedVel = alpha * desiredVel + (1.0 - alpha) * m_previousDesiredAzVel;
+        m_previousDesiredAzVel = smoothedVel;
+
+        // Hardware polarity
+        double finalCmd = m_azHardwareSign * smoothedVel;
+
+        // Clamp to global limit
+        double globalMax = (cfg.motion.maxVelocityDegS > 0.0)
+                         ? cfg.motion.maxVelocityDegS
+                         : v_max * 1.5;
+        finalCmd = std::clamp(finalCmd, -globalMax, globalMax);
+
+        sendStabilizedServoCommands(controller, finalCmd, 0.0, false, dt);
     }
-
-    // 3. Motion Profile (Trapezoidal Velocity)
-    double v_max = std::abs(m_activeScanZone.scanSpeed);
-    if (v_max < 0.5) v_max = 5.0; // Safety floor
-
-    double accel = 15.0; // deg/s^2 
-    double decelDist = (v_max * v_max) / (2.0 * accel);
-
-    double desiredVel = 0.0;
-    // Direction: If error is positive, we go Right (1.0).
-    double direction = (errAz > 0.0) ? 1.0 : -1.0;
-
-    if (distAz <= decelDist) {
-        double v_decel = std::sqrt(2.0 * accel * distAz);
-        desiredVel = direction * std::min(v_max, v_decel);
-    } else {
-        desiredVel = direction * v_max;
-    }
-
-    // 4. Smoothing
-    double alpha = 0.15; 
-    double smoothedVel = (desiredVel * alpha) + (m_previousDesiredAzVel * (1.0 - alpha));
-    m_previousDesiredAzVel = smoothedVel;
-
-    // 5. MOTOR DIRECTION FIX
-    // Logic: If I want +Vel, and hardware goes Left, I must send -Vel (which hardware interprets as Right).
-    double finalCmd = INVERT_MOTOR_DIRECTION ? -smoothedVel : smoothedVel;
-
-    // 6. Send Command
-    // enableStabilization = false (Testing raw scan logic first)
-    sendStabilizedServoCommands(controller, finalCmd, 0.0, false, dt);
 }

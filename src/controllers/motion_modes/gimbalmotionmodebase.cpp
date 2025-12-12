@@ -162,13 +162,13 @@ void GimbalMotionModeBase::sendStabilizedServoCommands(GimbalController* control
        // qDebug().nospace() << "[DBG SEND] writeAz (pre-negation)=" << finalAzVelocity;
         // Current behavior: negate when writing (keep it for now)
         qint32 lastAz = m_lastAzSpeedHz;
-        writeVelocityCommand(azServo, -finalAzVelocity, AZ_STEPS_PER_DEGREE(), m_lastAzSpeedHz);
+        writeVelocityCommand(azServo, finalAzVelocity, AZ_STEPS_PER_DEGREE(), m_lastAzSpeedHz);
        // qDebug().nospace() << "[DBG SEND] wroteAz (post-negation) lastHz=" << m_lastAzSpeedHz << " (prev=" << lastAz << ")";
     }
     if (auto elServo = controller->elevationServo()) {
         //qDebug().nospace() << "[DBG SEND] writeEl (pre-negation)=" << finalElVelocity;
         qint32 lastEl = m_lastElSpeedHz;
-        writeVelocityCommand(elServo, -finalElVelocity, EL_STEPS_PER_DEGREE(), m_lastElSpeedHz);
+        writeVelocityCommand(elServo, finalElVelocity, EL_STEPS_PER_DEGREE(), m_lastElSpeedHz);
        // qDebug().nospace() << "[DBG SEND] wroteEl (post-negation) lastHz=" << m_lastElSpeedHz << " (prev=" << lastEl << ")";
     }
 }

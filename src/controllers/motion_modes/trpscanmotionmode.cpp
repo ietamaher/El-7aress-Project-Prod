@@ -4,7 +4,7 @@
 #include <QDateTime>  // For throttling model updates
 #include <cmath> // For std::sqrt, std::hypot
 
-TRPScanMotionMode::TRPScanMotionMode()
+/*TRPScanMotionMode::TRPScanMotionMode()
     : m_currentState(State::Idle)
     , m_currentTrpIndex(0)
 {
@@ -22,200 +22,221 @@ TRPScanMotionMode::TRPScanMotionMode()
     m_elPid.Kd = cfg.trpScanEl.kd;
     m_elPid.maxIntegral = cfg.trpScanEl.maxIntegral;
 }
+ */
 
-void TRPScanMotionMode::setActiveTRPPage(const std::vector<TargetReferencePoint>& trpPage)
-{
-    qDebug() << "[TRPScanMotionMode] Active TRP page set with" << trpPage.size() << "points.";
-    m_trpPage = trpPage;
-    // Reset progress, ready to start when `enterMode` is called.
-    m_currentTrpIndex = 0;
-    m_currentState = m_trpPage.empty() ? State::Idle : State::Moving;
+static constexpr double AZ_TOL = 1.0;
+static constexpr double EL_TOL = 0.5;
+static constexpr double DEFAULT_ACCEL = 20.0;
+static constexpr double SMOOTH_TAU = 0.05;
+
+double TRPScanMotionMode::norm360(double a) {
+    double r = fmod(a, 360.0);
+    return (r < 0) ? r + 360.0 : r;
 }
 
-void TRPScanMotionMode::enterMode(GimbalController* controller)
+double TRPScanMotionMode::shortestDiff(double t, double c) {
+    double d = norm360(t) - norm360(c);
+    if (d > 180) d -= 360;
+    if (d <= -180) d += 360;
+    return d;
+}
+
+TRPScanMotionMode::TRPScanMotionMode(QObject* parent)
+    : GimbalMotionModeBase(parent)
+{}
+
+void TRPScanMotionMode::setTrpList(const QVector<TargetReferencePoint>& trps) {
+    m_trps = trps;
+}
+
+void TRPScanMotionMode::setTrpList(const std::vector<TargetReferencePoint>& trps)
 {
-    qDebug() << "[TRPScanMotionMode] Enter";
-    if (m_trpPage.empty()) {
-        qWarning() << "TRPScanMotionMode: No TRP page set. Exiting scan.";
-        // The GimbalController will set mode to Idle, so we just stop.
-        stopServos(controller);
-        m_currentState = State::Idle;
+    QVector<TargetReferencePoint> qtrps;
+    qtrps.reserve(static_cast<int>(trps.size()));
+    for (const auto &t : trps) {
+        qtrps.push_back(t);
+    }
+    setTrpList(qtrps);
+} 
+
+bool TRPScanMotionMode::selectPage(int locationPage) {
+    m_pageOrder.clear();
+
+    for (int i = 0; i < m_trps.size(); ++i) {
+        if (m_trps[i].locationPage == locationPage)
+            m_pageOrder.push_back(i);
+    }
+
+    std::sort(m_pageOrder.begin(), m_pageOrder.end(),
+              [&](int a, int b){ return m_trps[a].trpInPage < m_trps[b].trpInPage; });
+
+    if (m_pageOrder.isEmpty())
+        return false;
+
+    m_currentIndex = 0;
+    return true;
+}
+
+void TRPScanMotionMode::enterMode(GimbalController* controller) {
+    // If no TRPs at all -> abort
+    if (m_trps.isEmpty()) {
+        qWarning() << "[TRP] No TRPs selected!";
+        if (controller) controller->setMotionMode(MotionMode::Idle);
         return;
     }
 
-    // Reset state to start the path from the beginning
-    m_currentTrpIndex = 0;
-    m_currentState = State::Moving;
-    m_azPid.reset();
-    m_elPid.reset();
-
-    // Reset rate limiting state
-    m_previousDesiredAzVel = 0.0;
-    m_previousDesiredElVel = 0.0;
-
-    // ✅ CRITICAL: Start velocity timer for dt measurement
-    startVelocityTimer();
-
-    if (controller) {
-        // Set an aggressive acceleration for point-to-point moves
-        if (auto azServo = controller->azimuthServo()) setAcceleration(azServo, 200000);
-        if (auto elServo = controller->elevationServo()) setAcceleration(elServo, 200000);
+    // If pageOrder is empty, assume m_trps itself already contains only
+    // the TRPs for the active page (controller-side filtering).
+    // Populate pageOrder with sequential indices 0..N-1 so the rest of
+    // the code (which relies on m_pageOrder) works unchanged.
+    if (m_pageOrder.isEmpty()) {
+        m_pageOrder.clear();
+        for (int i = 0; i < m_trps.size(); ++i) m_pageOrder.push_back(i);
+        qDebug() << "[TRP] pageOrder was empty; populated from m_trps with"
+                 << m_pageOrder.size() << "entries.";
     }
-    qDebug() << "[TRPScanMotionMode] Starting path, moving to point 0.";
+
+    // If still empty (shouldn't happen), abort safely
+    if (m_pageOrder.isEmpty()) {
+        qWarning() << "[TRP] pageOrder empty after populate - aborting";
+        if (controller) controller->setMotionMode(MotionMode::Idle);
+        return;
+    }
+
+    m_prevAzVel = 0.0;
+    m_state = SlewToPoint;
+
+    // Ensure current index is valid
+    if (m_currentIndex < 0 || m_currentIndex >= m_pageOrder.size()) m_currentIndex = 0;
+
+    startCurrentTarget();
+
+    qDebug() << "[TRP] ENTER – cycling" << m_pageOrder.size() << "points";
 }
 
-void TRPScanMotionMode::exitMode(GimbalController* controller)
-{
-    qDebug() << "[TRPScanMotionMode] Exit";
+
+void TRPScanMotionMode::exitMode(GimbalController* controller) {
     stopServos(controller);
-    m_currentState = State::Idle;
 }
 
-// ===================================================================================
-// =================== REFACTORED UPDATE METHOD WITH MOTION PROFILING ================
-// ===================================================================================
-void TRPScanMotionMode::update(GimbalController* controller, double dt)
-{
-    if (!controller) return;
-
-    // --- Main State Machine Logic ---
-    switch (m_currentState)
-    {
-        case State::Idle: {
-            stopServos(controller);
-            return; // Do nothing
-        }
-
-        case State::Halted: {
-            // We are waiting at a TRP. Check if the halt timer has expired.
-            const auto& currentTrp = m_trpPage[m_currentTrpIndex];
-            
-            // Assuming `haltTime` is in seconds.
-            if (m_haltTimer.isValid() && m_haltTimer.elapsed() >= static_cast<qint64>(currentTrp.haltTime * 1000.0)) {
-                qDebug() << "[TRPScanMotionMode] Halt time finished at point" << m_currentTrpIndex;
-                
-                // Advance to the next point in the path
-                m_currentTrpIndex++;
-
-                // --- MODIFIED LOGIC FOR LOOPING ---
-                if (m_currentTrpIndex >= m_trpPage.size()) {
-                    // Reached the end of the path. Loop back to the beginning.
-                    qDebug() << "[TRPScanMotionMode] Path loop finished. Returning to point 0.";
-                    m_currentTrpIndex = 0; 
-                }
-                // --- END OF MODIFIED LOGIC ---
-
-                // This part now executes for both advancing to the next point and looping back.
-                qDebug() << "[TRPScanMotionMode] Moving to point" << m_currentTrpIndex;
-                m_currentState = State::Moving;
-                // Reset PIDs for the next deceleration phase.
-                m_azPid.reset();
-                m_elPid.reset();
-            }
-            // While halted, the servos should remain stopped.
-            return;
-        }
-
-        case State::Moving: {
-            // This is the core motion logic.
-            if (m_currentTrpIndex >= m_trpPage.size()) {
-                m_currentState = State::Idle; // Safety guard
-                return;
-            }
-
-            const auto& targetTrp = m_trpPage[m_currentTrpIndex];
-            SystemStateData data = controller->systemStateModel()->data();
-
-            // ✅ EXPERT REVIEW FIX: dt is now passed from GimbalController (centralized measurement)
-            const auto& cfg = MotionTuningConfig::instance();
-
-            // Calculate errors
-            double errAz = targetTrp.azimuth - data.gimbalAz;
-            double errEl = targetTrp.elevation - data.imuPitchDeg;
-
-            // Normalize Azimuth error for shortest path
-            errAz = normalizeAngle180(errAz);
-
-            // ✅ ROBUSTNESS: Use hypot for proper 2D distance
-            double distanceToTarget = std::hypot(errAz, errEl);
-
-            // --- 1. ARRIVAL CHECK ---
-            if (distanceToTarget < cfg.trpScanParams.arrivalThresholdDeg) {
-                qDebug() << "[TRPScanMotionMode] Arrived at point" << m_currentTrpIndex;
-                stopServos(controller);
-                m_currentState = State::Halted;
-                m_haltTimer.start();
-                return;
-            }
-
-            // --- 2. MOTION PROFILE LOGIC ---
-            double desiredAzVelocity = 0.0;
-            double desiredElVelocity = 0.0;
-
-            // ✅ Use default TRP travel speed from config (TargetReferencePoint struct doesn't have per-point speed)
-            double travelSpeed = cfg.motion.trpDefaultTravelSpeed;
-
-            if (travelSpeed <= 0.0) {
-                // Speed zero - use PID to hold position
-                desiredAzVelocity = pidCompute(m_azPid, errAz, dt);
-                desiredElVelocity = pidCompute(m_elPid, errEl, dt);
-            } else {
-                // ✅ CRITICAL FIX: Compute deceleration distance from kinematics (from config)
-                const double a = cfg.motion.trpMaxAccelDegS2;
-                double decelDist = (travelSpeed * travelSpeed) / (2.0 * std::max(a, 1e-3));
-
-                // Allow overriding decelDist from config if specified
-                if (cfg.trpScanParams.decelerationDistanceDeg > 0) {
-                    decelDist = cfg.trpScanParams.decelerationDistanceDeg;
-                }
-
-                if (distanceToTarget < decelDist) {
-                    // DECELERATION ZONE: Use PID to slow down smoothly
-                    qDebug() << "TRP: Decelerating. Dist:" << distanceToTarget;
-                    desiredAzVelocity = pidCompute(m_azPid, errAz, dt);
-                    desiredElVelocity = pidCompute(m_elPid, errEl, dt);
-                } else {
-                    // CRUISING ZONE: Move at constant speed
-                    double dirAz = errAz / distanceToTarget;
-                    double dirEl = errEl / distanceToTarget;
-                    desiredAzVelocity = dirAz * travelSpeed;
-                    desiredElVelocity = dirEl * travelSpeed;
-
-                    // ✅ SOFT PID RESET: Reset integrator only (keep derivative history)
-                    m_azPid.integral = 0.0;
-                    m_elPid.integral = 0.0;
-                }
-            }
-
-            // ✅ CRITICAL FIX: Apply time-based rate limiting (from config)
-            double maxDelta = cfg.motion.trpMaxAccelDegS2 * dt;
-            desiredAzVelocity = applyRateLimitTimeBased(desiredAzVelocity, m_previousDesiredAzVel, maxDelta);
-            desiredElVelocity = applyRateLimitTimeBased(desiredElVelocity, m_previousDesiredElVel, maxDelta);
-
-            // Update previous velocities for next cycle
-            m_previousDesiredAzVel = desiredAzVelocity;
-            m_previousDesiredElVel = desiredElVelocity;
-
-            // Throttle world-target publish to 10 Hz
-            static qint64 lastPublishMs = 0;
-            qint64 nowMs = QDateTime::currentMSecsSinceEpoch();
-            if (nowMs - lastPublishMs >= 100 && data.imuConnected) {
-                double worldAz, worldEl;
-                convertGimbalToWorldFrame(targetTrp.azimuth, targetTrp.elevation,
-                                          data.imuRollDeg, data.imuPitchDeg, data.imuYawDeg,
-                                          worldAz, worldEl);
-
-                auto stateModel = controller->systemStateModel();
-                SystemStateData updatedState = stateModel->data();
-                updatedState.targetAzimuth_world = worldAz;
-                updatedState.targetElevation_world = worldEl;
-                updatedState.useWorldFrameTarget = true;
-                stateModel->updateData(updatedState);
-                lastPublishMs = nowMs;
-            }
-
-            sendStabilizedServoCommands(controller, desiredAzVelocity, desiredElVelocity, true, dt);
-            break;
-        }
+void TRPScanMotionMode::startCurrentTarget() {
+    if (m_pageOrder.isEmpty()) {
+        qWarning() << "[TRP] startCurrentTarget called but pageOrder empty";
+        return;
     }
+    if (m_currentIndex < 0 || m_currentIndex >= m_pageOrder.size()) {
+        qWarning() << "[TRP] startCurrentTarget: currentIndex out of range, resetting to 0";
+        m_currentIndex = 0;
+    }
+
+    int trpIndex = m_pageOrder[m_currentIndex];
+    if (trpIndex < 0 || trpIndex >= m_trps.size()) {
+        qWarning() << "[TRP] startCurrentTarget: trpIndex out-of-range:" << trpIndex;
+        return;
+    }
+
+    const auto &T = m_trps[trpIndex];
+    m_targetAz = norm360(T.azimuth);
+    m_targetEl = T.elevation;
+    m_holdRemaining = T.haltTime;
+
+    qDebug() << "[TRP] Go to point:" << T.id
+             << " Az=" << m_targetAz
+             << " El=" << m_targetEl
+             << " Hold=" << m_holdRemaining;
+}
+
+
+void TRPScanMotionMode::advanceToNextPoint() {
+    if (m_pageOrder.isEmpty()) {
+        qWarning() << "[TRP] advanceToNextPoint called but pageOrder empty";
+        return;
+    }
+    m_currentIndex = (m_currentIndex + 1) % m_pageOrder.size();
+    startCurrentTarget();
+    m_state = SlewToPoint;
+    m_prevAzVel = 0.0;
+}
+
+
+void TRPScanMotionMode::update(GimbalController* controller, double dt) {
+    // If controller missing or no TRPs/page -> do nothing safely
+    if (!controller) return;
+    if (m_pageOrder.isEmpty() || m_trps.isEmpty()) {
+        // nothing to do, keep servos stable
+        sendStabilizedServoCommands(controller, 0.0, 0.0, true, dt > 0 ? dt : 1e-3);
+        return;
+    }
+
+    if (dt <= 0) dt = 1e-3;
+
+    auto data = controller->systemStateModel()->data();
+    const auto &T = m_trps[m_pageOrder[m_currentIndex]];
+
+    //------------------------------------------------------------
+    // 1) HOLD PHASE
+    //------------------------------------------------------------
+    if (m_state == HoldPoint) {
+
+        sendStabilizedServoCommands(controller, 0, 0, true, dt);
+
+        m_holdRemaining -= dt;
+
+        if (m_holdRemaining <= 0) {
+            advanceToNextPoint();
+        }
+        return;
+    }
+
+    //------------------------------------------------------------
+    // 2) SLEW-TO-POINT PHASE
+    //------------------------------------------------------------
+    double errAz = shortestDiff(m_targetAz, data.gimbalAz);
+    double errEl = - (m_targetEl - data.gimbalEl);
+
+    if (std::abs(errAz) <= AZ_TOL && std::abs(errEl) <= EL_TOL) {
+        m_state = HoldPoint;
+        m_prevAzVel = 0.0;
+        sendStabilizedServoCommands(controller, 0, 0, true, dt);
+        return;
+    }
+
+    //------------------------------------------------------------
+    // Smooth + accel limited az motion
+    //------------------------------------------------------------
+    const double accel = DEFAULT_ACCEL;
+    const double v_max = 20.0;
+
+    double decelDist = (v_max * v_max) / (2 * accel);
+    double distAz = std::abs(errAz);
+    double direction = (errAz > 0 ? 1.0 : -1.0);
+
+    double desiredAz;
+
+    if (distAz <= decelDist) {
+        double v_req = std::sqrt(2 * accel * distAz);
+        desiredAz = direction * std::min(v_max, v_req);
+    } else {
+        desiredAz = direction * v_max;
+    }
+
+    // Rate-limit
+    double maxDelta = accel * dt;
+    desiredAz = std::clamp(desiredAz, m_prevAzVel - maxDelta, m_prevAzVel + maxDelta);
+
+    // Smooth
+    double alpha = dt / (SMOOTH_TAU + dt);
+    double smoothedAz = alpha * desiredAz + (1 - alpha) * m_prevAzVel;
+    m_prevAzVel = smoothedAz;
+
+    //------------------------------------------------------------
+    // Elevation — simple proportional control
+    //------------------------------------------------------------
+    double kpEl = 2.2;
+    double elVel = std::clamp(kpEl * errEl, -15.0, 15.0);
+
+    //------------------------------------------------------------
+    // Send with stabilization enabled
+    //------------------------------------------------------------
+    sendStabilizedServoCommands(controller, smoothedAz, elVel, true, dt);
 }
