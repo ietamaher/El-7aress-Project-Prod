@@ -580,7 +580,7 @@ void GimbalController::setMotionMode(MotionMode newMode)
         }
 
         if (!pageToScan.empty()) {
-            trpMode->setActiveTRPPage(pageToScan);
+            trpMode->setTrpList(pageToScan);
             m_currentMode = std::move(trpMode);
         } else {
             qWarning() << "[GimbalController] No TRPs for page" << activePageNum;

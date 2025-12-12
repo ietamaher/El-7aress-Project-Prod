@@ -1,108 +1,88 @@
 {
     "areaZones": [
         {
-            "endAzimuth": 30,
+            "endAzimuth": 293.73382568359375,
             "id": 1,
-            "isEnabled": false,
+            "isEnabled": true,
             "isFactorySet": false,
             "isOverridable": false,
-            "maxElevation": 20,
+            "maxElevation": 45.07379913330078,
             "maxRange": 0,
-            "minElevation": -10,
+            "minElevation": 9.232199668884277,
             "minRange": 0,
             "name": "",
-            "startAzimuth": 340,
+            "startAzimuth": 232.780029296875,
             "type": 2
         },
         {
-            "endAzimuth": 150,
+            "endAzimuth": 108.86937713623047,
             "id": 2,
             "isEnabled": true,
             "isFactorySet": false,
             "isOverridable": false,
-            "maxElevation": 10,
+            "maxElevation": 2.9231998920440674,
             "maxRange": 0,
             "minElevation": 0,
             "minRange": 0,
             "name": "",
-            "startAzimuth": 100,
+            "startAzimuth": 294.1172180175781,
             "type": 3
         }
     ],
     "nextAreaZoneId": 3,
-    "nextSectorScanId": 6,
-    "nextTRPId": 4,
+    "nextSectorScanId": 2,
+    "nextTRPId": 6,
     "sectorScanZones": [
         {
-            "az1": 350,
-            "az2": 350,
-            "el1": 10,
-            "el2": 0,
+            "az1": 62.98324203491211,
+            "az2": 164.19537353515625,
+            "el1": 11.836799621582031,
+            "el2": 11.836799621582031,
             "id": 1,
             "isEnabled": true,
-            "scanSpeed": 20
-        },
-        {
-            "az1": 200,
-            "az2": 200,
-            "el1": -5.095799922943115,
-            "el2": 44.63460159301758,
-            "id": 2,
-            "isEnabled": true,
-            "scanSpeed": 20
-        },
-        {
-            "az1": 10,
-            "az2": 65,
-            "el1": 44.63460159301758,
-            "el2": 0,
-            "id": 3,
-            "isEnabled": true,
-            "scanSpeed": 20
-        },
-        {
-            "az1": 30,
-            "az2": 100,
-            "el1": 20,
-            "el2": -10,
-            "id": 4,
-            "isEnabled": true,
-            "scanSpeed": 20
-        },
-        {
-            "az1": 0,
-            "az2": 0,
-            "el1": 0,
-            "el2": 0,
-            "id": 5,
-            "isEnabled": false,
-            "scanSpeed": 14
+            "scanSpeed": 11
         }
     ],
     "targetReferencePoints": [
         {
-            "azimuth": 40,
-            "elevation": 35,
+            "azimuth": 66.15248107910156,
+            "elevation": 20.74139976501465,
             "haltTime": 5,
             "id": 1,
             "locationPage": 1,
             "trpInPage": 1
         },
         {
-            "azimuth": 40,
-            "elevation": -5,
-            "haltTime": 10,
+            "azimuth": 31.30365562438965,
+            "elevation": 29.077199935913086,
+            "haltTime": 6,
             "id": 2,
             "locationPage": 1,
+            "trpInPage": 2
+        },
+        {
+            "azimuth": 137.7934112548828,
+            "elevation": 38.07360076904297,
+            "haltTime": 4,
+            "id": 3,
+            "locationPage": 1,
+            "trpInPage": 3
+        },
+        {
+            "azimuth": 175.82534790039062,
+            "elevation": 39.497398376464844,
+            "haltTime": 5,
+            "id": 4,
+            "locationPage": 2,
             "trpInPage": 1
         },
         {
-            "azimuth": 120,
-            "elevation": 30,
-            "haltTime": 29,
-            "id": 3,
+            "azimuth": 200.97714233398438,
+            "elevation": 12.394800186157227,
+            "haltTime": 8,
+            "id": 5,
             "locationPage": 2,
-            "trpInPage": 4
+            "trpInPage": 2
         }
     ],
     "zoneFileVersion": 1

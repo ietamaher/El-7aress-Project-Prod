@@ -6,6 +6,7 @@
 #include "models/trpparameterviewmodel.h"
 #include "models/domain/systemstatemodel.h"
 #include <QDebug>
+#include <QCoreApplication>
 #include <algorithm>
 
 ZoneDefinitionController::ZoneDefinitionController(QObject *parent)
@@ -938,10 +939,11 @@ void ZoneDefinitionController::processConfirmSaveSelect()
 
         if (success) {
             // Save to file
-            if (m_stateModel->saveZonesToFile("zones.json")) {
-                qDebug() << "Zones successfully saved to zones.json";
+            QString zonesPath = QCoreApplication::applicationDirPath() + "/config/zones.json";
+            if (m_stateModel->saveZonesToFile(zonesPath)) {
+                qDebug() << "Zones successfully saved to" << zonesPath;
             } else {
-                qWarning() << "Failed to save zones to zones.json!";
+                qWarning() << "Failed to save zones to" << zonesPath;
             }
 
             resetWipData();
@@ -987,11 +989,12 @@ void ZoneDefinitionController::processConfirmDeleteSelect()
 
             if (success) {
                 // Save to file
-                bool saveSuccess = m_stateModel->saveZonesToFile("zones.json");
+                QString zonesPath = QCoreApplication::applicationDirPath() + "/config/zones.json";
+                bool saveSuccess = m_stateModel->saveZonesToFile(zonesPath);
 
                 if (saveSuccess) {
                     setupShowMessageUI(QString("%1 deleted and saved successfully!").arg(zoneTypeName));
-                    qDebug() << "Successfully deleted and saved" << zoneTypeName << "ID:" << m_editingZoneId;
+                    qDebug() << "Successfully deleted and saved" << zoneTypeName << "ID:" << m_editingZoneId << "to" << zonesPath;
                 } else {
                     setupShowMessageUI(QString("%1 deleted but failed to save to file!").arg(zoneTypeName));
                     qWarning() << "Deleted" << zoneTypeName << "but failed to save to JSON";

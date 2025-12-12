@@ -25,11 +25,13 @@ void ManualMotionMode::enterMode(GimbalController* controller)
 
     // Set initial acceleration for both servos
     if (auto azServo = controller->azimuthServo()) {
-        setAcceleration(azServo);
+        setAcceleration(azServo, 1000000);
     }
     if (auto elServo = controller->elevationServo()) {
-        setAcceleration(elServo);
+        setAcceleration(elServo, 1000000);
     }
+    // Add acceleration !!!!!
+    
 }
 
 void ManualMotionMode::exitMode(GimbalController* controller)

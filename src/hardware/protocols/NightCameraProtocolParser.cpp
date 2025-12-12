@@ -90,19 +90,19 @@ MessagePtr NightCameraProtocolParser::parsePacket(const QByteArray& packet) {
         data.digitalZoomLevel = data.digitalZoomEnabled ? 2 : 1;
         data.currentHFOV = data.digitalZoomEnabled ? 5.2 : 10.4;  // FLIR TAU 2 640×512
         data.currentVFOV = data.digitalZoomEnabled ? 4.0 : 8.0;   // NOT square sensor!
-        qDebug() << "TAU2 Parser: Video mode received:" << Qt::hex << videoMode
-                 << "(Zoom:" << data.digitalZoomLevel << "x, FOV:" << data.currentHFOV << "×" << data.currentVFOV << "°)";
+        //qDebug() << "TAU2 Parser: Video mode received:" << Qt::hex << videoMode
+        //         << "(Zoom:" << data.digitalZoomLevel << "x, FOV:" << data.currentHFOV << "×" << data.currentVFOV << "°)";
     } else if (functionCode == 0x10 && payloadData.size() >= 2) {
         // VIDEO_LUT response (0x0000=White hot, 0x0001=Black hot, etc.)
         data.videoMode = (static_cast<quint16>(static_cast<quint8>(payloadData[0])) << 8) |
                          static_cast<quint16>(static_cast<quint8>(payloadData[1]));
-        qDebug() << "TAU2 Parser: LUT received:" << data.videoMode;
+        //qDebug() << "TAU2 Parser: LUT received:" << data.videoMode;
     } else if (functionCode == 0x20 && payloadData.size() >= 2) {
         // READ_TEMP_SENSOR response - Temperature in Celsius × 10
         data.fpaTemperature = (static_cast<qint16>(static_cast<quint8>(payloadData[0])) << 8) |
                               static_cast<qint16>(static_cast<quint8>(payloadData[1]));
-        qDebug() << "TAU2 Parser: Temperature received:" << data.fpaTemperature
-                 << "(" << (data.fpaTemperature / 10.0) << "°C)";
+        //qDebug() << "TAU2 Parser: Temperature received:" << data.fpaTemperature
+         //        << "(" << (data.fpaTemperature / 10.0) << "°C)";
     } else if (functionCode == 0x70 && payloadData.size() >= 4) {
         // PAN_AND_TILT response
         data.tiltPosition = (static_cast<qint16>(static_cast<quint8>(payloadData[0])) << 8) |

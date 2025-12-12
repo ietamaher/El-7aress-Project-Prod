@@ -95,8 +95,8 @@ void NightCameraControlDevice::processMessage(const Message& message) {
         // Update temperature if received (from 0x20 READ_TEMP_SENSOR response)
         if (partial.fpaTemperature != 0) {
             newData->fpaTemperature = partial.fpaTemperature;
-            qDebug() << m_identifier << "Temperature updated:" << newData->fpaTemperature
-                     << "(" << (newData->fpaTemperature / 10.0) << "°C)";
+            //qDebug() << m_identifier << "Temperature updated:" << newData->fpaTemperature
+            //         << "(" << (newData->fpaTemperature / 10.0) << "°C)";
         }
 
         // Update video mode/zoom if received (from 0x0F VIDEO_MODE response)
@@ -105,8 +105,8 @@ void NightCameraControlDevice::processMessage(const Message& message) {
             newData->digitalZoomLevel = partial.digitalZoomLevel;
             newData->currentHFOV = partial.currentHFOV;
             newData->currentVFOV = partial.currentVFOV;
-            qDebug() << m_identifier << "Zoom updated:" << newData->digitalZoomLevel << "x"
-                     << "(FOV:" << newData->currentHFOV << "×" << newData->currentVFOV << "°)";
+            //qDebug() << m_identifier << "Zoom updated:" << newData->digitalZoomLevel << "x"
+            //         << "(FOV:" << newData->currentHFOV << "×" << newData->currentVFOV << "°)";
         }
 
         // Update LUT if received (from 0x10 VIDEO_LUT response)
@@ -114,15 +114,15 @@ void NightCameraControlDevice::processMessage(const Message& message) {
         if (partial.videoMode != 0) {
             newData->videoMode = partial.videoMode;
             newData->lut = static_cast<quint8>(partial.videoMode);
-            qDebug() << m_identifier << "LUT updated:" << newData->videoMode;
+            //qDebug() << m_identifier << "LUT updated:" << newData->videoMode;
         }
 
         // Update pan/tilt if received (from 0x70 PAN_AND_TILT response)
         if (partial.panPosition != 0 || partial.tiltPosition != 0) {
             newData->panPosition = partial.panPosition;
             newData->tiltPosition = partial.tiltPosition;
-            qDebug() << m_identifier << "Pan/Tilt updated: pan=" << newData->panPosition
-                     << "tilt=" << newData->tiltPosition;
+            //qDebug() << m_identifier << "Pan/Tilt updated: pan=" << newData->panPosition
+             //        << "tilt=" << newData->tiltPosition;
         }
 
         updateData(newData);
