@@ -1647,6 +1647,47 @@ void SystemStateModel::setPointInNoTraverseZone(bool inZone) {
     }
 }
 
+bool SystemStateModel::isAtNoTraverseZoneLimit(float currentAz, float currentEl, float intendedMoveAz) const {
+    // ========================================================================
+    // NO-TRAVERSE ZONE LIMIT DETECTION
+    // ========================================================================
+    // This method checks if an intended azimuth movement would cross into a
+    // no-traverse zone boundary. It's used to prevent gimbal motion into
+    // restricted areas.
+    //
+    // Logic:
+    // 1. Check if current position is already in a no-traverse zone
+    //    - If yes, allow movement OUT of the zone but not deeper IN
+    // 2. If not currently in a zone, check if intended movement would enter one
+    //    - If yes, block the movement
+    // ========================================================================
+
+    // Calculate the intended new azimuth position
+    float newAz = currentAz + intendedMoveAz;
+
+    // Normalize to [0, 360) range
+    while (newAz >= 360.0f) newAz -= 360.0f;
+    while (newAz < 0.0f) newAz += 360.0f;
+
+    // Check current position status
+    bool currentlyInZone = isPointInNoTraverseZone(currentAz, currentEl);
+
+    // Check intended position status
+    bool wouldBeInZone = isPointInNoTraverseZone(newAz, currentEl);
+
+    // Block movement if:
+    // - Currently NOT in zone AND intended position IS in zone (entering zone)
+    // - Currently IN zone AND still would be in zone (moving deeper/staying in zone)
+    //   (We allow movement OUT of the zone)
+    if (!currentlyInZone && wouldBeInZone) {
+        // Trying to enter a no-traverse zone - BLOCK
+        return true;
+    }
+
+    // Allow movement (either staying out of zone or exiting zone)
+    return false;
+}
+
 void SystemStateModel::updateCurrentScanName() {
     SystemStateData& data = m_currentStateData; // Work on member
     QString newScanName = "";
