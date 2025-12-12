@@ -43,6 +43,37 @@
 #include <algorithm> // For std::find_if, std::sort (if needed)
 #include <set>       // For getting unique page numbers
 
+// ----------------------------------------------------------------------------
+// Utility helpers (keep or merge with existing helpers)
+// ----------------------------------------------------------------------------
+static double normalize360(double a) {
+    double v = std::fmod(a, 360.0);
+    if (v < 0.0) v += 360.0;
+    return v;
+}
+
+// Signed shortest delta from 'from' to 'to' in degrees in (-180, +180]
+static double shortestSignedDelta(double from, double to) {
+    double d = normalize360(to) - normalize360(from);
+    if (d > 180.0) d -= 360.0;
+    if (d <= -180.0) d += 360.0;
+    return d;
+}
+
+// Helper: returns whether an azimuth angle x is strictly inside [start,end] (using existing project helper isAzimuthInRange if available).
+// If you already have isAzimuthInRange, prefer using it. Using same semantics here:
+static bool azInside(double x, double start, double end) {
+    // we assume project's isAzimuthInRange has the correct wrap-around semantics.
+    // If not accessible, implement wrap-around check:
+    double s = normalize360(start);
+    double e = normalize360(end);
+    double a = normalize360(x);
+    if (s <= e) return (a >= s && a <= e);
+    // wrap-around
+    return (a >= s || a <= e);
+}
+
+
 SystemStateModel::SystemStateModel(QObject *parent)
     : QObject(parent),
       m_nextAreaZoneId(1), // Start IDs from 1
@@ -1645,6 +1676,224 @@ void SystemStateModel::setPointInNoTraverseZone(bool inZone) {
         m_currentStateData.isReticleInNoTraverseZone = inZone;
         emit dataChanged(m_currentStateData);
     }
+}
+
+bool SystemStateModel::isAtNoTraverseZoneLimit(float currentAz, float currentEl, float intendedMoveAz) const
+{
+    // Normalize current az and compute new az after intended move (intendedMoveAz is delta in degrees)
+    auto normalize360 = [](double a)->double {
+        double v = std::fmod(a, 360.0);
+        if (v < 0) v += 360.0;
+        return v;
+    };
+
+    double cur = normalize360(currentAz);
+    double next = normalize360(cur + intendedMoveAz);
+
+    // If there's no movement, there's no crossing
+    if (qFuzzyCompare(static_cast<float>(cur), static_cast<float>(next))) return false;
+
+    // For each enabled NoTraverse zone, check if current is outside and next is inside (i.e., crossing into zone)
+    for (const auto &zone : m_currentStateData.areaZones) {
+        if (!zone.isEnabled) continue;
+        if (zone.type != ZoneType::NoTraverse) continue;
+
+        // elevation check: if current elevation not in zone's elevation band, skip
+        if (currentEl < zone.minElevation || currentEl > zone.maxElevation) continue;
+
+        // Use the existing az range helper (handles wrap-around)
+        bool curInside = isAzimuthInRange(static_cast<float>(cur), zone.startAzimuth, zone.endAzimuth);
+        bool nextInside = isAzimuthInRange(static_cast<float>(next), zone.startAzimuth, zone.endAzimuth);
+
+        // We are at the limit if movement pushes us from outside->inside (penetration)
+        if (!curInside && nextInside) {
+            return true;
+        }
+
+        // Also treat the case where we are inside and the intended move would push us further inside
+        // (rare), but main focus is preventing outside->inside.
+        if (curInside && nextInside) {
+            // Not strictly a crossing; not an entering movement — not considered a new limit hit.
+            continue;
+        }
+    }
+
+    return false;
+}
+
+
+
+// ----------------------------------------------------------------------------
+// Compute nearest signed delta from current to the closest exit boundary (signed relative to direction).
+// Returns signed degrees to nearest boundary (could be negative).
+// ----------------------------------------------------------------------------
+static double signedDeltaToNearestAzBoundary(double currentAz, double startAz, double endAz) {
+    double cur = normalize360(currentAz);
+    double s = normalize360(startAz);
+    double e = normalize360(endAz);
+    // compute signed deltas to both boundaries using shortestSignedDelta
+    double dToStart = shortestSignedDelta(cur, s);
+    double dToEnd   = shortestSignedDelta(cur, e);
+    // choose whichever has smaller absolute value (nearest)
+    return (std::abs(dToStart) <= std::abs(dToEnd)) ? dToStart : dToEnd;
+}
+
+// ----------------------------------------------------------------------------
+// New computeAllowedAzimuthDelta - stricter: allows only motion that does NOT result in being inside,
+// and when already inside, allows only motion that reduces penetration (toward nearest exit).
+// ----------------------------------------------------------------------------
+float SystemStateModel::computeAllowedAzimuthDelta(float currentAz, float currentEl, float intendedDelta) const
+{
+    if (qFuzzyIsNull(intendedDelta)) return 0.0f;
+    const double eps = 0.01; // deg safety margin
+    double cur = normalize360(currentAz);
+    double intendedNext = normalize360(cur + intendedDelta);
+    double sign = (intendedDelta > 0.0) ? 1.0 : -1.0;
+
+    // Start with full intended allowance
+    double allowed = intendedDelta;
+
+    for (const auto &zone : m_currentStateData.areaZones) {
+        if (!zone.isEnabled) continue;
+        if (zone.type != ZoneType::NoTraverse) continue;
+
+        // If elevation is outside zone band, az movement for this zone doesn't matter here
+        if (currentEl < zone.minElevation || currentEl > zone.maxElevation) continue;
+
+        bool curInside = azInside(cur, zone.startAzimuth, zone.endAzimuth);
+        bool nextInside = azInside(intendedNext, zone.startAzimuth, zone.endAzimuth);
+
+        // CASE A: outside -> inside (we must clamp to boundary)
+        if (!curInside && nextInside) {
+            // find the first boundary encountered along the movement direction
+            // compute signed distance from cur to both boundaries, but we must select the one encountered when moving in 'sign'
+            double dStart = shortestSignedDelta(cur, normalize360(zone.startAzimuth));
+            double dEnd   = shortestSignedDelta(cur, normalize360(zone.endAzimuth));
+
+            // Normalize to movement direction: we want positive values for forward movement direction
+            auto forwardDistForSign = [&](double d)->double {
+                if (sign > 0.0) {
+                    // moving positive: we want positive forward distance along increasing az
+                    double dist = d;
+                    if (dist < 0.0) dist += 360.0; // wrap to positive forward distance
+                    return dist;
+                } else {
+                    // moving negative: convert to "backward" distance magnitude
+                    double dist = -d;
+                    if (dist < 0.0) dist += 360.0;
+                    return dist;
+                }
+            };
+
+            double fStart = forwardDistForSign(dStart);
+            double fEnd   = forwardDistForSign(dEnd);
+
+            double forwardDistToBoundary = std::min(fStart, fEnd);
+            // convert back to signed delta in movement sign
+            double signedToBoundary = (sign > 0.0) ? forwardDistToBoundary : -forwardDistToBoundary;
+
+            // allowed delta is up to the boundary minus epsilon
+            double allowedToBoundary = signedToBoundary - (eps * sign);
+
+            // pick most restrictive across zones
+            if (std::abs(allowedToBoundary) < std::abs(allowed)) allowed = allowedToBoundary;
+            continue;
+        }
+
+        // CASE B: already inside & nextInside -> allow only motion that reduces penetration
+        if (curInside && nextInside) {
+            // find signed delta to nearest exit boundary from current and from next
+            double deltaCurToExit = signedDeltaToNearestAzBoundary(cur, zone.startAzimuth, zone.endAzimuth);
+            double nextAz = normalize360(cur + intendedDelta);
+            double deltaNextToExit = signedDeltaToNearestAzBoundary(nextAz, zone.startAzimuth, zone.endAzimuth);
+
+            // absolute distance to boundary
+            double distCur = std::abs(deltaCurToExit);
+            double distNext = std::abs(deltaNextToExit);
+
+            // If next would be closer to exit (distNext < distCur), allow it; otherwise block
+            if (distNext < distCur - 1e-6) {
+                // allowed remains intended (or may be reduced by other zones)
+                continue;
+            } else {
+                // Not moving toward exit: disallow
+                allowed = 0.0;
+                // No need to check other zones for "already inside" case because blocking is absolute
+                break;
+            }
+        }
+
+        // CASE C: curOutside && nextOutside -> no restriction from this zone
+        // CASE D: curInside && nextOutside -> operator is moving out, allowed (no restriction)
+    } // for zones
+
+    // Ensure sign consistency
+    if ((sign > 0 && allowed < 0) || (sign < 0 && allowed > 0)) allowed = 0.0;
+    return static_cast<float>(allowed);
+}
+
+// ----------------------------------------------------------------------------
+// computeAllowedElevationDelta - mirrored logic for elevation axis
+// Only allow elevation moves that do not result in entering the NTZ elevation band for the current az,
+// and when already inside by elevation, only allow motion that reduces penetration (toward exit).
+// ----------------------------------------------------------------------------
+float SystemStateModel::computeAllowedElevationDelta(float currentAz, float currentEl, float intendedDelta) const
+{
+    if (qFuzzyIsNull(intendedDelta)) return 0.0f;
+    const double eps = 0.01; // deg
+    double nextEl = currentEl + intendedDelta;
+    double sign = (intendedDelta > 0.0) ? 1.0 : -1.0;
+
+    double allowed = intendedDelta;
+
+    for (const auto &zone : m_currentStateData.areaZones) {
+        if (!zone.isEnabled) continue;
+        if (zone.type != ZoneType::NoTraverse) continue;
+
+        // If currentAz is outside the zone's az footprint, elevation movement into zone isn't relevant.
+        bool azFootprint = azInside(currentAz, zone.startAzimuth, zone.endAzimuth);
+        if (!azFootprint) continue;
+
+        bool curInside = (currentEl >= zone.minElevation && currentEl <= zone.maxElevation);
+        bool nextInside = (nextEl >= zone.minElevation && nextEl <= zone.maxElevation);
+
+        // outside -> inside: clamp to boundary
+        if (!curInside && nextInside) {
+            double boundary = (intendedDelta > 0.0) ? zone.minElevation : zone.maxElevation;
+            double allowedToBoundary = boundary - currentEl - (eps * sign);
+            if (std::abs(allowedToBoundary) < std::abs(allowed)) allowed = allowedToBoundary;
+            continue;
+        }
+
+        // already inside -> allow only if moving toward nearest exit
+        if (curInside && nextInside) {
+            // Determine nearest exit boundary
+            double distToMin = currentEl - zone.minElevation;   // positive if above min
+            double distToMax = zone.maxElevation - currentEl;   // positive if below max
+
+            bool exitIsDown = (distToMin < distToMax); // nearest exit is at minElevation
+            bool exitIsUp   = !exitIsDown;             // nearest exit is at maxElevation
+
+            bool movingDown = (intendedDelta < 0);
+            bool movingUp   = (intendedDelta > 0);
+
+            // Allow movement ONLY if going toward the nearest exit
+            if ((exitIsDown && movingDown) || (exitIsUp && movingUp)) {
+                // allowed as-is
+                continue;
+            } else {
+                // operator tries to go deeper inside or sideways => BLOCK
+                allowed = 0.0f;
+                break;
+            }
+        }
+
+        // curInside && nextOutside -> moving out -> allowed
+        // curOutside && nextOutside -> allowed
+    }
+
+    if ((sign > 0 && allowed < 0) || (sign < 0 && allowed > 0)) allowed = 0.0;
+    return static_cast<float>(allowed);
 }
 
 void SystemStateModel::updateCurrentScanName() {

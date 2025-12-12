@@ -483,7 +483,10 @@ void GimbalController::onSystemStateChanged(const SystemStateData& newData)
     if (newData.isReticleInNoTraverseZone != inNTZ) {
         m_stateModel->setPointInNoTraverseZone(inNTZ);
     }
-
+    bool inNFZ = m_stateModel->isPointInNoFireZone(newData.gimbalAz, newData.gimbalEl);
+    if (newData.isReticleInNoFireZone != inNFZ) {
+        m_stateModel->setPointInNoFireZone(inNFZ);
+    }
     m_oldState = newData;
 }
 

@@ -214,6 +214,9 @@ public:
      * @return True if the movement would hit a limit, false otherwise.
      */
     bool isAtNoTraverseZoneLimit(float currentAz, float currentEl, float intendedMoveAz) const;
+    float computeAllowedAzimuthDelta(float currentAz, float currentEl, float intendedDelta) const;
+    float computeAllowedElevationDelta(float currentAz, float currentEl, float intendedDelta) const;
+
 
     // =================================
     // LEAD ANGLE COMPENSATION

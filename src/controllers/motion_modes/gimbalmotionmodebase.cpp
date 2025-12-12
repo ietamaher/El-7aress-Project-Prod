@@ -153,8 +153,44 @@ void GimbalMotionModeBase::sendStabilizedServoCommands(GimbalController* control
     finalAzVelocity = qBound(-MAX_VELOCITY(), finalAzVelocity, MAX_VELOCITY());
     finalElVelocity = qBound(-MAX_VELOCITY(), finalElVelocity, MAX_VELOCITY());
 
-    //qDebug().nospace() << "[DBG SEND] final(before write) Az=" << finalAzVelocity
-     //                  << " El=" << finalElVelocity;
+    // ----------------------------
+    // NO-TRAVERSE ENFORCEMENT (improved: clamp to boundary to avoid overshoot)
+    // ----------------------------
+    if (controller && controller->systemStateModel()) {
+        auto *ssm = controller->systemStateModel();
+
+        float currentAz = ssm->data().gimbalAz;
+        float currentEl = ssm->data().gimbalEl;
+
+        // Intended deltas (deg) for this control cycle
+        double intendedAzDelta = finalAzVelocity * dt; // deg
+        double intendedElDelta = finalElVelocity * dt; // deg
+
+        // Ask model what is the allowed delta (it will return <= intended, same sign)
+        float allowedAzDelta = ssm->computeAllowedAzimuthDelta(currentAz, currentEl, static_cast<float>(intendedAzDelta));
+        float allowedElDelta = ssm->computeAllowedElevationDelta(currentAz, currentEl, static_cast<float>(intendedElDelta));
+
+        // If both axes would enter a zone (rare), take the most restrictive along each axis.
+        // Convert allowed deltas back to velocities for this tick.
+        double newAzVelocity = (dt > 0.0) ? (allowedAzDelta / dt) : 0.0;
+        double newElVelocity = (dt > 0.0) ? (allowedElDelta / dt) : 0.0;
+
+        // Update final velocities to the allowed values
+        finalAzVelocity = static_cast<float>(newAzVelocity);
+        finalElVelocity = static_cast<float>(newElVelocity);
+
+        // Optional debug/logging (throttle)
+        static int ntzLog = 0;
+        if ((++ntzLog % 40) == 0) {
+            if (!qFuzzyCompare(static_cast<float>(intendedAzDelta), finalAzVelocity * dt) ||
+                !qFuzzyCompare(static_cast<float>(intendedElDelta), finalElVelocity * dt)) {
+                qDebug() << "[Gimbal] NTZ clamp: intendedAzDelta" << intendedAzDelta
+                         << "allowedAzDelta" << allowedAzDelta
+                         << "intendedElDelta" << intendedElDelta
+                         << "allowedElDelta" << allowedElDelta;
+            }
+        }
+    }
 
     // --- Step 4: Convert to servo steps and send commands (AZD-KD velocity mode) ---
     if (auto azServo = controller->azimuthServo()) {

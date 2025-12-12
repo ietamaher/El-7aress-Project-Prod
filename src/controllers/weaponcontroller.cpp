@@ -496,6 +496,19 @@ void WeaponController::startFiring()
         qDebug() << "[WeaponController] Cannot fire: system is not armed";
         return;
     }
+
+    // Safety: Prevent firing if current aim point is inside a No-Fire zone
+    if (m_stateModel) {
+        // Use current gimbal pointing as the aim point.
+        SystemStateData s = m_stateModel->data();
+        if (m_stateModel->isPointInNoFireZone(s.gimbalAz, s.gimbalEl)) {
+            qWarning() << "[WeaponController] FIRE BLOCKED: Aim point is inside a No-Fire zone. Solenoid NOT armed.";
+            // Optionally set an OSD / UI flag or emit an event here
+            return;
+        }
+    }
+
+    // All OK — send solenoid command
     m_plc42->setSolenoidState(1);
 }
 
