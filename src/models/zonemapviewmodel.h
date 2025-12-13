@@ -98,10 +98,11 @@ private:
     int m_highlightedZoneId = -1;
 
     // Display constants
+    // Gimbal operates between -15° and +46°, so display -20° to 60° for margin
     static constexpr float AZ_MIN = 0.0f;
     static constexpr float AZ_MAX = 360.0f;
     static constexpr float EL_MIN = -20.0f;
-    static constexpr float EL_MAX = 90.0f;
+    static constexpr float EL_MAX = 60.0f;
 
     QColor m_accentColor = QColor(70, 226, 165); // Default green
 };
