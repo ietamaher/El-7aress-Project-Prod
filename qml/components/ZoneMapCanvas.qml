@@ -62,8 +62,9 @@ Canvas {
         }
 
         // Elevation grid lines (every 10°)
+        // Gimbal operates between -15° and +46°, so display -20° to 60° for margin
         var elMin = -20
-        var elMax = 90
+        var elMax = 60
         var elRange = elMax - elMin
         for (var el = elMin; el <= elMax; el += 10) {
             var y = height - ((el - elMin) / elRange * height)
@@ -85,8 +86,9 @@ Canvas {
         }
 
         // Elevation labels
+        // Gimbal operates between -15° and +46°, so display -20° to 60° for margin
         var elMin = -20
-        var elMax = 90
+        var elMax = 60
         var elRange = elMax - elMin
         for (var el = elMin; el <= elMax; el += 20) {
             var y = height - ((el - elMin) / elRange * height)
