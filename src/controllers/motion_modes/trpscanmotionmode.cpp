@@ -1,33 +1,15 @@
 #include "trpscanmotionmode.h"
-#include "controllers/gimbalcontroller.h" // For GimbalController and SystemStateData
+#include "controllers/gimbalcontroller.h"  
 #include <QDebug>
-#include <QDateTime>  // For throttling model updates
-#include <cmath> // For std::sqrt, std::hypot
-
-/*TRPScanMotionMode::TRPScanMotionMode()
-    : m_currentState(State::Idle)
-    , m_currentTrpIndex(0)
-{
-    // Configure PID gains for responsive and smooth stopping at waypoints.
-    // These might need tuning based on your gimbal\"s physical characteristics.
-    // ✅ Load PID gains from runtime config (field-tunable without rebuild)
-    const auto& cfg = MotionTuningConfig::instance();
-    m_azPid.Kp = cfg.trpScanAz.kp;
-    m_azPid.Ki = cfg.trpScanAz.ki;
-    m_azPid.Kd = cfg.trpScanAz.kd;
-    m_azPid.maxIntegral = cfg.trpScanAz.maxIntegral;
-
-    m_elPid.Kp = cfg.trpScanEl.kp;
-    m_elPid.Ki = cfg.trpScanEl.ki;
-    m_elPid.Kd = cfg.trpScanEl.kd;
-    m_elPid.maxIntegral = cfg.trpScanEl.maxIntegral;
-}
- */
-
-static constexpr double AZ_TOL = 1.0;
-static constexpr double EL_TOL = 0.5;
-static constexpr double DEFAULT_ACCEL = 20.0;
-static constexpr double SMOOTH_TAU = 0.05;
+#include <QDateTime>   
+#include <cmath>  
+ 
+static constexpr double AZIMUTH_TOLERANCE_DEG = 1.0;
+static constexpr double ELEVATION_TOLERANCE_DEG = 0.5;
+static constexpr double DEFAULT_ACCEL_DEG_S2 = 20.0;
+static constexpr double SMOOTHING_TAU_S = 0.05;
+static constexpr double SPEED_MAX_DES_S = 20.0;
+static constexpr double FINE_APPROACH_DEG = 5.0; 
 
 double TRPScanMotionMode::norm360(double a) {
     double r = fmod(a, 360.0);
@@ -43,11 +25,25 @@ double TRPScanMotionMode::shortestDiff(double t, double c) {
 
 TRPScanMotionMode::TRPScanMotionMode(QObject* parent)
     : GimbalMotionModeBase(parent)
-{}
+{
+    // Load PID gains from runtime config (field-tunable without rebuild)
+    const auto& cfg = MotionTuningConfig::instance();
+    m_azPid.Kp = cfg.trpScanAz.kp;
+    m_azPid.Ki = cfg.trpScanAz.ki;
+    m_azPid.Kd = cfg.trpScanAz.kd;
+    m_azPid.maxIntegral = cfg.trpScanAz.maxIntegral;
+
+    m_elPid.Kp = cfg.trpScanEl.kp;
+    m_elPid.Ki = cfg.trpScanEl.ki;
+    m_elPid.Kd = cfg.trpScanEl.kd;
+    m_elPid.maxIntegral = cfg.trpScanEl.maxIntegral;
+}
+
 
 void TRPScanMotionMode::setTrpList(const QVector<TargetReferencePoint>& trps) {
     m_trps = trps;
 }
+
 
 void TRPScanMotionMode::setTrpList(const std::vector<TargetReferencePoint>& trps)
 {
@@ -58,6 +54,7 @@ void TRPScanMotionMode::setTrpList(const std::vector<TargetReferencePoint>& trps
     }
     setTrpList(qtrps);
 } 
+
 
 bool TRPScanMotionMode::selectPage(int locationPage) {
     m_pageOrder.clear();
@@ -76,6 +73,7 @@ bool TRPScanMotionMode::selectPage(int locationPage) {
     m_currentIndex = 0;
     return true;
 }
+
 
 void TRPScanMotionMode::enterMode(GimbalController* controller) {
     // If no TRPs at all -> abort
@@ -118,6 +116,7 @@ void TRPScanMotionMode::enterMode(GimbalController* controller) {
 void TRPScanMotionMode::exitMode(GimbalController* controller) {
     stopServos(controller);
 }
+
 
 void TRPScanMotionMode::startCurrentTarget() {
     if (m_pageOrder.isEmpty()) {
@@ -194,7 +193,7 @@ void TRPScanMotionMode::update(GimbalController* controller, double dt) {
     double errAz = shortestDiff(m_targetAz, data.gimbalAz);
     double errEl = - (m_targetEl - data.gimbalEl);
 
-    if (std::abs(errAz) <= AZ_TOL && std::abs(errEl) <= EL_TOL) {
+    if (std::abs(errAz) <= AZIMUTH_TOLERANCE_DEG && std::abs(errEl) <= ELEVATION_TOLERANCE_DEG) {
         m_state = HoldPoint;
         m_prevAzVel = 0.0;
         sendStabilizedServoCommands(controller, 0, 0, true, dt);
@@ -204,8 +203,11 @@ void TRPScanMotionMode::update(GimbalController* controller, double dt) {
     //------------------------------------------------------------
     // Smooth + accel limited az motion
     //------------------------------------------------------------
-    const double accel = DEFAULT_ACCEL;
-    const double v_max = 20.0;
+    //------------------------------------------------------------
+    // Smooth + accel limited az motion (HYBRID: Trap + PID)
+    //------------------------------------------------------------
+    const double accel = DEFAULT_ACCEL_DEG_S2;
+    const double v_max = SPEED_MAX_DES_S;
 
     double decelDist = (v_max * v_max) / (2 * accel);
     double distAz = std::abs(errAz);
@@ -213,10 +215,15 @@ void TRPScanMotionMode::update(GimbalController* controller, double dt) {
 
     double desiredAz;
 
-    if (distAz <= decelDist) {
+    if (distAz <= FINE_APPROACH_DEG) {
+        // FINE APPROACH: PID for precise convergence (no overshoot)
+        desiredAz = m_azPid.Kp * errAz;
+    } else if (distAz <= decelDist) {
+        // DECEL ZONE: Trapezoidal ramp-down
         double v_req = std::sqrt(2 * accel * distAz);
         desiredAz = direction * std::min(v_max, v_req);
     } else {
+        // CRUISE: Full speed
         desiredAz = direction * v_max;
     }
 
@@ -225,15 +232,14 @@ void TRPScanMotionMode::update(GimbalController* controller, double dt) {
     desiredAz = std::clamp(desiredAz, m_prevAzVel - maxDelta, m_prevAzVel + maxDelta);
 
     // Smooth
-    double alpha = dt / (SMOOTH_TAU + dt);
+    double alpha = dt / (SMOOTHING_TAU_S + dt);
     double smoothedAz = alpha * desiredAz + (1 - alpha) * m_prevAzVel;
     m_prevAzVel = smoothedAz;
 
     //------------------------------------------------------------
     // Elevation — simple proportional control
     //------------------------------------------------------------
-    double kpEl = 2.2;
-    double elVel = std::clamp(kpEl * errEl, -15.0, 15.0);
+    double elVel = std::clamp( m_elPid.Kp * errEl, -15.0, 15.0);
 
     //------------------------------------------------------------
     // Send with stabilization enabled

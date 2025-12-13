@@ -76,6 +76,13 @@ static constexpr double STATIONARY_GYRO_LIMIT = 0.5;           ///< Max gyro mag
 static constexpr double STATIONARY_ACCEL_DELTA_LIMIT = 0.01;   ///< Max accel change (G) for stationary
 static constexpr int STATIONARY_TIME_MS = 2000;                ///< Required stationary time (2 seconds)
 
+struct NtzState {
+    int zoneId = -1;
+    bool isInside = false;
+    bool enteredViaAz = false;   // True=Side Wall, False=Floor/Ceiling
+    double entryBoundary = 0.0;  // The specific value of the wall
+    bool isInitialized = false;  // Boot detection flag
+};
 // =================================
 // MAIN CLASS DEFINITION
 // =================================
@@ -214,9 +221,14 @@ public:
      * @return True if the movement would hit a limit, false otherwise.
      */
     bool isAtNoTraverseZoneLimit(float currentAz, float currentEl, float intendedMoveAz) const;
-    float computeAllowedAzimuthDelta(float currentAz, float currentEl, float intendedDelta) const;
-    float computeAllowedElevationDelta(float currentAz, float currentEl, float intendedDelta) const;
+    // Computes independent allowed deltas for sliding capability
+    void computeAllowedDeltas(
+        float currentAz, float currentEl,
+        float intendedAzDelta, float intendedElDelta,
+        float& allowedAzDelta, float& allowedElDelta,
+        double dt); 
 
+    void resetNtzStates();
 
     // =================================
     // LEAD ANGLE COMPENSATION
@@ -968,6 +980,20 @@ private:
     AmmoFeedState m_ammoFeedState = AmmoFeedState::Idle;
     bool m_ammoFeedCycleInProgress = false;
     bool m_ammoLoaded = false;
+
+        QMap<int, NtzState> m_ntzStates;
+    
+    static constexpr double NTZ_EPS = 0.05;       // Stop 0.05 deg before wall
+    static constexpr double NTZ_HYSTERESIS = 0.2; // Release buffer
+
+    // Math Helpers
+    static double normalize360(double a);
+    static double shortestSignedDelta(double from, double to);
+    static bool isInsideAz(double az, double start, double end);
+    
+    // Continuous Collision Detection (Ray Casting)
+    // Returns 0.0 to 1.0 (Fraction of move allowed)
+    static double getCollisionFraction(double current, double boundary, double delta, bool isAzimuth);
 };
 
 #endif // SYSTEMSTATEMODEL_H

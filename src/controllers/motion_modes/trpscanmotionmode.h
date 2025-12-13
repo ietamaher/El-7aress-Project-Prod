@@ -42,6 +42,9 @@ private:
     QVector<TargetReferencePoint> m_trps;
     QVector<int> m_pageOrder;   // indexes of TRPs in this page
 
+    // PID controllers
+    PIDController m_azPid, m_elPid;
+
     int m_currentIndex = 0;     // index inside pageOrder
     double m_targetAz = 0.0;
     double m_targetEl = 0.0;
