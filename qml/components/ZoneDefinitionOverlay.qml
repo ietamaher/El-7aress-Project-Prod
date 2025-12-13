@@ -17,28 +17,134 @@ Rectangle {
                                               !viewModel.showConfirmDialog) : false
 
     visible: viewModel ? viewModel.visible : false
-    // Make background more transparent during aiming to see video
-    color: isAimingMode ? Qt.rgba(0, 0, 0, 0.15) : Qt.rgba(0, 0, 0, 0.7)
+    // Completely transparent during aiming mode - only HUD elements visible
+    color: isAimingMode ? "transparent" : Qt.rgba(0, 0, 0, 0.7)
     anchors.fill: parent
 
     Behavior on color { ColorAnimation { duration: 200 } }
 
-    // Main content container
+    // =========================================================================
+    // AIMING MODE HUD - Top bar (header + gimbal position)
+    // =========================================================================
+    Rectangle {
+        id: aimingTopBar
+        anchors.top: parent.top
+        anchors.horizontalCenter: parent.horizontalCenter
+        anchors.topMargin: 10
+        width: Math.min(parent.width - 40, 600)
+        height: 90
+        visible: isAimingMode
+        color: Qt.rgba(0, 0, 0, 0.75)
+        radius: 8
+        border.color: Qt.rgba(0.2, 0.2, 0.2, 0.8)
+        border.width: 1
+
+        ColumnLayout {
+            anchors.fill: parent
+            anchors.margins: 10
+            spacing: 4
+
+            // Title and instruction
+            Text {
+                text: viewModel ? viewModel.title : ""
+                font.pixelSize: 14
+                font.weight: Font.DemiBold
+                font.family: "Segoe UI"
+                color: "#FFFFFF"
+                horizontalAlignment: Text.AlignHCenter
+                Layout.alignment: Qt.AlignHCenter
+            }
+
+            Text {
+                text: viewModel ? viewModel.instruction : ""
+                font.pixelSize: 11
+                font.family: "Segoe UI"
+                color: accentColor
+                horizontalAlignment: Text.AlignHCenter
+                wrapMode: Text.WordWrap
+                Layout.alignment: Qt.AlignHCenter
+                Layout.fillWidth: true
+            }
+
+            // Separator
+            Rectangle {
+                Layout.fillWidth: true
+                height: 1
+                color: Qt.rgba(0.3, 0.3, 0.3, 0.6)
+            }
+
+            // Gimbal position - prominent display
+            RowLayout {
+                Layout.fillWidth: true
+                Layout.alignment: Qt.AlignHCenter
+                spacing: 30
+
+                Text {
+                    text: "WS Pos:"
+                    font.pixelSize: 14
+                    font.weight: Font.DemiBold
+                    font.family: "Segoe UI"
+                    color: "#AAAAAA"
+                }
+
+                Text {
+                    text: viewModel ? "Az: " + viewModel.gimbalAz.toFixed(1) + "°" : "Az: ---°"
+                    font.pixelSize: 18
+                    font.weight: Font.Bold
+                    font.family: "Segoe UI"
+                    color: accentColor
+                }
+
+                Text {
+                    text: viewModel ? "El: " + viewModel.gimbalEl.toFixed(1) + "°" : "El: ---°"
+                    font.pixelSize: 18
+                    font.weight: Font.Bold
+                    font.family: "Segoe UI"
+                    color: accentColor
+                }
+            }
+        }
+    }
+
+    // =========================================================================
+    // AIMING MODE HUD - Bottom bar (map footer)
+    // =========================================================================
+    Rectangle {
+        id: aimingBottomBar
+        anchors.bottom: parent.bottom
+        anchors.horizontalCenter: parent.horizontalCenter
+        anchors.bottomMargin: 10
+        width: Math.min(parent.width - 40, 700)
+        height: 160
+        visible: isAimingMode && (viewModel ? viewModel.showMap : true)
+        color: Qt.rgba(0, 0, 0, 0.75)
+        radius: 8
+        border.color: Qt.rgba(0.2, 0.2, 0.2, 0.8)
+        border.width: 1
+
+        ZoneMapCanvas {
+            id: aimingZoneMap
+            anchors.fill: parent
+            anchors.margins: 8
+            viewModel: mapViewModel
+        }
+    }
+
+    // =========================================================================
+    // NORMAL MODE - Full content container (menus, parameters, etc.)
+    // =========================================================================
     Rectangle {
         id: contentContainer
         anchors.centerIn: parent
         width: Math.min(parent.width - 20, 800)
         height: Math.min(parent.height - 20, 700)
-        // Make container semi-transparent during aiming mode
-        color: isAimingMode ? Qt.rgba(0.04, 0.04, 0.04, 0.8) : "#0A0A0A"
-        border.color: isAimingMode ? Qt.rgba(0.1, 0.1, 0.1, 0.6) : "#1A1A1A"
+        visible: !isAimingMode
+        color: "#0A0A0A"
+        border.color: "#1A1A1A"
         border.width: 1
         radius: 0
 
-        Behavior on color { ColorAnimation { duration: 200 } }
-
-        // Disable shadow effect during aiming mode for better video visibility
-        layer.enabled: !isAimingMode
+        layer.enabled: true
         layer.effect: MultiEffect {
             shadowEnabled: true
             shadowColor: "#80000000"
@@ -54,52 +160,40 @@ Rectangle {
             // Header section
             Rectangle {
                 Layout.fillWidth: true
-                Layout.preferredHeight: isAimingMode ? 60 : 80
-                color: isAimingMode ? Qt.rgba(0, 0, 0, 0.6) : "transparent"
-                radius: isAimingMode ? 4 : 0
-
-                Behavior on Layout.preferredHeight { NumberAnimation { duration: 200 } }
-                Behavior on color { ColorAnimation { duration: 200 } }
+                Layout.preferredHeight: 80
+                color: "transparent"
 
                 ColumnLayout {
                     anchors.centerIn: parent
-                    spacing: isAimingMode ? 4 : 6
+                    spacing: 6
 
                     Text {
                         text: viewModel ? viewModel.title : ""
-                        font.pixelSize: isAimingMode ? 16 : 20
+                        font.pixelSize: 20
                         font.weight: Font.Normal
                         font.family: "Segoe UI"
                         color: "#FFFFFF"
                         horizontalAlignment: Text.AlignHCenter
                         Layout.alignment: Qt.AlignHCenter
-
-                        Behavior on font.pixelSize { NumberAnimation { duration: 200 } }
                     }
 
                     Text {
                         text: viewModel ? viewModel.instruction : ""
-                        font.pixelSize: isAimingMode ? 11 : 12
+                        font.pixelSize: 12
                         font.family: "Segoe UI"
-                        color: isAimingMode ? accentColor : "#808080"
+                        color: "#808080"
                         horizontalAlignment: Text.AlignHCenter
                         wrapMode: Text.WordWrap
                         Layout.alignment: Qt.AlignHCenter
-
-                        Behavior on color { ColorAnimation { duration: 200 } }
                     }
                 }
             }
 
-            // Gimbal position display - more prominent during aiming mode
+            // Gimbal position display
             Rectangle {
                 Layout.fillWidth: true
-                Layout.preferredHeight: isAimingMode ? 50 : 40
-                color: isAimingMode ? Qt.rgba(0, 0, 0, 0.7) : "#0D0D0D"
-                radius: isAimingMode ? 4 : 0
-
-                Behavior on Layout.preferredHeight { NumberAnimation { duration: 200 } }
-                Behavior on color { ColorAnimation { duration: 200 } }
+                Layout.preferredHeight: 40
+                color: "#0D0D0D"
 
                 RowLayout {
                     anchors.fill: parent
@@ -109,18 +203,14 @@ Rectangle {
 
                     Text {
                         text: "WS Pos:"
-                        font.pixelSize: isAimingMode ? 16 : 14
-                        font.weight: isAimingMode ? Font.DemiBold : Font.Normal
+                        font.pixelSize: 14
                         font.family: "Segoe UI"
-                        color: isAimingMode ? "#AAAAAA" : "#606060"
-
-                        Behavior on color { ColorAnimation { duration: 200 } }
+                        color: "#606060"
                     }
 
                     Text {
                         text: viewModel ? "Az: " + viewModel.gimbalAz.toFixed(1) + "°" : "Az: ---°"
-                        font.pixelSize: isAimingMode ? 18 : 14
-                        font.weight: isAimingMode ? Font.Bold : Font.Normal
+                        font.pixelSize: 14
                         font.family: "Segoe UI"
                         color: accentColor
                     }
@@ -129,8 +219,7 @@ Rectangle {
 
                     Text {
                         text: viewModel ? "El: " + viewModel.gimbalEl.toFixed(1) + "°" : "El: ---°"
-                        font.pixelSize: isAimingMode ? 18 : 14
-                        font.weight: isAimingMode ? Font.Bold : Font.Normal
+                        font.pixelSize: 14
                         font.family: "Segoe UI"
                         color: accentColor
                     }
@@ -140,15 +229,13 @@ Rectangle {
             Rectangle {
                 Layout.fillWidth: true
                 height: 1
-                color: isAimingMode ? Qt.rgba(0.08, 0.08, 0.08, 0.5) : "#151515"
+                color: "#151515"
             }
 
             // Main content area (menu OR map)
-            // During aiming mode, this area becomes transparent to show video
             Item {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
-                visible: !isAimingMode  // Hide entirely during aiming mode
 
                 // Main Menu List
                 ListView {
@@ -380,27 +467,21 @@ Rectangle {
                 }
             }
 
-            // Zone Map - reduced size during aiming mode
+            // Zone Map
             Rectangle {
                 Layout.fillWidth: true
                 height: 1
-                color: isAimingMode ? Qt.rgba(0.08, 0.08, 0.08, 0.5) : "#151515"
+                color: "#151515"
                 visible: viewModel ? viewModel.showMap : true
             }
 
             ZoneMapCanvas {
                 id: zoneMap
                 Layout.fillWidth: true
-                Layout.preferredHeight: isAimingMode ? 180 : 250
+                Layout.preferredHeight: 250
                 visible: viewModel ? viewModel.showMap : true
                 viewModel: mapViewModel
-                opacity: isAimingMode ? 0.85 : 1.0
-
-                Behavior on Layout.preferredHeight { NumberAnimation { duration: 200 } }
-                Behavior on opacity { NumberAnimation { duration: 200 } }
             }
-
-
         }
     }
 
