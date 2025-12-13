@@ -123,7 +123,6 @@ double TrackingMotionMode::applyVelocityScaling(double velocity, double error)
 
 void TrackingMotionMode::update(GimbalController* controller, double dt)
 {
-    // If no valid target → stop + exit
     if (!m_targetValid) {
         stopServos(controller);
         return;
@@ -142,91 +141,150 @@ void TrackingMotionMode::update(GimbalController* controller, double dt)
     m_smoothedAzVel_dps = alphaVel * m_targetAzVel_dps + (1.0 - alphaVel) * m_smoothedAzVel_dps;
     m_smoothedElVel_dps = alphaVel * m_targetElVel_dps + (1.0 - alphaVel) * m_smoothedElVel_dps;
 
-    // --- 2. Compute AIM POINT (ballistics + lead) ---
+    // --- 2. Compute VISUAL error (target position without corrections) ---
+    // This tells us if the visual target is centered in the reticle
+    double visualErrAz = normalizeAngle180(m_smoothedTargetAz - data.gimbalAz);
+    double visualErrEl = m_smoothedTargetEl - data.gimbalEl;
+    double visualErrorMag = std::sqrt(visualErrAz * visualErrAz + visualErrEl * visualErrEl);
+
+    // --- 3. Compute AIM POINT (with ballistics + lead) ---
     double aimAz = m_smoothedTargetAz;
     double aimEl = m_smoothedTargetEl;
 
+    bool correctionsActive = false;
+
     if (data.ballisticDropActive) {
         aimAz += data.ballisticDropOffsetAz;
-        aimEl += data.ballisticDropOffsetEl;
+        aimEl -= data.ballisticDropOffsetEl;
+        correctionsActive = true;
     }
 
-    // ========================================================================
-    // BUG FIX #2: Apply motion lead for both On AND Lag status
-    // ========================================================================
-    // Per CROWS M153 and professional FCS behavior:
-    // - On:      Apply full lead angle
-    // - Lag:     Apply clamped lead angle (5° max) - gimbal still aims at lead!
-    // - ZoomOut: Don't apply lead (CCIP would be off-screen, warn operator)
-    //
-    // Previous bug: Only checked for On status, so Lag was ignored and
-    // gimbal aimed at visual target instead of clamped lead position.
-    // ========================================================================
     if (data.leadAngleCompensationActive &&
         (data.currentLeadAngleStatus == LeadAngleStatus::On ||
          data.currentLeadAngleStatus == LeadAngleStatus::Lag))
     {
         aimAz += data.motionLeadOffsetAz;
         aimEl += data.motionLeadOffsetEl;
+        correctionsActive = true;
     }
 
-    // --- 3. Position error ---
+    // --- 4. Compute AIM error (what gimbal must track) ---
     double errAz = normalizeAngle180(aimAz - data.gimbalAz);
     double errEl = aimEl - data.gimbalEl;
 
-    // --- 4. DEADBAND (prevents hunting at rest!) ---
-    static constexpr double DEADBAND = 0.08; // ≈1.4 mrad (perfect for RCWS)
-    if (std::abs(errAz) < DEADBAND && std::abs(errEl) < DEADBAND)
-    {
-        // decay motion smoothly (no oscillation)
-        m_previousDesiredAzVel *= 0.85;
-        m_previousDesiredElVel *= 0.85;
+    // --- 5. DEADBAND based on aim error ---
+    static constexpr double DEADBAND = 0.3;
+    
+    bool azInDeadband = std::abs(errAz) < DEADBAND;
+    bool elInDeadband = std::abs(errEl) < DEADBAND;
+    
+    if (azInDeadband) {
+        errAz = 0.0;
+        m_azPid.integral *= 0.9;
+    }
+    if (elInDeadband) {
+        errEl = 0.0;
+        m_elPid.integral *= 0.9;
+    }
 
-        // Reset integrator (prevents slow wandering)
+    if (azInDeadband && elInDeadband) {
+        m_previousDesiredAzVel *= 0.8;
+        m_previousDesiredElVel *= 0.8;
         m_azPid.integral = 0.0;
         m_elPid.integral = 0.0;
-
-        sendStabilizedServoCommands(controller,
-                                    m_previousDesiredAzVel,
-                                    m_previousDesiredElVel,
-                                    true, dt);
+        sendStabilizedServoCommands(controller, m_previousDesiredAzVel, m_previousDesiredElVel, false, dt);
         return;
     }
 
-    // --- 5. PID FEEDBACK ---
+    // --- 6. PID FEEDBACK (on aim error) ---
     bool derivativeOnMeasurement = true;
     double pidAzVelocity = pidCompute(m_azPid, errAz, aimAz, data.gimbalAz, derivativeOnMeasurement, dt);
     double pidElVelocity = pidCompute(m_elPid, errEl, aimEl, data.gimbalEl, derivativeOnMeasurement, dt);
 
-    // --- 6. FEEDFORWARD (target motion) ---
-    // Use full FF = 1.0 for responsive tracking
-    double FF =  1; //  then need to add it to motion_tuning   --> cfg.tracking.feedForwardGain; // Set to 1.0 in config
-    double ffAz = FF * m_smoothedAzVel_dps;
-    double ffEl = FF * m_smoothedElVel_dps;
+    // --- 7. FEEDFORWARD - Different logic for LAC vs no-LAC ---
+    double ffAz = 0.0;
+    double ffEl = 0.0;
+
+    if (correctionsActive) {
+        // ================================================================
+        // LAC/DROP ACTIVE: Use VISUAL error to determine FF
+        // ================================================================
+        // When corrections are active, the aim point is offset from visual target.
+        // We should apply FF based on whether the VISUAL target is centered,
+        // not the aim point.
+        //
+        // If visual target is centered → target motion is being tracked → apply FF
+        // If visual target is offset → still catching up → reduce FF
+        
+        double FF = 0.0;
+        if (visualErrorMag < 1.5) {
+            // Visual target nearly centered - we're tracking well
+            // Apply FF to help follow target motion
+            FF = 0.7 * std::max(0.0, 1.0 - visualErrorMag / 1.5);
+        }
+
+        ffAz = FF * m_smoothedAzVel_dps;
+        ffEl = FF * m_smoothedElVel_dps;
+
+        // Debug for LAC/drop mode
+        static int lacDbg = 0;
+        if (++lacDbg % 20 == 0) {
+            qDebug() << "[TRACKING+FCS] visualErr=" << QString::number(visualErrorMag, 'f', 2)
+                     << "aimErr=(" << QString::number(errAz, 'f', 2) << "," << QString::number(errEl, 'f', 2) << ")"
+                     << "FF=" << QString::number(FF, 'f', 2)
+                     << "drop=(" << data.ballisticDropOffsetAz << "," << data.ballisticDropOffsetEl << ")"
+                     << "lead=(" << data.motionLeadOffsetAz << "," << data.motionLeadOffsetEl << ")";
+        }
+    }
+    else {
+        // ================================================================
+        // NO CORRECTIONS: Use aim error (same as visual error)
+        // ================================================================
+        double aimErrorMag = std::sqrt(errAz * errAz + errEl * errEl);
+        double FF = 0.0;
+        
+        if (aimErrorMag < 1.0) {
+            FF = 0.5 * (1.0 - aimErrorMag);
+        }
+
+        ffAz = FF * m_smoothedAzVel_dps;
+        ffEl = FF * m_smoothedElVel_dps;
+    }
 
     double desiredAzVelocity = pidAzVelocity + ffAz;
     double desiredElVelocity = pidElVelocity + ffEl;
 
-    // --- 7. Velocity limits ---
-    double maxVel = cfg.motion.maxVelocityDegS;
-    desiredAzVelocity = qBound(-maxVel, desiredAzVelocity, maxVel);
-    desiredElVelocity = qBound(-maxVel, desiredElVelocity, maxVel);
+    // --- 8. Velocity limits ---
+    static constexpr double TRACKING_MAX_VEL = 15.0;
+    desiredAzVelocity = qBound(-TRACKING_MAX_VEL, desiredAzVelocity, TRACKING_MAX_VEL);
+    desiredElVelocity = qBound(-TRACKING_MAX_VEL, desiredElVelocity, TRACKING_MAX_VEL);
 
-    // --- 8. Acceleration rate limiting ---
+    // --- 9. Acceleration rate limiting ---
     double maxDelta = cfg.motion.maxAccelerationDegS2 * dt;
-    desiredAzVelocity = applyRateLimitTimeBased(desiredAzVelocity,
-                                                m_previousDesiredAzVel, maxDelta);
-    desiredElVelocity = applyRateLimitTimeBased(desiredElVelocity,
-                                                m_previousDesiredElVel, maxDelta);
+    desiredAzVelocity = applyRateLimitTimeBased(desiredAzVelocity, m_previousDesiredAzVel, maxDelta);
+    desiredElVelocity = applyRateLimitTimeBased(desiredElVelocity, m_previousDesiredElVel, maxDelta);
 
-    // Update history
+    // --- DEBUG ---
+    static int diagCnt = 0;
+    if (++diagCnt % 10 == 0) {
+        qDebug() << "[TRACKING] err=(" << QString::number(errAz, 'f', 2) 
+                 << "," << QString::number(errEl, 'f', 2) << ")"
+                 << "pid=(" << QString::number(pidAzVelocity, 'f', 2)
+                 << "," << QString::number(pidElVelocity, 'f', 2) << ")"
+                 << "ff=(" << QString::number(ffAz, 'f', 2)
+                 << "," << QString::number(ffEl, 'f', 2) << ")"
+                 << "cmd=(" << QString::number(desiredAzVelocity, 'f', 2)
+                 << "," << QString::number(desiredElVelocity, 'f', 2) << ")"
+                 << (correctionsActive ? "[FCS]" : "");
+    }
+
     m_previousDesiredAzVel = desiredAzVelocity;
     m_previousDesiredElVel = desiredElVelocity;
 
-    // --- 9. Publish world-frame target (optional throttled) ---
+    // --- 10. World-frame target for stabilization (throttled) ---
     static qint64 lastPubMs = 0;
     qint64 now = QDateTime::currentMSecsSinceEpoch();
-    if (now - lastPubMs >= 100 && data.imuConnected) { // 10 Hz
+    if (now - lastPubMs >= 100 && data.imuConnected) {
         double worldAz, worldEl;
         convertGimbalToWorldFrame(aimAz, aimEl,
                                   data.imuRollDeg, data.imuPitchDeg, data.imuYawDeg,
@@ -240,12 +298,10 @@ void TrackingMotionMode::update(GimbalController* controller, double dt)
         lastPubMs = now;
     }
 
-    // --- 10. Send final command (with stabilization ON) ---
-    sendStabilizedServoCommands(controller,
-                                desiredAzVelocity,
-                                desiredElVelocity,
-                                true, dt);
+    // --- 11. Send command ---
+    sendStabilizedServoCommands(controller, desiredAzVelocity, desiredElVelocity, false, dt);
 }
+ 
 
 /*
 void TrackingMotionMode::update(GimbalController* controller, double dt)
