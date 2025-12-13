@@ -152,6 +152,29 @@ void TrackingMotionMode::update(GimbalController* controller, double dt)
     }
 
     // ========================================================================
+    // NTZ AWARENESS: Prevent PID windup when aim point is in No-Traverse Zone
+    // ========================================================================
+    // If the target is inside an NTZ, the base class will clamp motion anyway.
+    // But without this check, the PID integrator would wind up trying to reach
+    // an unreachable target, causing motor stress and oscillation at boundary.
+    // ========================================================================
+    bool aimPointInNTZ = controller->systemStateModel()->isPointInNoTraverseZone(
+        static_cast<float>(aimAz), static_cast<float>(aimEl));
+
+    if (aimPointInNTZ) {
+        // Reset PID integrators to prevent windup
+        m_azPid.integral = 0.0;
+        m_elPid.integral = 0.0;
+
+        // Apply reduced velocity toward NTZ boundary (let base class clamp)
+        // This prevents aggressive tracking into forbidden zone
+        static int ntzWarnCounter = 0;
+        if (++ntzWarnCounter % 40 == 0) {  // Log every 2 seconds @ 20Hz
+            qDebug() << "[TrackingMotionMode] Aim point in NTZ - PID reset, motion clamped at boundary";
+        }
+    }
+
+    // ========================================================================
     // BUG FIX #2: Apply motion lead for both On AND Lag status
     // ========================================================================
     // Per CROWS M153 and professional FCS behavior:

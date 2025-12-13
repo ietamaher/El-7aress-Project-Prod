@@ -79,6 +79,24 @@ void RadarSlewMotionMode::update(GimbalController* controller, double dt)
             m_targetAz = it->azimuth;
             m_targetEl = atan2(-SYSTEM_HEIGHT_METERS, it->range) * (180.0 / M_PI);
 
+            // ================================================================
+            // NTZ CHECK: Verify slew target is not in No-Traverse Zone
+            // ================================================================
+            // If radar target is inside NTZ, we cannot slew there.
+            // Warn operator and reject the slew command.
+            // ================================================================
+            bool targetInNTZ = controller->systemStateModel()->isPointInNoTraverseZone(
+                static_cast<float>(m_targetAz), static_cast<float>(m_targetEl));
+
+            if (targetInNTZ) {
+                qWarning() << "[RadarSlewMotionMode] Cannot slew to target ID" << m_currentTargetId
+                           << "- Target Az:" << m_targetAz << "El:" << m_targetEl << "is in NO-TRAVERSE ZONE";
+                m_isSlewInProgress = false;
+                m_currentTargetId = 0;
+                stopServos(controller);
+                return;
+            }
+
             m_isSlewInProgress = true;
             m_azPid.reset();
             m_elPid.reset();
@@ -123,8 +141,10 @@ void RadarSlewMotionMode::update(GimbalController* controller, double dt)
     // Normalize Azimuth error to take the shortest path
     errAz = normalizeAngle180(errAz);
 
+    // Calculate distance to target (needed for arrival check and NTZ detection)
+    double distanceToTarget = std::sqrt(errAz * errAz + errEl * errEl);
+
     // Check for arrival at the destination
-    // Corrected to use both Az and El errors for 2D distance.
     if (std::abs(errAz) < ARRIVAL_THRESHOLD_DEG() && std::abs(errEl) < ARRIVAL_THRESHOLD_DEG()) {
         qInfo() << "[RadarSlewMotionMode] Arrived at target ID:" << m_currentTargetId;
         stopServos(controller);
@@ -132,8 +152,39 @@ void RadarSlewMotionMode::update(GimbalController* controller, double dt)
         return;
     }
 
-    // --- 4. MOTION PROFILING SIMILAR TO TRP SCAN ---
-    double distanceToTarget = std::sqrt(errAz * errAz + errEl * errEl);
+    // ========================================================================
+    // NTZ BOUNDARY CHECK: Detect if we've been blocked by NTZ during slew
+    // ========================================================================
+    // If current position is in NTZ or we're stuck at boundary, abort slew
+    // to prevent infinite attempts to reach unreachable target.
+    // ========================================================================
+    if (data.isReticleInNoTraverseZone) {
+        // Reset PID integrators to prevent windup at boundary
+        m_azPid.integral = 0.0;
+        m_elPid.integral = 0.0;
+
+        // Check if we're making progress or stuck
+        static double lastDistanceToTarget = 0.0;
+        static int stuckCounter = 0;
+
+        if (std::abs(distanceToTarget - lastDistanceToTarget) < 0.1) {
+            stuckCounter++;
+            if (stuckCounter > 20) {  // ~1 second at 20Hz
+                qWarning() << "[RadarSlewMotionMode] Slew blocked by NTZ boundary - aborting slew to target ID:"
+                           << m_currentTargetId;
+                stopServos(controller);
+                m_isSlewInProgress = false;
+                m_currentTargetId = 0;
+                stuckCounter = 0;
+                return;
+            }
+        } else {
+            stuckCounter = 0;
+        }
+        lastDistanceToTarget = distanceToTarget;
+    }
+
+    // --- 4. MOTION PROFILING ---
     double desiredAzVelocity = 0.0;
     double desiredElVelocity = 0.0;
 
@@ -144,9 +195,9 @@ void RadarSlewMotionMode::update(GimbalController* controller, double dt)
 
     if (distanceToTarget < DECELERATION_DISTANCE_DEG) {
         // DECELERATION ZONE: Use PID to slow down smoothly
-        qDebug() << "[RadarSlewMotionMode] Decelerating. Distance:" << distanceToTarget;
-        desiredAzVelocity = pidCompute(m_azPid, errAz, UPDATE_INTERVAL_S());
-        desiredElVelocity = pidCompute(m_elPid, errEl, UPDATE_INTERVAL_S());
+        // FIX: Use measured dt instead of constant UPDATE_INTERVAL_S()
+        desiredAzVelocity = pidCompute(m_azPid, errAz, dt);
+        desiredElVelocity = pidCompute(m_elPid, errEl, dt);
     } else {
         // CRUISING ZONE: Move at constant speed toward target
         double dirAz = errAz / distanceToTarget;
