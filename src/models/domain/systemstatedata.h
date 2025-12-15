@@ -169,6 +169,7 @@ enum class LeadAngleStatus {
 enum class AmmoFeedState {
     Idle,       ///< Ready for new cycle - displays "IDLE"
     Extending,  ///< Actuator moving to extended position - displays "FEED..."
+    Extended,   ///< Actuator at extended position, waiting for button release - displays "HOLD"
     Retracting, ///< Actuator returning to home - displays "FEED..."
     Fault       ///< Timeout/error occurred - displays "FAULT" (red, requires reset)
 };
