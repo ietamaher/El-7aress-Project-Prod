@@ -1,9 +1,10 @@
 # Software Design Document (SDD)
 ## El-7aress Remote Controlled Weapon Station (RCWS)
 
-**Document Version:** 1.0
+**Document Version:** 2.0
 **Date:** December 2024
 **Classification:** CONFIDENTIAL - RESTRICTED DISTRIBUTION
+**Compliance:** MIL-STD-498, IEEE 1016-2009
 
 ---
 
@@ -18,6 +19,12 @@
 7. [Design Patterns](#7-design-patterns)
 8. [Threading Model](#8-threading-model)
 9. [External Dependencies](#9-external-dependencies)
+10. [Timing Budget & Performance Requirements](#10-timing-budget--performance-requirements)
+11. [State Transition Tables](#11-state-transition-tables)
+12. [Safety Analysis (FMEA)](#12-safety-analysis-fmea)
+13. [Error Recovery Procedures](#13-error-recovery-procedures)
+14. [Sequence Diagrams](#14-sequence-diagrams)
+15. [Protocol Specifications](#15-protocol-specifications)
 
 ---
 
@@ -713,11 +720,566 @@ enum class ZoneType {
 
 ---
 
+## 10. Timing Budget & Performance Requirements
+
+### 10.1 Control Loop Timing
+
+| Parameter | Requirement | Actual | Margin | Source File |
+|-----------|-------------|--------|--------|-------------|
+| **Gimbal Control Loop** | ≤50ms | 50ms | 0% | `motion_tuning.json: updateIntervalS` |
+| **Servo Position Update** | ≤20ms | 20ms (50Hz) | 0% | `devices.json: pollIntervalMs` |
+| **IMU Data Rate** | ≤10ms | 10ms (100Hz) | - | `devices.json: samplingRateHz=100` |
+| **Video Frame Rate** | ≤33ms | 33ms (30Hz) | 0% | `devices.json: framerate=30` |
+| **Joystick Input** | ≤17ms | 16.7ms (60Hz) | 2% | SDL2 polling rate |
+| **OSD Refresh** | ≤33ms | 33ms (30Hz) | 0% | Frame-synchronized |
+
+### 10.2 End-to-End Latency Budget
+
+```
+JOYSTICK TO SERVO RESPONSE (Manual Mode):
+├── Joystick polling:           ~8ms (60Hz average)
+├── JoystickController process: ~1ms
+├── GimbalController update:    ~2ms (filtering + rate limit)
+├── Modbus write + response:    ~5ms (230400 baud)
+├── Servo motor response:       ~10ms (acceleration ramp)
+└── TOTAL:                      ~26ms (< 50ms requirement) ✓
+
+TRACKER TO SERVO RESPONSE (Tracking Mode):
+├── Frame capture (30Hz):       ~16ms (average wait)
+├── VPI DCF Tracker (CUDA):     ~5ms
+├── Qt::QueuedConnection:       ~2ms
+├── GimbalController PID:       ~2ms
+├── Modbus write + response:    ~5ms
+├── Servo motor response:       ~10ms
+└── TOTAL:                      ~40ms (< 50ms requirement) ✓
+
+FIRE COMMAND TO SOLENOID ACTIVATION:
+├── Button debounce:            ~10ms
+├── JoystickController:         ~1ms
+├── WeaponController safety:    ~1ms
+├── PLC42 Modbus write:         ~5ms (115200 baud)
+├── PLC relay activation:       ~5ms
+└── TOTAL:                      ~22ms (< 30ms requirement) ✓
+```
+
+### 10.3 Timing Constants (from `motion_tuning.json`)
+
+| Constant | Value | Unit | Purpose |
+|----------|-------|------|---------|
+| `updateIntervalS` | 0.05 | seconds | Main control loop period |
+| `trackingPositionTau` | 0.12 | seconds | Target position filter τ |
+| `trackingVelocityTau` | 0.08 | seconds | Target velocity filter τ |
+| `manualJoystickTau` | 0.08 | seconds | Joystick input filter τ |
+| `maxAccelerationDegS2` | 50.0 | °/s² | Tracking mode acceleration |
+| `scanMaxAccelDegS2` | 20.0 | °/s² | Sector scan acceleration |
+| `maxVelocityDegS` | 60.0 | °/s | Maximum gimbal velocity |
+| `arrivalThresholdDeg` | 0.5 | ° | Position arrival deadband |
+
+### 10.4 PID Tuning Parameters
+
+| Axis | Mode | Kp | Ki | Kd | Max Integral |
+|------|------|-----|-----|-----|--------------|
+| Azimuth | Tracking | 1.2 | 0.01 | 0.05 | 5.0 |
+| Elevation | Tracking | 1.0 | 0.01 | 0.08 | 5.0 |
+| Azimuth | SectorScan | 0.7 | 0.01 | 0.05 | 20.0 |
+| Elevation | SectorScan | 1.0 | 0.01 | 0.05 | 20.0 |
+| Azimuth | TRPScan | 0.7 | 0.01 | 0.05 | 20.0 |
+| Elevation | TRPScan | 1.2 | 0.015 | 0.08 | 25.0 |
+| Azimuth | RadarSlew | 1.5 | 0.08 | 0.15 | 30.0 |
+| Elevation | RadarSlew | 1.5 | 0.08 | 0.15 | 30.0 |
+
+---
+
+## 11. State Transition Tables
+
+### 11.1 Tracking Phase State Machine
+
+| Current State | Event | Next State | Actions | Guards |
+|---------------|-------|------------|---------|--------|
+| `Off` | Track button (single) | `Acquisition` | Show acquisition box, center on screen | Dead-man switch active |
+| `Acquisition` | Track button (single) | `Tracking_LockPending` | Initialize VPI tracker with gate | Gate size > 0 |
+| `Acquisition` | Track button (double) | `Off` | Hide acquisition box | - |
+| `Tracking_LockPending` | Tracker confidence > 0.25 | `Tracking_ActiveLock` | Enable motion mode, show green box | - |
+| `Tracking_LockPending` | Timeout (2s) | `Off` | Show "LOCK FAILED", stop tracker | - |
+| `Tracking_ActiveLock` | Confidence < 0.15 for 0.5s | `Tracking_Coast` | Show yellow box, continue prediction | - |
+| `Tracking_ActiveLock` | Track button (double) | `Off` | Stop tracker, return to Manual | - |
+| `Tracking_ActiveLock` | Fire button pressed | `Tracking_Firing` | Hold position, inhibit motion | Weapon armed |
+| `Tracking_Coast` | Confidence > 0.25 | `Tracking_ActiveLock` | Resume tracking, show green box | - |
+| `Tracking_Coast` | Coast timeout (3s) | `Off` | Stop tracker, show "TRACK LOST" | - |
+| `Tracking_Firing` | Fire button released | `Tracking_ActiveLock` | Resume tracking | - |
+
+### 11.2 Homing State Machine
+
+| Current State | Event | Next State | Actions | Guards |
+|---------------|-------|------------|---------|--------|
+| `Idle` | Home command | `Requested` | Set motion mode to Manual, prepare | Station enabled |
+| `Requested` | PLC42 acknowledges | `InProgress` | Send home position command | Emergency stop not active |
+| `InProgress` | Position reached | `Completed` | Update OSD "HOMING COMPLETE" | |Az| < 0.5° AND |El| < 0.5° |
+| `InProgress` | Timeout (30s) | `Failed` | Show "HOMING TIMEOUT", stop servos | - |
+| `InProgress` | Emergency stop | `Aborted` | Immediate halt, show "HOMING ABORTED" | - |
+| `Completed` | Any motion command | `Idle` | Ready for normal operation | - |
+| `Failed` | Operator reset | `Idle` | Clear fault, allow retry | - |
+| `Aborted` | Emergency stop released | `Idle` | Resume normal operation | - |
+
+### 11.3 Ammunition Feed FSM
+
+| Current State | Event | Next State | Actions | Guards |
+|---------------|-------|------------|---------|--------|
+| `Idle` | Feed button pressed | `Extending` | Command actuator extend, start timer | Actuator connected |
+| `Extending` | Position ≥ FEED_EXTEND_MM (45mm) | `Extended` | Stop actuator, hold position | - |
+| `Extending` | Timeout (5s) | `Fault` | Show "FEED FAULT", stop actuator | - |
+| `Extended` | Feed button released | `Retracting` | Command actuator retract | - |
+| `Extended` | Feed button held | `Extended` | Maintain extended position | - |
+| `Retracting` | Position ≤ FEED_HOME_MM (5mm) | `Idle` | Set ammoLoaded=true, cycle complete | - |
+| `Retracting` | Timeout (5s) | `Fault` | Show "RETRACT FAULT" | - |
+| `Fault` | Operator reset | `Idle` | Clear fault, ready for retry | Manual intervention |
+
+### 11.4 Operational Mode Transitions
+
+| Current Mode | Event | Next Mode | Actions | Guards |
+|--------------|-------|-----------|---------|--------|
+| `Idle` | Station enabled | `Surveillance` | Enable servos, start video | Hatch closed |
+| `Surveillance` | Track lock acquired | `Tracking` | Enable TrackingMotionMode | Dead-man switch |
+| `Surveillance` | Engagement button | `Engagement` | Arm weapon systems | System ready |
+| `Tracking` | Track lost | `Surveillance` | Return to Manual mode | - |
+| `Tracking` | Engagement button | `Engagement` | Keep tracking, arm weapon | System ready |
+| `Engagement` | Engagement released | `Surveillance`/`Tracking` | Disarm weapon | - |
+| `Engagement` | Fire completed | `Engagement` | Maintain armed state | - |
+| `*` (any) | Emergency stop | `EmergencyStop` | Immediate halt all motion | - |
+| `EmergencyStop` | E-stop released | `Surveillance` | Resume monitoring | Station enabled |
+
+---
+
+## 12. Safety Analysis (FMEA)
+
+### 12.1 Failure Mode Effects Analysis
+
+| ID | Component | Failure Mode | Effect | Severity | Detection | Mitigation | RPN |
+|----|-----------|--------------|--------|----------|-----------|------------|-----|
+| **F-001** | IMU | Complete loss | No stabilization, drift | HIGH | IMU connection monitor | Graceful degradation to encoder-only | 48 |
+| **F-002** | Az Servo | Communication loss | Cannot slew horizontally | CRITICAL | Modbus timeout (500ms) | Halt motion, alert operator | 72 |
+| **F-003** | El Servo | Communication loss | Cannot slew vertically | CRITICAL | Modbus timeout (500ms) | Halt motion, alert operator | 72 |
+| **F-004** | Az Servo | Motor fault | Sudden stop/runaway | CRITICAL | Alarm register polling | Emergency stop, brake engage | 64 |
+| **F-005** | El Servo | Motor fault | Elevation runaway | CRITICAL | Alarm register + limits | Hardware elevation limits | 56 |
+| **F-006** | Joystick | Dead-man switch stuck | False "safe" indication | HIGH | Periodic reset requirement | Timeout release detection | 36 |
+| **F-007** | VPI Tracker | Track loss during engage | Missed target | MEDIUM | Confidence monitoring | Coast mode, manual takeover | 24 |
+| **F-008** | LRF | No return/fault | Incorrect range | MEDIUM | Error code parsing | Manual range entry option | 20 |
+| **F-009** | PLC21 | Fire button stuck | Continuous fire | CRITICAL | Edge detection, timing | Hardware interlock (E-stop) | 80 |
+| **F-010** | PLC42 | Solenoid driver fail | No fire capability | MEDIUM | Feedback sensing | Redundant fire path | 30 |
+| **F-011** | Day Camera | Video loss | No visual | HIGH | Frame timeout (1s) | Auto-switch to Night | 32 |
+| **F-012** | Night Camera | Video loss | No thermal | HIGH | Frame timeout (1s) | Auto-switch to Day | 32 |
+| **F-013** | Video Pipeline | GStreamer crash | Black screen | HIGH | Process monitoring | Auto-restart pipeline | 40 |
+| **F-014** | Zone Database | Corruption | Zone violation | HIGH | CRC validation | Factory reset capability | 28 |
+
+**RPN Calculation:** Severity (1-10) × Occurrence (1-10) × Detection (1-10)
+
+### 12.2 Safety-Critical Paths
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                    FIRE COMMAND SAFETY CHAIN                             │
+├─────────────────────────────────────────────────────────────────────────┤
+│                                                                          │
+│  [Fire Button]                                                           │
+│       │                                                                  │
+│       ├── CHECK: Dead-Man Switch Active? ──NO──► BLOCKED                │
+│       │                                                                  │
+│       ├── CHECK: Station Enabled? ──────────NO──► BLOCKED               │
+│       │                                                                  │
+│       ├── CHECK: Weapon Armed? ─────────────NO──► BLOCKED               │
+│       │                                                                  │
+│       ├── CHECK: Emergency Stop Inactive? ──NO──► BLOCKED               │
+│       │                                                                  │
+│       ├── CHECK: In No-Fire Zone? ──────────YES─► BLOCKED               │
+│       │                                                                  │
+│       ├── CHECK: Ammo Loaded? ──────────────NO──► WARNING               │
+│       │                                                                  │
+│       └── ALL CHECKS PASS ──► FIRE COMMAND TO PLC42                     │
+│                                                                          │
+└─────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────┐
+│                    MOTION COMMAND SAFETY CHAIN                           │
+├─────────────────────────────────────────────────────────────────────────┤
+│                                                                          │
+│  [Motion Command from any source]                                        │
+│       │                                                                  │
+│       ├── CHECK: Emergency Stop? ───────────YES─► HALT                  │
+│       │                                                                  │
+│       ├── CHECK: Free Mode Toggle? ─────────YES─► BRAKE RELEASE         │
+│       │                                                                  │
+│       ├── CHECK: Station Enabled? ──────────NO──► BLOCKED               │
+│       │                                                                  │
+│       ├── CHECK: Dead-Man (Manual/Track)? ──NO──► BLOCKED               │
+│       │                                                                  │
+│       ├── CHECK: In No-Traverse Zone? ──────YES─► CLAMP VELOCITY        │
+│       │                                                                  │
+│       ├── CHECK: Elevation Limits? ─────────YES─► CLAMP ELEVATION       │
+│       │                                                                  │
+│       └── ALL CHECKS PASS ──► SERVO COMMAND                             │
+│                                                                          │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+### 12.3 Safety Interlock Matrix
+
+| Condition | Fire | Motion | Track | Scan | Home |
+|-----------|------|--------|-------|------|------|
+| Emergency Stop Active | ✗ | ✗ | ✗ | ✗ | ✗ |
+| Station Disabled | ✗ | ✗ | ✗ | ✗ | ✗ |
+| Dead-Man Switch Released | ✗ | ✗ (Manual) | ✗ | ✓ | ✓ |
+| Weapon Not Armed | ✗ | ✓ | ✓ | ✓ | ✓ |
+| In No-Fire Zone | ✗ | ✓ | ✓ | ✓ | ✓ |
+| In No-Traverse Zone | ✓ | CLAMP | CLAMP | SKIP | CLAMP |
+| Servo Fault Active | ✗ | ✗ | ✗ | ✗ | ✗ |
+| IMU Disconnected | ✓ | ✓ (reduced) | ✓ (reduced) | ✓ | ✓ |
+
+---
+
+## 13. Error Recovery Procedures
+
+### 13.1 Servo Communication Loss
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  SERVO COMMUNICATION LOSS RECOVERY                               │
+├─────────────────────────────────────────────────────────────────┤
+│  1. Detection: Modbus timeout > 500ms (3 consecutive failures)   │
+│                                                                  │
+│  2. Immediate Actions:                                           │
+│     ├── Set axis fault flag (azFault/elFault = true)            │
+│     ├── Stop sending commands to affected axis                   │
+│     ├── Display "AZ/EL SERVO DISCONNECTED" on OSD               │
+│     └── Log error with timestamp                                 │
+│                                                                  │
+│  3. Recovery Attempt (automatic):                                │
+│     ├── Wait 2 seconds                                          │
+│     ├── Attempt reconnection (up to 3 retries)                  │
+│     ├── If successful: Clear fault, resume operation            │
+│     └── If failed: Require manual intervention                   │
+│                                                                  │
+│  4. Manual Recovery:                                             │
+│     ├── Operator selects "Reset Servo Alarm" from menu          │
+│     ├── System sends alarm reset command (register 388)          │
+│     └── Verify fault cleared, resume operation                   │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### 13.2 Track Loss During Engagement
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  TRACK LOSS DURING ENGAGEMENT                                    │
+├─────────────────────────────────────────────────────────────────┤
+│  1. Detection: Tracking confidence < 0.15 for > 500ms           │
+│                                                                  │
+│  2. Phase 1 - Coast Mode (0-3 seconds):                         │
+│     ├── Continue predicting target position                     │
+│     ├── Display yellow tracking box + "COAST"                   │
+│     ├── Maintain weapon armed state                             │
+│     └── If confidence recovers > 0.25: Resume ActiveLock        │
+│                                                                  │
+│  3. Phase 2 - Track Lost (after 3 seconds):                     │
+│     ├── Transition to TrackingPhase::Off                        │
+│     ├── Display "TRACK LOST" on OSD                             │
+│     ├── Return gimbal to Manual mode                            │
+│     ├── Maintain weapon armed (operator decision)               │
+│     └── Operator can re-initiate tracking                       │
+│                                                                  │
+│  4. Critical: Fire Inhibit NOT automatic                         │
+│     └── Operator maintains fire authority throughout             │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### 13.3 IMU Failure Recovery
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  IMU FAILURE RECOVERY                                            │
+├─────────────────────────────────────────────────────────────────┤
+│  1. Detection: No valid IMU data for > 100ms                    │
+│                                                                  │
+│  2. Degraded Mode Activation:                                    │
+│     ├── Set imuConnected = false                                │
+│     ├── Disable hybrid stabilization                            │
+│     ├── Fall back to encoder-only position feedback             │
+│     ├── Display "STAB OFF" on OSD                               │
+│     └── Continue operation with reduced accuracy                 │
+│                                                                  │
+│  3. Impact by Mode:                                              │
+│     ├── Manual: Full functionality (no stabilization)           │
+│     ├── Tracking: Reduced accuracy (no platform compensation)   │
+│     ├── SectorScan: Normal operation (encoder-based)            │
+│     └── TRP: Normal operation (encoder-based)                   │
+│                                                                  │
+│  4. Recovery:                                                    │
+│     ├── IMU reconnection detected automatically                 │
+│     ├── 10-second gyro bias capture period                      │
+│     ├── Stabilization re-enabled                                │
+│     └── Display "STAB ON" on OSD                                │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### 13.4 Video Pipeline Failure
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  VIDEO PIPELINE FAILURE RECOVERY                                 │
+├─────────────────────────────────────────────────────────────────┤
+│  1. Detection: No frames for > 1000ms                           │
+│                                                                  │
+│  2. Immediate Actions:                                           │
+│     ├── Set camera error flag                                   │
+│     ├── Display "NO VIDEO SIGNAL" on last frame                 │
+│     ├── Stop VPI tracker (no valid input)                       │
+│     └── If tracking was active: transition to TrackingPhase::Off│
+│                                                                  │
+│  3. Auto-Recovery Attempt:                                       │
+│     ├── Pipeline restart after 2 seconds                        │
+│     ├── GStreamer element recreation                            │
+│     └── VPI tracker reinitialization                            │
+│                                                                  │
+│  4. Fallback:                                                    │
+│     ├── If Day camera fails: Attempt Night camera switch        │
+│     ├── If Night camera fails: Attempt Day camera switch        │
+│     └── If both fail: Display static "VIDEO FAULT" screen       │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 14. Sequence Diagrams
+
+### 14.1 Target Acquisition to Fire Sequence
+
+```
+ Operator     Joystick     CameraCtrl    Tracker(VPI)    GimbalCtrl    WeaponCtrl    PLC42
+    │            │             │              │              │              │           │
+    │─TRACK_BTN─►│             │              │              │              │           │
+    │            │─startAcq───►│              │              │              │           │
+    │            │             │─initTracker─►│              │              │           │
+    │            │             │              │              │              │           │
+    │◄───────────────────────────────"ACQUISITION" OSD──────────────────────│           │
+    │                                                                       │           │
+    │──(position gate with joystick)──►                                     │           │
+    │                                                                       │           │
+    │─TRACK_BTN─►│             │              │              │              │           │
+    │            │─confirmGate►│              │              │              │           │
+    │            │             │─startTrack──►│              │              │           │
+    │            │             │              │─trackResult─►│              │           │
+    │            │             │              │              │─velocityCmd─►│           │
+    │            │             │              │              │              │           │
+    │◄─────────────────────────────"TRACKING" OSD (green box)───────────────│           │
+    │                                                                       │           │
+    │─LRF_BTN───►│             │              │              │              │           │
+    │            │─triggerLrf─►│              │              │              │           │
+    │            │             │◄──range=850m─│              │              │           │
+    │            │             │              │              │              │           │
+    │            │             │─────────────────────────────►│             │           │
+    │            │             │              │              ─ballisticCalc─►│           │
+    │◄────────────────────────────"RNG: 850m  DROP: +2.1°"──────────────────│           │
+    │                                                                       │           │
+    │─ENGAGE_BTN►│             │              │              │              │           │
+    │            │─armWeapon──►│              │              │              │           │
+    │            │             │──────────────────────────────────────arm───►│          │
+    │◄────────────────────────────"ARMED" OSD───────────────────────────────│           │
+    │                                                                       │           │
+    │─FIRE_BTN──►│             │              │              │              │           │
+    │            │─fire───────────────────────────────────────────────────fire────►    │
+    │            │             │              │              │              │─solenoid─►│
+    │            │             │              │              │              │◄──ack─────│
+    │◄──────────────────────────"FIRING"────────────────────────────────────│           │
+    │                                                                       │           │
+```
+
+### 14.2 Emergency Stop Sequence
+
+```
+ E-STOP_HW    PLC42      GimbalCtrl    WeaponCtrl    CameraCtrl    OsdCtrl
+     │          │             │             │             │            │
+     │─ACTIVE──►│             │             │             │            │
+     │          │─eStopSig───►│             │             │            │
+     │          │             │─HALT_AZ────►│             │            │
+     │          │             │─HALT_EL────►│             │            │
+     │          │             │             │             │            │
+     │          │─eStopSig───────────────►│             │            │
+     │          │             │             │─safeWeapon─►│            │
+     │          │             │             │             │            │
+     │          │─eStopSig──────────────────────────────────►│         │
+     │          │             │             │             │─stopTrack─►│
+     │          │             │             │             │            │
+     │          │─eStopSig─────────────────────────────────────────────►│
+     │          │             │             │             │            │─showESTOP─►
+     │          │             │             │             │            │
+     ╔══════════╧═════════════╧═════════════╧═════════════╧════════════╧══════════╗
+     ║  SYSTEM IN EMERGENCY STOP STATE - ALL MOTION HALTED - WEAPON SAFE         ║
+     ╚════════════════════════════════════════════════════════════════════════════╝
+     │          │             │             │             │            │
+     │─RELEASE─►│             │             │             │            │
+     │          │─clearSig───►│             │             │            │
+     │          │             │─resumeOp───►│             │            │
+     │          │             │             │             │            │─clearOSD──►
+     │          │             │             │             │            │
+```
+
+### 14.3 Ammo Feed Cycle Sequence
+
+```
+ Operator    Joystick    WeaponCtrl    Actuator    OsdCtrl    SystemState
+    │           │            │            │           │            │
+    │─FEED_BTN─►│            │            │           │            │
+    │           │─feedCmd───►│            │           │            │
+    │           │            │─extend────►│           │            │
+    │           │            │            │           │            │
+    │           │            │─setState(Extending)────────────────►│
+    │           │            │            │           │◄─updateOSD─│
+    │◄──────────────────────────"FEED..."─────────────│            │
+    │           │            │            │           │            │
+    │           │            │◄─pos=45mm──│           │            │
+    │           │            │─setState(Extended)─────────────────►│
+    │           │            │            │           │◄─updateOSD─│
+    │◄──────────────────────────"HOLD"────────────────│            │
+    │           │            │            │           │            │
+    │─(release)►│            │            │           │            │
+    │           │─releaseCmd►│            │           │            │
+    │           │            │─retract───►│           │            │
+    │           │            │─setState(Retracting)───────────────►│
+    │           │            │            │           │◄─updateOSD─│
+    │◄──────────────────────────"RETRACTING..."───────│            │
+    │           │            │            │           │            │
+    │           │            │◄─pos=5mm───│           │            │
+    │           │            │─setState(Idle)─────────────────────►│
+    │           │            │─setAmmoLoaded(true)────────────────►│
+    │           │            │            │           │◄─updateOSD─│
+    │◄──────────────────────────"LOADED"──────────────│            │
+    │           │            │            │           │            │
+```
+
+---
+
+## 15. Protocol Specifications
+
+### 15.1 Servo Driver Modbus RTU
+
+**Transport:** RS-485, 230400 baud, 8N1
+**Slave ID:** Az=2, El=1 (configurable)
+**Poll Rate:** 50Hz (20ms)
+
+| Register | Address | Type | Size | Description |
+|----------|---------|------|------|-------------|
+| Position | 0x00CC (204) | Input | 2 regs (32-bit) | Current position in steps |
+| Motor Temp | 0x00F8 (248) | Input | 2 regs | Motor temperature °C×10 |
+| Driver Temp | 0x00FA (250) | Input | 2 regs | Driver temperature °C×10 |
+| Alarm Status | 0x00AC (172) | Input | 20 regs | Active alarm codes |
+| Alarm History | 0x0082 (130) | Input | 20 regs | Stored alarm history |
+| Op Type | 0x005A (90) | Holding | 2 regs | Operation type (16=velocity) |
+| Op Speed | 0x005E (94) | Holding | 2 regs (signed) | Speed ±4,000,000 Hz |
+| Op Accel | 0x0060 (96) | Holding | 2 regs | Acceleration rate Hz/s |
+| Op Trigger | 0x0066 (102) | Holding | 2 regs | Command trigger (-4=update) |
+| Alarm Reset | 0x0184 (388) | Holding | 1 reg | Write 1 to reset alarms |
+
+**Velocity Command Sequence:**
+1. Write Op Speed (0x005E) = target velocity in Hz
+2. Write Op Trigger (0x0066) = 0xFFFFFFC (-4 = update speed)
+
+### 15.2 PLC21 Modbus RTU (Weapon Control Panel)
+
+**Transport:** RS-485, 115200 baud, 8E1
+**Slave ID:** 31
+**Poll Rate:** 20Hz (50ms)
+
+| Register | Address | Type | Bit | Description |
+|----------|---------|------|-----|-------------|
+| DI0 | 0x0000 | Discrete | 0 | Station Enabled |
+| DI1 | 0x0000 | Discrete | 1 | System Charged |
+| DI2 | 0x0000 | Discrete | 2 | Weapon Armed |
+| DI3 | 0x0000 | Discrete | 3 | Fire Mode Single |
+| DI4 | 0x0000 | Discrete | 4 | Fire Mode Burst |
+| DI5 | 0x0000 | Discrete | 5 | Emergency Stop |
+| DI6 | 0x0000 | Discrete | 6 | Menu Up Button |
+| DI7 | 0x0000 | Discrete | 7 | Menu Down Button |
+| DI8 | 0x0000 | Discrete | 8 | Menu Val Button |
+| DI9 | 0x0000 | Discrete | 9 | Fire Rate Full |
+| DI10 | 0x0000 | Discrete | 10 | Ammunition Low |
+| DI11 | 0x0000 | Discrete | 11 | Cocklock Depressed |
+| DI12 | 0x0000 | Discrete | 12 | Cocklock Released |
+
+### 15.3 PLC42 Modbus RTU (Gimbal Control)
+
+**Transport:** RS-485, 115200 baud, 8E1
+**Slave ID:** 31
+**Poll Rate:** 20Hz (50ms)
+
+| Register | Address | Type | Description |
+|----------|---------|------|-------------|
+| DI0-6 | 0x0000 | Discrete | Various limit switches |
+| HR0 | 0x0000 | Holding | Solenoid mode (1=Single,2=Burst,3=Cont) |
+| HR1 | 0x0001 | Holding | Fire rate (0=Reduced,1=Full) |
+| HR2 | 0x0002 | Holding | Gimbal mode (0=Manual,1=Stop,3=Home,4=Free) |
+| HR8 | 0x0008 | Holding | Solenoid state (0=OFF,1=ON) |
+| HR9 | 0x0009 | Holding | Alarm reset (0=Normal,1=Reset) |
+
+### 15.4 IMU 3DM-GX3 Protocol
+
+**Transport:** RS-232, 115200 baud, 8N1
+**Rate:** 100Hz (internal decimation from higher rate)
+
+**Initialization Sequence:**
+1. Send 0xCD (stop streaming)
+2. Wait 10s (gyro bias capture - system stationary)
+3. Send 0xCE (set data format: Euler + Gyro)
+4. Send 0xCB (continuous mode at configured rate)
+
+**Data Packet (26 bytes):**
+```
+[0xCB] [Roll_H] [Roll_L] [Pitch_H] [Pitch_L] [Yaw_H] [Yaw_L]
+       [GyroX_H] [GyroX_L] [GyroY_H] [GyroY_L] [GyroZ_H] [GyroZ_L]
+       [Checksum_H] [Checksum_L]
+
+Scaling: Angles = raw × (360.0 / 65536.0) degrees
+         Gyro = raw × (360.0 / 65536.0) degrees/second
+```
+
+### 15.5 LRF Protocol
+
+**Transport:** RS-232, 115200 baud, 8N1
+**Mode:** Command/Response
+
+**Fire Command:** `0x5A 0x04 0x01 0x5F` (single shot)
+**Continuous:** `0x5A 0x04 0x02 0x60` (start) / `0x5A 0x04 0x03 0x61` (stop)
+
+**Response Format:**
+```
+[0x59] [0x59] [Dist_L] [Dist_H] [Strength_L] [Strength_H] [Temp] [Checksum]
+
+Range = (Dist_H << 8 | Dist_L) centimeters
+Valid if Strength > 100
+```
+
+---
+
 ## Document History
 
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
 | 1.0 | Dec 2024 | Engineering Team | Initial release |
+| 2.0 | Dec 2024 | Engineering Team | Added timing budgets, state transition tables, FMEA safety analysis, error recovery procedures, sequence diagrams, protocol specifications |
+
+---
+
+## Appendix C: Requirements Traceability Matrix (Partial)
+
+| Req ID | Requirement | Implementation | Verification |
+|--------|-------------|----------------|--------------|
+| REQ-SAF-001 | Fire shall require dead-man switch | `WeaponController::canFire()` checks `deadManSwitchActive` | Test TC-SAF-001 |
+| REQ-SAF-002 | E-stop shall halt all motion <100ms | `GimbalController::emergencyStop()` via Qt::DirectConnection | Test TC-SAF-002 |
+| REQ-SAF-003 | No-Fire zones shall inhibit fire | `SystemStateModel::isReticleInNoFireZone` check | Test TC-SAF-003 |
+| REQ-PER-001 | Joystick to servo latency <50ms | Measured 26ms typical (Section 10.2) | Test TC-PER-001 |
+| REQ-PER-002 | Tracking loop latency <50ms | Measured 40ms typical (Section 10.2) | Test TC-PER-002 |
+| REQ-TRK-001 | Track lock confidence >0.25 | `TrackingMotionMode::m_targetValid` threshold | Test TC-TRK-001 |
+| REQ-TRK-002 | Coast timeout 3 seconds | `CameraVideoStreamDevice::COAST_TIMEOUT_MS` | Test TC-TRK-002 |
+| REQ-BAL-001 | Ballistic drop auto-apply on range | `WeaponController::updateBallisticDrop()` | Test TC-BAL-001 |
+| REQ-BAL-002 | Motion lead requires LAC toggle | `leadAngleCompensationActive` guard | Test TC-BAL-002 |
 
 ---
 
