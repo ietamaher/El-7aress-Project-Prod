@@ -114,10 +114,17 @@ void WeaponController::onSystemStateChanged(const SystemStateData& newData)
         onOperatorRequestLoad();
     }
 
-    // If button released while cycle running - log but ignore
+    // Handle button release
     if (!newData.ammoLoadButtonPressed && m_oldState.ammoLoadButtonPressed) {
-        if (m_feedState != AmmoFeedState::Idle && m_feedState != AmmoFeedState::Fault) {
-            qDebug() << "[WeaponController] Operator released load button early - ignored (cycle in progress)";
+        if (m_feedState == AmmoFeedState::Extended) {
+            // Button released while in Extended (hold) state - now retract
+            qDebug() << "[WeaponController] Button RELEASED in Extended state - initiating retraction";
+            transitionFeedState(AmmoFeedState::Retracting);
+            m_servoActuator->moveToPosition(FEED_RETRACT_POS);
+            m_feedTimer->start(FEED_TIMEOUT_MS);  // Start watchdog for retraction
+        } else if (m_feedState == AmmoFeedState::Extending || m_feedState == AmmoFeedState::Retracting) {
+            // Button released during extend/retract motion - logged but cycle continues
+            qDebug() << "[WeaponController] Button released during" << feedStateName(m_feedState) << "- cycle continues";
         }
     }
 
@@ -361,14 +368,27 @@ void WeaponController::processActuatorPosition(double posMM)
     switch (m_feedState) {
     case AmmoFeedState::Extending:
         if (posMM >= (FEED_EXTEND_POS - FEED_POSITION_TOLERANCE)) {
+            // Extension reached - check if button is still held
+            m_feedTimer->stop();  // Stop watchdog while we check
 
-            // Extension reached - now retract
-            transitionFeedState(AmmoFeedState::Retracting);
-            m_servoActuator->moveToPosition(FEED_RETRACT_POS);
-
-            // Restart watchdog for retraction
-            m_feedTimer->start(FEED_TIMEOUT_MS);
+            if (m_stateModel && m_stateModel->data().ammoLoadButtonPressed) {
+                // Button still held - hold extended position until release
+                transitionFeedState(AmmoFeedState::Extended);
+                qDebug() << "[WeaponController] Extension complete - HOLDING (button still pressed)";
+                // No watchdog in Extended state - operator controls timing
+            } else {
+                // Button already released (short press) - immediately retract
+                transitionFeedState(AmmoFeedState::Retracting);
+                m_servoActuator->moveToPosition(FEED_RETRACT_POS);
+                m_feedTimer->start(FEED_TIMEOUT_MS);  // Restart watchdog for retraction
+                qDebug() << "[WeaponController] Extension complete - RETRACTING (short press)";
+            }
         }
+        break;
+
+    case AmmoFeedState::Extended:
+        // In Extended state, we just hold position
+        // Transition to Retracting happens via button release in onSystemStateChanged()
         break;
 
     case AmmoFeedState::Retracting:
@@ -469,6 +489,7 @@ QString WeaponController::feedStateName(AmmoFeedState s) const
     switch (s) {
     case AmmoFeedState::Idle:       return "Idle";
     case AmmoFeedState::Extending:  return "Extending";
+    case AmmoFeedState::Extended:   return "Extended";
     case AmmoFeedState::Retracting: return "Retracting";
     case AmmoFeedState::Fault:      return "Fault";
     }
