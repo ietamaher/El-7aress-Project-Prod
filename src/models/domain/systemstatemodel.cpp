@@ -1576,9 +1576,9 @@ void SystemStateModel::updateTargetAngularRates(float rateAzDegS, float rateElDe
     }
 
     if (changed) {
-        qDebug() << "[SystemStateModel] Target angular rates updated:"
+        /*qDebug() << "[SystemStateModel] Target angular rates updated:"
                  << "Az:" << rateAzDegS << "°/s"
-                 << "El:" << rateElDegS << "°/s";
+                 << "El:" << rateElDegS << "°/s";*/
         emit dataChanged(m_currentStateData);
     }
 }
@@ -1717,7 +1717,7 @@ bool SystemStateModel::isInsideAz(double az, double start, double end) {
 // RAY CASTER: Returns fraction [0.0 - 1.0] of delta allowed before impact
 // ----------------------------------------------------------------------------
 double SystemStateModel::getCollisionFraction(double current, double boundary, double delta, bool isAzimuth) {
-    if (std::abs(delta) < 1e-6) return 2.0; // No motion = No collision
+    if (std::abs(delta) < 1e-6) return 2.0;
 
     double distToWall;
     if (isAzimuth) {
@@ -1726,14 +1726,12 @@ double SystemStateModel::getCollisionFraction(double current, double boundary, d
         distToWall = boundary - current;
     }
 
-    // 1. Moving away from wall? (Dot product > 0 means moving towards? No, signs)
-    // If dist is + (wall is ahead) and delta is + (moving ahead) -> Collision
-    // If dist is - (wall is behind) and delta is - (moving behind) -> Collision
-    if ((distToWall * delta) <= 0) return 2.0; // Moving away or parallel
+    double t = distToWall / delta;
 
-    // 2. Calculate fraction
-    double absDist = std::abs(distToWall);
-    double effectiveDist = absDist - NTZ_EPS; 
+    // Standard Ray Cast
+    if (t < 0.0) return 2.0; // Moving away
+
+    double effectiveDist = std::abs(distToWall) - NTZ_EPS; 
     if (effectiveDist < 0) effectiveDist = 0;
 
     return effectiveDist / std::abs(delta);
@@ -1754,7 +1752,6 @@ void SystemStateModel::computeAllowedDeltas(
 {
     Q_UNUSED(dt);
     
-    // Default: Grant intended motion (Sliding logic modifies these independently)
     allowedAzDelta = intendedAzDelta;
     allowedElDelta = intendedElDelta;
 
@@ -1766,7 +1763,7 @@ void SystemStateModel::computeAllowedDeltas(
     double nextEl = curEl + intendedElDelta;
 
     for (const auto& zone : m_currentStateData.areaZones) {
-        if (!zone.isEnabled || zone.type != ZoneType::NoTraverse) continue; // 2 = NTZ
+        if (!zone.isEnabled || zone.type != ZoneType::NoTraverse) continue;
 
         double zStart = normalize360(zone.startAzimuth);
         double zEnd   = normalize360(zone.endAzimuth);
@@ -1777,91 +1774,66 @@ void SystemStateModel::computeAllowedDeltas(
         bool elInCur = (curEl >= zMinEl && curEl <= zMaxEl);
         bool physicallyInside = azInCur && elInCur;
 
-        // Init State
         if (!m_ntzStates.contains(zone.id)) {
             m_ntzStates[zone.id] = NtzState{zone.id, false, false, 0.0, false};
         }
         NtzState& state = m_ntzStates[zone.id];
 
-        // --------------------------------------------------------------------
-        // 1. BOOT LOGIC (Fix #1: Full Implementation)
-        // --------------------------------------------------------------------
-        if (physicallyInside && !state.isInitialized) {
-            state.isInside = true;
-            
-            double dStart = std::abs(shortestSignedDelta(curAz, zStart));
-            double dEnd   = std::abs(shortestSignedDelta(curAz, zEnd));
-            double dMin   = std::abs(curEl - zMinEl);
-            double dMax   = std::abs(curEl - zMaxEl);
-            
-            double minAz = std::min(dStart, dEnd);
-            double minEl = std::min(dMin, dMax);
+        // ====================================================================
+        // PRIORITY 1: IMMEDIATE LATCH
+        // ====================================================================
+        if (physicallyInside && !state.isInside) {
+             state.isInside = true;
+             state.isInitialized = true;
+             
+             double dStart = std::abs(shortestSignedDelta(curAz, zStart));
+             double dEnd   = std::abs(shortestSignedDelta(curAz, zEnd));
+             double dMin   = std::abs(curEl - zMinEl);
+             double dMax   = std::abs(curEl - zMaxEl);
+             
+             double minAz = std::min(dStart, dEnd);
+             double minEl = std::min(dMin, dMax);
 
-            // Latch nearest axis
-            if (minAz < minEl) {
-                state.enteredViaAz = true;
-                state.entryBoundary = (dStart < dEnd) ? zStart : zEnd;
-            } else {
-                state.enteredViaAz = false;
-                state.entryBoundary = (dMin < dMax) ? zMinEl : zMaxEl;
-            }
-            qWarning() << "[NTZ] Boot inside zone" << zone.id << "- Recovery via" << (state.enteredViaAz ? "AZ" : "EL");
+             // LATCH THE EXACT WALL
+             if (minAz < minEl) {
+                 state.enteredViaAz = true;
+                 state.entryBoundary = (dStart < dEnd) ? zStart : zEnd;
+                 qWarning() << "[NTZ] Latch AZ:" << state.entryBoundary;
+             } else {
+                 state.enteredViaAz = false;
+                 state.entryBoundary = (dMin < dMax) ? zMinEl : zMaxEl;
+                 qWarning() << "[NTZ] Latch EL:" << state.entryBoundary;
+             }
         }
-        state.isInitialized = true;
 
-        // --------------------------------------------------------------------
-        // CASE A: OUTSIDE -> INSIDE (Collision Logic)
-        // --------------------------------------------------------------------
-	if (!state.isInside) {
-	    bool azInNext = isInsideAz(nextAz, zStart, zEnd);
-	    bool elInNext = (nextEl >= zMinEl && nextEl <= zMaxEl);
+        // ====================================================================
+        // CASE A: PREDICTIVE COLLISION
+        // ====================================================================
+        if (!state.isInside) {
+            bool azInNext = isInsideAz(nextAz, zStart, zEnd);
+            bool elInNext = (nextEl >= zMinEl && nextEl <= zMaxEl);
 
-	    if (azInNext && elInNext) {
-		// COLLISION DETECTED
-		double tStart = getCollisionFraction(curAz, zStart, intendedAzDelta, true);
-		double tEnd   = getCollisionFraction(curAz, zEnd, intendedAzDelta, true);
-		double tAz    = std::min(tStart, tEnd);
+            if (azInNext && elInNext) {
+                double tStart = getCollisionFraction(curAz, zStart, intendedAzDelta, true);
+                double tEnd   = getCollisionFraction(curAz, zEnd, intendedAzDelta, true);
+                double tAz    = std::min(tStart, tEnd);
 
-		double tMin   = getCollisionFraction(curEl, zMinEl, intendedElDelta, false);
-		double tMax   = getCollisionFraction(curEl, zMaxEl, intendedElDelta, false);
-		double tEl    = std::min(tMin, tMax);
+                double tMin   = getCollisionFraction(curEl, zMinEl, intendedElDelta, false);
+                double tMax   = getCollisionFraction(curEl, zMaxEl, intendedElDelta, false);
+                double tEl    = std::min(tMin, tMax);
 
-		// SLIDING LOGIC
-		if (tAz < tEl) {
-		    if (tAz < 1.0) allowedAzDelta = intendedAzDelta * tAz;
-		} else {
-		    if (tEl < 1.0) allowedElDelta = intendedElDelta * tEl;
-		}
-		
-		// IMMEDIATE LATCH if drift forces us inside (no frame delay)
-		if (physicallyInside) {
-		    state.isInside = true;
-		    
-		    double dStart = std::abs(shortestSignedDelta(curAz, zStart));
-		    double dEnd   = std::abs(shortestSignedDelta(curAz, zEnd));
-		    double dMin   = std::abs(curEl - zMinEl);
-		    double dMax   = std::abs(curEl - zMaxEl);
-		    
-		    double minAz = std::min(dStart, dEnd);
-		    double minEl = std::min(dMin, dMax);
-
-		    if (minAz < minEl) {
-		        state.enteredViaAz = true;
-		        state.entryBoundary = (dStart < dEnd) ? zStart : zEnd;
-		    } else {
-		        state.enteredViaAz = false;
-		        state.entryBoundary = (dMin < dMax) ? zMinEl : zMaxEl;
-		    }
-		    qWarning() << "[NTZ] Drift entry zone" << zone.id;
-		}
-	    }
-	}
+                if (tAz < tEl) {
+                    if (tAz < 1.0) allowedAzDelta = intendedAzDelta * tAz;
+                } else {
+                    if (tEl < 1.0) allowedElDelta = intendedElDelta * tEl;
+                }
+            }
+        }
         
-        // --------------------------------------------------------------------
-        // CASE B: INSIDE (Escape Logic)
-        // --------------------------------------------------------------------
+        // ====================================================================
+        // CASE B: RECOVERY (STATIC WALL LOGIC)
+        // ====================================================================
         else {
-            // Hysteresis Check
             double dStart = std::abs(shortestSignedDelta(curAz, zStart));
             double dEnd   = std::abs(shortestSignedDelta(curAz, zEnd));
             double dMin   = std::abs(curEl - zMinEl);
@@ -1873,35 +1845,42 @@ void SystemStateModel::computeAllowedDeltas(
                 continue;
             }
 
-            // --- RECOVERY ---
-            
+            // --- FIXED DIRECTION CHECK ---
             if (state.enteredViaAz) {
-                // LATCHED TO SIDE
-                // 1. Azimuth: Strict Retrace
-                double distToExit = shortestSignedDelta(curAz, state.entryBoundary);
-                bool movingTowards = (intendedAzDelta * distToExit) > 0;
+                // Determine if we are at Start or End wall
+                bool isStartWall = std::abs(shortestSignedDelta(state.entryBoundary, zStart)) < 0.1;
                 
-                if (!movingTowards && !qFuzzyIsNull(intendedAzDelta)) {
-                    allowedAzDelta = 0.0f; 
+                if (isStartWall) {
+                    // Start Wall (Left/CCW edge of zone). Zone is to the Right (+).
+                    // BLOCK Positive (CW) motion.
+                    // ALLOW Negative (CCW) motion.
+                    if (intendedAzDelta > 0) allowedAzDelta = 0.0f;
+                } else {
+                    // End Wall (Right/CW edge of zone). Zone is to the Left (-).
+                    // BLOCK Negative (CCW) motion.
+                    // ALLOW Positive (CW) motion.
+                    if (intendedAzDelta < 0) allowedAzDelta = 0.0f;
                 }
-
-                // 2. Elevation: FULLY FREE (Fix #2)
-                // Exiting vertically is always safe. Do not clamp.
-                // allowedElDelta remains = intendedElDelta
+                
+                // ELEVATION IS FREE
             }
             else {
-                // LATCHED TO FLOOR/CEILING
-                // 1. Elevation: Strict Retrace
-                double distToExit = state.entryBoundary - curEl;
-                bool movingTowards = (intendedElDelta * distToExit) > 0;
-                
-                if (!movingTowards && !qFuzzyIsNull(intendedElDelta)) {
-                    allowedElDelta = 0.0f;
+                bool isFloor = std::abs(state.entryBoundary - zMinEl) < 0.1;
+
+                if (isFloor) {
+                    // Floor (Bottom edge). Zone is Up (+).
+                    // BLOCK Positive (Up) motion.
+                    // ALLOW Negative (Down) motion.
+                    if (intendedElDelta < 0) allowedElDelta = 0.0f;
+                } else {
+                    // Ceiling (Top edge). Zone is Down (-).
+                    // BLOCK Negative (Down) motion.
+                    // ALLOW Positive (Up) motion.
+                    if (intendedElDelta > 0) allowedElDelta = 0.0f;
                 }
 
-                // 2. Azimuth: BLOCKED (Safety Critical)
-                // Prevents sweeping the protected volume
-                allowedAzDelta = 0.0f; 
+                // SAFETY: Azimuth BLOCKED
+                allowedAzDelta = 0.0f;
             }
         }
     }
@@ -2407,10 +2386,10 @@ void SystemStateModel::updateTrackingResult(
                 qWarning() << "[MODEL] Target lost during active tracking. Transitioning to Coast (" << static_cast<int>(data.currentTrackingPhase) << ").";
             } else if (trackerState == VPI_TRACKING_STATE_TRACKED) {
                 // All good, continue tracking.
-                qDebug() << "[MODEL] ActiveLock: Target still tracked.";
+               // qDebug() << "[MODEL] ActiveLock: Target still tracked.";
             } else {
                 // Unexpected state during ActiveLock. Log and potentially reset.
-                qWarning() << "[MODEL] In ActiveLock, received unexpected VPI state: " << static_cast<int>(trackerState) << ". Staying in ActiveLock but might indicate issue.";
+                //qWarning() << "[MODEL] In ActiveLock, received unexpected VPI state: " << static_cast<int>(trackerState) << ". Staying in ActiveLock but might indicate issue.";
             }
             break;
 
@@ -2448,9 +2427,9 @@ void SystemStateModel::updateTrackingResult(
 
     // Only emit dataChanged if something actually changed (raw data or phase)
     if (stateDataChanged) {
-        qDebug() << "[MODEL-OUT] Emitting dataChanged. New Phase:" << static_cast<int>(data.currentTrackingPhase)
+        /*qDebug() << "[MODEL-OUT] Emitting dataChanged. New Phase:" << static_cast<int>(data.currentTrackingPhase)
                  << "Valid Target:" << data.trackerHasValidTarget;
-         qDebug() << "trackedTarget_position: (" << data.trackedTargetCenterX_px << ", " << data.trackedTargetCenterY_px << ")";
+         qDebug() << "trackedTarget_position: (" << data.trackedTargetCenterX_px << ", " << data.trackedTargetCenterY_px << ")";*/
          
         emit dataChanged(m_currentStateData);
     }

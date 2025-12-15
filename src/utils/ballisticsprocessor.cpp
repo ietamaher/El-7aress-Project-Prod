@@ -14,10 +14,10 @@ void BallisticsProcessor::setEnvironmentalConditions(float temp_celsius, float a
     m_altitude_m = altitude_m;
     m_crosswind_ms = crosswind_ms;
 
-    qDebug() << "[BallisticsProcessor] Environmental conditions updated:"
+    /*qDebug() << "[BallisticsProcessor] Environmental conditions updated:"
              << "Temp:" << temp_celsius << "°C"
              << "Alt:" << altitude_m << "m"
-             << "Wind:" << crosswind_ms << "m/s";
+             << "Wind:" << crosswind_ms << "m/s";*/
 }
 
 LeadCalculationResult BallisticsProcessor::calculateLeadAngle(

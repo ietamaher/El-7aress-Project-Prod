@@ -206,17 +206,17 @@ void WeaponController::onSystemStateChanged(const SystemStateData& newData)
     // Target range changes (LRF measurement)
     if (!qFuzzyCompare(m_oldState.currentTargetRange, newData.currentTargetRange)) {
         ballisticsInputsChanged = true;
-        qDebug() << "[WeaponController] Target range changed:"
-                 << m_oldState.currentTargetRange << "->" << newData.currentTargetRange << "m";
+        /*qDebug() << "[WeaponController] Target range changed:"
+                 << m_oldState.currentTargetRange << "->" << newData.currentTargetRange << "m";*/
     }
 
     // Target angular rates (tracking motion)
     if (!qFuzzyCompare(m_oldState.currentTargetAngularRateAz, newData.currentTargetAngularRateAz) ||
         !qFuzzyCompare(m_oldState.currentTargetAngularRateEl, newData.currentTargetAngularRateEl)) {
         ballisticsInputsChanged = true;
-        qDebug() << "[WeaponController] Target angular rates changed: Az:"
+        /*qDebug() << "[WeaponController] Target angular rates changed: Az:"
                  << m_oldState.currentTargetAngularRateAz << "->" << newData.currentTargetAngularRateAz
-                 << "El:" << m_oldState.currentTargetAngularRateEl << "->" << newData.currentTargetAngularRateEl;
+                 << "El:" << m_oldState.currentTargetAngularRateEl << "->" << newData.currentTargetAngularRateEl;*/
     }
 
     // ========================================================================

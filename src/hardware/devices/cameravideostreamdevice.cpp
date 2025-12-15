@@ -1166,8 +1166,8 @@ bool CameraVideoStreamDevice::runTrackingCycle(VPIImage vpiFrameInput)
                     // DCF correlation scores typically range from ~0 to ~8
                     // Map: 0→0.0, 4→0.5, 8→1.0, >8→1.0 (clamped)
                     currentConfidence = std::min(1.0f, std::max(0.0f, maxCorr / 8.0f));
-                    qDebug() << "[CAM" << m_cameraIndex << "] VPI correlation map confidence (method 2): raw=" << maxCorr
-                             << "normalized=" << currentConfidence << "(" << (int)(currentConfidence * 100) << "%) map size:" << width << "x" << height;
+                    /*qDebug() << "[CAM" << m_cameraIndex << "] VPI correlation map confidence (method 2): raw=" << maxCorr
+                             << "normalized=" << currentConfidence << "(" << (int)(currentConfidence * 100) << "%) map size:" << width << "x" << height;*/
                     vpiImageUnlock(m_vpiCorrelationMap);
                 } else {
                     // METHOD 3: VPI didn't populate confidence array or correlation map - estimate from tracking state
@@ -1216,9 +1216,9 @@ bool CameraVideoStreamDevice::runTrackingCycle(VPIImage vpiFrameInput)
                 m_smoothedConfidence = alpha * currentConfidence + (1.0f - alpha) * m_smoothedConfidence;
             }
 
-            qDebug() << "[CAM" << m_cameraIndex << "] VPI Localize Result: State=" << tempTarget->state
+            /*qDebug() << "[CAM" << m_cameraIndex << "] VPI Localize Result: State=" << tempTarget->state
                      << "Confidence=" << currentConfidence << "Smoothed=" << m_smoothedConfidence
-                     << "(VPI array size=" << *confidenceData.buffer.aos.sizePointer << ")";
+                     << "(VPI array size=" << *confidenceData.buffer.aos.sizePointer << ")";*/
 
             // Store confidence scores for later use
             m_currentConfidence = currentConfidence;

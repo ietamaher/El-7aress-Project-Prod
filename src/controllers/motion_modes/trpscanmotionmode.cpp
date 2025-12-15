@@ -4,12 +4,12 @@
 #include <QDateTime>   
 #include <cmath>  
  
-static constexpr double AZIMUTH_TOLERANCE_DEG = 1.0;
-static constexpr double ELEVATION_TOLERANCE_DEG = 0.5;
-static constexpr double DEFAULT_ACCEL_DEG_S2 = 20.0;
+static constexpr double AZIMUTH_TOLERANCE_DEG = 0.2;
+static constexpr double ELEVATION_TOLERANCE_DEG = 0.2;
+static constexpr double DEFAULT_ACCEL_DEG_S2 = 50.0;
 static constexpr double SMOOTHING_TAU_S = 0.05;
-static constexpr double SPEED_MAX_DES_S = 20.0;
-static constexpr double FINE_APPROACH_DEG = 5.0; 
+static constexpr double SPEED_MAX_DES_S = 12.0;
+static constexpr double FINE_APPROACH_DEG = 8.0; 
 
 double TRPScanMotionMode::norm360(double a) {
     double r = fmod(a, 360.0);

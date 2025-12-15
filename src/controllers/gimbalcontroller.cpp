@@ -56,7 +56,7 @@ QPointF calculateAngularOffsetFromPixelError(
     // CRITICAL FIX: !!! check sign
     if (cameraHfovDegrees > 0.01f && imageWidthPx > 0) {
         double degreesPerPixelAz = cameraHfovDegrees / static_cast<double>(imageWidthPx);
-        angularOffsetXDeg = - errorPxX * degreesPerPixelAz;
+        angularOffsetXDeg =  errorPxX * degreesPerPixelAz;
     }
 
     // Calculate elevation offset
@@ -68,7 +68,7 @@ QPointF calculateAngularOffsetFromPixelError(
         if (vfov_deg_approx > 0.01f) {
             double degreesPerPixelEl = vfov_deg_approx / static_cast<double>(imageHeightPx);
             // Invert Y: positive pixel error (target below) needs negative elevation (gimbal down)
-            angularOffsetYDeg = errorPxY * degreesPerPixelEl;
+            angularOffsetYDeg = - errorPxY * degreesPerPixelEl;
         }
     }
 

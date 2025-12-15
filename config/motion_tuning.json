@@ -38,24 +38,22 @@
   "pid": {
     "tracking": {
       "azimuth": {
-        "kp": 1.0,
-        "ki": 0.005,
-        "kd": 0.01,
-        "maxIntegral": 10.0,
-        "comment": "Tracking mode azimuth PID gains (reduced for stability)"
+        "kp": 1.2,
+        "ki": 0.01,
+        "kd": 0.05,
+        "maxIntegral": 5.0
       },
       "elevation": {
         "kp": 1.0,
-        "ki": 0.005,
-        "kd": 0.01,
-        "maxIntegral": 10.0,
-        "comment": "Tracking mode elevation PID gains (reduced for stability)"
+        "ki": 0.01,
+        "kd": 0.08,
+        "maxIntegral": 5.0
       }
-    },
+    } ,
 
     "autoSectorScan": {
       "azimuth": {
-        "kp": 1.0,
+        "kp": 0.7,
         "ki": 0.01,
         "kd": 0.05,
         "maxIntegral": 20.0,
@@ -75,10 +73,10 @@
 
     "trpScan": {
       "azimuth": {
-        "kp": 1.2,
-        "ki": 0.015,
-        "kd": 0.08,
-        "maxIntegral": 25.0,
+        "kp": 0.7,
+        "ki": 0.01,
+        "kd": 0.05,
+        "maxIntegral": 20.0,
         "comment": "TRP scan azimuth PID gains"
       },
       "elevation": {

@@ -36,10 +36,10 @@ void BallisticsProcessorLUT::setEnvironmentalConditions(float temp_celsius,
     m_altitude_m = altitude_m;
     m_crosswind_ms = crosswind_ms;
 
-    qDebug() << "[BallisticsProcessorLUT] Environmental conditions updated:"
+    /*qDebug() << "[BallisticsProcessorLUT] Environmental conditions updated:"
              << "Temp:" << temp_celsius << "°C"
              << "Alt:" << altitude_m << "m"
-             << "Wind:" << crosswind_ms << "m/s";
+             << "Wind:" << crosswind_ms << "m/s";*/
 }
 
 QString BallisticsProcessorLUT::getAmmunitionName() const
