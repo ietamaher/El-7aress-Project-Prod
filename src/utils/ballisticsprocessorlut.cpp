@@ -287,7 +287,7 @@ LeadCalculationResult BallisticsProcessorLUT::calculateMotionLead(
 
     // Calculate motion lead (target movement during bullet flight)
     float motionLeadAzDeg = targetAngularRateAzDegS * tof_s;
-    float motionLeadElDeg = targetAngularRateElDegS * tof_s;
+    float motionLeadElDeg = - targetAngularRateElDegS * tof_s;
 
     result.leadAzimuthDegrees = motionLeadAzDeg;
     result.leadElevationDegrees = motionLeadElDeg;

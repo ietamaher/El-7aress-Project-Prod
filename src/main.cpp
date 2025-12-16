@@ -98,7 +98,8 @@ int main(int argc, char *argv[])
     
     if (window) {
         qInfo() << "Showing window (fullscreen in EGLFS)";
-        window->show();  // In EGLFS, show() is always fullscreen
+        //window->show();  // In EGLFS, show() is always fullscreen
+        window->showFullScreen();
     }
     
     // Start hardware
