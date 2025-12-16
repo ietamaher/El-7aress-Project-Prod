@@ -11,6 +11,7 @@ class ColorMenuController;
 class ZeroingController;
 class WindageController;
 class EnvironmentalController;
+class HomeCalibrationController;
 class ZoneDefinitionController;
 // class SystemStatusController;  // DISABLED
 class AboutController;
@@ -36,6 +37,7 @@ public:
     void setZeroingController(ZeroingController* controller);
     void setWindageController(WindageController* controller);
     void setEnvironmentalController(EnvironmentalController* controller);
+    void setHomeCalibrationController(HomeCalibrationController* controller);
     void setZoneDefinitionController(ZoneDefinitionController* controller);
     // void setSystemStatusController(SystemStatusController* controller);  // DISABLED
     void setAboutController(AboutController* controller);
@@ -53,6 +55,7 @@ public:
         ZeroingProcedure,
         WindageProcedure,
         EnvironmentalProcedure,
+        HomeCalibrationProcedure,
         ZoneDefinition,
         // SystemStatus,  // DISABLED
         RadarTargets,
@@ -76,6 +79,8 @@ private slots:
     void handleClearWindage();
     void handleEnvironmental();
     void handleClearEnvironmental();
+    void handleHomeCalibration();
+    void handleClearHomeCalibration();
     void handleZoneDefinitions();
     // void handleSystemStatus();  // DISABLED
     void handleToggleDetection();
@@ -90,6 +95,7 @@ private slots:
     void handleZeroingFinished();
     void handleWindageFinished();
     void handleEnvironmentalFinished();
+    void handleHomeCalibrationFinished();
     void handleZoneDefinitionFinished();
     // void handleSystemStatusFinished();  // DISABLED
     void handleAboutFinished();
@@ -125,6 +131,7 @@ private:
     ZeroingController* m_zeroingController;
     WindageController* m_windageController;
     EnvironmentalController* m_environmentalController;
+    HomeCalibrationController* m_homeCalibrationController;
     ZoneDefinitionController* m_zoneDefinitionController;
     // SystemStatusController* m_systemStatusController;  // DISABLED
     AboutController* m_aboutController;

@@ -5,6 +5,7 @@
 #include "controllers/zeroingcontroller.h"
 #include "controllers/windagecontroller.h"
 #include "controllers/environmentalcontroller.h"
+#include "controllers/homecalibrationcontroller.h"
 #include "controllers/zonedefinitioncontroller.h"
 // #include "controllers/systemstatuscontroller.h"  // DISABLED
 #include "controllers/aboutcontroller.h"
@@ -22,6 +23,7 @@ ApplicationController::ApplicationController(QObject *parent)
     , m_zeroingController(nullptr)
     , m_windageController(nullptr)
     , m_environmentalController(nullptr)
+    , m_homeCalibrationController(nullptr)
     , m_zoneDefinitionController(nullptr)
     , m_systemStateModel(nullptr)
     , m_aboutController(nullptr)
@@ -62,6 +64,11 @@ void ApplicationController::setEnvironmentalController(EnvironmentalController* 
     m_environmentalController = controller;
 }
 
+void ApplicationController::setHomeCalibrationController(HomeCalibrationController* controller)
+{
+    m_homeCalibrationController = controller;
+}
+
 void ApplicationController::setZoneDefinitionController(ZoneDefinitionController* controller)
 {
     m_zoneDefinitionController = controller;
@@ -97,6 +104,7 @@ void ApplicationController::initialize()
     Q_ASSERT(m_zeroingController);
     Q_ASSERT(m_windageController);
     Q_ASSERT(m_environmentalController);
+    Q_ASSERT(m_homeCalibrationController);
     Q_ASSERT(m_zoneDefinitionController);
     // Q_ASSERT(m_systemStatusController);  // DISABLED
     Q_ASSERT(m_aboutController);
@@ -121,6 +129,10 @@ void ApplicationController::initialize()
             this, &ApplicationController::handleEnvironmental);
     connect(m_mainMenuController, &MainMenuController::clearEnvironmentalRequested,
             this, &ApplicationController::handleClearEnvironmental);
+    connect(m_mainMenuController, &MainMenuController::homeCalibrationRequested,
+            this, &ApplicationController::handleHomeCalibration);
+    connect(m_mainMenuController, &MainMenuController::clearHomeCalibrationRequested,
+            this, &ApplicationController::handleClearHomeCalibration);
     connect(m_mainMenuController, &MainMenuController::zoneDefinitionsRequested,
             this, &ApplicationController::handleZoneDefinitions);
     // connect(m_mainMenuController, &MainMenuController::systemStatusRequested,  // DISABLED
@@ -175,6 +187,14 @@ void ApplicationController::initialize()
             this, &ApplicationController::handleReturnToMainMenu);
     connect(m_environmentalController, &EnvironmentalController::environmentalFinished,
             this, &ApplicationController::handleEnvironmentalFinished);
+
+    // =========================================================================
+    // HOME CALIBRATION CONNECTIONS
+    // =========================================================================
+    connect(m_homeCalibrationController, &HomeCalibrationController::returnToMainMenu,
+            this, &ApplicationController::handleReturnToMainMenu);
+    connect(m_homeCalibrationController, &HomeCalibrationController::calibrationFinished,
+            this, &ApplicationController::handleHomeCalibrationFinished);
 
     // =========================================================================
     // ZONE DEFINITION CONNECTIONS
@@ -245,6 +265,7 @@ void ApplicationController::hideAllMenus()
     m_zeroingController->hide();
     m_windageController->hide();
     m_environmentalController->hide();
+    m_homeCalibrationController->hide();
     m_zoneDefinitionController->hide();
     // m_systemStatusController->hide();  // DISABLED
     m_aboutController->hide();
@@ -263,6 +284,7 @@ void ApplicationController::onMenuValButtonPressed()
     if (m_currentMenuState == MenuState::ZeroingProcedure ||
         m_currentMenuState == MenuState::WindageProcedure ||
         m_currentMenuState == MenuState::EnvironmentalProcedure ||
+        m_currentMenuState == MenuState::HomeCalibrationProcedure ||
         m_currentMenuState == MenuState::ZoneDefinition     ||
         m_currentMenuState == MenuState::HelpAbout ||
         // m_currentMenuState == MenuState::SystemStatus  ||  // DISABLED
@@ -340,6 +362,9 @@ void ApplicationController::handleMenuValInProcedure()
     case MenuState::EnvironmentalProcedure:
         m_environmentalController->onSelectButtonPressed();
         break;
+    case MenuState::HomeCalibrationProcedure:
+        m_homeCalibrationController->onSelectButtonPressed();
+        break;
     case MenuState::ZoneDefinition:
         m_zoneDefinitionController->onMenuValButtonPressed();
         break;
@@ -376,6 +401,9 @@ void ApplicationController::onUpButtonPressed()
         break;
     case MenuState::EnvironmentalProcedure:
         m_environmentalController->onUpButtonPressed();
+        break;
+    case MenuState::HomeCalibrationProcedure:
+        m_homeCalibrationController->onUpButtonPressed();
         break;
     case MenuState::ZoneDefinition:
         m_zoneDefinitionController->onUpButtonPressed();
@@ -415,6 +443,9 @@ void ApplicationController::onDownButtonPressed()
         break;
     case MenuState::EnvironmentalProcedure:
         m_environmentalController->onDownButtonPressed();
+        break;
+    case MenuState::HomeCalibrationProcedure:
+        m_homeCalibrationController->onDownButtonPressed();
         break;
     case MenuState::ZoneDefinition:
         m_zoneDefinitionController->onDownButtonPressed();
@@ -498,6 +529,23 @@ void ApplicationController::handleClearEnvironmental()
     qDebug() << "ApplicationController: Clear Environmental settings requested";
     if (m_systemStateModel) {
         m_systemStateModel->clearEnvironmental();
+    }
+    showMainMenu();
+}
+
+void ApplicationController::handleHomeCalibration()
+{
+    qDebug() << "ApplicationController: Home Calibration requested";
+    hideAllMenus();
+    m_homeCalibrationController->show();
+    setMenuState(MenuState::HomeCalibrationProcedure);
+}
+
+void ApplicationController::handleClearHomeCalibration()
+{
+    qDebug() << "ApplicationController: Clear Home Calibration requested";
+    if (m_systemStateModel) {
+        m_systemStateModel->clearAzHomeOffset();
     }
     showMainMenu();
 }
@@ -615,6 +663,11 @@ void ApplicationController::handleWindageFinished()
 void ApplicationController::handleEnvironmentalFinished()
 {
     qDebug() << "ApplicationController: Environmental procedure finished";
+}
+
+void ApplicationController::handleHomeCalibrationFinished()
+{
+    qDebug() << "ApplicationController: Home Calibration procedure finished";
 }
 
 void ApplicationController::handleZoneDefinitionFinished()

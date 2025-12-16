@@ -517,6 +517,57 @@ public:
     void clearEnvironmental();
 
     // =================================
+    // AZIMUTH HOME OFFSET CALIBRATION
+    // =================================
+    // Runtime compensation for ABZO encoder drift in Oriental Motor AZD-KD.
+    // Drift of ~40,000 steps (~70-80° at gimbal) can occur randomly.
+    // This system allows field recalibration without hardware modification.
+
+    /**
+     * @brief Starts the home calibration procedure.
+     * Enables calibration mode and allows operator to define true home.
+     */
+    void startHomeCalibrationProcedure();
+
+    /**
+     * @brief Gets the current encoder position in raw steps (for calibration display).
+     * @return Raw encoder position in steps before any offset is applied.
+     */
+    double getCurrentEncoderPositionSteps() const;
+
+    /**
+     * @brief Captures the current encoder position as the "true home" offset.
+     * Called when operator has manually slewed gimbal to visual/mechanical reference.
+     * offset = currentEncoderPosition - 0 (since true home should be 0)
+     */
+    void captureAzHomeOffset();
+
+    /**
+     * @brief Finalizes the home calibration procedure.
+     * Applies the captured offset and saves to persistent storage.
+     */
+    void finalizeHomeCalibration();
+
+    /**
+     * @brief Clears the azimuth home offset and reverts to encoder reference.
+     * Use when the underlying encoder drift issue has been physically resolved.
+     */
+    void clearAzHomeOffset();
+
+    /**
+     * @brief Loads the home calibration offset from persistent storage.
+     * Called during system initialization.
+     * @return true if loaded successfully, false if no saved calibration exists.
+     */
+    bool loadHomeCalibration();
+
+    /**
+     * @brief Saves the current home calibration offset to persistent storage.
+     * @return true if saved successfully.
+     */
+    bool saveHomeCalibration();
+
+    // =================================
     // TRACKING SYSTEM CONTROL
     // =================================
     
@@ -678,6 +729,14 @@ signals:
      * @param active True if environmental mode is now active, false otherwise
      */
     void environmentalModeChanged(bool active);
+
+    /**
+     * @brief Emitted when home calibration mode state changes.
+     * This signal is emitted ONLY when homeCalibrationModeActive flag actually changes.
+     * Designed to reduce event queue congestion for HomeCalibrationController.
+     * @param active True if home calibration mode is now active, false otherwise
+     */
+    void homeCalibrationModeChanged(bool active);
 
     /**
      * @brief Emitted when active camera type changes (day/night).
@@ -913,6 +972,16 @@ private:
         float initialEl = 0.0f;           ///< Gimbal elevation when zeroing started
         bool capturedInitialPos = false;  ///< True if initial position was captured
     } m_zeroingState;
+
+    // ========================================================================
+    // AZIMUTH HOME CALIBRATION STATE
+    // ========================================================================
+    /**
+     * @brief Stores raw encoder position (before offset applied) for calibration
+     * Updated from onServoAzDataChanged with the raw position from servo driver.
+     * Used to capture offset when operator confirms true home position.
+     */
+    double m_rawAzEncoderSteps = 0.0;     ///< Raw encoder position in steps (no offset applied)
 
     // =================================
     // PRIVATE HELPER METHODS

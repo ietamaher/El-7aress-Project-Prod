@@ -11,6 +11,7 @@
 #include "models/zeroingviewmodel.h"
 #include "models/windageviewmodel.h"
 #include "models/environmentalviewmodel.h"
+#include "models/homecalibrationviewmodel.h"
 // #include "models/systemstatusviewmodel.h"  // DISABLED
 #include "models/aboutviewmodel.h"
 
@@ -51,6 +52,9 @@ bool ViewModelRegistry::createViewModels()
         m_zeroingViewModel = new ZeroingViewModel(this);
         m_windageViewModel = new WindageViewModel(this);
         m_environmentalViewModel = new EnvironmentalViewModel(this);
+
+        // Calibration ViewModels
+        m_homeCalibrationViewModel = new HomeCalibrationViewModel(this);
 
         // System Info ViewModels
         // m_systemStatusViewModel = new SystemStatusViewModel(this);  // DISABLED
@@ -94,6 +98,9 @@ bool ViewModelRegistry::registerWithQml(QQmlContext* context)
     context->setContextProperty("zeroingViewModel", m_zeroingViewModel);
     context->setContextProperty("windageViewModel", m_windageViewModel);
     context->setContextProperty("environmentalViewModel", m_environmentalViewModel);
+
+    // Calibration
+    context->setContextProperty("homeCalibrationViewModel", m_homeCalibrationViewModel);
 
     // System Info
     // context->setContextProperty("systemStatusViewModel", m_systemStatusViewModel);  // DISABLED

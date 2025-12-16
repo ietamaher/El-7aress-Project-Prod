@@ -14,6 +14,7 @@ class MenuViewModel;
 class ZeroingViewModel;
 class WindageViewModel;
 class EnvironmentalViewModel;
+class HomeCalibrationViewModel;
 // class SystemStatusViewModel;  // DISABLED
 class AboutViewModel;
 
@@ -76,6 +77,9 @@ public:
     WindageViewModel* windageViewModel() const { return m_windageViewModel; }
     EnvironmentalViewModel* environmentalViewModel() const { return m_environmentalViewModel; }
 
+    // Calibration ViewModels
+    HomeCalibrationViewModel* homeCalibrationViewModel() const { return m_homeCalibrationViewModel; }
+
     // System Info ViewModels
     // SystemStatusViewModel* systemStatusViewModel() const { return m_systemStatusViewModel; }  // DISABLED
     AboutViewModel* aboutViewModel() const { return m_aboutViewModel; }
@@ -108,6 +112,9 @@ private:
     ZeroingViewModel* m_zeroingViewModel = nullptr;
     WindageViewModel* m_windageViewModel = nullptr;
     EnvironmentalViewModel* m_environmentalViewModel = nullptr;
+
+    // Calibration
+    HomeCalibrationViewModel* m_homeCalibrationViewModel = nullptr;
 
     // System Info
     // SystemStatusViewModel* m_systemStatusViewModel = nullptr;  // DISABLED
