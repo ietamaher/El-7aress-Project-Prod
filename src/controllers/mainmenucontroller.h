@@ -36,6 +36,8 @@ signals:
     void clearWindageRequested();
     void environmentalRequested();
     void clearEnvironmentalRequested();
+    void homeCalibrationRequested();
+    void clearHomeCalibrationRequested();
     void zoneDefinitionsRequested();
     void systemStatusRequested();
     void toggleDetectionRequested();
