@@ -140,6 +140,19 @@ void OsdController::onSystemStateChanged(const SystemStateData& data)
             data.ammoLoaded
         );
 
+        // ========================================================================
+        // GIMBAL POSITION UPDATE - Direct from SystemStateData
+        // ========================================================================
+        // BUG FIX: Gimbal Az/El was only updated via FrameData path, which depends
+        // on camera frames. During zeroing or when camera frame rate is low, the
+        // gimbal position display would be stale or show 0°.
+        //
+        // This direct update ensures immediate response to servo data changes,
+        // providing real-time gimbal position feedback on the OSD.
+        // ========================================================================
+        m_viewModel->updateAzimuth(data.gimbalAz);
+        m_viewModel->updateElevation(data.gimbalEl);
+
         // NOTE: Windage display is now updated from FrameData in onFrameDataReady()
         // This ensures frame-synchronized display with other OSD elements
     }
