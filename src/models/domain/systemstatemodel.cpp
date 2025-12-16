@@ -1185,6 +1185,14 @@ void SystemStateModel::finalizeZeroing() {
 
         qInfo() << "[ZEROING] ✓ Procedure complete - Zeroing now ACTIVE";
 
+        // ========================================================================
+        // BUG FIX: RECALCULATE RETICLE POSITION WITH NEW ZEROING OFFSETS
+        // ========================================================================
+        // Without this call, the reticle position doesn't update until another
+        // action (zoom, LAC toggle) triggers recalculation.
+        // ========================================================================
+        recalculateDerivedAimpointData();
+
         emit dataChanged(m_currentStateData);
         emit zeroingStateChanged(false, m_currentStateData.zeroingAzimuthOffset, m_currentStateData.zeroingElevationOffset);
         // ✅ LATENCY FIX: Dedicated signal for ZeroingController to reduce event queue load

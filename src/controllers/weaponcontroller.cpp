@@ -645,6 +645,12 @@ void WeaponController::updateFireControlSolution()
     // ========================================================================
     // STEP 2: BALLISTIC DROP - AUTO-APPLIED WHEN RANGE VALID (Professional FCS)
     // ========================================================================
+    // DEFAULT_LAC_RANGE: Used for motion lead calculation when LRF is cleared
+    // but LAC is active. Professional FCS typically uses 500-1000m default.
+    // This allows CCIP to function for moving targets even without LRF lock.
+    // ========================================================================
+    constexpr float DEFAULT_LAC_RANGE = 500.0f;  // meters
+
     bool applyDrop = (targetRange > 0.1f);  // Valid range threshold
 
     if (applyDrop) {
@@ -701,13 +707,28 @@ void WeaponController::updateFireControlSolution()
     float targetAngRateAz = sData.currentTargetAngularRateAz;
     float targetAngRateEl = sData.currentTargetAngularRateEl;
 
+    // ========================================================================
+    // BUG FIX: USE DEFAULT RANGE FOR MOTION LEAD WHEN LRF IS CLEARED
+    // ========================================================================
+    // Motion lead requires TOF which depends on range. When LRF is cleared:
+    // - Use DEFAULT_LAC_RANGE (500m) for TOF calculation
+    // - This allows CCIP to work for close-range moving targets
+    // - Status will show "Lag" to indicate estimated range is used
+    // ========================================================================
+    float leadCalculationRange = (targetRange > 0.1f) ? targetRange : DEFAULT_LAC_RANGE;
+
     LeadCalculationResult lead = m_ballisticsProcessor->calculateMotionLead(
-        targetRange,
+        leadCalculationRange,
         targetAngRateAz,
         targetAngRateEl,
         currentHFOV,
         currentVFOV
     );
+
+    // If using default range (no LRF), force Lag status to indicate estimation
+    if (targetRange <= 0.1f && lead.status == LeadAngleStatus::On) {
+        lead.status = LeadAngleStatus::Lag;
+    }
 
     SystemStateData updatedData = sData;
     updatedData.motionLeadOffsetAz = lead.leadAzimuthDegrees;
@@ -721,6 +742,8 @@ void WeaponController::updateFireControlSolution()
     qDebug() << "[WeaponController] MOTION LEAD:"
              << "Az:" << lead.leadAzimuthDegrees << "deg"
              << "| El:" << lead.leadElevationDegrees << "deg"
+             << "| Range:" << leadCalculationRange << "m"
+             << (targetRange <= 0.1f ? "(DEFAULT)" : "(LRF)")
              << "| Status:" << static_cast<int>(lead.status)
              << (lead.status == LeadAngleStatus::On ? "(On)" :
                  lead.status == LeadAngleStatus::Lag ? "(Lag)" :

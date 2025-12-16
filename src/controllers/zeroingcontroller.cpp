@@ -149,8 +149,15 @@ void ZeroingController::onSelectButtonPressed()
 
     switch (m_currentState) {
     case ZeroingState::Instruct_MoveReticleToImpact:
-        transitionToState(ZeroingState::Completed);
+        // ========================================================================
+        // BUG FIX: FINALIZE ZEROING BEFORE TRANSITIONING TO COMPLETED STATE
+        // ========================================================================
+        // Previous code called transitionToState() FIRST, which updated the UI
+        // with OLD offset values. Now we finalize zeroing FIRST so the UI
+        // displays the correct new offset values.
+        // ========================================================================
         m_stateModel->finalizeZeroing();
+        transitionToState(ZeroingState::Completed);
         break;
 
     case ZeroingState::Completed:
