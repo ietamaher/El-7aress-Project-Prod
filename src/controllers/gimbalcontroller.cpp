@@ -141,11 +141,21 @@ GimbalController::~GimbalController()
 
 void GimbalController::shutdown()
 {
-    if (m_currentMode) {
-        m_currentMode->exitMode(this);
-    }
+    // Stop the update timer FIRST to prevent any more updates
     if (m_updateTimer) {
         m_updateTimer->stop();
+    }
+
+    // CRITICAL: Clear state model pointer BEFORE exitMode()
+    // SystemStateModel may already be destroyed when this destructor runs
+    // (Qt destroys children in reverse creation order, but SystemStateModel
+    // is a sibling created before ControllerRegistry in SystemController)
+    m_stateModel = nullptr;
+
+    // Exit current motion mode
+    // The null check in stopServos/sendStabilizedServoCommands will handle this safely
+    if (m_currentMode) {
+        m_currentMode->exitMode(this);
     }
 }
 
@@ -155,6 +165,14 @@ void GimbalController::shutdown()
 
 void GimbalController::update()
 {
+    // ========================================================================
+    // Shutdown Safety Check
+    // Timer may fire after shutdown() stops it if event was already queued
+    // ========================================================================
+    if (!m_stateModel) {
+        return;  // SystemStateModel destroyed, skip update
+    }
+
     // ========================================================================
     // Startup Sanity Checks (run once on first update)
     // ========================================================================

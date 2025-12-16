@@ -110,6 +110,13 @@ void GimbalMotionModeBase::sendStabilizedServoCommands(GimbalController* control
                                  bool enableStabilization,
                                  double dt)
 {
+    // --- Shutdown safety check ---
+    if (!controller || !controller->systemStateModel()) {
+        // During shutdown, systemStateModel may be destroyed before controller
+        // Just return silently - no commands needed during cleanup
+        return;
+    }
+
     // --- Step 1: Get current system state ---
     SystemStateData systemState = controller->systemStateModel()->data();
 
@@ -262,7 +269,11 @@ double GimbalMotionModeBase::pidCompute(PIDController& pid, double error, double
  
 void GimbalMotionModeBase::stopServos(GimbalController* controller)
 {
-    if (!controller) return;
+    // Shutdown safety: check both controller and systemStateModel
+    if (!controller || !controller->systemStateModel()) {
+        // During shutdown, just return - no commands needed
+        return;
+    }
     // Send a zero-velocity command through the new architecture.
     // Disable stabilization when stopping (no need to hold position)
     const double dt = 0.05; // 50ms nominal, doesn't matter for zero velocity
