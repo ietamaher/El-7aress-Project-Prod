@@ -1648,6 +1648,29 @@ void SystemStateModel::recalculateDerivedAimpointData() {
         ccipPosChanged = true;
     }
 
+    // ========================================================================
+    // CROWS ZOOM OUT DETECTION (TM 9-1090-225-10-2)
+    // ========================================================================
+    // "If the Lead Angle is greater than the selected camera FOV, ZOOM OUT
+    //  appears over the on screen reticle. The message remains on screen until
+    //  the hit point is no longer outside the viewing area."
+    //
+    // Check if CCIP is outside the current camera FOV boundaries
+    // ========================================================================
+    if (data.leadAngleCompensationActive || data.ballisticDropActive) {
+        bool ccipOutOfFov =
+            data.ccipImpactImageX_px < 0 ||
+            data.ccipImpactImageX_px > data.currentImageWidthPx ||
+            data.ccipImpactImageY_px < 0 ||
+            data.ccipImpactImageY_px > data.currentImageHeightPx;
+
+        if (ccipOutOfFov) {
+            data.currentLeadAngleStatus = LeadAngleStatus::ZoomOut;
+        }
+        // Note: Lag status is set by WeaponController when lead is clamped
+        // On status is the default when LAC active and not ZoomOut/Lag
+    }
+
     // Update status texts
     QString oldLeadStatusText = data.leadStatusText;
     QString oldZeroingStatusText = data.zeroingStatusText;
