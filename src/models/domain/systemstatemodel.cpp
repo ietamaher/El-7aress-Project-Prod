@@ -1557,10 +1557,18 @@ void SystemStateModel::setLeadAngleCompensationActive(bool active) {
 
 void SystemStateModel::recalculateDerivedAimpointData() {
     // ========================================================================
-    // ARCHITECTURAL PRINCIPLE: Two Separate Coordinate Systems
+    // CROWS-COMPLIANT COORDINATE SYSTEM (TM 9-1090-225-10-2)
     // ========================================================================
     // 1. RETICLE: Gun boresight with ZEROING ONLY (shows where gun points)
-    // 2. CCIP:    Impact prediction with ZEROING + LEAD (shows where bullets hit)
+    //    - NO ballistic drop, NO motion lead
+    //    - Reticle stays at gun axis (with zeroing offset)
+    //
+    // 2. CCIP: Impact prediction with ZEROING + DROP + LEAD
+    //    - Shows where bullet will actually land
+    //    - Operator fires when TARGET overlaps CCIP
+    //
+    // This is the safer, more certifiable approach per user review:
+    // "Reticle = center + zeroing only... slightly less magical but more robust"
     // ========================================================================
 
     SystemStateData& data = m_currentStateData;
@@ -1569,34 +1577,38 @@ void SystemStateModel::recalculateDerivedAimpointData() {
     float activeHfov = data.activeCameraIsDay ? static_cast<float>(data.dayCurrentHFOV) : static_cast<float>(data.nightCurrentHFOV);
 
     // ========================================================================
-    // CALCULATION 1: RETICLE Position (Zeroing + Ballistic Drop)
+    // CALCULATION 1: RETICLE Position (ZEROING ONLY - CROWS Doctrine)
     // ========================================================================
-    // Main reticle shows gun boresight with zeroing + AUTO ballistic drop
-    // Ballistic drop (gravity + wind) auto-applies when LRF range is valid
-    // NO motion lead - this is Kongsberg/Rafael professional FCS behavior
+    // Reticle = gun boresight = center + zeroing correction
+    // NO ballistic drop, NO motion lead
+    //
+    // Per CROWS doctrine: The reticle shows where the gun is pointing NOW.
+    // Ballistic corrections only affect CCIP (impact prediction).
     // ========================================================================
     QPointF newReticlePosPx = ReticleAimpointCalculator::calculateReticleImagePositionPx(
-        data.zeroingAzimuthOffset,        // Zeroing correction
+        data.zeroingAzimuthOffset,        // Zeroing correction (camera-gun alignment)
         data.zeroingElevationOffset,      // Zeroing correction
         data.zeroingAppliedToBallistics,  // Apply zeroing?
-        data.ballisticDropOffsetAz,       // ← AUTO ballistic drop (wind deflection)
-        data.ballisticDropOffsetEl,       // ← AUTO ballistic drop (gravity compensation)
-        data.ballisticDropActive,         // ← Active when LRF range valid
-        LeadAngleStatus::On,              // ← Force apply when active (ignore status checks)
+        0.0f,                             // ← NO ballistic drop for reticle (CROWS)
+        0.0f,                             // ← NO ballistic drop for reticle (CROWS)
+        false,                            // ← No additional offsets
+        LeadAngleStatus::Off,             // ← No lead for reticle
         activeHfov,
         data.currentImageWidthPx,
         data.currentImageHeightPx
     );
 
     // ========================================================================
-    // CALCULATION 2: CCIP Position (Zeroing + Ballistic Drop + Motion Lead)
+    // CALCULATION 2: CCIP Position (ZEROING + DROP + LEAD - Full FCS)
     // ========================================================================
-    // CCIP pipper shows bullet impact point with FULL ballistic compensation:
-    // 1. Ballistic drop (gravity + wind) - auto when range valid
-    // 2. Motion lead (target velocity) - only when LAC active
-    // Professional FCS: CCIP = where bullet will actually hit
+    // CCIP = predicted bullet impact point
+    // - Zeroing: camera-gun alignment
+    // - Ballistic drop: gravity + wind (auto when LRF valid)
+    // - Motion lead: target velocity compensation (when LAC active)
+    //
+    // Per CROWS doctrine: Operator fires when TARGET overlaps CCIP,
+    // not when reticle is on target.
     // ========================================================================
-    // Combine ballistic drop + motion lead for total CCIP offset
     float ccipTotalAz = data.ballisticDropOffsetAz + data.motionLeadOffsetAz;
     float ccipTotalEl = data.ballisticDropOffsetEl + data.motionLeadOffsetEl;
     bool ccipActive = data.ballisticDropActive || data.leadAngleCompensationActive;
@@ -1764,6 +1776,153 @@ void SystemStateModel::updateTargetAngularRates(float rateAzDegS, float rateElDe
                  << "El:" << rateElDegS << "°/s";*/
         emit dataChanged(m_currentStateData);
     }
+}
+
+// =============================================================================
+// CROWS-COMPLIANT LAC LATCHING (TM 9-1090-225-10-2)
+// =============================================================================
+
+void SystemStateModel::armLAC(float azRate_dps, float elRate_dps) {
+    // ========================================================================
+    // Per TM 9-1090-225-10-2:
+    // "The computer is constantly monitoring the change in rotation of the
+    //  elevation and azimuth axes and measuring the speed."
+    //
+    // LAC latches the tracking rate at the moment of arming. This rate is then
+    // used as a feed-forward bias to help maintain tracking of constant-velocity
+    // targets without requiring continuous joystick input.
+    //
+    // WARNING from manual:
+    // "If target #2 is not properly acquired, the WS will fire outside the
+    //  desired engagement area by continuing to apply the lead angle acquired
+    //  from target #1"
+    // ========================================================================
+
+    SystemStateData& data = m_currentStateData;
+
+    data.leadAngleCompensationActive = true;
+    data.lacArmed = true;
+    data.lacLatchedAzRate_dps = azRate_dps;
+    data.lacLatchedElRate_dps = elRate_dps;
+    data.lacArmTimestampMs = QDateTime::currentMSecsSinceEpoch();
+    data.currentLeadAngleStatus = LeadAngleStatus::On;
+
+    qInfo() << "";
+    qInfo() << "========================================";
+    qInfo() << "  LAC ARMED (CROWS-Compliant)";
+    qInfo() << "========================================";
+    qInfo() << "  Latched rates: Az=" << azRate_dps << "°/s, El=" << elRate_dps << "°/s";
+    qInfo() << "";
+    qWarning() << "[CROWS WARNING] LAC armed with latched rates.";
+    qWarning() << "[CROWS WARNING] Must RESET LAC before engaging new target!";
+    qWarning() << "[CROWS WARNING] Minimum 2 seconds between LAC toggles.";
+
+    emit dataChanged(m_currentStateData);
+}
+
+bool SystemStateModel::disarmLAC() {
+    // ========================================================================
+    // Per TM 9-1090-225-10-2:
+    // "Cancel Lead Angle Compensation by pressing the Palm Switch with the
+    //  CG in the neutral position."
+    //
+    // "A minimum of 2 seconds must be waited before reuse of lead angle
+    //  compensation feature."
+    // ========================================================================
+
+    SystemStateData& data = m_currentStateData;
+
+    // Check 2-second minimum reset interval
+    qint64 now = QDateTime::currentMSecsSinceEpoch();
+    qint64 timeSinceArm = now - data.lacArmTimestampMs;
+
+    if (data.lacArmed && timeSinceArm < SystemStateData::LAC_MIN_RESET_INTERVAL_MS) {
+        qWarning() << "[CROWS] LAC disarm BLOCKED - only" << timeSinceArm
+                   << "ms since arm (min:" << SystemStateData::LAC_MIN_RESET_INTERVAL_MS << "ms)";
+        return false;
+    }
+
+    data.leadAngleCompensationActive = false;
+    data.lacArmed = false;
+    data.lacLatchedAzRate_dps = 0.0f;
+    data.lacLatchedElRate_dps = 0.0f;
+    // Note: Keep lacArmTimestampMs for next canRearmLAC() check
+
+    // Clear motion lead offsets
+    data.motionLeadOffsetAz = 0.0f;
+    data.motionLeadOffsetEl = 0.0f;
+    data.currentLeadAngleStatus = LeadAngleStatus::Off;
+
+    qInfo() << "";
+    qInfo() << "========================================";
+    qInfo() << "  LAC DISARMED";
+    qInfo() << "========================================";
+    qInfo() << "";
+
+    emit dataChanged(m_currentStateData);
+    return true;
+}
+
+bool SystemStateModel::canRearmLAC() const {
+    qint64 now = QDateTime::currentMSecsSinceEpoch();
+    qint64 timeSinceArm = now - m_currentStateData.lacArmTimestampMs;
+    return timeSinceArm >= SystemStateData::LAC_MIN_RESET_INTERVAL_MS;
+}
+
+// =============================================================================
+// DEAD RECKONING (Firing during tracking)
+// =============================================================================
+
+void SystemStateModel::enterDeadReckoning(float azVel_dps, float elVel_dps) {
+    // ========================================================================
+    // Per TM 9-1090-225-10-2 page 38:
+    // "When firing is initiated, CROWS aborts Target Tracking. Instead the
+    //  system moves according to the speed and direction of the WS just prior
+    //  to pulling the trigger. CROWS will not automatically compensate for
+    //  changes in speed or direction of the tracked target during firing."
+    // ========================================================================
+
+    SystemStateData& data = m_currentStateData;
+
+    data.deadReckoningActive = true;
+    data.deadReckoningAzVel_dps = azVel_dps;
+    data.deadReckoningElVel_dps = elVel_dps;
+
+    // Transition tracking phase to Firing (dashed green box)
+    if (data.currentTrackingPhase == TrackingPhase::Tracking_ActiveLock ||
+        data.currentTrackingPhase == TrackingPhase::Tracking_Coast) {
+        data.currentTrackingPhase = TrackingPhase::Tracking_Firing;
+    }
+
+    qInfo() << "[CROWS] DEAD RECKONING ACTIVE - Tracking aborted during fire";
+    qInfo() << "[CROWS] Holding velocity: Az=" << azVel_dps << "°/s, El=" << elVel_dps << "°/s";
+
+    emit dataChanged(m_currentStateData);
+}
+
+void SystemStateModel::exitDeadReckoning() {
+    // Called when firing stops
+
+    SystemStateData& data = m_currentStateData;
+
+    if (!data.deadReckoningActive) {
+        return; // Not in dead reckoning
+    }
+
+    data.deadReckoningActive = false;
+    data.deadReckoningAzVel_dps = 0.0f;
+    data.deadReckoningElVel_dps = 0.0f;
+
+    // Return to Manual mode after firing (tracking was aborted)
+    // Per CROWS: "Firing terminates Target Tracking"
+    data.currentTrackingPhase = TrackingPhase::Off;
+    data.motionMode = MotionMode::Manual;
+    data.opMode = OperationalMode::Surveillance;
+
+    qInfo() << "[CROWS] DEAD RECKONING ENDED - Returning to Manual mode";
+    qInfo() << "[CROWS] Operator must re-acquire target to resume tracking";
+
+    emit dataChanged(m_currentStateData);
 }
 
 // Helper for Azimuth checks considering wrap-around

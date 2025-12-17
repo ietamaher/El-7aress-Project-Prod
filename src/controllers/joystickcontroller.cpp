@@ -242,22 +242,49 @@ void JoystickController::onButtonChanged(int button, bool pressed)
         break;
 
     // ==========================================================================
-    // BUTTON 2: LEAD ANGLE COMPENSATION TOGGLE
-    // PDF: "Hold the Palm Switch (2) and press the LEAD button (1)"
+    // BUTTON 2: LEAD ANGLE COMPENSATION (CROWS-Style Latching)
+    // ==========================================================================
+    // Per TM 9-1090-225-10-2:
+    // "Hold the Palm Switch (2) and press the LEAD button (1)"
+    // "A minimum of 2 seconds must be waited before reuse of lead angle
+    //  compensation feature."
     // ==========================================================================
     case 2:
         if (pressed) {
             bool isDeadManActive = curr.deadManSwitchActive;
-            bool currentLACState = curr.leadAngleCompensationActive;
 
             if (!isDeadManActive) {
-                qDebug() << "Cannot toggle Lead Angle Compensation - Deadman switch not active";
-            } else {
-                m_stateModel->setLeadAngleCompensationActive(!currentLACState);
+                qDebug() << "[CROWS] LAC toggle ignored - Palm Switch not active";
+                return;
+            }
 
-                if (!currentLACState && m_weaponController) {
-                    // Turning on - trigger initial calculation
+            bool currentLACState = curr.lacArmed;
+
+            if (!currentLACState) {
+                // === ARMING LAC (CROWS-compliant latching) ===
+                // Check 2-second minimum interval
+                if (!m_stateModel->canRearmLAC()) {
+                    qWarning() << "[CROWS] LAC arm BLOCKED - minimum 2 seconds between LAC toggles";
+                    return;
+                }
+
+                // Latch current tracking rate
+                m_stateModel->armLAC(
+                    curr.currentTargetAngularRateAz,
+                    curr.currentTargetAngularRateEl
+                );
+
+                // Trigger initial fire control calculation with new LAC state
+                if (m_weaponController) {
                     m_weaponController->updateFireControlSolution();
+                }
+            } else {
+                // === DISARMING LAC ===
+                // Per CROWS: "Cancel Lead Angle Compensation by pressing the
+                //            Palm Switch with the CG in the neutral position."
+                bool disarmed = m_stateModel->disarmLAC();
+                if (!disarmed) {
+                    qWarning() << "[CROWS] LAC disarm failed (too soon after arm)";
                 }
             }
         }

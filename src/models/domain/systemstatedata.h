@@ -629,6 +629,31 @@ struct SystemStateData {
     float motionLeadOffsetAz = 0.0f;                    ///< Moving target lead azimuth offset in degrees
     float motionLeadOffsetEl = 0.0f;                    ///< Moving target lead elevation offset in degrees
 
+    // =================================
+    // CROWS-COMPLIANT LAC LATCHING (TM 9-1090-225-10-2)
+    // =================================
+    // LAC must be manually armed and latches the current tracking rate.
+    // "If target #2 is not properly acquired, the WS will fire outside the
+    //  desired engagement area by continuing to apply the lead angle acquired
+    //  from target #1... a minimum of 2 seconds must be waited before reuse"
+    bool lacArmed = false;                              ///< LAC manually armed by operator (latched state)
+    float lacLatchedAzRate_dps = 0.0f;                  ///< Latched azimuth rate at arm time (deg/s)
+    float lacLatchedElRate_dps = 0.0f;                  ///< Latched elevation rate at arm time (deg/s)
+    qint64 lacArmTimestampMs = 0;                       ///< Timestamp when LAC was armed (for 2s reset rule)
+    static constexpr qint64 LAC_MIN_RESET_INTERVAL_MS = 2000; ///< Minimum 2 seconds between LAC resets
+
+    // =================================
+    // DEAD RECKONING (Firing during tracking)
+    // =================================
+    // CROWS TM 9-1090-225-10-2 page 38:
+    // "When firing is initiated, CROWS aborts Target Tracking. Instead the system
+    //  moves according to the speed and direction of the WS just prior to pulling
+    //  the trigger. CROWS will not automatically compensate for changes in speed
+    //  or direction of the tracked target during firing."
+    bool deadReckoningActive = false;                   ///< True when firing terminated tracking
+    float deadReckoningAzVel_dps = 0.0f;                ///< Last Az velocity before firing (deg/s)
+    float deadReckoningElVel_dps = 0.0f;                ///< Last El velocity before firing (deg/s)
+
     // Target Parameters for Ballistics
     float currentTargetRange = 2000.0f;                 ///< Current target range in meters
     float currentTargetAngularRateAz = 0.0f;            ///< Target angular rate in azimuth (degrees/second)
@@ -921,6 +946,15 @@ struct SystemStateData {
                ballisticDropActive == other.ballisticDropActive &&
                qFuzzyCompare(motionLeadOffsetAz, other.motionLeadOffsetAz) &&
                qFuzzyCompare(motionLeadOffsetEl, other.motionLeadOffsetEl) &&
+               // LAC Latching (CROWS-compliant)
+               lacArmed == other.lacArmed &&
+               qFuzzyCompare(lacLatchedAzRate_dps, other.lacLatchedAzRate_dps) &&
+               qFuzzyCompare(lacLatchedElRate_dps, other.lacLatchedElRate_dps) &&
+               lacArmTimestampMs == other.lacArmTimestampMs &&
+               // Dead Reckoning
+               deadReckoningActive == other.deadReckoningActive &&
+               qFuzzyCompare(deadReckoningAzVel_dps, other.deadReckoningAzVel_dps) &&
+               qFuzzyCompare(deadReckoningElVel_dps, other.deadReckoningElVel_dps) &&
                qFuzzyCompare(currentTargetRange, other.currentTargetRange) &&
                qFuzzyCompare(currentTargetAngularRateAz, other.currentTargetAngularRateAz) &&
                qFuzzyCompare(currentTargetAngularRateEl, other.currentTargetAngularRateEl) &&
