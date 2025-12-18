@@ -44,7 +44,7 @@ QPointF ReticleAimpointCalculator::calculateReticleImagePositionPx(
     if (zeroingActive) {
         // Qualify with class name when calling another static member
         totalPixelShift += ReticleAimpointCalculator::convertSingleAngularToPixelShift(
-                                zeroingAzDeg, zeroingElDeg,
+                                zeroingAzDeg, - zeroingElDeg,
                                 cameraHfovDeg, imageWidthPx, imageHeightPx);
     }
 

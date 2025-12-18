@@ -263,6 +263,60 @@ public:
     void updateTargetAngularRates(float rateAzDegS, float rateElDegS);
 
     // =================================
+    // CROWS-COMPLIANT LAC LATCHING (TM 9-1090-225-10-2)
+    // =================================
+
+    /**
+     * @brief Arms LAC with latched tracking rates (CROWS-compliant).
+     *
+     * Per TM 9-1090-225-10-2: LAC latches the current tracking rate at arm time.
+     * "If target #2 is not properly acquired, the WS will fire outside the
+     *  desired engagement area by continuing to apply the lead angle acquired
+     *  from target #1... a minimum of 2 seconds must be waited before reuse"
+     *
+     * @param azRate_dps Current azimuth angular rate to latch (deg/s)
+     * @param elRate_dps Current elevation angular rate to latch (deg/s)
+     */
+    void armLAC(float azRate_dps, float elRate_dps);
+
+    /**
+     * @brief Disarms LAC and clears latched rates.
+     *
+     * Enforces minimum 2-second reset interval per CROWS doctrine.
+     * Returns false if called within 2 seconds of arming.
+     *
+     * @return True if successfully disarmed, false if within reset interval
+     */
+    bool disarmLAC();
+
+    /**
+     * @brief Checks if LAC can be re-armed (2-second minimum after last arm).
+     * @return True if sufficient time has passed since last arm
+     */
+    bool canRearmLAC() const;
+
+    // =================================
+    // DEAD RECKONING (Firing during tracking)
+    // =================================
+
+    /**
+     * @brief Enters dead reckoning mode when firing during tracking.
+     *
+     * Per TM 9-1090-225-10-2 page 38: "When firing is initiated, CROWS aborts
+     * Target Tracking. Instead the system moves according to the speed and
+     * direction of the WS just prior to pulling the trigger."
+     *
+     * @param azVel_dps Last azimuth velocity before firing (deg/s)
+     * @param elVel_dps Last elevation velocity before firing (deg/s)
+     */
+    void enterDeadReckoning(float azVel_dps, float elVel_dps);
+
+    /**
+     * @brief Exits dead reckoning mode (called when firing stops).
+     */
+    void exitDeadReckoning();
+
+    // =================================
     // AREA ZONE MANAGEMENT
     // =================================
     

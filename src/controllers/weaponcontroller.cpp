@@ -520,12 +520,27 @@ void WeaponController::startFiring()
 
     // Safety: Prevent firing if current aim point is inside a No-Fire zone
     if (m_stateModel) {
-        // Use current gimbal pointing as the aim point.
         SystemStateData s = m_stateModel->data();
         if (m_stateModel->isPointInNoFireZone(s.gimbalAz, s.gimbalEl)) {
             qWarning() << "[WeaponController] FIRE BLOCKED: Aim point is inside a No-Fire zone. Solenoid NOT armed.";
-            // Optionally set an OSD / UI flag or emit an event here
             return;
+        }
+
+        // =====================================================================
+        // CROWS DEAD RECKONING (TM 9-1090-225-10-2 page 38)
+        // =====================================================================
+        // "When firing is initiated, CROWS aborts Target Tracking. Instead the
+        //  system moves according to the speed and direction of the WS just
+        //  prior to pulling the trigger. CROWS will not automatically compensate
+        //  for changes in speed or direction of the tracked target during firing."
+        // =====================================================================
+        if (s.currentTrackingPhase == TrackingPhase::Tracking_ActiveLock ||
+            s.currentTrackingPhase == TrackingPhase::Tracking_Coast) {
+            qInfo() << "[CROWS] FIRING DURING TRACKING - Entering dead reckoning mode";
+            m_stateModel->enterDeadReckoning(
+                s.currentTargetAngularRateAz,
+                s.currentTargetAngularRateEl
+            );
         }
     }
 
@@ -536,6 +551,19 @@ void WeaponController::startFiring()
 void WeaponController::stopFiring()
 {
     m_plc42->setSolenoidState(0);
+
+    // =========================================================================
+    // CROWS: Exit dead reckoning when firing stops
+    // =========================================================================
+    // Per CROWS doctrine: Firing terminates tracking completely.
+    // After firing, operator must re-acquire target to resume tracking.
+    // =========================================================================
+    if (m_stateModel) {
+        SystemStateData s = m_stateModel->data();
+        if (s.deadReckoningActive) {
+            m_stateModel->exitDeadReckoning();
+        }
+    }
 }
 
 void WeaponController::unloadAmmo()
