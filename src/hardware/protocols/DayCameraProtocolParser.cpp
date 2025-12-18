@@ -51,7 +51,7 @@ MessagePtr DayCameraProtocolParser::parseFrame(const QByteArray& frame) {
         quint16 zoomPos = (data1 << 8) | data2;
         data.zoomPosition = zoomPos;
         data.currentHFOV = computeHFOVfromZoom(zoomPos);
-        data.currentVFOV = data.currentHFOV * (9.0 / 16.0);  // 16:9 aspect ratio → VFOV = HFOV × 9/16
+        data.currentVFOV = data.currentHFOV * (3.0 / 4.0);  // 4:3 aspect ratio → VFOV = HFOV × 3/4
     } else if (resp2 == 0x63) {
         // Focus position response
         quint16 focusPos = (data1 << 8) | data2;

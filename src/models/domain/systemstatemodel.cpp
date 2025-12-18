@@ -714,7 +714,7 @@ void SystemStateModel::onDayCameraDataChanged(const DayCameraData &dayData)
 
     newData.dayZoomPosition = dayData.zoomPosition;
     newData.dayCurrentHFOV = dayData.currentHFOV;
-    newData.dayCurrentVFOV = dayData.currentVFOV;  // 16:9 aspect ratio (VFOV = HFOV × 9/16)
+    newData.dayCurrentVFOV = dayData.currentVFOV;  // 4:3 aspect ratio (VFOV = HFOV × 3/4)
     newData.dayCameraConnected = dayData.isConnected;
     newData.dayCameraError = dayData.errorState;
     newData.dayCameraStatus = dayData.cameraStatus;

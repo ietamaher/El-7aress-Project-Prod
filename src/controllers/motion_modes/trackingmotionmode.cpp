@@ -203,21 +203,8 @@ void TrackingMotionMode::update(GimbalController* controller, double dt)
     // CRITICAL: PID uses VISUAL target position ONLY
     // NO ballistic drop, NO motion lead in gimbal control!
     // The gimbal tracks WHERE THE TARGET IS, not where the bullet will land.
-    //
-    // BUG FIX: Elevation sign inversion
-    // =========================================================================
-    // The elevation axis requires sign inversion to match the physical motor
-    // direction. This is consistent with TRP scan mode (trpscanmotionmode.cpp:194)
-    // which uses: errEl = -(m_targetEl - data.gimbalEl)
-    //
-    // Without this inversion, when target is below center:
-    // - Target pixel Y > center → negative angularOffset → lower targetEl
-    // - errEl = targetEl - gimbalEl < 0 → negative PID output
-    // - But motor expects positive velocity for DOWN motion
-    // - Result: gimbal moves UP (wrong direction) → divergence
-    // =========================================================================
     double errAz = normalizeAngle180(m_smoothedTargetAz - data.gimbalAz);
-    double errEl = -(m_smoothedTargetEl - data.gimbalEl);  // BUG FIX: Sign inversion for elevation axis
+    double errEl = m_smoothedTargetEl - data.gimbalEl;
 
     // ==========================================================================
     // PHASE 6: MANUAL OVERRIDE DURING TRACKING
@@ -291,8 +278,6 @@ void TrackingMotionMode::update(GimbalController* controller, double dt)
     // CROWS LAC is a RATE BIAS - it adds to velocity command, NOT position error.
     // This helps the operator maintain tracking without constant joystick input.
     // The reticle stays ON the target, while CCIP shows predicted impact.
-    //
-    // NOTE: Elevation rate bias sign inversion to match error convention fix
     double lacAzBias = 0.0;
     double lacElBias = 0.0;
 
@@ -300,7 +285,7 @@ void TrackingMotionMode::update(GimbalController* controller, double dt)
         // Use LATCHED rates for rate bias (not current rates)
         // This prevents auto-adaptation when target changes
         lacAzBias = LAC_RATE_BIAS_GAIN * data.lacLatchedAzRate_dps;
-        lacElBias = -LAC_RATE_BIAS_GAIN * data.lacLatchedElRate_dps;  // BUG FIX: Sign inversion to match elevation error convention
+        lacElBias = LAC_RATE_BIAS_GAIN * data.lacLatchedElRate_dps;
 
         static int lacDbg = 0;
         if (++lacDbg % 40 == 0) {
@@ -314,8 +299,6 @@ void TrackingMotionMode::update(GimbalController* controller, double dt)
     // PHASE 10: BASIC FEED-FORWARD (target velocity assistance)
     // ==========================================================================
     // This is separate from LAC - basic FF helps smooth tracking regardless
-    //
-    // NOTE: Elevation feed-forward sign inversion to match error convention fix
     double visualErrorMag = std::sqrt(errAz * errAz + errEl * errEl);
     double ffGain = 0.0;
 
@@ -325,7 +308,7 @@ void TrackingMotionMode::update(GimbalController* controller, double dt)
     }
 
     double ffAz = ffGain * m_smoothedAzVel_dps;
-    double ffEl = -ffGain * m_smoothedElVel_dps;  // BUG FIX: Sign inversion to match elevation error convention
+    double ffEl = ffGain * m_smoothedElVel_dps;
 
     // ==========================================================================
     // PHASE 11: COMBINE ALL VELOCITY COMPONENTS
