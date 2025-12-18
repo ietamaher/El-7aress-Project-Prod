@@ -231,12 +231,12 @@ LeadCalculationResult BallisticsProcessorLUT::calculateBallisticDrop(float targe
 
     result.status = LeadAngleStatus::On;  // Always ON for valid range
 
-    qDebug() << "[BallisticsProcessorLUT] 🎯 DROP:" << targetRangeMeters << "m"
+    /*qDebug() << "[BallisticsProcessorLUT] 🎯 DROP:" << targetRangeMeters << "m"
              << "| Elev:" << result.leadElevationDegrees << "°"
              << "| Wind Az:" << result.leadAzimuthDegrees << "°"
              << "| Temp:" << m_temperature_celsius << "°C"
              << "| Alt:" << m_altitude_m << "m"
-             << "| Crosswind:" << m_crosswind_ms << "m/s";
+             << "| Crosswind:" << m_crosswind_ms << "m/s";*/
 
     return result;
 }

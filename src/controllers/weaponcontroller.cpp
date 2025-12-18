@@ -691,10 +691,10 @@ void WeaponController::updateFireControlSolution()
         m_stateModel->updateData(updatedData);
         sData = updatedData;
 
-        qDebug() << "[WeaponController] AUTO DROP APPLIED:"
+        /*qDebug() << "[WeaponController] AUTO DROP APPLIED:"
                  << "Range:" << targetRange << "m"
                  << "| Drop Az:" << drop.leadAzimuthDegrees << "deg (wind)"
-                 << "| Drop El:" << drop.leadElevationDegrees << "deg (gravity)";
+                 << "| Drop El:" << drop.leadElevationDegrees << "deg (gravity)";*/
     } else {
         // Clear drop when no valid range
         if (sData.ballisticDropActive) {
