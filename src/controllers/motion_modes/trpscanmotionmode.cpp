@@ -190,8 +190,10 @@ void TRPScanMotionMode::update(GimbalController* controller, double dt) {
     //------------------------------------------------------------
     // 2) SLEW-TO-POINT PHASE
     //------------------------------------------------------------
+    // NOTE: Standard error convention (target - current)
+    // Hardware-specific sign inversions are handled in sendStabilizedServoCommands
     double errAz = shortestDiff(m_targetAz, data.gimbalAz);
-    double errEl = - (m_targetEl - data.gimbalEl);
+    double errEl = m_targetEl - data.gimbalEl;
 
     if (std::abs(errAz) <= AZIMUTH_TOLERANCE_DEG && std::abs(errEl) <= ELEVATION_TOLERANCE_DEG) {
         m_state = HoldPoint;

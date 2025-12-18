@@ -207,20 +207,26 @@ void GimbalMotionModeBase::sendStabilizedServoCommands(GimbalController* control
         }
     }
 
+    // ==========================================================================
+    // HARDWARE-SPECIFIC SIGN INVERSIONS
+    // ==========================================================================
+    // Apply sign inversions to match physical motor wiring/direction.
+    // This is the ONLY place where hardware-specific inversions should be applied.
+    // All motion mode math uses standard convention: positive = right/up.
+    //
+    // Current hardware configuration requires:
+    // - Azimuth: INVERTED (positive velocity command → motor moves left)
+    // - Elevation: INVERTED (positive velocity command → motor moves down)
+    // ==========================================================================
+    double hwAzVelocity = -finalAzVelocity;  // Invert azimuth for hardware
+    double hwElVelocity = -finalElVelocity;  // Invert elevation for hardware
+
     // --- Step 4: Convert to servo steps and send commands (AZD-KD velocity mode) ---
     if (auto azServo = controller->azimuthServo()) {
-        // Log what we will write (before any sign inversion)
-       // qDebug().nospace() << "[DBG SEND] writeAz (pre-negation)=" << finalAzVelocity;
-        // Current behavior: negate when writing (keep it for now)
-        qint32 lastAz = m_lastAzSpeedHz;
-        writeVelocityCommand(azServo, finalAzVelocity, AZ_STEPS_PER_DEGREE(), m_lastAzSpeedHz);
-       // qDebug().nospace() << "[DBG SEND] wroteAz (post-negation) lastHz=" << m_lastAzSpeedHz << " (prev=" << lastAz << ")";
+        writeVelocityCommand(azServo, hwAzVelocity, AZ_STEPS_PER_DEGREE(), m_lastAzSpeedHz);
     }
     if (auto elServo = controller->elevationServo()) {
-        //qDebug().nospace() << "[DBG SEND] writeEl (pre-negation)=" << finalElVelocity;
-        qint32 lastEl = m_lastElSpeedHz;
-        writeVelocityCommand(elServo, finalElVelocity, EL_STEPS_PER_DEGREE(), m_lastElSpeedHz);
-       // qDebug().nospace() << "[DBG SEND] wroteEl (post-negation) lastHz=" << m_lastElSpeedHz << " (prev=" << lastEl << ")";
+        writeVelocityCommand(elServo, hwElVelocity, EL_STEPS_PER_DEGREE(), m_lastElSpeedHz);
     }
 }
 
