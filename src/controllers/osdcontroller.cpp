@@ -294,6 +294,14 @@ void OsdController::onFrameDataReady(const FrameData& frmdata)
     bool ccipVisible = false;
 
     // Check ballistic drop (auto when LRF valid) OR lead angle (manual LAC button)
+    // DEBUG: Trace CCIP visibility decision
+    static int ccipDbgCnt = 0;
+    if (++ccipDbgCnt % 30 == 0) {
+        qDebug() << "[CCIP DEBUG] ballisticDropActive:" << frmdata.ballisticDropActive
+                 << "| leadAngleActive:" << frmdata.leadAngleActive
+                 << "| ccipPos:(" << frmdata.ccipImpactImageX_px << "," << frmdata.ccipImpactImageY_px << ")";
+    }
+
     if (frmdata.ballisticDropActive || frmdata.leadAngleActive) {
         ccipVisible = true;
 

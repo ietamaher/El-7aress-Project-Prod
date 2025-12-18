@@ -69,9 +69,8 @@ QPointF ReticleAimpointCalculator::calculateReticleImagePositionPx(
     qreal screenCenterX_px = static_cast<qreal>(imageWidthPx) / 2.0f;
     qreal screenCenterY_px = static_cast<qreal>(imageHeightPx) / 2.0f;
 
-    qDebug() << "🎯 ReticleAimpointCalculator::calculateReticleImagePositionPx: Center(" << screenCenterX_px << "," << screenCenterY_px
-             << ") TotalShift(" << totalPixelShift.x() << "," << totalPixelShift.y() << ")"
-             << "FinalPos(" << (screenCenterX_px + totalPixelShift.x()) << "," << (screenCenterY_px + totalPixelShift.y()) << ")";
+    // Debug output reduced to avoid log spam
+    // qDebug() << "🎯 ReticleAimpointCalculator: Shift(" << totalPixelShift.x() << "," << totalPixelShift.y() << ")";
 
     return QPointF(screenCenterX_px + totalPixelShift.x(),
                    screenCenterY_px + totalPixelShift.y());
