@@ -180,7 +180,7 @@ private:
     // CONVERSION NOTE: Hardware uses counts, but API uses mm
     // Original counts: EXTEND=63000, RETRACT=2048, TOLERANCE=200
     // Conversion: (counts - 1024) * 3.175mm / 1024counts
-    static constexpr double FEED_EXTEND_POS = 150; //192.11;       ///< Full extension (mm) [was 63000 counts]
+    static constexpr double FEED_EXTEND_POS = 190.6; //192.11;       ///< Full extension (mm) [was 63000 counts]
     static constexpr double FEED_RETRACT_POS = 3.175;       ///< Home position (mm) [was 2048 counts]
     static constexpr double FEED_POSITION_TOLERANCE = 0.62; ///< Position match tolerance (mm) [was 200 counts]
     static constexpr int FEED_TIMEOUT_MS = 6000;            ///< Watchdog timeout (ms)

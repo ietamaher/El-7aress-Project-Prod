@@ -192,7 +192,7 @@ def main():
     actuator.start_polling()
     time.sleep(1) # Allow polling to start and get first reading
     try:
-        target_counts_1 = 63000; target_counts_2 = actuator.config['retracted_offset_counts']
+        target_counts_1 = 61500; target_counts_2 = actuator.config['retracted_offset_counts']
         print(f"\n>>> STEP 1: Commanding move to {target_counts_1} counts..."); actuator.move_to_position_by_counts(target_counts_1)
         if actuator.last_command_acknowledged:
             print("    -> Move command acknowledged.")
