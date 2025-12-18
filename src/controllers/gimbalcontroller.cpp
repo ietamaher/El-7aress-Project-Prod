@@ -441,15 +441,29 @@ void GimbalController::onSystemStateChanged(const SystemStateData& newData)
                     double targetAngularVelEl_dps = angularVelocity.y();
 
                     // ================================================================
+                    // BUG FIX: Smooth angular rates to stabilize CCIP display
+                    // ================================================================
+                    // Raw tracker velocity measurements are noisy frame-to-frame.
+                    // Apply low-pass filter (tau = 150ms) to stabilize CCIP.
+                    // Without smoothing, CCIP jumps around even for stationary targets.
+                    // ================================================================
+                    static double filteredTargetVelAz = 0.0;
+                    static double filteredTargetVelEl = 0.0;
+                    const double filterTau = 0.15;  // 150ms time constant (more aggressive than manual mode)
+                    const double dt = 0.033;  // ~30Hz tracker update rate
+                    double alpha = dt / (filterTau + dt);
+                    filteredTargetVelAz = alpha * targetAngularVelAz_dps + (1.0 - alpha) * filteredTargetVelAz;
+                    filteredTargetVelEl = alpha * targetAngularVelEl_dps + (1.0 - alpha) * filteredTargetVelEl;
+                    // ================================================================
                     // BUG FIX #1: Update target angular rates for LAC calculation
                     // ================================================================
-                    // Store angular rates in SystemStateData so WeaponController
+                    // Store SMOOTHED angular rates in SystemStateData so WeaponController
                     // can use them to calculate motion lead (rate × TOF).
                     // Without this, LAC motion lead is always zero!
                     // ================================================================
                     m_stateModel->updateTargetAngularRates(
-                        static_cast<float>(targetAngularVelAz_dps),
-                        static_cast<float>(targetAngularVelEl_dps)
+                        static_cast<float>(filteredTargetVelAz),
+                        static_cast<float>(filteredTargetVelEl)
                     );
 
                     // Emit queued signal (thread-safe, prevents race conditions)

@@ -203,8 +203,8 @@ void TrackingMotionMode::update(GimbalController* controller, double dt)
     // CRITICAL: PID uses VISUAL target position ONLY
     // NO ballistic drop, NO motion lead in gimbal control!
     // The gimbal tracks WHERE THE TARGET IS, not where the bullet will land.
-    double errAz = normalizeAngle180(m_smoothedTargetAz - data.gimbalAz);
-    double errEl = m_smoothedTargetEl - data.gimbalEl;
+    double errAz = -(normalizeAngle180(m_smoothedTargetAz - data.gimbalAz));
+    double errEl = -(m_smoothedTargetEl - data.gimbalEl);
 
     // ==========================================================================
     // PHASE 6: MANUAL OVERRIDE DURING TRACKING
@@ -223,7 +223,7 @@ void TrackingMotionMode::update(GimbalController* controller, double dt)
         // Apply manual velocity on top of tracking
         // Scale factor converts joystick (-1 to 1) to deg/s
         manualAzVel = data.joystickAzValue * MANUAL_OVERRIDE_SCALE;
-        manualElVel = -data.joystickElValue * MANUAL_OVERRIDE_SCALE; // Inverted Y
+        manualElVel = data.joystickElValue * MANUAL_OVERRIDE_SCALE; // Inverted Y
 
         // Note: Manual input should NOT silently re-arm LAC
         // This is handled by the LAC latching system - manual input is independent
