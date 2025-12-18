@@ -131,6 +131,9 @@ struct FrameData {
     // Ballistics - Lead Angle Compensation
     bool leadAngleActive = false;
     LeadAngleStatus leadAngleStatus;
+
+    // Ballistics - Drop Compensation (auto-applied when LRF range valid)
+    bool ballisticDropActive = false;
     float leadAngleOffsetAz_deg;
     float leadAngleOffsetEl_deg;
     QString leadStatusText;
@@ -381,6 +384,9 @@ private:
     // Ballistics - Lead Angle
     bool m_isLacActiveForReticle;
     LeadAngleStatus m_currentLeadAngleStatus;
+
+    // Ballistics - Drop Compensation
+    bool m_currentBallisticDropActive;
     float m_currentLeadAngleOffsetAz;
     float m_currentLeadAngleOffsetEl;
     QString m_currentLeadStatusText;

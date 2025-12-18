@@ -281,25 +281,40 @@ void OsdController::onFrameDataReady(const FrameData& frmdata)
     // Position comes from reticleAimpointImageX/Y which includes lead offsets
     // ========================================================================
 
-    // Determine CCIP status string
+    // ========================================================================
+    // BUG FIX: CCIP visibility now checks BOTH ballistic drop AND lead angle
+    // ========================================================================
+    // Per CROWS doctrine (TM 9-1090-225-10-2):
+    // - CCIP shows predicted bullet impact point
+    // - Ballistic drop: Auto-applied when LRF range is valid (gravity compensation)
+    // - Lead angle: Manual activation via LAC button (moving target compensation)
+    // - CCIP should be visible when EITHER compensation is active
+    // ========================================================================
     QString ccipStatus = "Off";
     bool ccipVisible = false;
 
-    if (frmdata.leadAngleActive) {
+    // Check ballistic drop (auto when LRF valid) OR lead angle (manual LAC button)
+    if (frmdata.ballisticDropActive || frmdata.leadAngleActive) {
         ccipVisible = true;
-        switch (frmdata.leadAngleStatus) {
-            case LeadAngleStatus::On:
-                ccipStatus = "On";
-                break;
-            case LeadAngleStatus::Lag:
-                ccipStatus = "Lag";
-                break;
-            case LeadAngleStatus::ZoomOut:
-                ccipStatus = "ZoomOut";
-                break;
-            default:
-                ccipStatus = "Off";
-                ccipVisible = false;
+
+        // Determine status priority: Lead angle status takes precedence when active
+        if (frmdata.leadAngleActive) {
+            switch (frmdata.leadAngleStatus) {
+                case LeadAngleStatus::On:
+                    ccipStatus = "On";
+                    break;
+                case LeadAngleStatus::Lag:
+                    ccipStatus = "Lag";
+                    break;
+                case LeadAngleStatus::ZoomOut:
+                    ccipStatus = "ZoomOut";
+                    break;
+                default:
+                    ccipStatus = "Drop";  // Fall back to drop-only status
+            }
+        } else {
+            // Only ballistic drop active (no lead angle compensation)
+            ccipStatus = "Drop";
         }
     }
 

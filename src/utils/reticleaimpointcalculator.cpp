@@ -48,10 +48,17 @@ QPointF ReticleAimpointCalculator::calculateReticleImagePositionPx(
                                 cameraHfovDeg, imageWidthPx, imageHeightPx);
     }
 
-    bool applyLeadOffset = leadActive &&
-                           (leadStatus == LeadAngleStatus::On ||
-                            leadStatus == LeadAngleStatus::Lag ); //||
-                            //leadStatus == LeadAngleStatus::ZoomOut);
+    // ========================================================================
+    // BUG FIX: Apply CCIP offset for drop-only case (Issue #1)
+    // ========================================================================
+    // The offset should be applied when:
+    // 1. LAC active with valid status (On or Lag) - motion lead compensation
+    // 2. OR drop-only mode (leadActive=true but leadStatus=Off)
+    //
+    // The offset should NOT be applied when:
+    // - leadStatus == ZoomOut (can't calculate lead at wide FOV per CROWS doctrine)
+    // ========================================================================
+    bool applyLeadOffset = leadActive && (leadStatus != LeadAngleStatus::ZoomOut);
     if (applyLeadOffset) {
         // Qualify with class name
         totalPixelShift += ReticleAimpointCalculator::convertSingleAngularToPixelShift(
