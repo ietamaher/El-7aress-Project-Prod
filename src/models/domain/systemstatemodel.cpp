@@ -1171,7 +1171,7 @@ void SystemStateModel::finalizeZeroing() {
         float currentEl = m_currentStateData.gimbalEl;
 
         float deltaAz = currentAz - m_zeroingState.initialAz;
-        float deltaEl = currentEl - m_zeroingState.initialEl;
+        float deltaEl = currentEl - m_zeroingState.initialEl;   // Elevation gear ratio is 1:1
 
         qInfo() << "[ZEROING] Finalizing procedure";
         qInfo() << "[ZEROING]   Initial position:";
@@ -1627,7 +1627,7 @@ void SystemStateModel::recalculateDerivedAimpointData() {
     // not when reticle is on target.
     // ========================================================================
     float ccipTotalAz = data.ballisticDropOffsetAz + data.motionLeadOffsetAz;
-    float ccipTotalEl = data.ballisticDropOffsetEl + data.motionLeadOffsetEl;
+    float ccipTotalEl = - data.ballisticDropOffsetEl + data.motionLeadOffsetEl;
     bool ccipActive = data.ballisticDropActive || data.leadAngleCompensationActive;
 
     QPointF newCcipPosPx = ReticleAimpointCalculator::calculateReticleImagePositionPx(

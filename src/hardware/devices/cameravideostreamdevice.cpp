@@ -154,13 +154,17 @@ CameraVideoStreamDevice::CameraVideoStreamDevice(int cameraIndex,
     if (m_cameraIndex == 0) {  // Sony day camera
         m_cropTop = 0;
         m_cropBottom = 0;
-        m_cropLeft = 0;
-        m_cropRight = 0;
+        m_cropLeft = 160;
+        m_cropRight = 160;
     } else {  // FLIR night camera
         m_cropTop = 28;
         m_cropBottom = 60;
         m_cropLeft = 116;
         m_cropRight = 116;
+                m_cropTop = 16;
+        m_cropBottom = 16;
+        m_cropLeft = 0;
+        m_cropRight = 0;
     }
 
     qInfo() << "Cam" << cameraIndex << ": Initialized -"
