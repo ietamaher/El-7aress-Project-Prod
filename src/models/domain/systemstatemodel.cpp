@@ -1126,8 +1126,24 @@ void SystemStateModel::applyZeroingAdjustment(float deltaAz, float deltaEl) {
         // We might need separate "raw mechanical zero" and "user zero offset".
         // For now, these are offsets from a nominal zero.
 
+        // ========================================================================
+        // SIGN CONVENTION FIX FOR ELEVATION
+        // ========================================================================
+        // The gimbal elevation has inverted sign convention:
+        //   gimbalEl = servo_position * (-0.0018)
+        // This means pointing UP = more negative gimbalEl.
+        //
+        // When user moves gimbal UP to align with an impact point that was ABOVE:
+        //   deltaEl = final_el - initial_el = (more negative) - (less negative) = NEGATIVE
+        //
+        // But we want POSITIVE zeroingElevationOffset to mean "impact was UP"
+        // so the reticle shifts UP to show where bullets hit.
+        //
+        // Solution: Negate deltaEl to compensate for inverted gimbal coordinates.
+        // ========================================================================
+
         m_currentStateData.zeroingAzimuthOffset += deltaAz;
-        m_currentStateData.zeroingElevationOffset += deltaEl;
+        m_currentStateData.zeroingElevationOffset -= deltaEl;  // NEGATED to fix inverted gimbal
 
         // Clamp total offsets if necessary (e.g., to +/- 3 degrees from some baseline)
         // float maxOffset = 3.0f;
@@ -1163,12 +1179,13 @@ void SystemStateModel::finalizeZeroing() {
         qInfo() << "[ZEROING]   Final position:";
         qInfo() << "[ZEROING]     Az: " << currentAz << "°  El: " << currentEl << "°";
         qInfo() << "[ZEROING]   Gimbal movement detected:";
-        qInfo() << "[ZEROING]     ΔAz: " << deltaAz << "°  ΔEl: " << deltaEl << "°";
+        qInfo() << "[ZEROING]     ΔAz: " << deltaAz << "°  ΔEl: " << deltaEl << "° (raw)";
+        qInfo() << "[ZEROING]     Note: El sign will be inverted to compensate for gimbal coordinates";
 
         // Apply the calculated offset (cumulative with existing offsets)
         if (std::abs(deltaAz) > 0.01f || std::abs(deltaEl) > 0.01f) {
             applyZeroingAdjustment(deltaAz, deltaEl);
-            qInfo() << "[ZEROING]   ✓ New zeroing offsets applied";
+            qInfo() << "[ZEROING]   ✓ New zeroing offsets applied (El negated for gimbal sign convention)";
         } else {
             qInfo() << "[ZEROING]   ⚠ No significant gimbal movement detected (< 0.01°)";
             qInfo() << "[ZEROING]   ⚠ Keeping existing offsets unchanged";
