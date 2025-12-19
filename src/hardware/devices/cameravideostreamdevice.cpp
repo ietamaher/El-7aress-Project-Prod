@@ -918,12 +918,29 @@ bool CameraVideoStreamDevice::processFrame(GstBuffer *buffer)
             }
         }
 
-        // This part is perfect and should be kept exactly as it is.
-        // It correctly handles all cases and passes all data to the model.
+        // ========================================================================
+        // CCIP STABILITY FIX: Velocity filtering with dead-band and EMA
+        // ========================================================================
+        // Raw frame-to-frame velocity is extremely noisy due to sub-pixel tracker
+        // jitter (±0.3px creates ±10px/s velocity spikes at 30Hz).
+        // This causes CCIP to jump around even for stationary targets.
+        //
+        // Solution: Apply EMA filter + dead-band BEFORE storing velocity.
+        // - EMA with tau=300ms provides strong smoothing
+        // - Dead-band of 3 px/s ignores noise from stationary targets
+        // ========================================================================
         if (m_stateModel) {
             bool trackerIsValidThisFrame = (m_trackerInitialized && m_currentTarget.state == VPI_TRACKING_STATE_TRACKED);
             float cX_px = 0.0f, cY_px = 0.0f, tW_px = 0.0f, tH_px = 0.0f;
             float velX_px_s = 0.0f, velY_px_s = 0.0f;
+
+            // Static filter state - persists across frames
+            static float smoothedVelX = 0.0f;
+            static float smoothedVelY = 0.0f;
+
+            // Filter parameters (CROWS-grade stability)
+            const float VELOCITY_DEADBAND_PX_S = 3.0f;  // Ignore velocities below 3 px/s (tracker noise floor)
+            const float FILTER_TAU_MS = 300.0f;         // 300ms time constant for strong smoothing
 
             if (trackerIsValidThisFrame) {
                 cX_px = m_currentTarget.bbox.left + m_currentTarget.bbox.width / 2.0f;
@@ -933,15 +950,30 @@ bool CameraVideoStreamDevice::processFrame(GstBuffer *buffer)
 
                 qint64 ms_elapsed = m_velocityTimer.restart();
                 double dt_s = ms_elapsed / 1000.0;
+
                 if (dt_s > 1e-6 && m_lastTargetCenterX_px > 0) {
-                    velX_px_s = (cX_px - m_lastTargetCenterX_px) / dt_s;
-                    velY_px_s = (cY_px - m_lastTargetCenterY_px) / dt_s;
+                    // Step 1: Calculate raw velocity
+                    float rawVelX = static_cast<float>((cX_px - m_lastTargetCenterX_px) / dt_s);
+                    float rawVelY = static_cast<float>((cY_px - m_lastTargetCenterY_px) / dt_s);
+
+                    // Step 2: Apply EMA filter (alpha = dt / (tau + dt))
+                    float dt_ms = static_cast<float>(ms_elapsed);
+                    float alpha = dt_ms / (FILTER_TAU_MS + dt_ms);
+                    smoothedVelX = alpha * rawVelX + (1.0f - alpha) * smoothedVelX;
+                    smoothedVelY = alpha * rawVelY + (1.0f - alpha) * smoothedVelY;
+
+                    // Step 3: Apply dead-band to eliminate noise from stationary targets
+                    velX_px_s = (std::abs(smoothedVelX) > VELOCITY_DEADBAND_PX_S) ? smoothedVelX : 0.0f;
+                    velY_px_s = (std::abs(smoothedVelY) > VELOCITY_DEADBAND_PX_S) ? smoothedVelY : 0.0f;
                 }
                 m_lastTargetCenterX_px = cX_px;
                 m_lastTargetCenterY_px = cY_px;
             } else {
                 m_lastTargetCenterX_px = 0.0f;
                 m_lastTargetCenterY_px = 0.0f;
+                // Reset filter state when tracking is lost
+                smoothedVelX = 0.0f;
+                smoothedVelY = 0.0f;
             }
             //qDebug() << "[CAM" << m_cameraIndex << " | processFrame] Reporting to model. trackerIsValidThisFrame:" << trackerIsValidThisFrame   << "m_currentTarget.state:" << static_cast<int>(m_currentTarget.state);
             // Call the model's update method (using the new name if you changed it)
