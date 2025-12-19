@@ -38,13 +38,13 @@
   "pid": {
     "tracking": {
       "azimuth": {
-        "kp": 1.2,
+        "kp": 0.7,
         "ki": 0.01,
         "kd": 0.05,
         "maxIntegral": 5.0
       },
       "elevation": {
-        "kp": 1.0,
+        "kp": 0.7,
         "ki": 0.01,
         "kd": 0.08,
         "maxIntegral": 5.0

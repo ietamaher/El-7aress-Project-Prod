@@ -203,8 +203,8 @@ void TrackingMotionMode::update(GimbalController* controller, double dt)
     // CRITICAL: PID uses VISUAL target position ONLY
     // NO ballistic drop, NO motion lead in gimbal control!
     // The gimbal tracks WHERE THE TARGET IS, not where the bullet will land.
-    double errAz = -(normalizeAngle180(m_smoothedTargetAz - data.gimbalAz));
-    double errEl = -(m_smoothedTargetEl - data.gimbalEl);
+    double errAz = normalizeAngle180(m_smoothedTargetAz - data.gimbalAz);
+    double errEl = m_smoothedTargetEl - data.gimbalEl;
 
     // ==========================================================================
     // PHASE 6: MANUAL OVERRIDE DURING TRACKING
@@ -238,7 +238,7 @@ void TrackingMotionMode::update(GimbalController* controller, double dt)
     // ==========================================================================
     // PHASE 7: DEADBAND
     // ==========================================================================
-    static constexpr double DEADBAND = 0.3;
+    static constexpr double DEADBAND = 0.15;
 
     bool azInDeadband = std::abs(errAz) < DEADBAND;
     bool elInDeadband = std::abs(errEl) < DEADBAND;
@@ -253,15 +253,22 @@ void TrackingMotionMode::update(GimbalController* controller, double dt)
     }
 
     // If both in deadband and no manual input, hold position
-    if (azInDeadband && elInDeadband && !hasManualInput) {
+    /*if (azInDeadband && elInDeadband && !hasManualInput) {
         m_previousDesiredAzVel *= 0.8;
         m_previousDesiredElVel *= 0.8;
         m_azPid.integral = 0.0;
         m_elPid.integral = 0.0;
         sendStabilizedServoCommands(controller, m_previousDesiredAzVel, m_previousDesiredElVel, true, dt);
         return;
-    }
-
+    }*/
+if (azInDeadband && elInDeadband && !hasManualInput) {
+    m_previousDesiredAzVel = 0.0;
+    m_previousDesiredElVel = 0.0;
+    m_azPid.integral = 0.0;
+    m_elPid.integral = 0.0;
+    stopServos(controller);  // Hard stop, not coast
+    return;
+}
     // ==========================================================================
     // PHASE 8: PID FEEDBACK (on VISUAL error only!)
     // ==========================================================================
@@ -314,9 +321,10 @@ void TrackingMotionMode::update(GimbalController* controller, double dt)
     // PHASE 11: COMBINE ALL VELOCITY COMPONENTS
     // ==========================================================================
     // Final velocity = PID + FF + LAC rate bias + Manual override
-    double desiredAzVelocity = pidAzVelocity + ffAz + lacAzBias + manualAzVel;
-    double desiredElVelocity = pidElVelocity + ffEl + lacElBias + manualElVel;
-
+    //double desiredAzVelocity = pidAzVelocity + ffAz + lacAzBias + manualAzVel;
+    //double desiredElVelocity = pidElVelocity + ffEl + lacElBias + manualElVel;
+    double desiredAzVelocity = -(pidAzVelocity + ffAz + lacAzBias) + manualAzVel;
+    double desiredElVelocity = -(pidElVelocity + ffEl + lacElBias) + manualElVel;
     // ==========================================================================
     // PHASE 12: VELOCITY LIMITS
     // ==========================================================================
