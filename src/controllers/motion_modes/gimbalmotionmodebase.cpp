@@ -446,9 +446,10 @@ void GimbalMotionModeBase::calculateStabilizationCorrection(double currentAz_deg
         platformEffectOnAz = r_imu + tanEl * (q_imu * sin(currentAzRad) + p_imu * cos(currentAzRad));
     }
 
-    // The correction is the negative of the platform's effect
+    // The correction is the negative of the platform's effect (for Az)
+    // NOTE: Elevation servo has inverted convention, so use + instead of -
     azCorrection_dps = -platformEffectOnAz;
-    elCorrection_dps = -platformEffectOnEl;
+    elCorrection_dps = +platformEffectOnEl;  // FIX: Inverted servo convention
 
     // --- DETAILED LOGGING OUTPUT ---
     if (shouldLog) {
@@ -687,9 +688,9 @@ void GimbalMotionModeBase::calculateHybridStabilizationCorrection(
             double platformTerm_degps = (q_dps * sin(azRad)) + (p_dps * cos(azRad)); // deg/s
             double platformEffectOnAz_dps = r_dps + tanEl * platformTerm_degps; // deg/s
 
-            // Corrections are negatives of platform effects
+            // Corrections: negate Az (standard), but NOT El (inverted servo convention)
             double azCorr_dps = -platformEffectOnAz_dps;
-            double elCorr_dps = -platformEffectOnEl_dps;
+            double elCorr_dps = +platformEffectOnEl_dps;  // FIX: Inverted servo convention
 
             // Limit corrections
             const double MAX_VELOCITY_CORR = 5.0; // deg/s

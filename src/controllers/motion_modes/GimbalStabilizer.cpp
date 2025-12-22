@@ -316,6 +316,9 @@ std::pair<double,double> GimbalStabilizer::computeRateFeedForward(
     // Azimuth couples with platform yaw + pitch/roll projected through elevation angle
     double platformEffectOnAz_dps = r_dps + tan_el * (q_dps * sin_az + p_dps * cos_az);
 
-    // Return negative (feed-forward compensates platform motion)
-    return {-platformEffectOnAz_dps, -platformEffectOnEl_dps};
+    // Return negative for Az (standard), positive for El (inverted servo convention)
+    // NOTE: Elevation servo wiring is inverted (negative velocity = UP, positive = DOWN)
+    // Position correction handles this at line 283: gimbalEl_deg = -gimbalEl_deg
+    // Rate feed-forward must match: use +platformEffectOnEl instead of -
+    return {-platformEffectOnAz_dps, +platformEffectOnEl_dps};
 }
