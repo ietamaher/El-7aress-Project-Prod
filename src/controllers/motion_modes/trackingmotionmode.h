@@ -54,6 +54,24 @@ private:
     static constexpr double LAC_RATE_BIAS_GAIN = 0.7;   ///< LAC feed-forward gain (0.0-1.0)
     static constexpr double MANUAL_OVERRIDE_SCALE = 5.0; ///< Manual slew scale during tracking (deg/s per unit)
     static constexpr double HALF_SCREEN_LIMIT_DEG = 5.0; ///< Max manual offset from target (half FOV approx)
+    double m_manualAzOffset = 0.0;
+    double m_manualElOffset = 0.0;
+
+    double m_lastGimbalAz   = 0.0;
+    double m_lastGimbalEl   = 0.0;
+    double m_gimbalVelAz    = 0.0;
+    double m_gimbalVelEl    = 0.0;
+        double m_prevAzVel = 0.0;
+
+    double m_prevErrAz = 0.0;   // previous loop error for azimuth (for sign-change check)
+double m_prevErrEl = 0.0;   // previous loop error for elevation
+
+double m_imageErrAz = 0.0;
+double m_imageErrEl = 0.0;
+
+
+double m_gimbalAzRate_dps = 0.0;
+double m_gimbalElRate_dps = 0.0;
 
 };
 

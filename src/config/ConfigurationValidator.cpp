@@ -387,7 +387,7 @@ bool ConfigurationValidator::validateMotionTuning()
                           "Manual joystick tau");
 
     // Validate motion limits
-    valid &= validateRange(static_cast<float>(cfg.motion.maxAccelerationDegS2), 1.0f, 200.0f,
+    valid &= validateRange(static_cast<float>(cfg.motion.maxAccelerationDegS2), 1.0f, 500.0f,
                           "Max acceleration");
     valid &= validateRange(static_cast<float>(cfg.motion.scanMaxAccelDegS2), 1.0f, 100.0f,
                           "Scan max acceleration");

@@ -48,8 +48,8 @@ std::pair<double,double> GimbalStabilizer::computeStabilizedVelocity(
     );
 
     // Calculate angle errors (required - current)
-    double azError_deg = normalizeAngle180(requiredAz_deg - currentAz_deg);
-    double elError_deg = normalizeAngle180(requiredEl_deg - currentEl_deg);
+    double azError_deg = normalizeAngle180(-requiredAz_deg + currentAz_deg);
+    double elError_deg = normalizeAngle180(-requiredEl_deg + currentEl_deg);
 
     // Convert to velocity correction: v_correction = Kp × error
     double azPositionCorr_dps = cfg.kpPosition * azError_deg;
@@ -197,5 +197,5 @@ std::pair<double,double> GimbalStabilizer::computeRateFeedForward(
     double platformEffectOnAz_dps = r_dps + tan_el * (q_dps * sin_az + p_dps * cos_az);
 
     // Return negative (feed-forward compensates platform motion)
-    return {-platformEffectOnAz_dps, -platformEffectOnEl_dps};
+    return {platformEffectOnAz_dps, -platformEffectOnEl_dps};
 }

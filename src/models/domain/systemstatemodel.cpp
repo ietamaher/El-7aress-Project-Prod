@@ -1142,8 +1142,8 @@ void SystemStateModel::applyZeroingAdjustment(float deltaAz, float deltaEl) {
         // Solution: Negate deltaEl to compensate for inverted gimbal coordinates.
         // ========================================================================
 
-        m_currentStateData.zeroingAzimuthOffset += deltaAz;
-        m_currentStateData.zeroingElevationOffset -= deltaEl;  // NEGATED to fix inverted gimbal
+        m_currentStateData.zeroingAzimuthOffset -= deltaAz; // NEGATED to fix inverted gimbal
+        m_currentStateData.zeroingElevationOffset += deltaEl;  
 
         // Clamp total offsets if necessary (e.g., to +/- 3 degrees from some baseline)
         // float maxOffset = 3.0f;

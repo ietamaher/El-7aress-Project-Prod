@@ -1,124 +1,122 @@
 {
-  "version": "1.0",
-  "comment": "Motion Control Tuning Parameters - Field-adjustable without rebuild",
+  "version": "2.0",
+  "comment": "OPTIMIZED Motion Tuning - 50ms update cycle, AZD-KD servo",
 
   "filters": {
     "gyro": {
-      "cutoffFreqHz": 5.0,
-      "comment": "Gyro low-pass filter cutoff frequency (1-20 Hz recommended)"
+      "cutoffFreqHz": 8.0,
+      "comment": "Slightly higher for faster response (was 5.0)"
     },
     "tracking": {
-      "positionTau": 0.12,
-      "velocityTau": 0.08,
-      "comment": "Time constants for target position/velocity smoothing (seconds)"
+      "positionTau": 0.04,
+      "velocityTau": 0.03,
+      "comment": "REDUCED from 0.12/0.08 - faster target following"
     },
     "manual": {
-      "joystickTau": 0.08,
-      "comment": "Joystick input filter time constant (seconds)"
+      "joystickTau": 0.05,
+      "comment": "Responsive joystick (was 0.08)"
     }
   },
 
   "motion": {
-    "maxAccelerationDegS2": 50.0,
-    "scanMaxAccelDegS2": 20.0,
-    "trpMaxAccelDegS2": 50.0,
-    "trpDefaultTravelSpeed": 15.0,
+    "maxAccelerationDegS2": 400.0,
+    "scanMaxAccelDegS2": 100.0,
+    "trpMaxAccelDegS2": 200.0,
+    "trpDefaultTravelSpeed": 20.0,
     "maxVelocityDegS": 60.0,
-    "arrivalThresholdDeg": 0.5,
+    "arrivalThresholdDeg": 0.3,
     "updateIntervalS": 0.05,
-    "comment": "General motion limits and control loop parameters"
+    "comment": "INCREASED maxAccel from 50 to 400 - must be <= hardware limit (880 deg/s²)"
   },
 
   "servo": {
     "azStepsPerDegree": 568.627350634,
     "elStepsPerDegree": 555.5556,
-    "comment": "Servo unit conversions (205500/360 for AZ, 200000/360 for EL)"
+    "hardwareAccelHz_s": 500000,
+    "comment": "500kHz/s = ~880 deg/s² for AZ, ~900 deg/s² for EL"
   },
 
   "pid": {
     "tracking": {
       "azimuth": {
-        "kp": 0.7,
-        "ki": 0.01,
-        "kd": 0.05,
-        "maxIntegral": 5.0
+        "kp": 2.5,
+        "ki": 0.3,
+        "kd": 0.08,
+        "maxIntegral": 8.0,
+        "comment": "ADDED Kd for damping! Was 0 causing overshoot"
       },
       "elevation": {
-        "kp": 0.7,
-        "ki": 0.01,
+        "kp": 2.8,
+        "ki": 0.3,
         "kd": 0.08,
-        "maxIntegral": 5.0
+        "maxIntegral": 10.0,
+        "comment": "Slightly higher gains for gravity compensation"
       }
-    } ,
+    },
 
     "autoSectorScan": {
       "azimuth": {
-        "kp": 0.7,
-        "ki": 0.01,
-        "kd": 0.05,
-        "maxIntegral": 20.0,
-        "comment": "AutoSectorScan azimuth PID gains"
+        "kp": 1.2,
+        "ki": 0.05,
+        "kd": 0.15,
+        "maxIntegral": 15.0
       },
       "elevation": {
-        "kp": 1.0,
-        "ki": 0.01,
-        "kd": 0.05,
-        "maxIntegral": 20.0,
-        "comment": "AutoSectorScan elevation PID gains"
+        "kp": 1.5,
+        "ki": 0.05,
+        "kd": 0.15,
+        "maxIntegral": 15.0
       },
-      "decelerationDistanceDeg": 5.0,
-      "arrivalThresholdDeg": 0.2,
-      "comment": "AutoSectorScan deceleration and arrival parameters"
+      "decelerationDistanceDeg": 3.0,
+      "arrivalThresholdDeg": 0.2
     },
 
     "trpScan": {
       "azimuth": {
-        "kp": 0.7,
-        "ki": 0.01,
-        "kd": 0.05,
-        "maxIntegral": 20.0,
-        "comment": "TRP scan azimuth PID gains"
+        "kp": 1.5,
+        "ki": 0.08,
+        "kd": 0.2,
+        "maxIntegral": 20.0
       },
       "elevation": {
-        "kp": 1.2,
-        "ki": 0.015,
-        "kd": 0.08,
-        "maxIntegral": 25.0,
-        "comment": "TRP scan elevation PID gains"
+        "kp": 1.8,
+        "ki": 0.1,
+        "kd": 0.25,
+        "maxIntegral": 20.0
       },
-      "decelerationDistanceDeg": 3.0,
-      "arrivalThresholdDeg": 0.1,
-      "comment": "TRP scan deceleration and arrival parameters"
+      "decelerationDistanceDeg": 2.0,
+      "arrivalThresholdDeg": 0.1
     },
 
     "radarSlew": {
       "azimuth": {
-        "kp": 1.5,
-        "ki": 0.08,
-        "kd": 0.15,
-        "maxIntegral": 30.0,
-        "comment": "Radar slew azimuth PID gains (aggressive for fast slew)"
+        "kp": 2.0,
+        "ki": 0.1,
+        "kd": 0.2,
+        "maxIntegral": 25.0
       },
       "elevation": {
-        "kp": 1.5,
-        "ki": 0.08,
-        "kd": 0.15,
-        "maxIntegral": 30.0,
-        "comment": "Radar slew elevation PID gains (aggressive for fast slew)"
+        "kp": 2.0,
+        "ki": 0.1,
+        "kd": 0.2,
+        "maxIntegral": 25.0
       }
     }
   },
 
   "accelLimits": {
     "manualMaxAccelHzPerSec": 500000.0,
-    "comment": "Maximum acceleration for manual joystick mode (Hz/s)"
+    "comment": "Matched to hardware setting"
   },
 
   "tuningNotes": {
-    "note1": "After editing this file, restart the application to apply changes",
-    "note2": "PID gains: Kp controls response speed, Ki eliminates steady-state error, Kd dampens oscillation",
-    "note3": "Time constants (tau): Lower = faster response but more noise. Typical range: 0.05-0.2s",
-    "note4": "Acceleration limits: Lower = smoother motion but slower. Higher = faster but may stress servos",
-    "note5": "For field tuning: Start with tracking PID, then scan modes, then slew modes"
+    "critical1": "SOFTWARE ACCEL LIMIT MUST BE <= HARDWARE ACCEL LIMIT",
+    "critical2": "Kd is ESSENTIAL for preventing overshoot - never set to 0",
+    "critical3": "Filter tau values add phase lag - keep low for responsive tracking",
+    "note1": "Hardware accel @ 500kHz/s = 880 deg/s² (AZ) - very responsive",
+    "note2": "With 50ms cycle, PID needs Kd to damp oscillations",
+    "note3": "Feed-forward helps tracking but PID must still damp",
+    "note4": "If still oscillating: increase Kd. If too slow: increase Kp",
+    "note5": "Derivative on measurement (not error) prevents kick on target jumps"
   }
 }

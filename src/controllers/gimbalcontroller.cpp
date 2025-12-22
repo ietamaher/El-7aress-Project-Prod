@@ -53,7 +53,6 @@ QPointF calculateAngularOffsetFromPixelError(
     double angularOffsetYDeg = 0.0;
 
     // Calculate azimuth offset
-    // CRITICAL FIX: !!! check sign
     if (cameraHfovDegrees > 0.01f && imageWidthPx > 0) {
         double degreesPerPixelAz = cameraHfovDegrees / static_cast<double>(imageWidthPx);
         angularOffsetXDeg =  errorPxX * degreesPerPixelAz;
@@ -67,7 +66,6 @@ QPointF calculateAngularOffsetFromPixelError(
 
         if (vfov_deg_approx > 0.01f) {
             double degreesPerPixelEl = vfov_deg_approx / static_cast<double>(imageHeightPx);
-            // Invert Y: positive pixel error (target below) needs negative elevation (gimbal down)
             angularOffsetYDeg = - errorPxY * degreesPerPixelEl;
         }
     }
@@ -426,52 +424,36 @@ void GimbalController::onSystemStateChanged(const SystemStateData& newData)
                         newData.currentImageWidthPx, newData.currentImageHeightPx, activeHfov
                     );
 
-                    // Target gimbal position = current position + offset
-                    double targetGimbalAz = newData.gimbalAz + angularOffset.x();
-                    double targetGimbalEl = newData.gimbalEl + angularOffset.y();
+                     errorPxX = newData.trackedTargetCenterX_px - screenCenterX_px;
+                     errorPxY = newData.trackedTargetCenterY_px - screenCenterY_px;
 
-                    QPointF angularVelocity = GimbalUtils::calculateAngularOffsetFromPixelError(
-                        newData.trackedTargetVelocityX_px_s,
-                        newData.trackedTargetVelocityY_px_s,
-                        newData.currentImageWidthPx,
-                        newData.currentImageHeightPx,
-                        activeHfov
-                    );
-                    double targetAngularVelAz_dps = angularVelocity.x();
-                    double targetAngularVelEl_dps = angularVelocity.y();
+                    // Convert pixel error → angular error (deg)
+                    QPointF angularError =
+                        GimbalUtils::calculateAngularOffsetFromPixelError(
+                            errorPxX, errorPxY,
+                            newData.currentImageWidthPx,
+                            newData.currentImageHeightPx,
+                            activeHfov
+                        );
 
-                    // ================================================================
-                    // BUG FIX: Smooth angular rates to stabilize CCIP display
-                    // ================================================================
-                    // Raw tracker velocity measurements are noisy frame-to-frame.
-                    // Apply low-pass filter (tau = 150ms) to stabilize CCIP.
-                    // Without smoothing, CCIP jumps around even for stationary targets.
-                    // ================================================================
-                    static double filteredTargetVelAz = 0.0;
-                    static double filteredTargetVelEl = 0.0;
-                    const double filterTau = 0.15;  // 150ms time constant (more aggressive than manual mode)
-                    const double dt = 0.033;  // ~30Hz tracker update rate
-                    double alpha = dt / (filterTau + dt);
-                    filteredTargetVelAz = alpha * targetAngularVelAz_dps + (1.0 - alpha) * filteredTargetVelAz;
-                    filteredTargetVelEl = alpha * targetAngularVelEl_dps + (1.0 - alpha) * filteredTargetVelEl;
-                    // ================================================================
-                    // BUG FIX #1: Update target angular rates for LAC calculation
-                    // ================================================================
-                    // Store SMOOTHED angular rates in SystemStateData so WeaponController
-                    // can use them to calculate motion lead (rate × TOF).
-                    // Without this, LAC motion lead is always zero!
-                    // ================================================================
-                    m_stateModel->updateTargetAngularRates(
-                        static_cast<float>(filteredTargetVelAz),
-                        static_cast<float>(filteredTargetVelEl)
-                    );
+                    // Convert pixel velocity → angular velocity (deg/s)
+                    QPointF angularVelocity =
+                        GimbalUtils::calculateAngularOffsetFromPixelError(
+                            newData.trackedTargetVelocityX_px_s,
+                            newData.trackedTargetVelocityY_px_s,
+                            newData.currentImageWidthPx,
+                            newData.currentImageHeightPx,
+                            activeHfov
+                        );
 
-                    // Emit queued signal (thread-safe, prevents race conditions)
+                    // ✔ EMIT IMAGE-SPACE DATA ONLY
                     emit trackingTargetUpdated(
-                        targetGimbalAz, targetGimbalEl,
-                        targetAngularVelAz_dps, targetAngularVelEl_dps,
+                        angularError.x(),          // image-based angular error (deg)
+                        angularError.y(),
+                        angularVelocity.x(),       // target angular velocity (deg/s)
+                        angularVelocity.y(),
                         true
-                    );
+                    ) ;
                 } else {
                     // Target lost - clear angular rates and emit invalid signal
                     m_stateModel->updateTargetAngularRates(0.0f, 0.0f);
