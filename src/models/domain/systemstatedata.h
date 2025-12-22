@@ -474,6 +474,41 @@ struct SystemStateData {
     double targetElevation_world = 0.0; ///< Desired world elevation in degrees (0° = horizon, +90° = zenith)
     bool useWorldFrameTarget = false;   ///< Enable world-frame stabilization (true = hold absolute direction)
 
+    // =================================
+    // GYROSTABILIZATION DEBUG DATA
+    // =================================
+    // Intermediate values from stabilization pipeline for debugging
+    struct StabilizationDebug {
+        // Input values (from IMU, mapped to stabilizer frame)
+        double p_dps = 0.0;             ///< Roll rate in stabilizer frame (deg/s)
+        double q_dps = 0.0;             ///< Pitch rate in stabilizer frame (deg/s)
+        double r_dps = 0.0;             ///< Yaw rate in stabilizer frame (deg/s) - NOTE: negated from GyroZ
+
+        // Position correction component
+        double requiredAz_deg = 0.0;    ///< Required gimbal Az to maintain world target
+        double requiredEl_deg = 0.0;    ///< Required gimbal El to maintain world target
+        double azError_deg = 0.0;       ///< Position error Az (required - current)
+        double elError_deg = 0.0;       ///< Position error El (required - current)
+        double azPosCorr_dps = 0.0;     ///< Position correction velocity Az
+        double elPosCorr_dps = 0.0;     ///< Position correction velocity El
+
+        // Rate feed-forward component
+        double azRateFF_dps = 0.0;      ///< Rate feed-forward Az (gyro compensation)
+        double elRateFF_dps = 0.0;      ///< Rate feed-forward El (gyro compensation)
+
+        // Final output
+        double finalAz_dps = 0.0;       ///< Final command Az = user + posCorr + rateFF
+        double finalEl_dps = 0.0;       ///< Final command El = user + posCorr + rateFF
+
+        // User input
+        double userAz_dps = 0.0;        ///< User-commanded Az velocity
+        double userEl_dps = 0.0;        ///< User-commanded El velocity
+
+        // Status flags
+        bool stabActive = false;        ///< Stabilization is actually being applied
+        bool worldTargetHeld = false;   ///< World frame target holding active
+    } stabDebug;
+
     // Stationary detection variables
     bool isVehicleStationary = false;   ///< Flag indicating if the vehicle is stationary
     double previousAccelMagnitude = 0.0; ///< Previous accelerometer magnitude for delta calculation

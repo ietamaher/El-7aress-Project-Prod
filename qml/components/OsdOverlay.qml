@@ -1294,6 +1294,259 @@ Item {
     }*/
 
     // ========================================================================
+    // GYROSTABILIZATION DEBUG BOX (Left side, below status block)
+    // Toggle visibility with viewModel.toggleStabDebugVisible()
+    // ========================================================================
+    Rectangle {
+        id: stabDebugBox
+        x: 10
+        y: statusBlock.y + statusBlock.height + 10
+        width: 320
+        height: stabDebugColumn.height + 20
+        color: "#DD000000"
+        border.color: viewModel && viewModel.stabDebugActive ? "#00FF00" : "#FF6600"
+        border.width: 2
+        radius: 4
+        visible: viewModel ? viewModel.stabDebugVisible : false
+        z: 300
+
+        // Click to toggle visibility
+        MouseArea {
+            anchors.fill: parent
+            onClicked: {
+                if (viewModel) viewModel.toggleStabDebugVisible()
+            }
+        }
+
+        Column {
+            id: stabDebugColumn
+            anchors.left: parent.left
+            anchors.top: parent.top
+            anchors.margins: 10
+            spacing: 3
+
+            // Header
+            Row {
+                spacing: 10
+                Text {
+                    text: "GYRO STAB DEBUG"
+                    font.pixelSize: 14
+                    font.bold: true
+                    font.family: primaryFont
+                    color: viewModel && viewModel.stabDebugActive ? "#00FF00" : "#FF6600"
+                }
+                Text {
+                    text: viewModel && viewModel.stabDebugActive ? "[ACTIVE]" : "[INACTIVE]"
+                    font.pixelSize: 12
+                    font.bold: true
+                    font.family: primaryFont
+                    color: viewModel && viewModel.stabDebugActive ? "#00FF00" : "#888888"
+                }
+                Text {
+                    text: viewModel && viewModel.stabDebugWorldHeld ? "[WORLD]" : "[LOCAL]"
+                    font.pixelSize: 12
+                    font.bold: true
+                    font.family: primaryFont
+                    color: viewModel && viewModel.stabDebugWorldHeld ? "cyan" : "#888888"
+                }
+            }
+
+            // Separator
+            Rectangle { width: 300; height: 1; color: "#666666" }
+
+            // IMU Body Rates (p, q, r in stabilizer frame)
+            Text {
+                text: "IMU RATES (p,q,r):"
+                font.pixelSize: 11
+                font.bold: true
+                font.family: primaryFont
+                color: "#AAAAAA"
+            }
+            Row {
+                spacing: 15
+                Text {
+                    text: "p: " + (viewModel ? viewModel.stabDebugP.toFixed(2) : "0.00") + "°/s"
+                    font.pixelSize: 12
+                    font.family: primaryFont
+                    color: "yellow"
+                }
+                Text {
+                    text: "q: " + (viewModel ? viewModel.stabDebugQ.toFixed(2) : "0.00") + "°/s"
+                    font.pixelSize: 12
+                    font.family: primaryFont
+                    color: "yellow"
+                }
+                Text {
+                    text: "r: " + (viewModel ? viewModel.stabDebugR.toFixed(2) : "0.00") + "°/s"
+                    font.pixelSize: 12
+                    font.family: primaryFont
+                    color: viewModel && Math.abs(viewModel.stabDebugR) > 0.5 ? "#FF6600" : "yellow"
+                }
+            }
+
+            // Separator
+            Rectangle { width: 300; height: 1; color: "#444444" }
+
+            // Position Error
+            Text {
+                text: "POSITION ERROR:"
+                font.pixelSize: 11
+                font.bold: true
+                font.family: primaryFont
+                color: "#AAAAAA"
+            }
+            Row {
+                spacing: 20
+                Text {
+                    text: "Az: " + (viewModel ? viewModel.stabDebugAzError.toFixed(2) : "0.00") + "°"
+                    font.pixelSize: 12
+                    font.family: primaryFont
+                    color: viewModel && Math.abs(viewModel.stabDebugAzError) > 1.0 ? "#FF0000" : "#00FF00"
+                }
+                Text {
+                    text: "El: " + (viewModel ? viewModel.stabDebugElError.toFixed(2) : "0.00") + "°"
+                    font.pixelSize: 12
+                    font.family: primaryFont
+                    color: viewModel && Math.abs(viewModel.stabDebugElError) > 1.0 ? "#FF0000" : "#00FF00"
+                }
+            }
+
+            // Position Correction Velocity
+            Text {
+                text: "POS CORR (Kp*err):"
+                font.pixelSize: 11
+                font.bold: true
+                font.family: primaryFont
+                color: "#AAAAAA"
+            }
+            Row {
+                spacing: 20
+                Text {
+                    text: "Az: " + (viewModel ? viewModel.stabDebugAzPosCorr.toFixed(2) : "0.00") + "°/s"
+                    font.pixelSize: 12
+                    font.family: primaryFont
+                    color: "cyan"
+                }
+                Text {
+                    text: "El: " + (viewModel ? viewModel.stabDebugElPosCorr.toFixed(2) : "0.00") + "°/s"
+                    font.pixelSize: 12
+                    font.family: primaryFont
+                    color: "cyan"
+                }
+            }
+
+            // Separator
+            Rectangle { width: 300; height: 1; color: "#444444" }
+
+            // Rate Feed-Forward
+            Text {
+                text: "RATE FEEDFWD (gyro comp):"
+                font.pixelSize: 11
+                font.bold: true
+                font.family: primaryFont
+                color: "#AAAAAA"
+            }
+            Row {
+                spacing: 20
+                Text {
+                    text: "Az: " + (viewModel ? viewModel.stabDebugAzRateFF.toFixed(2) : "0.00") + "°/s"
+                    font.pixelSize: 12
+                    font.family: primaryFont
+                    color: "#FF00FF"  // Magenta for rate FF
+                }
+                Text {
+                    text: "El: " + (viewModel ? viewModel.stabDebugElRateFF.toFixed(2) : "0.00") + "°/s"
+                    font.pixelSize: 12
+                    font.family: primaryFont
+                    color: "#FF00FF"
+                }
+            }
+
+            // Separator
+            Rectangle { width: 300; height: 1; color: "#666666" }
+
+            // User Input
+            Text {
+                text: "USER INPUT:"
+                font.pixelSize: 11
+                font.bold: true
+                font.family: primaryFont
+                color: "#AAAAAA"
+            }
+            Row {
+                spacing: 20
+                Text {
+                    text: "Az: " + (viewModel ? viewModel.stabDebugAzUser.toFixed(2) : "0.00") + "°/s"
+                    font.pixelSize: 12
+                    font.family: primaryFont
+                    color: "#FFFFFF"
+                }
+                Text {
+                    text: "El: " + (viewModel ? viewModel.stabDebugElUser.toFixed(2) : "0.00") + "°/s"
+                    font.pixelSize: 12
+                    font.family: primaryFont
+                    color: "#FFFFFF"
+                }
+            }
+
+            // Final Command Output
+            Text {
+                text: "FINAL CMD (user+pos+rate):"
+                font.pixelSize: 11
+                font.bold: true
+                font.family: primaryFont
+                color: "#AAAAAA"
+            }
+            Row {
+                spacing: 20
+                Text {
+                    text: "Az: " + (viewModel ? viewModel.stabDebugAzFinal.toFixed(2) : "0.00") + "°/s"
+                    font.pixelSize: 13
+                    font.bold: true
+                    font.family: primaryFont
+                    color: "#00FF00"
+                }
+                Text {
+                    text: "El: " + (viewModel ? viewModel.stabDebugElFinal.toFixed(2) : "0.00") + "°/s"
+                    font.pixelSize: 13
+                    font.bold: true
+                    font.family: primaryFont
+                    color: "#00FF00"
+                }
+            }
+
+            // Sign Check Indicator
+            Rectangle { width: 300; height: 1; color: "#666666" }
+            Row {
+                spacing: 10
+                Text {
+                    text: "SIGN CHECK:"
+                    font.pixelSize: 10
+                    font.family: primaryFont
+                    color: "#888888"
+                }
+                Text {
+                    // Check if rateFF and posCorr have same sign (should cooperate, not fight)
+                    property bool azSignMatch: viewModel ?
+                        (viewModel.stabDebugAzRateFF * viewModel.stabDebugAzPosCorr >= 0 ||
+                         Math.abs(viewModel.stabDebugAzRateFF) < 0.1 ||
+                         Math.abs(viewModel.stabDebugAzPosCorr) < 0.1) : true
+                    property bool elSignMatch: viewModel ?
+                        (viewModel.stabDebugElRateFF * viewModel.stabDebugElPosCorr >= 0 ||
+                         Math.abs(viewModel.stabDebugElRateFF) < 0.1 ||
+                         Math.abs(viewModel.stabDebugElPosCorr) < 0.1) : true
+                    text: "Az:" + (azSignMatch ? "OK" : "CONFLICT") +
+                          " El:" + (elSignMatch ? "OK" : "CONFLICT")
+                    font.pixelSize: 10
+                    font.bold: true
+                    font.family: primaryFont
+                    color: (azSignMatch && elSignMatch) ? "#00FF00" : "#FF0000"
+                }
+            }
+        }
+    }
+
+    // ========================================================================
     // HELPER FUNCTIONS
     // ========================================================================
     function getCardinalDirection(bearing) {

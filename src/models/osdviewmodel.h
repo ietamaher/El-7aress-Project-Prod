@@ -156,6 +156,32 @@ class OsdViewModel : public QObject
     Q_PROPERTY(bool ammoFeedCycleInProgress READ ammoFeedCycleInProgress NOTIFY ammoFeedCycleInProgressChanged)
     Q_PROPERTY(bool ammoLoaded READ ammoLoaded NOTIFY ammoLoadedChanged)
 
+    // ========================================================================
+    // GYROSTABILIZATION DEBUG DATA (for diagnostic OSD overlay)
+    // ========================================================================
+    Q_PROPERTY(bool stabDebugVisible READ stabDebugVisible NOTIFY stabDebugVisibleChanged)
+    Q_PROPERTY(bool stabDebugActive READ stabDebugActive NOTIFY stabDebugChanged)
+    Q_PROPERTY(bool stabDebugWorldHeld READ stabDebugWorldHeld NOTIFY stabDebugChanged)
+    // Gyro rates (mapped to stabilizer frame)
+    Q_PROPERTY(double stabDebugP READ stabDebugP NOTIFY stabDebugChanged)
+    Q_PROPERTY(double stabDebugQ READ stabDebugQ NOTIFY stabDebugChanged)
+    Q_PROPERTY(double stabDebugR READ stabDebugR NOTIFY stabDebugChanged)
+    // Position error
+    Q_PROPERTY(double stabDebugAzError READ stabDebugAzError NOTIFY stabDebugChanged)
+    Q_PROPERTY(double stabDebugElError READ stabDebugElError NOTIFY stabDebugChanged)
+    // Position correction velocity
+    Q_PROPERTY(double stabDebugAzPosCorr READ stabDebugAzPosCorr NOTIFY stabDebugChanged)
+    Q_PROPERTY(double stabDebugElPosCorr READ stabDebugElPosCorr NOTIFY stabDebugChanged)
+    // Rate feed-forward velocity
+    Q_PROPERTY(double stabDebugAzRateFF READ stabDebugAzRateFF NOTIFY stabDebugChanged)
+    Q_PROPERTY(double stabDebugElRateFF READ stabDebugElRateFF NOTIFY stabDebugChanged)
+    // Final command velocity
+    Q_PROPERTY(double stabDebugAzFinal READ stabDebugAzFinal NOTIFY stabDebugChanged)
+    Q_PROPERTY(double stabDebugElFinal READ stabDebugElFinal NOTIFY stabDebugChanged)
+    // User input velocity
+    Q_PROPERTY(double stabDebugAzUser READ stabDebugAzUser NOTIFY stabDebugChanged)
+    Q_PROPERTY(double stabDebugElUser READ stabDebugElUser NOTIFY stabDebugChanged)
+
 
 public:
     explicit OsdViewModel(QObject *parent = nullptr);
@@ -268,6 +294,30 @@ public:
     bool ammoFeedCycleInProgress() const { return m_ammoFeedCycleInProgress; }
     bool ammoLoaded() const { return m_ammoLoaded; }
 
+    // Gyrostabilization debug getters
+    bool stabDebugVisible() const { return m_stabDebugVisible; }
+    bool stabDebugActive() const { return m_stateData.stabDebug.stabActive; }
+    bool stabDebugWorldHeld() const { return m_stateData.stabDebug.worldTargetHeld; }
+    double stabDebugP() const { return m_stateData.stabDebug.p_dps; }
+    double stabDebugQ() const { return m_stateData.stabDebug.q_dps; }
+    double stabDebugR() const { return m_stateData.stabDebug.r_dps; }
+    double stabDebugAzError() const { return m_stateData.stabDebug.azError_deg; }
+    double stabDebugElError() const { return m_stateData.stabDebug.elError_deg; }
+    double stabDebugAzPosCorr() const { return m_stateData.stabDebug.azPosCorr_dps; }
+    double stabDebugElPosCorr() const { return m_stateData.stabDebug.elPosCorr_dps; }
+    double stabDebugAzRateFF() const { return m_stateData.stabDebug.azRateFF_dps; }
+    double stabDebugElRateFF() const { return m_stateData.stabDebug.elRateFF_dps; }
+    double stabDebugAzFinal() const { return m_stateData.stabDebug.finalAz_dps; }
+    double stabDebugElFinal() const { return m_stateData.stabDebug.finalEl_dps; }
+    double stabDebugAzUser() const { return m_stateData.stabDebug.userAz_dps; }
+    double stabDebugElUser() const { return m_stateData.stabDebug.userEl_dps; }
+
+    // Toggle stabDebug visibility (for debugging)
+    Q_INVOKABLE void toggleStabDebugVisible() {
+        m_stabDebugVisible = !m_stabDebugVisible;
+        emit stabDebugVisibleChanged();
+    }
+
 public slots:
     // Setters
     void setAccentColor(const QColor& color);
@@ -330,6 +380,9 @@ public slots:
 
     // Ammunition Feed Status update
     void updateAmmoFeedStatus(int state, bool cycleInProgress, bool loaded);
+
+    // Gyrostabilization debug update (called by OsdController from SystemStateData)
+    void updateStabDebug(const SystemStateData& data);
 
 
 signals:
@@ -438,6 +491,10 @@ signals:
     void ammoFeedStateChanged();
     void ammoFeedCycleInProgressChanged();
     void ammoLoadedChanged();
+
+    // Gyrostabilization debug signals
+    void stabDebugVisibleChanged();
+    void stabDebugChanged();
 
 
 private:
@@ -558,6 +615,10 @@ private:
     int m_ammoFeedState = 0;  // 0=Idle, 1=Extending, 2=Retracting, 3=Fault
     bool m_ammoFeedCycleInProgress = false;
     bool m_ammoLoaded = false;
+
+    // Gyrostabilization debug data
+    bool m_stabDebugVisible = true;  // Default to visible for debugging
+    SystemStateData m_stateData;      // Cached state data for stabDebug access
 };
 
 #endif // OSDVIEWMODEL_H

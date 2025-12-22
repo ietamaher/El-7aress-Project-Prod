@@ -4,6 +4,7 @@
 #include <Eigen/Dense>
 #include <utility>
 #include <cmath>
+#include "models/domain/systemstatedata.h"  // For StabilizationDebug struct
 
 /**
  * @class GimbalStabilizer
@@ -51,6 +52,32 @@ public:
      * @return std::pair<double,double> Stabilized velocity commands (az_dps, el_dps)
      */
     std::pair<double,double> computeStabilizedVelocity(
+        double desiredAzVel_dps,
+        double desiredElVel_dps,
+        double imuRoll_deg,
+        double imuPitch_deg,
+        double imuYaw_deg,
+        double gyroX_dps,
+        double gyroY_dps,
+        double gyroZ_dps,
+        double currentAz_deg,
+        double currentEl_deg,
+        double targetAz_world,
+        double targetEl_world,
+        bool useWorldTarget,
+        double dt) const;
+
+    /**
+     * @brief Compute stabilized velocity with debug output for OSD visualization
+     *
+     * Same as computeStabilizedVelocity but also populates debug struct
+     * for diagnostics display on OSD overlay.
+     *
+     * @param debugOut Output debug data for OSD display
+     * @param ... (same parameters as above)
+     */
+    std::pair<double,double> computeStabilizedVelocityWithDebug(
+        SystemStateData::StabilizationDebug& debugOut,
         double desiredAzVel_dps,
         double desiredElVel_dps,
         double imuRoll_deg,

@@ -727,6 +727,13 @@ public:
      */
     void updateStationaryStatus(SystemStateData& data);
 
+    /**
+     * @brief Updates stabilization debug data for OSD display.
+     * Called from GimbalMotionModeBase::sendStabilizedServoCommands().
+     * @param debugData The debug data from the stabilizer.
+     */
+    void updateStabilizationDebug(const SystemStateData::StabilizationDebug& debugData);
+
 signals:
     // =================================
     // CORE SYSTEM SIGNALS
