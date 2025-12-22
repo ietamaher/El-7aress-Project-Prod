@@ -30,72 +30,81 @@ WeaponController::WeaponController(SystemStateModel* stateModel,
     , m_servoActuator(servoActuator)
     , m_plc42(plc42)
 {
-    // ========================================================================
-    // SYSTEM STATE MONITORING
-    // ========================================================================
-    if (m_stateModel) {
-        // ========================================================================
-        // BUG FIX #4: MOTOR CONTROL LATENCY - USE DIRECT CONNECTION
-        // ========================================================================
-        // ORIGINAL: Qt::QueuedConnection caused event queue saturation over time
-        // - Servo updates at 110Hz → ~1200 events/min from state changes
-        // - Queued events accumulate if processing takes longer than arrival rate
-        // - Result: Latency increases from 0ms to several seconds over time
-        //
-        // FIX: Use Qt::DirectConnection (all components in main thread)
-        // - Immediate processing, no event queue buildup
-        // - Safe because SystemStateModel, WeaponController, and GimbalController
-        //   all run in the main thread (required by QModbus)
-        // - Ballistics calculations are fast (<1ms), won't block I/O
-        // ========================================================================
-        connect(m_stateModel, &SystemStateModel::dataChanged,
-                this, &WeaponController::onSystemStateChanged,
-                Qt::DirectConnection);  // ✅ FIX: Changed from QueuedConnection
+    setupTimers();
+    setupConnections();
 
-        // Initialize GUI state for ammo feed
+    if (m_stateModel) {
         m_stateModel->setAmmoFeedCycleInProgress(false);
     }
 
     // ========================================================================
-    // AMMO FEED FSM SETUP
-    // ========================================================================
-    m_feedTimer = new QTimer(this);
-    m_feedTimer->setSingleShot(true);
-    connect(m_feedTimer, &QTimer::timeout, this, &WeaponController::onFeedTimeout);
-
-    // Connect actuator position feedback for FSM state transitions
-    if (m_servoActuator) {
-        connect(m_servoActuator, &ServoActuatorDevice::actuatorDataChanged,
-                this, &WeaponController::onActuatorFeedback,
-                Qt::QueuedConnection);
-    }
-
-    // ========================================================================
-    // BALLISTICS: Professional LUT System (Kongsberg/Rafael approach)
+    // BALLISTICS
     // ========================================================================
     m_ballisticsProcessor = new BallisticsProcessorLUT();
-
     bool lutLoaded = m_ballisticsProcessor->loadAmmunitionTable(":/ballistic/tables/m2_ball.json");
-
     if (lutLoaded) {
-        qInfo() << "[WeaponController] Ballistic LUT loaded successfully:"
-                << m_ballisticsProcessor->getAmmunitionName();
-    } else {
-        qCritical() << "[WeaponController] CRITICAL: Failed to load ballistic table!"
-                    << "Fire control accuracy will be degraded!";
+        qInfo() << "[WeaponController] Ballistic LUT loaded:" << m_ballisticsProcessor->getAmmunitionName();
     }
+
+    // ========================================================================
+    // JAM DETECTION CONFIG - LOG FOR OPERATOR
+    // ========================================================================
+    qInfo() << "╔════════════════════════════════════════════════════════════╗";
+    qInfo() << "║     AMMUNITION FEED - JAM DETECTION ENABLED                ║";
+    qInfo() << "╠════════════════════════════════════════════════════════════╣";
+    qInfo() << "║  Torque Nominal:    " << QString("%1").arg(m_jamConfig.torqueNominal, 6) << " (CALIBRATE!)           ║";
+    qInfo() << "║  Torque Warning:    " << QString("%1").arg(m_jamConfig.torqueWarning, 6) << "                        ║";
+    qInfo() << "║  Torque Jam:        " << QString("%1").arg(m_jamConfig.torqueJamThreshold, 6) << "                        ║";
+    qInfo() << "║  Torque Critical:   " << QString("%1").arg(m_jamConfig.torqueCritical, 6) << " (fuse protection)      ║";
+    qInfo() << "║  Stall Time:        " << QString("%1").arg(m_jamConfig.stallTimeMs, 6) << " ms                      ║";
+    qInfo() << "╚════════════════════════════════════════════════════════════╝";
 }
 
 WeaponController::~WeaponController()
 {
-    // Stop any active timers
-    if (m_feedTimer) {
-        m_feedTimer->stop();
-    }
+    if (m_feedTimer) m_feedTimer->stop();
+    if (m_safeRetractTimer) m_safeRetractTimer->stop();
+    if (m_jamMonitorTimer) m_jamMonitorTimer->stop();
 
-    // Clean up ballistics processor
     delete m_ballisticsProcessor;
     m_ballisticsProcessor = nullptr;
+}
+
+// ============================================================================
+// SETUP
+// ============================================================================
+
+void WeaponController::setupTimers()
+{
+    // Overall feed cycle timeout
+    m_feedTimer = new QTimer(this);
+    m_feedTimer->setSingleShot(true);
+    connect(m_feedTimer, &QTimer::timeout, this, &WeaponController::onFeedTimeout);
+
+    // Safe retract timeout
+    m_safeRetractTimer = new QTimer(this);
+    m_safeRetractTimer->setSingleShot(true);
+    connect(m_safeRetractTimer, &QTimer::timeout, this, &WeaponController::onSafeRetractTimeout);
+
+    // High-frequency jam monitoring (combines torque + stall check)
+    m_jamMonitorTimer = new QTimer(this);
+    m_jamMonitorTimer->setInterval(m_jamConfig.torqueSampleIntervalMs);
+    connect(m_jamMonitorTimer, &QTimer::timeout, this, &WeaponController::onJamMonitorTimer);
+}
+
+void WeaponController::setupConnections()
+{
+    if (m_stateModel) {
+        connect(m_stateModel, &SystemStateModel::dataChanged,
+                this, &WeaponController::onSystemStateChanged,
+                Qt::DirectConnection);
+    }
+
+    if (m_servoActuator) {
+        connect(m_servoActuator, &ServoActuatorDevice::actuatorDataChanged,
+                this, &WeaponController::onActuatorFeedback,
+                Qt::DirectConnection);
+    }
 }
 
 // ============================================================================
@@ -109,22 +118,21 @@ void WeaponController::onSystemStateChanged(const SystemStateData& newData)
     // Detect button PRESS (edge trigger, not level)
     // Button RELEASE is intentionally ignored - FSM controls the cycle
     // ========================================================================
+    // ========================================================================
+    // AMMO FEED BUTTON - PRESS DETECTION
+    // ========================================================================
     if (newData.ammoLoadButtonPressed && !m_oldState.ammoLoadButtonPressed) {
-        // Button was just pressed - try to start cycle
         onOperatorRequestLoad();
     }
 
     // Handle button release
     if (!newData.ammoLoadButtonPressed && m_oldState.ammoLoadButtonPressed) {
         if (m_feedState == AmmoFeedState::Extended) {
-            // Button released while in Extended (hold) state - now retract
-            qDebug() << "[WeaponController] Button RELEASED in Extended state - initiating retraction";
+            qDebug() << "[WeaponController] Button RELEASED in Extended - retracting";
             transitionFeedState(AmmoFeedState::Retracting);
-            m_servoActuator->moveToPosition(FEED_RETRACT_POS);
-            m_feedTimer->start(FEED_TIMEOUT_MS);  // Start watchdog for retraction
-        } else if (m_feedState == AmmoFeedState::Extending || m_feedState == AmmoFeedState::Retracting) {
-            // Button released during extend/retract motion - logged but cycle continues
-            qDebug() << "[WeaponController] Button released during" << feedStateName(m_feedState) << "- cycle continues";
+            commandRetract();
+            startJamMonitoring();
+            m_feedTimer->start(FEED_TIMEOUT_MS);
         }
     }
 
@@ -305,180 +313,459 @@ void WeaponController::onSystemStateChanged(const SystemStateData& newData)
 // ============================================================================
 // AMMO FEED CYCLE FSM - OPERATOR ENTRY POINT
 // ============================================================================
-
-void WeaponController::onOperatorRequestLoad()
+ 
+void WeaponController::setJamDetectionConfig(const JamDetectionConfig& config)
 {
-    qDebug() << "[WeaponController] Operator REQUEST LOAD. Current feed state:"
-             << feedStateName(m_feedState);
-
-    // Handle FAULT state - operator presses button again to reset
-    if (m_feedState == AmmoFeedState::Fault) {
-        qDebug() << "[WeaponController] Button pressed in FAULT state - resetting fault";
-        resetFeedFault();
-        return;
-    }
-
-    // Only allow start when idle
-    if (m_feedState != AmmoFeedState::Idle) {
-        qDebug() << "[WeaponController] Feed cycle start IGNORED - cycle already running";
-        return;
-    }
-
-    startAmmoFeedCycle();
+    m_jamConfig = config;
+    m_jamMonitorTimer->setInterval(config.torqueSampleIntervalMs);
+    
+    qInfo() << "[WeaponController] Jam detection config updated";
+    qInfo() << "  Nominal:" << config.torqueNominal;
+    qInfo() << "  Jam threshold:" << config.torqueJamThreshold;
+    qInfo() << "  Critical:" << config.torqueCritical;
 }
 
 // ============================================================================
-// AMMO FEED CYCLE FSM - CYCLE START
-// ============================================================================
-
-void WeaponController::startAmmoFeedCycle()
-{
-    if (!m_servoActuator) {
-        qWarning() << "[WeaponController] No servo actuator - cannot start feed cycle";
-        return;
-    }
-
-    qDebug() << "========== FEED CYCLE STARTED ==========";
-    transitionFeedState(AmmoFeedState::Extending);
-
-    // Notify GUI
-    if (m_stateModel) {
-        m_stateModel->setAmmoFeedCycleInProgress(true);
-    }
-    emit ammoFeedCycleStarted();
-
-    // Command full extension
-    m_servoActuator->moveToPosition(FEED_EXTEND_POS);
-
-    // Start watchdog
-    m_feedTimer->start(FEED_TIMEOUT_MS);
-}
-
-// ============================================================================
-// AMMO FEED CYCLE FSM - ACTUATOR FEEDBACK HANDLER
+// ACTUATOR FEEDBACK HANDLER
 // ============================================================================
 
 void WeaponController::onActuatorFeedback(const ServoActuatorData& data)
 {
-    processActuatorPosition(data.position_mm);
-}
+    // Update position (Ultramotion A2 reports in inches)
+    float previousPosition = m_lastKnownPosition;
+    m_lastKnownPosition = static_cast<float>(data.position_mm);  // Actually mm from A2!
+    
+    // Track position changes for stall detection
+    if (std::abs(m_lastKnownPosition - previousPosition) > m_jamConfig.stallPositionTolerance) {
+        m_lastPositionChangeTime = QDateTime::currentMSecsSinceEpoch();
+    }
 
-void WeaponController::processActuatorPosition(double posMM)
-{
+    // ========================================================================
+    // TORQUE UPDATE (Critical for jam detection)
+    // ServoActuatorDevice needs to be updated to capture TQ response
+    // For now, we'll get torque from the merged data
+    // ========================================================================
+    // NOTE: You need to ensure ServoActuatorData has a field for raw torque
+    // m_lastTorquePercent = data.torque_raw;  // Add this field!
+    // Torque update - USE EXISTING FIELD!
+    m_lastTorquePercent = data.torque_percent;
+
+    if (m_lastTorquePercent > m_peakTorqueThisCycle) {
+        m_peakTorqueThisCycle = m_lastTorquePercent;
+    }
+    
+    // Emit for calibration UI
+    emit torqueUpdated(m_lastTorquePercent);
+
+    // ========================================================================
+    // STATE-BASED POSITION PROCESSING
+    // ========================================================================
     switch (m_feedState) {
     case AmmoFeedState::Extending:
-        if (posMM >= (FEED_EXTEND_POS - FEED_POSITION_TOLERANCE)) {
-            // Extension reached - check if button is still held
-            m_feedTimer->stop();  // Stop watchdog while we check
-
+        if (m_lastKnownPosition >= (FEED_EXTEND_POS - FEED_POSITION_TOLERANCE)) {
+            // Extension complete
+            stopJamMonitoring();
+            m_feedTimer->stop();
+            
+            qInfo() << "[WeaponController] Extension COMPLETE at" << m_lastKnownPosition << "mm"
+                    << "| Peak torque:" << m_peakTorqueThisCycle;
+            
             if (m_stateModel && m_stateModel->data().ammoLoadButtonPressed) {
-                // Button still held - hold extended position until release
                 transitionFeedState(AmmoFeedState::Extended);
-                qDebug() << "[WeaponController] Extension complete - HOLDING (button still pressed)";
-                // No watchdog in Extended state - operator controls timing
             } else {
-                // Button already released (short press) - immediately retract
+                // Short press - immediately retract
                 transitionFeedState(AmmoFeedState::Retracting);
-                m_servoActuator->moveToPosition(FEED_RETRACT_POS);
-                m_feedTimer->start(FEED_TIMEOUT_MS);  // Restart watchdog for retraction
-                qDebug() << "[WeaponController] Extension complete - RETRACTING (short press)";
+                commandRetract();
+                startJamMonitoring();
+                m_feedTimer->start(FEED_TIMEOUT_MS);
             }
         }
         break;
 
-    case AmmoFeedState::Extended:
-        // In Extended state, we just hold position
-        // Transition to Retracting happens via button release in onSystemStateChanged()
-        break;
-
     case AmmoFeedState::Retracting:
-        if (posMM <= (FEED_RETRACT_POS + FEED_POSITION_TOLERANCE)) {
-            // Cycle complete
+        if (m_lastKnownPosition <= (FEED_RETRACT_POS + FEED_POSITION_TOLERANCE)) {
+            // Retraction complete - cycle successful
+            stopJamMonitoring();
+            m_feedTimer->stop();
             transitionFeedState(AmmoFeedState::Idle);
-
-            // Notify GUI - belt is now loaded (inferred from successful cycle)
+            
             if (m_stateModel) {
                 m_stateModel->setAmmoFeedCycleInProgress(false);
                 m_stateModel->setAmmoLoaded(true);
             }
-
-            m_feedTimer->stop();
+            
+            qInfo() << "╔════════════════════════════════════════╗";
+            qInfo() << "║   FEED CYCLE COMPLETED SUCCESSFULLY    ║";
+            qInfo() << "╠════════════════════════════════════════╣";
+            qInfo() << "║  Peak Torque:" << QString("%1").arg(m_peakTorqueThisCycle, 6) << "              ║";
+            qInfo() << "║  Cycle Time: " << QString("%1").arg(m_cycleTimer.elapsed(), 5) << " ms            ║";
+            qInfo() << "╚════════════════════════════════════════╝";
+            
             emit ammoFeedCycleCompleted();
-
-            qDebug() << "========== FEED CYCLE COMPLETED - BELT LOADED ==========";
         }
         break;
 
-    case AmmoFeedState::Idle:
-    case AmmoFeedState::Fault:
+    case AmmoFeedState::SafeRetract:
+        if (m_lastKnownPosition <= (FEED_RETRACT_POS + FEED_POSITION_TOLERANCE)) {
+            // Safe retract successful - but still enter fault for operator check
+            handleSafeRetractComplete(true);
+        }
+        break;
+
     default:
-        // Ignore feedback in other states
         break;
     }
+}
+
+// ============================================================================
+// JAM MONITORING (High-frequency timer callback)
+// ============================================================================
+
+void WeaponController::onJamMonitorTimer()
+{
+    processJamMonitoring();
+}
+
+void WeaponController::processJamMonitoring()
+{
+    // Only monitor during active motion states
+    if (m_feedState != AmmoFeedState::Extending &&
+        m_feedState != AmmoFeedState::Retracting &&
+        m_feedState != AmmoFeedState::SafeRetract) {
+        return;
+    }
+
+    // ========================================================================
+    // CHANGED: Use torque_percent instead of raw value
+    // No need for abs() - torque_percent is already absolute
+    // ========================================================================
+    float currentTorque = m_lastTorquePercent;
+
+    // ========================================================================
+    // CRITICAL TORQUE CHECK - Emergency stop (fuse protection)
+    // ========================================================================
+    if (currentTorque >= m_jamConfig.torqueCritical) {
+        qCritical() << "╔════════════════════════════════════════╗";
+        qCritical() << "║   ⚠️  CRITICAL TORQUE - FUSE PROTECT    ║";
+        qCritical() << "╠════════════════════════════════════════╣";
+        qCritical() << "║  Torque:" << QString("%1").arg(currentTorque, 6, 'f', 1) << "%"
+                    << " >= " << QString("%1").arg(m_jamConfig.torqueCritical, 5, 'f', 1) << "%  ║";
+        qCritical() << "╚════════════════════════════════════════╝";
+        handleJamDetected("critical_torque");
+        return;
+    }
+
+    // ========================================================================
+    // JAM TORQUE CHECK - Definite jam condition
+    // ========================================================================
+    if (currentTorque >= m_jamConfig.torqueJamThreshold) {
+        qWarning() << "[WeaponController] JAM TORQUE:" << currentTorque << "%"
+                   << ">=" << m_jamConfig.torqueJamThreshold << "%";
+        handleJamDetected("torque_jam");
+        return;
+    }
+
+    // ========================================================================
+    // WARNING TORQUE - Log but continue
+    // ========================================================================
+    if (currentTorque >= m_jamConfig.torqueWarning) {
+        emit torqueWarning(currentTorque, m_jamConfig.torqueWarning);
+    }
+
+    // ========================================================================
+    // STALL DETECTION - Position not changing
+    // ========================================================================
+    qint64 now = QDateTime::currentMSecsSinceEpoch();
+    qint64 timeSinceMove = now - m_lastPositionChangeTime;
+
+    if (timeSinceMove > m_jamConfig.stallTimeMs) {
+        // Check if we're at target (not stalled, just arrived)
+        bool atTarget = false;
+
+        if (m_feedState == AmmoFeedState::Extending) {
+            atTarget = m_lastKnownPosition >= (FEED_EXTEND_POS - FEED_POSITION_TOLERANCE);
+        } else if (m_feedState == AmmoFeedState::Retracting ||
+                   m_feedState == AmmoFeedState::SafeRetract) {
+            atTarget = m_lastKnownPosition <= (FEED_RETRACT_POS + FEED_POSITION_TOLERANCE);
+        }
+
+        if (!atTarget) {
+            qWarning() << "[WeaponController] STALL DETECTED: No movement for"
+                       << timeSinceMove << "ms at" << m_lastKnownPosition << "mm";
+            handleJamDetected("stall");
+            return;
+        }
+    }
+}
+// ============================================================================
+// JAM HANDLING
+// ============================================================================
+
+void WeaponController::handleJamDetected(const QString& reason)
+{
+    // Prevent re-entry
+    if (m_feedState == AmmoFeedState::JamDetected ||
+        m_feedState == AmmoFeedState::SafeRetract ||
+        m_feedState == AmmoFeedState::Fault) {
+        return;
+    }
+
+    qCritical() << "╔════════════════════════════════════════════════════════════╗";
+    qCritical() << "║                    JAM DETECTED                            ║";
+    qCritical() << "╠════════════════════════════════════════════════════════════╣";
+    qCritical() << "║  Reason:      " << QString("%1").arg(reason, -20) << "                   ║";
+    qCritical() << "║  Position:    " << QString("%1").arg(m_lastKnownPosition, 6, 'f', 3) << " mm                          ║";
+    qCritical() << "║  Torque:      " << QString("%1").arg(m_lastTorquePercent, 6) << " raw                         ║";
+    qCritical() << "║  State:       " << QString("%1").arg(feedStateName(m_feedState), -15) << "                ║";
+    qCritical() << "╚════════════════════════════════════════════════════════════╝";
+
+    // IMMEDIATE STOP
+    commandStop();
+    stopJamMonitoring();
+    m_feedTimer->stop();
+
+    // Log the event
+    JamEventData event;
+    event.timestamp = QDateTime::currentMSecsSinceEpoch();
+    event.stateWhenDetected = m_feedState;
+    event.positionWhenDetected = m_lastKnownPosition;
+    event.torquePercentWhenDetected = m_lastTorquePercent;  // was torqueRawWhenDetected
+    event.detectionReason = reason;
+    event.safeRetractSuccessful = false;
+
+    m_jamHistory.append(event);
+    while (m_jamHistory.size() > MAX_JAM_HISTORY) {
+        m_jamHistory.removeFirst();
+    }
+
+    emit jamDetected(event);
+
+    transitionFeedState(AmmoFeedState::JamDetected);
+
+    // Start safe retract to home position
+    startSafeRetract();
+}
+
+void WeaponController::startSafeRetract()
+{
+    qInfo() << "[WeaponController] Starting SAFE RETRACT to home position";
+    
+    transitionFeedState(AmmoFeedState::SafeRetract);
+    emit safeRetractStarted();
+
+    // Set reduced torque for safe retract
+    setTorqueLimit(m_jamConfig.safeRetractTorqueLimit);
+
+    // Command retract
+    commandRetract();
+
+    // Start timeout (if can't retract, go to fault anyway)
+    m_safeRetractTimer->start(m_jamConfig.safeRetractTimeoutMs);
+    
+    // Continue monitoring (to detect if retract also jams)
+    m_lastPositionChangeTime = QDateTime::currentMSecsSinceEpoch();
+    m_jamMonitorTimer->start();
+}
+
+void WeaponController::onSafeRetractTimeout()
+{
+    qWarning() << "[WeaponController] Safe retract TIMEOUT - forcing fault state";
+    handleSafeRetractComplete(false);
+}
+
+void WeaponController::handleSafeRetractComplete(bool success)
+{
+    m_safeRetractTimer->stop();
+    stopJamMonitoring();
+    commandStop();
+
+    // Update last jam event
+    if (!m_jamHistory.isEmpty()) {
+        m_jamHistory.last().safeRetractSuccessful = success;
+    }
+
+    emit safeRetractCompleted(success);
+
+    // Always go to FAULT state - operator must verify
+    transitionFeedState(AmmoFeedState::Fault);
+
+    if (m_stateModel) {
+        m_stateModel->setAmmoFeedCycleInProgress(false);
+    }
+
+    QString faultReason = success 
+        ? "JAM DETECTED - RETRACTED OK - CHECK GUN"
+        : "JAM DETECTED - RETRACT FAILED - CHECK GUN";
+
+    qCritical() << "╔════════════════════════════════════════════════════════════╗";
+    qCritical() << "║                    FAULT STATE                             ║";
+    qCritical() << "╠════════════════════════════════════════════════════════════╣";
+    qCritical() << "║  Safe Retract: " << (success ? "SUCCESS" : "FAILED ") << "                            ║";
+    qCritical() << "║  Position:     " << QString("%1").arg(m_lastKnownPosition, 6, 'f', 3) << " in                         ║";
+    qCritical() << "║                                                            ║";
+    qCritical() << "║  >>> OPERATOR MUST CHECK GUN AND PRESS LOAD TO RESET <<<   ║";
+    qCritical() << "╚════════════════════════════════════════════════════════════╝";
+
+    emit ammoFeedCycleFaulted(faultReason);
+}
+
+
+// ============================================================================
+// JAM MONITORING CONTROL
+// ============================================================================
+
+void WeaponController::startJamMonitoring()
+{
+    m_lastPositionChangeTime = QDateTime::currentMSecsSinceEpoch();
+    m_peakTorqueThisCycle = 0;
+    m_jamMonitorTimer->start();
+    qDebug() << "[WeaponController] Jam monitoring STARTED";
+}
+
+void WeaponController::stopJamMonitoring()
+{
+    m_jamMonitorTimer->stop();
+    qDebug() << "[WeaponController] Jam monitoring STOPPED | Peak torque:" << m_peakTorqueThisCycle;
+}
+
+
+// ============================================================================
+// MOTION COMMANDS
+// ============================================================================
+
+void WeaponController::commandExtend()
+{
+    if (!m_servoActuator) return;
+    m_servoActuator->moveToPosition(FEED_EXTEND_POS);
+    qDebug() << "[WeaponController] CMD: EXTEND to" << FEED_EXTEND_POS << "mm";
+}
+
+void WeaponController::commandRetract()
+{
+    if (!m_servoActuator) return;
+    m_servoActuator->moveToPosition(FEED_RETRACT_POS);
+    qDebug() << "[WeaponController] CMD: RETRACT to" << FEED_RETRACT_POS << "mm";
+}
+
+void WeaponController::commandStop()
+{
+    if (!m_servoActuator) return;
+    m_servoActuator->stopMove();
+    qDebug() << "[WeaponController] CMD: STOP";
+}
+
+void WeaponController::setTorqueLimit(int16_t rawLimit)
+{
+    if (!m_servoActuator) return;
+    // Convert raw to percentage if needed, or send raw value
+    // This depends on how your ServoActuatorDevice::setMaxTorque() works
+    // For Ultramotion A2, you might need to use the MC (Max Current) command
+    double percent = (static_cast<double>(rawLimit) / 32767.0) * 100.0;
+    m_servoActuator->setMaxTorque(percent);
+    qDebug() << "[WeaponController] CMD: TORQUE LIMIT" << rawLimit << "raw (" << percent << "%)";
 }
 
 // ============================================================================
 // AMMO FEED CYCLE FSM - TIMEOUT HANDLER
 // ============================================================================
 
-void WeaponController::onFeedTimeout()
+void WeaponController::onOperatorRequestLoad()
 {
-    qWarning() << "[WeaponController] FEED TIMEOUT in state:" << feedStateName(m_feedState)
-               << "- actuator did not reach expected position within" << FEED_TIMEOUT_MS << "ms";
+    qDebug() << "[WeaponController] Operator REQUEST LOAD | State:" << feedStateName(m_feedState);
 
-    // Enter fault state
-    transitionFeedState(AmmoFeedState::Fault);
-
-    // Notify GUI
-    if (m_stateModel) {
-        m_stateModel->setAmmoFeedCycleInProgress(false);
+    // FAULT state - operator presses button to reset after checking gun
+    if (m_feedState == AmmoFeedState::Fault) {
+        resetFeedFault();
+        return;
     }
-    emit ammoFeedCycleFaulted();
 
-    // NOTE: We do NOT automatically retract here - operator must clear jam first
-    // and then use resetFeedFault() to attempt recovery
+    // Only start when idle
+    if (m_feedState != AmmoFeedState::Idle) {
+        qDebug() << "[WeaponController] Feed start IGNORED - not idle";
+        return;
+    }
+
+    startAmmoFeedCycle();
 }
 
-// ============================================================================
-// AMMO FEED CYCLE FSM - FAULT RESET
-// ============================================================================
+void WeaponController::startAmmoFeedCycle()
+{
+    if (!m_servoActuator) {
+        qWarning() << "[WeaponController] No servo actuator!";
+        return;
+    }
+
+    qInfo() << "╔════════════════════════════════════════╗";
+    qInfo() << "║        FEED CYCLE STARTED              ║";
+    qInfo() << "╚════════════════════════════════════════╝";
+
+    m_cycleTimer.start();
+    m_peakTorqueThisCycle = 0;
+
+    transitionFeedState(AmmoFeedState::Extending);
+
+    if (m_stateModel) {
+        m_stateModel->setAmmoFeedCycleInProgress(true);
+    }
+    emit ammoFeedCycleStarted();
+
+    commandExtend();
+    startJamMonitoring();
+    m_feedTimer->start(FEED_TIMEOUT_MS);
+}
 
 void WeaponController::resetFeedFault()
 {
     if (m_feedState != AmmoFeedState::Fault) {
-        qDebug() << "[WeaponController] Feed fault reset IGNORED - not in FAULT state";
+        qDebug() << "[WeaponController] Reset IGNORED - not in fault";
         return;
     }
 
-    if (!m_servoActuator) {
-        qWarning() << "[WeaponController] No actuator available for fault recovery";
-        return;
-    }
+    qInfo() << "[WeaponController] FAULT RESET by operator";
+    qInfo() << "  (Operator has verified gun is clear)";
 
-    qDebug() << "[WeaponController] Operator reset - attempting safe retraction";
-    transitionFeedState(AmmoFeedState::Retracting);
+    transitionFeedState(AmmoFeedState::Idle);
 
-    // Attempt safe retraction
-    m_servoActuator->moveToPosition(FEED_RETRACT_POS);
-    m_feedTimer->start(FEED_TIMEOUT_MS);
-
-    // Notify GUI
     if (m_stateModel) {
-        m_stateModel->setAmmoFeedCycleInProgress(true);
+        m_stateModel->setAmmoFeedCycleInProgress(false);
     }
 }
 
+void WeaponController::abortFeedCycle()
+{
+    qWarning() << "[WeaponController] ABORT by operator";
+
+    commandStop();
+    stopJamMonitoring();
+    m_feedTimer->stop();
+    m_safeRetractTimer->stop();
+
+    transitionFeedState(AmmoFeedState::Idle);
+
+    if (m_stateModel) {
+        m_stateModel->setAmmoFeedCycleInProgress(false);
+    }
+
+    emit ammoFeedCycleAborted();
+}
+
+void WeaponController::onFeedTimeout()
+{
+    qWarning() << "[WeaponController] FEED TIMEOUT in state:" << feedStateName(m_feedState);
+    handleJamDetected("timeout");
+}
+
+ 
 // ============================================================================
-// AMMO FEED CYCLE FSM - STATE TRANSITION HELPER
+// STATE TRANSITION
 // ============================================================================
 
 void WeaponController::transitionFeedState(AmmoFeedState newState)
 {
-    qDebug() << "[WeaponController] Feed state:" << feedStateName(m_feedState)
+    qDebug() << "[WeaponController] State:" << feedStateName(m_feedState)
              << "->" << feedStateName(newState);
     m_feedState = newState;
 
-    // Update SystemStateModel for OSD display
     if (m_stateModel) {
         m_stateModel->setAmmoFeedState(newState);
     }
@@ -487,11 +774,13 @@ void WeaponController::transitionFeedState(AmmoFeedState newState)
 QString WeaponController::feedStateName(AmmoFeedState s) const
 {
     switch (s) {
-    case AmmoFeedState::Idle:       return "Idle";
-    case AmmoFeedState::Extending:  return "Extending";
-    case AmmoFeedState::Extended:   return "Extended";
-    case AmmoFeedState::Retracting: return "Retracting";
-    case AmmoFeedState::Fault:      return "Fault";
+    case AmmoFeedState::Idle:        return "Idle";
+    case AmmoFeedState::Extending:   return "Extending";
+    case AmmoFeedState::Extended:    return "Extended";
+    case AmmoFeedState::Retracting:  return "Retracting";
+    case AmmoFeedState::JamDetected: return "JamDetected";
+    case AmmoFeedState::SafeRetract: return "SafeRetract";
+    case AmmoFeedState::Fault:       return "FAULT";
     }
     return "Unknown";
 }

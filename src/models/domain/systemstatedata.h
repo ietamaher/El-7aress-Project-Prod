@@ -167,12 +167,18 @@ enum class LeadAngleStatus {
  * Tracks the state of the ammunition feeding mechanism
  */
 enum class AmmoFeedState {
-    Idle,       ///< Ready for new cycle - displays "IDLE"
-    Extending,  ///< Actuator moving to extended position - displays "FEED..."
-    Extended,   ///< Actuator at extended position, waiting for button release - displays "HOLD"
-    Retracting, ///< Actuator returning to home - displays "FEED..."
-    Fault       ///< Timeout/error occurred - displays "FAULT" (red, requires reset)
+    Idle,           // Ready for new cycle
+    Extending,      // Moving to extend position
+    Extended,       // Holding at extended position (button held)
+    Retracting,     // Moving to retract position
+    
+    // === JAM HANDLING ===
+    JamDetected,    // Jam detected - emergency stop in progress
+    SafeRetract,    // Attempting controlled retraction to home
+    
+    Fault           // Fault state - operator must check gun and reset
 };
+
 
 // =================================
 // ZONE STRUCTURES

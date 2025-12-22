@@ -287,7 +287,7 @@ void ServoActuatorDevice::checkAllStatus() {
     //m_commandQueue.enqueue("SR");  // Status register
     m_commandQueue.enqueue("AP");  // Position
     //m_commandQueue.enqueue("VL");  // Velocity
-    //m_commandQueue.enqueue("TQ");  // Torque
+    m_commandQueue.enqueue("TQ");  // Torque
     //m_commandQueue.enqueue("RT1"); // Temperature
     //m_commandQueue.enqueue("BV");  // Bus voltage
 

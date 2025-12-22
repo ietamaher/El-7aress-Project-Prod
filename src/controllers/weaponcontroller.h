@@ -20,6 +20,70 @@ class Plc42Device;
 class ServoActuatorDevice;
 struct ServoActuatorData;
 
+
+
+// ============================================================================
+// AMMUNITION FEED FSM - TORQUE-AWARE WITH SAFE FAULT HANDLING
+// ============================================================================
+// Design Philosophy (Military Standard):
+// - Detect jam BEFORE fuse blows (proactive, not reactive)
+// - On jam: STOP immediately, RETRACT to home, enter FAULT state
+// - NO automatic retry - operator must physically verify gun is clear
+// - Fault state requires deliberate operator action to clear
+// ============================================================================
+
+
+// ============================================================================
+// ULTRAMOTION A2 TORQUE/CURRENT CONFIGURATION
+// ============================================================================
+// TQ command returns: -32768 to 32767 (signed 16-bit)
+// This represents "transformed three phase current feedback"
+// 
+// Calibration approach:
+// - Run normal feed cycle, record max TQ value → NOMINAL_TORQUE_RAW
+// - Jam threshold = NOMINAL × 1.5 (50% above normal)
+// - Critical threshold = Calculate from fuse rating
+//
+// Your setup: 180W motor, 24V supply, 5A fuse
+// - Max motor current: 180W / 24V = 7.5A
+// - Fuse trips at: 5A
+// - Safe operating limit: ~4A (80% of fuse) = 53% of motor max
+// - If TQ at 7.5A = 32767, then 4A ≈ 17,476 raw counts
+// ============================================================================
+
+struct JamDetectionConfig {
+    // === TORQUE THRESHOLDS (percentage) ===
+    float torqueNominal = 40.0f;       // Expected max during normal operation (CALIBRATE!)
+    float torqueWarning = 50.0f;       // Start monitoring closely
+    float torqueJamThreshold = 55.0f;  // Definite jam - initiate safe retract
+    float torqueCritical = 62.0f;      // Emergency stop - approaching fuse limit (67%)
+
+    // === STALL DETECTION ===
+    float stallPositionTolerance = 0.00f;  // mm
+    int stallTimeMs = 150;
+
+
+    // === SAFE RETRACT PARAMETERS ===
+    int16_t safeRetractTorqueLimit = 10000; // Reduced torque for retraction
+    int safeRetractTimeoutMs = 3000;        // Max time for safe retract
+
+    // === TIMING ===
+    int torqueSampleIntervalMs = 25;   // 40Hz torque monitoring
+    int positionSampleIntervalMs = 25; // 40Hz position monitoring
+};
+
+// ============================================================================
+// JAM EVENT DATA (for diagnostics and post-mission analysis)
+// ============================================================================
+struct JamEventData {
+    qint64 timestamp;
+    AmmoFeedState stateWhenDetected;
+    float positionWhenDetected;         // mm
+    float torquePercentWhenDetected;    // was torqueRawWhenDetected
+    QString detectionReason;        // "torque_limit", "stall", "critical", "timeout"
+    bool safeRetractSuccessful;
+};
+
 /**
  * @brief Weapon system controller
  *
@@ -59,38 +123,32 @@ public:
     void fireSingleShot();
     virtual void startFiring();
     virtual void stopFiring();
-
-    // ========================================================================
-    // Ammunition Control (legacy API - still supported)
-    // ========================================================================
-    virtual void unloadAmmo();
+    void unloadAmmo();
+ 
 
     // ========================================================================
     // Fire Control Solution
     // ========================================================================
     virtual void updateFireControlSolution();
 
-public slots:
-    // ========================================================================
-    // Ammo Feed Cycle Control (new FSM-based API)
-    // ========================================================================
 
-    /**
-     * @brief Start ammo feed cycle (operator button press)
-     *
-     * This is the preferred entry point for initiating ammo loading.
-     * Decoupled from UI toggle - only starts cycle, does not track button state.
-     * If cycle already running, request is ignored.
-     */
-    void onOperatorRequestLoad();
-
-    /**
-     * @brief Reset from fault state (operator reset command)
-     *
-     * Attempts safe retraction after a fault (timeout/jam).
-     * Only works when in Fault state.
-     */
-    void resetFeedFault();
+        // === FAULT HANDLING API ===
+    void resetFeedFault();      // Operator-initiated fault reset (after physical check)
+    void abortFeedCycle();      // Emergency abort
+    
+    // === CONFIGURATION ===
+    void setJamDetectionConfig(const JamDetectionConfig& config);
+    JamDetectionConfig jamDetectionConfig() const { return m_jamConfig; }
+    
+    // === CALIBRATION HELPERS ===
+    float lastTorquePercent() const { return m_lastTorquePercent; }      // was lastRawTorque()
+    float peakTorqueThisCycle() const { return m_peakTorqueThisCycle; }  // was int16_t
+    void resetPeakTorque() { m_peakTorqueThisCycle = 0; }
+    
+    // === DIAGNOSTICS ===
+    AmmoFeedState currentFeedState() const { return m_feedState; }
+    QList<JamEventData> jamHistory() const { return m_jamHistory; }
+    void clearJamHistory() { m_jamHistory.clear(); }
 
 signals:
     // ========================================================================
@@ -102,9 +160,20 @@ signals:
     // ========================================================================
     // Ammo Feed Cycle Notifications
     // ========================================================================
+    // === FEED CYCLE SIGNALS ===
     void ammoFeedCycleStarted();
     void ammoFeedCycleCompleted();
-    void ammoFeedCycleFaulted();
+    void ammoFeedCycleFaulted(const QString& reason);
+    void ammoFeedCycleAborted();
+    
+    // === JAM DETECTION SIGNALS ===
+    void jamDetected(const JamEventData& event);
+    void torqueWarning(int16_t currentTorque, int16_t threshold);
+    void safeRetractStarted();
+    void safeRetractCompleted(bool success);
+    
+    // === CALIBRATION SIGNAL ===
+    void torqueUpdated(int16_t rawTorque);  // For calibration UI
 
 private slots:
     // ========================================================================
@@ -117,7 +186,9 @@ private slots:
     // ========================================================================
     void onFeedTimeout();
     void onActuatorFeedback(const ServoActuatorData& data);
-
+    void onSafeRetractTimeout();
+    // === JAM MONITORING ===
+    void onJamMonitorTimer();
 private:
     // ========================================================================
     // Ballistics Calculations
@@ -169,11 +240,32 @@ private:
      */
     // Uses global AmmoFeedState enum from systemstatedata.h
 
-    void startAmmoFeedCycle();
+
     void processActuatorPosition(double posMM);
+
+    // === INITIALIZATION ===
+    void setupTimers();
+    void setupConnections();
+    
+    // === FEED CYCLE FSM ===
+    void onOperatorRequestLoad();
+    void startAmmoFeedCycle();
     void transitionFeedState(AmmoFeedState newState);
     QString feedStateName(AmmoFeedState s) const;
-
+    
+    // === JAM DETECTION ===
+    void startJamMonitoring();
+    void stopJamMonitoring();
+    void processJamMonitoring();
+    void handleJamDetected(const QString& reason);
+    void startSafeRetract();
+    void handleSafeRetractComplete(bool success);
+    
+    // === MOTION COMMANDS ===
+    void commandExtend();
+    void commandRetract();
+    void commandStop();
+    void setTorqueLimit(int16_t rawLimit);
     // ========================================================================
     // Ammo Feed Configuration (in millimeters - matches ServoActuatorData units)
     // ========================================================================
@@ -188,8 +280,23 @@ private:
     // ========================================================================
     // Ammo Feed State
     // ========================================================================
+    // === FEED CYCLE FSM ===
     AmmoFeedState m_feedState = AmmoFeedState::Idle;
-    QTimer* m_feedTimer = nullptr;
+    QTimer* m_feedTimer = nullptr;          // Overall cycle timeout
+    QTimer* m_safeRetractTimer = nullptr;   // Safe retract timeout
+    QTimer* m_jamMonitorTimer = nullptr;    // High-frequency jam monitoring
+
+    // === JAM DETECTION STATE ===
+    JamDetectionConfig m_jamConfig;
+    float m_lastTorquePercent = 0.0f;
+    float m_peakTorqueThisCycle = 0.0f;
+    float m_lastKnownPosition = 0.0f;       // inches
+    qint64 m_lastPositionChangeTime = 0;    // For stall detection
+    QElapsedTimer m_cycleTimer;             // Timing for diagnostics
+    
+    // === JAM HISTORY ===
+    QList<JamEventData> m_jamHistory;
+    static constexpr int MAX_JAM_HISTORY = 50;
 
     // ========================================================================
     // Dependencies
