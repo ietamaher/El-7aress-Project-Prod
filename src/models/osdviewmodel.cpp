@@ -947,3 +947,16 @@ void OsdViewModel::updateAmmoFeedStatus(int state, bool cycleInProgress, bool lo
                  << "Loaded=" << loaded;
     }
 }
+
+// ============================================================================
+// GYROSTABILIZATION DEBUG UPDATE
+// ============================================================================
+
+void OsdViewModel::updateStabDebug(const SystemStateData& data)
+{
+    // Cache the state data for property access
+    m_stateData = data;
+
+    // Always emit changed signal - QML bindings will efficiently update
+    emit stabDebugChanged();
+}

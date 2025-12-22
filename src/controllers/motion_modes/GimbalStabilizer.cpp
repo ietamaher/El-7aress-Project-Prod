@@ -94,6 +94,126 @@ std::pair<double,double> GimbalStabilizer::computeStabilizedVelocity(
 }
 
 // ============================================================================
+// DEBUG VERSION - Populates debug struct for OSD visualization
+// ============================================================================
+
+std::pair<double,double> GimbalStabilizer::computeStabilizedVelocityWithDebug(
+    SystemStateData::StabilizationDebug& dbg,
+    double desiredAzVel_dps,
+    double desiredElVel_dps,
+    double imuRoll_deg,
+    double imuPitch_deg,
+    double imuYaw_deg,
+    double gyroX_dps,
+    double gyroY_dps,
+    double gyroZ_dps,
+    double currentAz_deg,
+    double currentEl_deg,
+    double targetAz_world,
+    double targetEl_world,
+    bool useWorldTarget,
+    double dt) const
+{
+    // ========================================================================
+    // Control Law: ω_cmd = ω_user + ω_feedforward + Kp × (angle_error)
+    // ========================================================================
+
+    // Store user input for debug
+    dbg.userAz_dps = desiredAzVel_dps;
+    dbg.userEl_dps = desiredElVel_dps;
+    dbg.worldTargetHeld = useWorldTarget;
+
+    double finalAz_dps = desiredAzVel_dps;
+    double finalEl_dps = desiredElVel_dps;
+
+    // IMU body rates: X→p (roll), Y→q (pitch), Z→r (yaw, inverted)
+    dbg.p_dps = gyroX_dps;
+    dbg.q_dps = gyroY_dps;
+    dbg.r_dps = -gyroZ_dps;  // NOTE: Sign inversion for NED convention
+
+    // If world-frame target holding is disabled, return user velocity only
+    if (!useWorldTarget) {
+        dbg.stabActive = false;
+        dbg.requiredAz_deg = 0.0;
+        dbg.requiredEl_deg = 0.0;
+        dbg.azError_deg = 0.0;
+        dbg.elError_deg = 0.0;
+        dbg.azPosCorr_dps = 0.0;
+        dbg.elPosCorr_dps = 0.0;
+        dbg.azRateFF_dps = 0.0;
+        dbg.elRateFF_dps = 0.0;
+        dbg.finalAz_dps = finalAz_dps;
+        dbg.finalEl_dps = finalEl_dps;
+        return {finalAz_dps, finalEl_dps};
+    }
+
+    dbg.stabActive = true;
+
+    // ========================================================================
+    // COMPONENT 1: Position Correction (AHRS-based drift compensation)
+    // ========================================================================
+
+    const auto& cfg = MotionTuningConfig::instance().stabilizer;
+
+    // Compute required gimbal angles to point at world target
+    auto [requiredAz_deg, requiredEl_deg] = computeRequiredGimbalAngles(
+        imuRoll_deg, imuPitch_deg, imuYaw_deg,
+        targetAz_world, targetEl_world
+    );
+    dbg.requiredAz_deg = requiredAz_deg;
+    dbg.requiredEl_deg = requiredEl_deg;
+
+    // Calculate angle errors (required - current)
+    double azError_deg = normalizeAngle180(requiredAz_deg - currentAz_deg);
+    double elError_deg = normalizeAngle180(requiredEl_deg - currentEl_deg);
+    dbg.azError_deg = azError_deg;
+    dbg.elError_deg = elError_deg;
+
+    // Convert to velocity correction: v_correction = Kp × error
+    double azPositionCorr_dps = cfg.kpPosition * azError_deg;
+    double elPositionCorr_dps = cfg.kpPosition * elError_deg;
+
+    // Clamp position correction velocities
+    azPositionCorr_dps = std::clamp(azPositionCorr_dps, -cfg.maxPositionVel, cfg.maxPositionVel);
+    elPositionCorr_dps = std::clamp(elPositionCorr_dps, -cfg.maxPositionVel, cfg.maxPositionVel);
+    dbg.azPosCorr_dps = azPositionCorr_dps;
+    dbg.elPosCorr_dps = elPositionCorr_dps;
+
+    // ========================================================================
+    // COMPONENT 2: Rate Feed-Forward (Gyro-based transient compensation)
+    // ========================================================================
+
+    // Transform platform motion to gimbal frame
+    auto [azRateFF_dps, elRateFF_dps] = computeRateFeedForward(
+        dbg.p_dps, dbg.q_dps, dbg.r_dps,
+        currentAz_deg, currentEl_deg
+    );
+
+    // Clamp rate feed-forward velocities
+    azRateFF_dps = std::clamp(azRateFF_dps, -cfg.maxVelocityCorr, cfg.maxVelocityCorr);
+    elRateFF_dps = std::clamp(elRateFF_dps, -cfg.maxVelocityCorr, cfg.maxVelocityCorr);
+    dbg.azRateFF_dps = azRateFF_dps;
+    dbg.elRateFF_dps = elRateFF_dps;
+
+    // ========================================================================
+    // COMPONENT 3: Velocity Composition
+    // ========================================================================
+
+    // Combine all three components: user + position correction + rate feed-forward
+    finalAz_dps = desiredAzVel_dps + azPositionCorr_dps + azRateFF_dps;
+    finalEl_dps = desiredElVel_dps + elPositionCorr_dps + elRateFF_dps;
+
+    // Apply total velocity limit
+    finalAz_dps = std::clamp(finalAz_dps, -cfg.maxTotalVel, cfg.maxTotalVel);
+    finalEl_dps = std::clamp(finalEl_dps, -cfg.maxTotalVel, cfg.maxTotalVel);
+
+    dbg.finalAz_dps = finalAz_dps;
+    dbg.finalEl_dps = finalEl_dps;
+
+    return {finalAz_dps, finalEl_dps};
+}
+
+// ============================================================================
 // PRIVATE IMPLEMENTATION
 // ============================================================================
 

@@ -817,6 +817,15 @@ void SystemStateModel::updateStationaryStatus(SystemStateData& data)
     }
 }
 
+void SystemStateModel::updateStabilizationDebug(const SystemStateData::StabilizationDebug& debugData)
+{
+    // Update stabDebug in system state for OSD display
+    // This is called from GimbalMotionModeBase::sendStabilizedServoCommands()
+    m_currentStateData.stabDebug = debugData;
+    // Note: We don't emit dataChanged() here to avoid flooding signals
+    // OSD will pick up changes on next regular update cycle
+}
+
 
 void SystemStateModel::onJoystickAxisChanged(int axis, float normalizedValue)
 {

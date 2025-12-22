@@ -131,8 +131,12 @@ void GimbalMotionModeBase::sendStabilizedServoCommands(GimbalController* control
                        << " encEl=" << systemState.gimbalEl;*/
 
     // --- Step 2: Apply stabilization if enabled ---
+    // Use debug version to populate stabDebug in system state for OSD visualization
+    SystemStateData::StabilizationDebug stabDebug;
+
     if (enableStabilization && systemState.enableStabilization) {
-        auto [stabAz_dps, stabEl_dps] = s_stabilizer.computeStabilizedVelocity(
+        auto [stabAz_dps, stabEl_dps] = s_stabilizer.computeStabilizedVelocityWithDebug(
+            stabDebug,
             desiredAzVelocity,
             desiredElVelocity,
             systemState.imuRollDeg,
@@ -145,16 +149,27 @@ void GimbalMotionModeBase::sendStabilizedServoCommands(GimbalController* control
             systemState.gimbalEl,
             systemState.targetAzimuth_world,
             systemState.targetElevation_world,
-            true,
+            systemState.useWorldFrameTarget,
             dt
         );
 
         finalAzVelocity = stabAz_dps;
         finalElVelocity = stabEl_dps;
-
-        //qDebug().nospace() << "[DBG SEND] stabilization applied: stabAz=" << stabAz_dps
-         //                  << " stabEl=" << stabEl_dps;
+    } else {
+        // Not stabilizing - fill debug with raw values
+        stabDebug.userAz_dps = desiredAzVelocity;
+        stabDebug.userEl_dps = desiredElVelocity;
+        stabDebug.stabActive = false;
+        stabDebug.worldTargetHeld = false;
+        stabDebug.p_dps = systemState.GyroX;
+        stabDebug.q_dps = systemState.GyroY;
+        stabDebug.r_dps = -systemState.GyroZ;  // Sign inversion for debug visibility
+        stabDebug.finalAz_dps = finalAzVelocity;
+        stabDebug.finalEl_dps = finalElVelocity;
     }
+
+    // Update system state with debug info for OSD display
+    controller->systemStateModel()->updateStabilizationDebug(stabDebug);
 
     // Step 3: limits
     finalAzVelocity = qBound(-MAX_VELOCITY(), finalAzVelocity, MAX_VELOCITY());

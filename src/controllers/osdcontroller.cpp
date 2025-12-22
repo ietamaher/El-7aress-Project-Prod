@@ -140,6 +140,9 @@ void OsdController::onSystemStateChanged(const SystemStateData& data)
             data.ammoLoaded
         );
 
+        // Update gyrostabilization debug data for OSD diagnostics
+        m_viewModel->updateStabDebug(data);
+
         // ========================================================================
         // GIMBAL POSITION UPDATE - Direct from SystemStateData
         // ========================================================================
