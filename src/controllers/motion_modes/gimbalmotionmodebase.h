@@ -320,7 +320,11 @@ protected:
         return MotionTuningConfig::instance().servo.azStepsPerDegree;
     }
     static inline double EL_STEPS_PER_DEGREE() {
-        return MotionTuningConfig::instance().servo.elStepsPerDegree;
+        // ✅ FIX: Negate to correct elevation servo polarity
+        // Servo wiring convention: positive Hz = DOWN motion
+        // Control convention: positive deg/s = UP motion
+        // Negating the scaling factor aligns these conventions
+        return -MotionTuningConfig::instance().servo.elStepsPerDegree;
     }
 
     /**

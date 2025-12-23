@@ -446,8 +446,10 @@ void GimbalMotionModeBase::calculateStabilizationCorrection(double currentAz_deg
         platformEffectOnAz = r_imu + tanEl * (q_imu * sin(currentAzRad) + p_imu * cos(currentAzRad));
     }
 
-    // The correction is the negative of the platform's effect
-    azCorrection_dps = -platformEffectOnAz;
+    // ✅ FIX: Corrected feed-forward signs (consistent with GimbalStabilizer)
+    // Azimuth: POSITIVE (platform yaws LEFT → gimbal turns RIGHT = positive)
+    // Elevation: NEGATIVE (platform pitches UP → gimbal tilts DOWN = negative with inverted servo)
+    azCorrection_dps = platformEffectOnAz;
     elCorrection_dps = -platformEffectOnEl;
 
     // --- DETAILED LOGGING OUTPUT ---
@@ -536,9 +538,9 @@ void GimbalMotionModeBase::calculateRequiredGimbalAngles(
                                         sqrt(v_platform.x() * v_platform.x() +
                                              v_platform.y() * v_platform.y())));
 
-    // ✅ EXPERT REVIEW FIX: Negate elevation to match system sign convention
-    // (Consistent with GimbalStabilizer::computeRequiredGimbalAngles)
-    required_gimbal_el = -required_gimbal_el;
+    // NOTE: Elevation sign is now correct without negation
+    // The servo polarity inversion is handled in EL_STEPS_PER_DEGREE()
+    // which negates the scaling factor for the entire elevation axis.
 }
 
 
@@ -623,11 +625,9 @@ void GimbalMotionModeBase::calculateHybridStabilizationCorrection(
             required_el_deg
         );
 
-        double az_error_deg = required_az_deg - state.gimbalAz;
-        double el_error_deg = required_el_deg - state.gimbalEl;
-
-        // Normalize az error to [-180, 180]
-        az_error_deg = normalizeAngle180(az_error_deg);
+        // ✅ FIX: Azimuth error sign corrected (consistent with GimbalStabilizer)
+        double az_error_deg = -normalizeAngle180(required_az_deg - state.gimbalAz);
+        double el_error_deg = normalizeAngle180(required_el_deg - state.gimbalEl);
 
         const double Kp_position = 2.0; // deg/s per degree
         positionCorrectionAz_dps = Kp_position * az_error_deg;
@@ -687,8 +687,10 @@ void GimbalMotionModeBase::calculateHybridStabilizationCorrection(
             double platformTerm_degps = (q_dps * sin(azRad)) + (p_dps * cos(azRad)); // deg/s
             double platformEffectOnAz_dps = r_dps + tanEl * platformTerm_degps; // deg/s
 
-            // Corrections are negatives of platform effects
-            double azCorr_dps = -platformEffectOnAz_dps;
+            // ✅ FIX: Corrected feed-forward signs (consistent with GimbalStabilizer)
+            // Azimuth: POSITIVE (platform yaws LEFT → gimbal turns RIGHT = positive)
+            // Elevation: NEGATIVE (platform pitches UP → gimbal tilts DOWN = negative with inverted servo)
+            double azCorr_dps = platformEffectOnAz_dps;
             double elCorr_dps = -platformEffectOnEl_dps;
 
             // Limit corrections

@@ -47,8 +47,14 @@ std::pair<double,double> GimbalStabilizer::computeStabilizedVelocity(
         targetAz_world, targetEl_world
     );
 
-    // Calculate angle errors (required - current)
-    double azError_deg = normalizeAngle180(requiredAz_deg - currentAz_deg);
+    // ========================================================================
+    // Calculate angle errors with CORRECTED signs
+    // ========================================================================
+    // ✅ FIX: Azimuth error sign corrected for IMU/gimbal coordinate frame
+    // The atan2(y,x) in computeRequiredGimbalAngles gives angle in standard math
+    // convention (CCW positive), but our gimbal servo uses CW positive for azimuth.
+    // Negating the error corrects this frame mismatch.
+    double azError_deg = -normalizeAngle180(requiredAz_deg - currentAz_deg);
     double elError_deg = normalizeAngle180(requiredEl_deg - currentEl_deg);
 
     // Convert to velocity correction: v_correction = Kp × error
@@ -163,8 +169,13 @@ std::pair<double,double> GimbalStabilizer::computeStabilizedVelocityWithDebug(
     dbg.requiredAz_deg = requiredAz_deg;
     dbg.requiredEl_deg = requiredEl_deg;
 
-    // Calculate angle errors (required - current)
-    double azError_deg = normalizeAngle180(requiredAz_deg - currentAz_deg);
+    // ========================================================================
+    // Calculate angle errors with CORRECTED signs
+    // ========================================================================
+    // ✅ FIX: Azimuth error sign corrected for IMU/gimbal coordinate frame
+    // The atan2(y,x) in computeRequiredGimbalAngles gives angle in standard math
+    // convention (CCW positive), but our gimbal servo uses CW positive for azimuth.
+    double azError_deg = -normalizeAngle180(requiredAz_deg - currentAz_deg);
     double elError_deg = normalizeAngle180(requiredEl_deg - currentEl_deg);
     dbg.azError_deg = azError_deg;
     dbg.elError_deg = elError_deg;
@@ -278,9 +289,10 @@ std::pair<double,double> GimbalStabilizer::computeRequiredGimbalAngles(
     double gimbalAz_deg = radToDeg(gimbalAz_rad);
     double gimbalEl_deg = radToDeg(gimbalEl_rad);
 
-    // ✅ EXPERT REVIEW FIX: Negate elevation to match system sign convention
-    // Elevation servo wiring convention requires sign inversion
-    gimbalEl_deg = -gimbalEl_deg;
+    // NOTE: Elevation sign is now correct without negation
+    // The servo polarity inversion is handled in EL_STEPS_PER_DEGREE()
+    // which negates the scaling factor for the entire elevation axis.
+    // This keeps the control law clean: positive elevation = UP.
 
     return {gimbalAz_deg, gimbalEl_deg};
 }
@@ -316,6 +328,18 @@ std::pair<double,double> GimbalStabilizer::computeRateFeedForward(
     // Azimuth couples with platform yaw + pitch/roll projected through elevation angle
     double platformEffectOnAz_dps = r_dps + tan_el * (q_dps * sin_az + p_dps * cos_az);
 
-    // Return negative (feed-forward compensates platform motion)
-    return {-platformEffectOnAz_dps, -platformEffectOnEl_dps};
+    // ========================================================================
+    // Feed-forward sign convention (CORRECTED):
+    // ========================================================================
+    // Azimuth: POSITIVE feed-forward
+    //   - When platform yaws LEFT (r_dps > 0), gimbal must turn RIGHT to hold target
+    //   - RIGHT turn = positive azimuth velocity in our servo convention
+    //   - So platformEffectOnAz > 0 needs POSITIVE compensation
+    //
+    // Elevation: NEGATIVE feed-forward
+    //   - When platform pitches UP (q_dps > 0), gimbal must tilt DOWN to hold target
+    //   - DOWN tilt = negative elevation velocity (servo polarity is inverted)
+    //   - So platformEffectOnEl > 0 needs NEGATIVE compensation
+    // ========================================================================
+    return {platformEffectOnAz_dps, -platformEffectOnEl_dps};
 }
