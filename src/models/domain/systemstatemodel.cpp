@@ -669,7 +669,7 @@ void SystemStateModel::onServoAzDataChanged(const ServoDriverData &azData) {
         m_currentStateData.azMotorTemp = azData.motorTemp;
         m_currentStateData.azDriverTemp = azData.driverTemp;
         m_currentStateData.azServoConnected = azData.isConnected;
-        m_currentStateData.azRpm = azData.rpm;
+        m_currentStateData.azRpm = azData.rpm / (204.705882353);
         m_currentStateData.azTorque = azData.torque;
         m_currentStateData.azFault = azData.fault;
 
@@ -686,7 +686,7 @@ void SystemStateModel::onServoElDataChanged(const ServoDriverData &elData) {
         m_currentStateData.elMotorTemp = elData.motorTemp;
         m_currentStateData.elDriverTemp = elData.driverTemp;
         m_currentStateData.elServoConnected = elData.isConnected;
-        m_currentStateData.elRpm = elData.rpm;
+        m_currentStateData.elRpm = elData.rpm / (200.0);
         m_currentStateData.elTorque = elData.torque;
         m_currentStateData.elFault = elData.fault;
 

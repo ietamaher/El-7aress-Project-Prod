@@ -68,6 +68,8 @@ MessagePtr ServoDriverProtocolParser::parsePositionReply(const QModbusDataUnit& 
     int32_t positionRaw = (static_cast<int32_t>(unit.value(0)) << 16) | unit.value(1);
     m_data.position = static_cast<float>(positionRaw);
 
+        int32_t speedRaw = (static_cast<int32_t>(unit.value(2)) << 16) | unit.value(3);
+    m_data.rpm = static_cast<float>(speedRaw);
     // Return the accumulated data (temperature fields retain previous values)
     return std::make_unique<ServoDriverDataMessage>(m_data);
 }

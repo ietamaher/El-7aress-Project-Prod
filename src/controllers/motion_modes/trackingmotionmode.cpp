@@ -30,17 +30,17 @@ TrackingMotionMode::TrackingMotionMode(QObject* parent)
     // -------------------------------------------------------------------------
     // These override config file for field testing - move to config once tuned
     
-    // Azimuth PID
-    m_azPid.Kp = 2.5;           // Proportional: main response (was 1.5 - too weak)
-    m_azPid.Ki = 0.1;           // Integral: eliminates steady-state error
-    m_azPid.Kd = 0.3;           // Derivative: CRITICAL for damping overshoot
-    m_azPid.maxIntegral = 8.0;  // Anti-windup limit (deg)
-    
-    // Elevation PID (slightly higher due to gravity loading)
-    m_elPid.Kp = 2.8;
-    m_elPid.Ki = 0.15;
-    m_elPid.Kd = 0.35;
-    m_elPid.maxIntegral = 10.0;
+    // Azimuth
+    m_azPid.Kp = 0.6;     // 4× faster than 0.15
+    m_azPid.Kd = 0.12;    // 4× 0.03 → keeps damping
+    m_azPid.Ki = 0.0;     // OFF for tracking
+    m_azPid.maxIntegral = 3.0;
+
+    // Elevation
+    m_elPid.Kp = 0.7;
+    m_elPid.Kd = 0.14;
+    m_elPid.Ki = 0.0;
+    m_elPid.maxIntegral = 3.0;
     
     // Initialize measurement velocity tracking
     m_lastGimbalAz = 0.0;
@@ -160,9 +160,14 @@ void TrackingMotionMode::update(GimbalController* controller, double dt)
     m_gimbalElRate_dps = alpha * m_gimbalElRate_dps + (1.0 - alpha) * m_gimbalElRate_dps;
 
     // Damping using gimbal rate (NOT error derivative)
-    azVel -= m_azPid.Kd * m_gimbalAzRate_dps;
-    elVel -= m_elPid.Kd * m_gimbalElRate_dps;
+    double azRate_dps = data.azRpm * 6.0;   // RPM → deg/s
+    double elRate_dps = data.elRpm * 6.0;
 
+    azVel += m_azPid.Kd * (m_smoothedAzVel_dps - azRate_dps);
+    elVel += m_elPid.Kd * (m_smoothedElVel_dps - elRate_dps);
+
+    if (std::abs(errAz) < DB && std::abs(azRate_dps) < 0.3) azVel = 0.0;
+    if (std::abs(errEl) < DB && std::abs(elRate_dps) < 0.3) elVel = 0.0;
     // ----------------------------------------------------
     // TARGET MOTION FEED-FORWARD (ESSENTIAL)
     // ----------------------------------------------------
@@ -184,10 +189,31 @@ void TrackingMotionMode::update(GimbalController* controller, double dt)
     // ----------------------------------------------------
     // VELOCITY LIMIT ONLY (NO ACCEL LIMIT)
     // ----------------------------------------------------
-    constexpr double MAX_VEL = 30.0;
+    constexpr double MAX_VEL = 10.0;
     azVel = qBound(-MAX_VEL, azVel, MAX_VEL);
     elVel = qBound(-MAX_VEL, elVel, MAX_VEL);
-azVel = -azVel;
-elVel = -elVel;
+
+
+constexpr double STOP_ERR = 0.3;     // deg
+constexpr double STOP_RATE = 0.5;    // deg/s
+
+    if (std::abs(errAz) < STOP_ERR && std::abs(azRate_dps) > STOP_RATE)
+        azVel = -0.6 * azRate_dps;   // active braking
+
+    //Same for elevation.
+    if (std::abs(errEl) < STOP_ERR && std::abs(elRate_dps) > STOP_RATE)
+        elVel = -0.6 * elRate_dps;   // active braking
+    
+
+    azVel = -azVel;
+    elVel = -elVel;
     sendStabilizedServoCommands(controller, azVel, elVel, false, dt);
+
+    qDebug()
+        << "errAz" << errAz
+        << "azRpm" << data.azRpm
+        << "azRate_dps" << azRate_dps
+        << "targetRate" << m_smoothedAzVel_dps
+        << "rateErr" << (m_smoothedAzVel_dps - azRate_dps)
+        << "cmdAzVel" << azVel;
 }

@@ -186,6 +186,11 @@ void ServoDriverDevice::processMessage(const Message& message) {
             newData->position = partialData.position;
             dataChanged = true;
         }
+        if (!qFuzzyCompare(partialData.rpm + 1.0f, currentData->rpm + 1.0f)) {
+            newData->rpm = partialData.rpm;
+            dataChanged = true;
+        }
+
         if (!qFuzzyCompare(partialData.driverTemp + 1.0f, currentData->driverTemp + 1.0f)) {
             newData->driverTemp = partialData.driverTemp;
             dataChanged = true;
