@@ -960,3 +960,16 @@ void OsdViewModel::updateStabDebug(const SystemStateData& data)
     // Always emit changed signal - QML bindings will efficiently update
     emit stabDebugChanged();
 }
+
+// ============================================================================
+// TRACKER DEBUG UPDATE
+// ============================================================================
+
+void OsdViewModel::updateTrackerDebug(const SystemStateData& data)
+{
+    // Cache the state data for property access (updates trackerDebug)
+    m_stateData = data;
+
+    // Always emit changed signal - QML bindings will efficiently update
+    emit trackerDebugChanged();
+}

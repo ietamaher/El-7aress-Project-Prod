@@ -826,6 +826,15 @@ void SystemStateModel::updateStabilizationDebug(const SystemStateData::Stabiliza
     // OSD will pick up changes on next regular update cycle
 }
 
+void SystemStateModel::updateTrackerDebug(const SystemStateData::TrackerDebug& debugData)
+{
+    // Update trackerDebug in system state for OSD display
+    // This is called from TrackingMotionMode::update()
+    m_currentStateData.trackerDebug = debugData;
+    // Note: We don't emit dataChanged() here to avoid flooding signals
+    // OSD will pick up changes on next regular update cycle
+}
+
 
 void SystemStateModel::onJoystickAxisChanged(int axis, float normalizedValue)
 {

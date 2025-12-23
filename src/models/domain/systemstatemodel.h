@@ -734,6 +734,13 @@ public:
      */
     void updateStabilizationDebug(const SystemStateData::StabilizationDebug& debugData);
 
+    /**
+     * @brief Updates tracker debug data for OSD display.
+     * Called from TrackingMotionMode::update() with all intermediate values.
+     * @param debugData The debug data from the tracking controller.
+     */
+    void updateTrackerDebug(const SystemStateData::TrackerDebug& debugData);
+
 signals:
     // =================================
     // CORE SYSTEM SIGNALS

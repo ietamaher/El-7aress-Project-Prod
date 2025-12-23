@@ -509,6 +509,53 @@ struct SystemStateData {
         bool worldTargetHeld = false;   ///< World frame target holding active
     } stabDebug;
 
+    // =================================
+    // TRACKER DEBUG DATA
+    // =================================
+    // Intermediate values from tracking pipeline for debugging
+    struct TrackerDebug {
+        // Tracker input (from VPI tracker via video processor)
+        float boxCenterX_px = 0.0f;     ///< Tracker box center X in pixels
+        float boxCenterY_px = 0.0f;     ///< Tracker box center Y in pixels
+        float boxWidth_px = 0.0f;       ///< Tracker box width in pixels
+        float boxHeight_px = 0.0f;      ///< Tracker box height in pixels
+        float screenCenterX_px = 0.0f;  ///< Screen center X (aim point)
+        float screenCenterY_px = 0.0f;  ///< Screen center Y (aim point)
+
+        // Error calculation
+        float errorX_px = 0.0f;         ///< Error X in pixels (box center - screen center)
+        float errorY_px = 0.0f;         ///< Error Y in pixels (box center - screen center)
+        float errorAz_deg = 0.0f;       ///< Error azimuth in degrees (converted from pixels)
+        float errorEl_deg = 0.0f;       ///< Error elevation in degrees (converted from pixels)
+
+        // Target velocity (from tracker)
+        float targetVelX_px_s = 0.0f;   ///< Target velocity X in pixels/second
+        float targetVelY_px_s = 0.0f;   ///< Target velocity Y in pixels/second
+        float targetVelAz_dps = 0.0f;   ///< Target velocity Az in deg/s (converted)
+        float targetVelEl_dps = 0.0f;   ///< Target velocity El in deg/s (converted)
+
+        // Gimbal rates (measured from encoder delta)
+        float gimbalRateAz_dps = 0.0f;  ///< Measured gimbal Az rate (deg/s)
+        float gimbalRateEl_dps = 0.0f;  ///< Measured gimbal El rate (deg/s)
+
+        // PID components
+        float pTermAz = 0.0f;           ///< P term for azimuth (Kp * error)
+        float pTermEl = 0.0f;           ///< P term for elevation
+        float dTermAz = 0.0f;           ///< D term for azimuth (damping)
+        float dTermEl = 0.0f;           ///< D term for elevation
+        float ffTermAz = 0.0f;          ///< Feed-forward term Az (target velocity)
+        float ffTermEl = 0.0f;          ///< Feed-forward term El (target velocity)
+
+        // Command output
+        float cmdVelAz_dps = 0.0f;      ///< Final commanded Az velocity (deg/s)
+        float cmdVelEl_dps = 0.0f;      ///< Final commanded El velocity (deg/s)
+
+        // Status
+        bool trackerActive = false;     ///< Tracker is currently active
+        bool targetValid = false;       ///< Target is valid (tracker has lock)
+        float confidence = 0.0f;        ///< Tracking confidence (0.0-1.0)
+    } trackerDebug;
+
     // Stationary detection variables
     bool isVehicleStationary = false;   ///< Flag indicating if the vehicle is stationary
     double previousAccelMagnitude = 0.0; ///< Previous accelerometer magnitude for delta calculation

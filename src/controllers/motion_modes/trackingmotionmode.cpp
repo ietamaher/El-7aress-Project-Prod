@@ -145,8 +145,11 @@ void TrackingMotionMode::update(GimbalController* controller, double dt)
     // ----------------------------------------------------
     // VELOCITY CONTROL (P + D on measurement)
     // ----------------------------------------------------
-    double azVel = m_azPid.Kp * errAz;
-    double elVel = m_elPid.Kp * errEl;
+    double pTermAz = m_azPid.Kp * errAz;
+    double pTermEl = m_elPid.Kp * errEl;
+    double azVel = pTermAz;
+    double elVel = pTermEl;
+
     if (dt > 0.0) {
         m_gimbalAzRate_dps = normalizeAngle180(data.gimbalAz - m_lastGimbalAz) / dt;
         m_gimbalElRate_dps = (data.gimbalEl - m_lastGimbalEl) / dt;
@@ -160,14 +163,18 @@ void TrackingMotionMode::update(GimbalController* controller, double dt)
     m_gimbalElRate_dps = alpha * m_gimbalElRate_dps + (1.0 - alpha) * m_gimbalElRate_dps;
 
     // Damping using gimbal rate (NOT error derivative)
-    azVel -= m_azPid.Kd * m_gimbalAzRate_dps;
-    elVel -= m_elPid.Kd * m_gimbalElRate_dps;
+    double dTermAz = m_azPid.Kd * m_gimbalAzRate_dps;
+    double dTermEl = m_elPid.Kd * m_gimbalElRate_dps;
+    azVel -= dTermAz;
+    elVel -= dTermEl;
 
     // ----------------------------------------------------
     // TARGET MOTION FEED-FORWARD (ESSENTIAL)
     // ----------------------------------------------------
-    azVel += m_smoothedAzVel_dps;
-    elVel += m_smoothedElVel_dps;
+    double ffTermAz = m_smoothedAzVel_dps;
+    double ffTermEl = m_smoothedElVel_dps;
+    azVel += ffTermAz;
+    elVel += ffTermEl;
 
     // ----------------------------------------------------
     // LAC (RATE BIAS, NEAR LOCK)
@@ -187,7 +194,62 @@ void TrackingMotionMode::update(GimbalController* controller, double dt)
     constexpr double MAX_VEL = 30.0;
     azVel = qBound(-MAX_VEL, azVel, MAX_VEL);
     elVel = qBound(-MAX_VEL, elVel, MAX_VEL);
-azVel = -azVel;
-elVel = -elVel;
+    azVel = -azVel;
+    elVel = -elVel;
+
+    // ========================================================================
+    // TRACKER DEBUG DATA - Populate all intermediate values for OSD debugging
+    // ========================================================================
+    SystemStateData::TrackerDebug debugData;
+
+    // Tracker input (from video processor via SystemStateData)
+    debugData.boxCenterX_px = data.trackedTargetCenterX_px;
+    debugData.boxCenterY_px = data.trackedTargetCenterY_px;
+    debugData.boxWidth_px = data.trackedTargetWidth_px;
+    debugData.boxHeight_px = data.trackedTargetHeight_px;
+
+    // Screen center (aim point) - calculated from camera resolution
+    float activeHFOV = data.activeCameraIsDay ? data.dayCurrentHFOV : data.nightCurrentHFOV;
+    int camWidth = data.activeCameraIsDay ? data.dayWidth : data.nightWidth;
+    int camHeight = data.activeCameraIsDay ? data.dayHeight : data.nightHeight;
+    debugData.screenCenterX_px = camWidth / 2.0f;
+    debugData.screenCenterY_px = camHeight / 2.0f;
+
+    // Error calculation (pixels and degrees)
+    debugData.errorX_px = debugData.boxCenterX_px - debugData.screenCenterX_px;
+    debugData.errorY_px = debugData.boxCenterY_px - debugData.screenCenterY_px;
+    debugData.errorAz_deg = static_cast<float>(m_imageErrAz);
+    debugData.errorEl_deg = static_cast<float>(m_imageErrEl);
+
+    // Target velocity (from tracker)
+    debugData.targetVelX_px_s = data.trackedTargetVelocityX_px_s;
+    debugData.targetVelY_px_s = data.trackedTargetVelocityY_px_s;
+    debugData.targetVelAz_dps = static_cast<float>(m_smoothedAzVel_dps);
+    debugData.targetVelEl_dps = static_cast<float>(m_smoothedElVel_dps);
+
+    // Gimbal rates (measured from encoder delta)
+    debugData.gimbalRateAz_dps = static_cast<float>(m_gimbalAzRate_dps);
+    debugData.gimbalRateEl_dps = static_cast<float>(m_gimbalElRate_dps);
+
+    // PID components
+    debugData.pTermAz = static_cast<float>(pTermAz);
+    debugData.pTermEl = static_cast<float>(pTermEl);
+    debugData.dTermAz = static_cast<float>(dTermAz);
+    debugData.dTermEl = static_cast<float>(dTermEl);
+    debugData.ffTermAz = static_cast<float>(ffTermAz);
+    debugData.ffTermEl = static_cast<float>(ffTermEl);
+
+    // Command output (after sign flip and limit)
+    debugData.cmdVelAz_dps = static_cast<float>(azVel);
+    debugData.cmdVelEl_dps = static_cast<float>(elVel);
+
+    // Status
+    debugData.trackerActive = true;
+    debugData.targetValid = m_targetValid;
+    debugData.confidence = data.trackedTargetConfidence;
+
+    // Send debug data to SystemStateModel for OSD display
+    controller->systemStateModel()->updateTrackerDebug(debugData);
+
     sendStabilizedServoCommands(controller, azVel, elVel, false, dt);
 }

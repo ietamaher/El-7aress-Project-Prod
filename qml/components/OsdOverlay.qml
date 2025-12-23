@@ -1547,6 +1547,296 @@ Item {
     }
 
     // ========================================================================
+    // TRACKER DEBUG BOX (Left side, below stabDebugBox)
+    // Toggle visibility with viewModel.toggleTrackerDebugVisible()
+    // ========================================================================
+    Rectangle {
+        id: trackerDebugBox
+        x: 10
+        y: stabDebugBox.visible ? (stabDebugBox.y + stabDebugBox.height + 10) : (statusBlock.y + statusBlock.height + 10)
+        width: 360
+        height: trackerDebugColumn.height + 20
+        color: "#DD000000"
+        border.color: viewModel && viewModel.trackerDebugActive ? "#FF0000" : "#666666"
+        border.width: 2
+        radius: 4
+        visible: viewModel ? viewModel.trackerDebugVisible : false
+        z: 300
+
+        // Click to toggle visibility
+        MouseArea {
+            anchors.fill: parent
+            onClicked: {
+                if (viewModel) viewModel.toggleTrackerDebugVisible()
+            }
+        }
+
+        Column {
+            id: trackerDebugColumn
+            anchors.left: parent.left
+            anchors.top: parent.top
+            anchors.margins: 10
+            spacing: 3
+
+            // Header Row
+            Row {
+                spacing: 10
+                Text {
+                    text: "TRACKER DEBUG"
+                    font.pixelSize: 14
+                    font.bold: true
+                    font.family: primaryFont
+                    color: viewModel && viewModel.trackerDebugActive ? "#FF0000" : "#666666"
+                }
+                Text {
+                    text: viewModel && viewModel.trackerDebugActive ? "[ACTIVE]" : "[INACTIVE]"
+                    font.pixelSize: 12
+                    font.bold: true
+                    font.family: primaryFont
+                    color: viewModel && viewModel.trackerDebugActive ? "#FF0000" : "#888888"
+                }
+                Text {
+                    text: viewModel && viewModel.trackerDebugTargetValid ? "[LOCK]" : "[NO LOCK]"
+                    font.pixelSize: 12
+                    font.bold: true
+                    font.family: primaryFont
+                    color: viewModel && viewModel.trackerDebugTargetValid ? "#00FF00" : "#FFAA00"
+                }
+                Text {
+                    text: "C:" + (viewModel ? (viewModel.trackerDebugConfidence * 100).toFixed(0) + "%" : "0%")
+                    font.pixelSize: 12
+                    font.bold: true
+                    font.family: primaryFont
+                    color: viewModel && viewModel.trackerDebugConfidence > 0.7 ? "#00FF00" :
+                           viewModel && viewModel.trackerDebugConfidence > 0.4 ? "#FFAA00" : "#FF0000"
+                }
+            }
+
+            // Separator
+            Rectangle { width: 340; height: 1; color: "#666666" }
+
+            // Box Position
+            Text {
+                text: "Box Center (px)"
+                font.pixelSize: 11
+                font.bold: true
+                font.family: primaryFont
+                color: "#AAAAAA"
+            }
+            Row {
+                spacing: 20
+                Text {
+                    text: "X: " + (viewModel ? viewModel.trackerDebugBoxCenterX.toFixed(0) : "0")
+                    font.pixelSize: 12
+                    font.family: primaryFont
+                    color: "yellow"
+                }
+                Text {
+                    text: "Y: " + (viewModel ? viewModel.trackerDebugBoxCenterY.toFixed(0) : "0")
+                    font.pixelSize: 12
+                    font.family: primaryFont
+                    color: "yellow"
+                }
+                Text {
+                    text: "| Screen: " + (viewModel ? viewModel.trackerDebugScreenCenterX.toFixed(0) : "0") +
+                          "," + (viewModel ? viewModel.trackerDebugScreenCenterY.toFixed(0) : "0")
+                    font.pixelSize: 11
+                    font.family: primaryFont
+                    color: "#888888"
+                }
+            }
+
+            // Separator
+            Rectangle { width: 340; height: 1; color: "#444444" }
+
+            // Error (pixels and degrees)
+            Text {
+                text: "Error (pixels / degrees)"
+                font.pixelSize: 11
+                font.bold: true
+                font.family: primaryFont
+                color: "#AAAAAA"
+            }
+            Row {
+                spacing: 15
+                Text {
+                    text: "X: " + (viewModel ? viewModel.trackerDebugErrorX.toFixed(1) : "0.0") + "px"
+                    font.pixelSize: 12
+                    font.family: primaryFont
+                    color: viewModel && Math.abs(viewModel.trackerDebugErrorX) > 50 ? "#FF0000" : "#00FF00"
+                }
+                Text {
+                    text: "Y: " + (viewModel ? viewModel.trackerDebugErrorY.toFixed(1) : "0.0") + "px"
+                    font.pixelSize: 12
+                    font.family: primaryFont
+                    color: viewModel && Math.abs(viewModel.trackerDebugErrorY) > 50 ? "#FF0000" : "#00FF00"
+                }
+                Text {
+                    text: "Az: " + (viewModel ? viewModel.trackerDebugErrorAz.toFixed(3) : "0.000") + "°"
+                    font.pixelSize: 12
+                    font.family: primaryFont
+                    color: viewModel && Math.abs(viewModel.trackerDebugErrorAz) > 0.5 ? "#FF0000" : "#00FF00"
+                }
+                Text {
+                    text: "El: " + (viewModel ? viewModel.trackerDebugErrorEl.toFixed(3) : "0.000") + "°"
+                    font.pixelSize: 12
+                    font.family: primaryFont
+                    color: viewModel && Math.abs(viewModel.trackerDebugErrorEl) > 0.5 ? "#FF0000" : "#00FF00"
+                }
+            }
+
+            // Separator
+            Rectangle { width: 340; height: 1; color: "#444444" }
+
+            // Target Velocity
+            Text {
+                text: "Target Velocity"
+                font.pixelSize: 11
+                font.bold: true
+                font.family: primaryFont
+                color: "#AAAAAA"
+            }
+            Row {
+                spacing: 20
+                Text {
+                    text: "Az: " + (viewModel ? viewModel.trackerDebugTargetVelAz.toFixed(2) : "0.00") + "°/s"
+                    font.pixelSize: 12
+                    font.family: primaryFont
+                    color: "cyan"
+                }
+                Text {
+                    text: "El: " + (viewModel ? viewModel.trackerDebugTargetVelEl.toFixed(2) : "0.00") + "°/s"
+                    font.pixelSize: 12
+                    font.family: primaryFont
+                    color: "cyan"
+                }
+            }
+
+            // Separator
+            Rectangle { width: 340; height: 1; color: "#444444" }
+
+            // Gimbal Rate
+            Text {
+                text: "Gimbal Rate (measured)"
+                font.pixelSize: 11
+                font.bold: true
+                font.family: primaryFont
+                color: "#AAAAAA"
+            }
+            Row {
+                spacing: 20
+                Text {
+                    text: "Az: " + (viewModel ? viewModel.trackerDebugGimbalRateAz.toFixed(2) : "0.00") + "°/s"
+                    font.pixelSize: 12
+                    font.family: primaryFont
+                    color: "#FF00FF"
+                }
+                Text {
+                    text: "El: " + (viewModel ? viewModel.trackerDebugGimbalRateEl.toFixed(2) : "0.00") + "°/s"
+                    font.pixelSize: 12
+                    font.family: primaryFont
+                    color: "#FF00FF"
+                }
+            }
+
+            // Separator
+            Rectangle { width: 340; height: 1; color: "#444444" }
+
+            // PID Components
+            Text {
+                text: "PID Components (°/s)"
+                font.pixelSize: 11
+                font.bold: true
+                font.family: primaryFont
+                color: "#AAAAAA"
+            }
+            Row {
+                spacing: 10
+                Text {
+                    text: "P: " + (viewModel ? viewModel.trackerDebugPTermAz.toFixed(2) : "0.00")
+                    font.pixelSize: 11
+                    font.family: primaryFont
+                    color: "#00FF00"
+                }
+                Text {
+                    text: "D: " + (viewModel ? viewModel.trackerDebugDTermAz.toFixed(2) : "0.00")
+                    font.pixelSize: 11
+                    font.family: primaryFont
+                    color: "#FFAA00"
+                }
+                Text {
+                    text: "FF: " + (viewModel ? viewModel.trackerDebugFFTermAz.toFixed(2) : "0.00")
+                    font.pixelSize: 11
+                    font.family: primaryFont
+                    color: "cyan"
+                }
+                Text {
+                    text: "[Az]"
+                    font.pixelSize: 10
+                    font.family: primaryFont
+                    color: "#666666"
+                }
+            }
+            Row {
+                spacing: 10
+                Text {
+                    text: "P: " + (viewModel ? viewModel.trackerDebugPTermEl.toFixed(2) : "0.00")
+                    font.pixelSize: 11
+                    font.family: primaryFont
+                    color: "#00FF00"
+                }
+                Text {
+                    text: "D: " + (viewModel ? viewModel.trackerDebugDTermEl.toFixed(2) : "0.00")
+                    font.pixelSize: 11
+                    font.family: primaryFont
+                    color: "#FFAA00"
+                }
+                Text {
+                    text: "FF: " + (viewModel ? viewModel.trackerDebugFFTermEl.toFixed(2) : "0.00")
+                    font.pixelSize: 11
+                    font.family: primaryFont
+                    color: "cyan"
+                }
+                Text {
+                    text: "[El]"
+                    font.pixelSize: 10
+                    font.family: primaryFont
+                    color: "#666666"
+                }
+            }
+
+            // Separator
+            Rectangle { width: 340; height: 1; color: "#666666" }
+
+            // Command Velocity Output (Final)
+            Text {
+                text: "COMMAND VELOCITY (Final)"
+                font.pixelSize: 11
+                font.bold: true
+                font.family: primaryFont
+                color: "#AAAAAA"
+            }
+            Row {
+                spacing: 20
+                Text {
+                    text: "Az: " + (viewModel ? viewModel.trackerDebugCmdVelAz.toFixed(2) : "0.00") + "°/s"
+                    font.pixelSize: 13
+                    font.bold: true
+                    font.family: primaryFont
+                    color: "#00FF00"
+                }
+                Text {
+                    text: "El: " + (viewModel ? viewModel.trackerDebugCmdVelEl.toFixed(2) : "0.00") + "°/s"
+                    font.pixelSize: 13
+                    font.bold: true
+                    font.family: primaryFont
+                    color: "#00FF00"
+                }
+            }
+        }
+    }
+
+    // ========================================================================
     // HELPER FUNCTIONS
     // ========================================================================
     function getCardinalDirection(bearing) {

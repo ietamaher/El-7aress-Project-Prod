@@ -182,6 +182,40 @@ class OsdViewModel : public QObject
     Q_PROPERTY(double stabDebugAzUser READ stabDebugAzUser NOTIFY stabDebugChanged)
     Q_PROPERTY(double stabDebugElUser READ stabDebugElUser NOTIFY stabDebugChanged)
 
+    // ========================================================================
+    // TRACKER DEBUG DATA (for diagnostic OSD overlay)
+    // ========================================================================
+    Q_PROPERTY(bool trackerDebugVisible READ trackerDebugVisible NOTIFY trackerDebugVisibleChanged)
+    Q_PROPERTY(bool trackerDebugActive READ trackerDebugActive NOTIFY trackerDebugChanged)
+    Q_PROPERTY(bool trackerDebugTargetValid READ trackerDebugTargetValid NOTIFY trackerDebugChanged)
+    Q_PROPERTY(float trackerDebugConfidence READ trackerDebugConfidence NOTIFY trackerDebugChanged)
+    // Box position
+    Q_PROPERTY(float trackerDebugBoxCenterX READ trackerDebugBoxCenterX NOTIFY trackerDebugChanged)
+    Q_PROPERTY(float trackerDebugBoxCenterY READ trackerDebugBoxCenterY NOTIFY trackerDebugChanged)
+    Q_PROPERTY(float trackerDebugScreenCenterX READ trackerDebugScreenCenterX NOTIFY trackerDebugChanged)
+    Q_PROPERTY(float trackerDebugScreenCenterY READ trackerDebugScreenCenterY NOTIFY trackerDebugChanged)
+    // Error
+    Q_PROPERTY(float trackerDebugErrorX READ trackerDebugErrorX NOTIFY trackerDebugChanged)
+    Q_PROPERTY(float trackerDebugErrorY READ trackerDebugErrorY NOTIFY trackerDebugChanged)
+    Q_PROPERTY(float trackerDebugErrorAz READ trackerDebugErrorAz NOTIFY trackerDebugChanged)
+    Q_PROPERTY(float trackerDebugErrorEl READ trackerDebugErrorEl NOTIFY trackerDebugChanged)
+    // Target velocity
+    Q_PROPERTY(float trackerDebugTargetVelAz READ trackerDebugTargetVelAz NOTIFY trackerDebugChanged)
+    Q_PROPERTY(float trackerDebugTargetVelEl READ trackerDebugTargetVelEl NOTIFY trackerDebugChanged)
+    // Gimbal rate
+    Q_PROPERTY(float trackerDebugGimbalRateAz READ trackerDebugGimbalRateAz NOTIFY trackerDebugChanged)
+    Q_PROPERTY(float trackerDebugGimbalRateEl READ trackerDebugGimbalRateEl NOTIFY trackerDebugChanged)
+    // PID components
+    Q_PROPERTY(float trackerDebugPTermAz READ trackerDebugPTermAz NOTIFY trackerDebugChanged)
+    Q_PROPERTY(float trackerDebugPTermEl READ trackerDebugPTermEl NOTIFY trackerDebugChanged)
+    Q_PROPERTY(float trackerDebugDTermAz READ trackerDebugDTermAz NOTIFY trackerDebugChanged)
+    Q_PROPERTY(float trackerDebugDTermEl READ trackerDebugDTermEl NOTIFY trackerDebugChanged)
+    Q_PROPERTY(float trackerDebugFFTermAz READ trackerDebugFFTermAz NOTIFY trackerDebugChanged)
+    Q_PROPERTY(float trackerDebugFFTermEl READ trackerDebugFFTermEl NOTIFY trackerDebugChanged)
+    // Command velocity
+    Q_PROPERTY(float trackerDebugCmdVelAz READ trackerDebugCmdVelAz NOTIFY trackerDebugChanged)
+    Q_PROPERTY(float trackerDebugCmdVelEl READ trackerDebugCmdVelEl NOTIFY trackerDebugChanged)
+
 
 public:
     explicit OsdViewModel(QObject *parent = nullptr);
@@ -318,6 +352,44 @@ public:
         emit stabDebugVisibleChanged();
     }
 
+    // Tracker debug getters
+    bool trackerDebugVisible() const { return m_trackerDebugVisible; }
+    bool trackerDebugActive() const { return m_stateData.trackerDebug.trackerActive; }
+    bool trackerDebugTargetValid() const { return m_stateData.trackerDebug.targetValid; }
+    float trackerDebugConfidence() const { return m_stateData.trackerDebug.confidence; }
+    // Box position
+    float trackerDebugBoxCenterX() const { return m_stateData.trackerDebug.boxCenterX_px; }
+    float trackerDebugBoxCenterY() const { return m_stateData.trackerDebug.boxCenterY_px; }
+    float trackerDebugScreenCenterX() const { return m_stateData.trackerDebug.screenCenterX_px; }
+    float trackerDebugScreenCenterY() const { return m_stateData.trackerDebug.screenCenterY_px; }
+    // Error
+    float trackerDebugErrorX() const { return m_stateData.trackerDebug.errorX_px; }
+    float trackerDebugErrorY() const { return m_stateData.trackerDebug.errorY_px; }
+    float trackerDebugErrorAz() const { return m_stateData.trackerDebug.errorAz_deg; }
+    float trackerDebugErrorEl() const { return m_stateData.trackerDebug.errorEl_deg; }
+    // Target velocity
+    float trackerDebugTargetVelAz() const { return m_stateData.trackerDebug.targetVelAz_dps; }
+    float trackerDebugTargetVelEl() const { return m_stateData.trackerDebug.targetVelEl_dps; }
+    // Gimbal rate
+    float trackerDebugGimbalRateAz() const { return m_stateData.trackerDebug.gimbalRateAz_dps; }
+    float trackerDebugGimbalRateEl() const { return m_stateData.trackerDebug.gimbalRateEl_dps; }
+    // PID components
+    float trackerDebugPTermAz() const { return m_stateData.trackerDebug.pTermAz; }
+    float trackerDebugPTermEl() const { return m_stateData.trackerDebug.pTermEl; }
+    float trackerDebugDTermAz() const { return m_stateData.trackerDebug.dTermAz; }
+    float trackerDebugDTermEl() const { return m_stateData.trackerDebug.dTermEl; }
+    float trackerDebugFFTermAz() const { return m_stateData.trackerDebug.ffTermAz; }
+    float trackerDebugFFTermEl() const { return m_stateData.trackerDebug.ffTermEl; }
+    // Command velocity
+    float trackerDebugCmdVelAz() const { return m_stateData.trackerDebug.cmdVelAz_dps; }
+    float trackerDebugCmdVelEl() const { return m_stateData.trackerDebug.cmdVelEl_dps; }
+
+    // Toggle trackerDebug visibility (for debugging)
+    Q_INVOKABLE void toggleTrackerDebugVisible() {
+        m_trackerDebugVisible = !m_trackerDebugVisible;
+        emit trackerDebugVisibleChanged();
+    }
+
 public slots:
     // Setters
     void setAccentColor(const QColor& color);
@@ -383,6 +455,9 @@ public slots:
 
     // Gyrostabilization debug update (called by OsdController from SystemStateData)
     void updateStabDebug(const SystemStateData& data);
+
+    // Tracker debug update (called by OsdController from SystemStateData)
+    void updateTrackerDebug(const SystemStateData& data);
 
 
 signals:
@@ -495,6 +570,10 @@ signals:
     // Gyrostabilization debug signals
     void stabDebugVisibleChanged();
     void stabDebugChanged();
+
+    // Tracker debug signals
+    void trackerDebugVisibleChanged();
+    void trackerDebugChanged();
 
 
 private:
@@ -618,7 +697,10 @@ private:
 
     // Gyrostabilization debug data
     bool m_stabDebugVisible = true;  // Default to visible for debugging
-    SystemStateData m_stateData;      // Cached state data for stabDebug access
+    SystemStateData m_stateData;      // Cached state data for stabDebug/trackerDebug access
+
+    // Tracker debug data
+    bool m_trackerDebugVisible = true;  // Default to visible for debugging
 };
 
 #endif // OSDVIEWMODEL_H
