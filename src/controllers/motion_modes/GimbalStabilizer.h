@@ -163,6 +163,26 @@ private:
         while (angle < -180.0) angle += 360.0;
         return angle;
     }
+
+    mutable double m_prevAzError_deg = 0.0;
+    mutable double m_prevElError_deg = 0.0;
+
+    // ✅ NEW: AHRS angle filters (reduce yaw noise)
+    mutable double m_filteredYaw_deg = 0.0;
+    mutable double m_filteredPitch_deg = 0.0;
+    mutable double m_filteredRoll_deg = 0.0;
+    mutable bool m_ahrsFilterInitialized = false;
+    mutable bool  m_requiredAnglesInitialized = false;
+    mutable double  m_filteredRequiredAz_deg = 0.0;
+    mutable double  m_filteredRequiredEl_deg = 0.0;
+
+mutable double m_prevAzCmd_dps = 0.0;
+mutable double m_prevElCmd_dps = 0.0;
+mutable double m_azFF_smooth = 0.0;
+mutable double m_elFF_smooth = 0.0;
+
+
+
 };
 
 #endif // GIMBALSTABILIZER_H

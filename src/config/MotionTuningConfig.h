@@ -85,13 +85,19 @@ public:
      *
      * Defaults tuned for 50ms update rate (20Hz) on moving platform.
      */
-    struct StabilizerConfig {
-        double kpPosition = 2.0;              ///< Position error gain (deg/s per deg)
-        double maxPositionVel = 10.0;         ///< Max position correction velocity (deg/s)
-        double maxVelocityCorr = 5.0;         ///< Max rate feed-forward velocity (deg/s)
-        double maxTotalVel = 18.0;            ///< Max total correction velocity (deg/s) [must be >= sum]
-        double maxTanEl = 10.0;               ///< Clamp tan(elevation) for singularity protection
-    };
+struct StabilizerConfig {
+    double kpPosition = 0.7;
+    double kdPosition = 0.0;
+    double maxErrorRate = 50.0;
+    double maxPositionVel = 10.0;
+    double maxVelocityCorr = 5.0;
+    double maxTotalVel = 18.0;
+    double maxTanEl = 10.0;
+    
+    // ✅ NEW: Anti-jitter parameters
+    double positionDeadbandDeg = 0.5;   ///< Ignore errors smaller than this
+    double ahrsFilterTau = 0.15;          ///< AHRS angle filter time constant (seconds)
+};
 
     // ========================================================================
     // PUBLIC API

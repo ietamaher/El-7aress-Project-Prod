@@ -128,7 +128,18 @@ void ManualMotionMode::update(GimbalController* controller, double dt)
             auto stateModel = controller->systemStateModel();
             SystemStateData updatedState = stateModel->data();
             updatedState.useWorldFrameTarget = true; // Enable world-frame stabilization
-            stateModel->updateData(updatedState);
+
+
+                double worldAz, worldEl;
+                convertGimbalToWorldFrame(data.gimbalAz, data.gimbalEl,
+                                        data.imuRollDeg, data.imuPitchDeg, data.imuYawDeg,
+                                        worldAz, worldEl);
+                updatedState.targetAzimuth_world = worldAz;
+                updatedState.targetElevation_world = worldEl;
+                updatedState.useWorldFrameTarget = true;
+                stateModel->updateData(updatedState);
+
+            //stateModel->updateData(updatedState);
         }
     }
 

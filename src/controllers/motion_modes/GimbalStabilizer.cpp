@@ -52,12 +52,23 @@ std::pair<double,double> GimbalStabilizer::computeStabilizedVelocity(
     double elError_deg = normalizeAngle180(requiredEl_deg - currentEl_deg);
 
     // Convert to velocity correction: v_correction = Kp × error
-    double azPositionCorr_dps = cfg.kpPosition * azError_deg;
-    double elPositionCorr_dps = cfg.kpPosition * elError_deg;
+    //double azPositionCorr_dps = cfg.kpPosition * azError_deg;
+    //double elPositionCorr_dps = cfg.kpPosition * elError_deg;
 
-    // Clamp position correction velocities
-    azPositionCorr_dps = std::clamp(azPositionCorr_dps, -cfg.maxPositionVel, cfg.maxPositionVel);
-    elPositionCorr_dps = std::clamp(elPositionCorr_dps, -cfg.maxPositionVel, cfg.maxPositionVel);
+    // ✅ NEW: Derivative term for damping (error rate estimation)
+    double azErrorRate_dps = (azError_deg - m_prevAzError_deg) / dt;
+    double elErrorRate_dps = (elError_deg - m_prevElError_deg) / dt;
+    m_prevAzError_deg = azError_deg;
+    m_prevElError_deg = elError_deg;
+
+    // ✅ NEW: Filter derivative to reduce noise (optional but recommended)
+    azErrorRate_dps = std::clamp(azErrorRate_dps, -cfg.maxErrorRate, cfg.maxErrorRate);
+    elErrorRate_dps = std::clamp(elErrorRate_dps, -cfg.maxErrorRate, cfg.maxErrorRate);
+
+    // Convert to velocity correction: PD control
+    // v_correction = Kp × error + Kd × error_rate
+    double azPositionCorr_dps = cfg.kpPosition * azError_deg + cfg.kdPosition * azErrorRate_dps;
+    double elPositionCorr_dps = cfg.kpPosition * elError_deg + cfg.kdPosition * elErrorRate_dps;
 
     // ========================================================================
     // COMPONENT 2: Rate Feed-Forward (Gyro-based transient compensation)
@@ -155,9 +166,25 @@ std::pair<double,double> GimbalStabilizer::computeStabilizedVelocityWithDebug(
 
     const auto& cfg = MotionTuningConfig::instance().stabilizer;
 
+        // ✅ FIX 1: Filter AHRS angles to reduce noise-induced jitter
+    if (!m_ahrsFilterInitialized) {
+        m_filteredRoll_deg = imuRoll_deg;
+        m_filteredPitch_deg = imuPitch_deg;
+        m_filteredYaw_deg = imuYaw_deg;
+        m_ahrsFilterInitialized = true;
+    } else {
+        double alpha = 1.0 - std::exp(-dt / cfg.ahrsFilterTau);
+        m_filteredRoll_deg  += alpha * (imuRoll_deg - m_filteredRoll_deg);
+        m_filteredPitch_deg += alpha * (imuPitch_deg - m_filteredPitch_deg);
+        
+        // ✅ Special handling for yaw wraparound
+        double yawDiff = normalizeAngle180(imuYaw_deg - m_filteredYaw_deg);
+        m_filteredYaw_deg = normalizeAngle180(m_filteredYaw_deg + alpha * yawDiff);
+    }
+
     // Compute required gimbal angles to point at world target
     auto [requiredAz_deg, requiredEl_deg] = computeRequiredGimbalAngles(
-        imuRoll_deg, imuPitch_deg, imuYaw_deg,
+        m_filteredRoll_deg, m_filteredPitch_deg, m_filteredYaw_deg,  // ✅ FILTERED!
         targetAz_world, targetEl_world
     );
     dbg.requiredAz_deg = requiredAz_deg;
@@ -166,51 +193,116 @@ std::pair<double,double> GimbalStabilizer::computeStabilizedVelocityWithDebug(
     // Calculate angle errors (required - current)
     double azError_deg = normalizeAngle180(requiredAz_deg - currentAz_deg);
     double elError_deg = normalizeAngle180(requiredEl_deg - currentEl_deg);
-    dbg.azError_deg = azError_deg;
-    dbg.elError_deg = elError_deg;
 
-    // Convert to velocity correction: v_correction = Kp × error
-    double azPositionCorr_dps = cfg.kpPosition * azError_deg;
-    double elPositionCorr_dps = cfg.kpPosition * elError_deg;
+    // ✅ FIX: Calculate derivative on RAW error BEFORE deadband
+    double azErrorRate_dps = 0.0;
+    double elErrorRate_dps = 0.0;
+    if (dt > 1e-6) {
+        azErrorRate_dps = (azError_deg - m_prevAzError_deg) / dt;
+        elErrorRate_dps = (elError_deg - m_prevElError_deg) / dt;
+        
+        // Clamp derivative to prevent spikes
+        azErrorRate_dps = std::clamp(azErrorRate_dps, -cfg.maxErrorRate, cfg.maxErrorRate);
+        elErrorRate_dps = std::clamp(elErrorRate_dps, -cfg.maxErrorRate, cfg.maxErrorRate);
+    }
+    // ✅ Store RAW error for next derivative calculation
+    m_prevAzError_deg = azError_deg;
+    m_prevElError_deg = elError_deg;
 
-    // Clamp position correction velocities
-    azPositionCorr_dps = std::clamp(azPositionCorr_dps, -cfg.maxPositionVel, cfg.maxPositionVel);
-    elPositionCorr_dps = std::clamp(elPositionCorr_dps, -cfg.maxPositionVel, cfg.maxPositionVel);
+    // ✅ Apply deadband ONLY to proportional term (after derivative calc)
+    double azErrorForP = azError_deg;
+    double elErrorForP = elError_deg;
+    if (std::abs(azErrorForP) < cfg.positionDeadbandDeg) azErrorForP = 0.0;
+    if (std::abs(elErrorForP) < cfg.positionDeadbandDeg) elErrorForP = 0.0;
+
+    // ✅ Also apply deadband to derivative when error is small (prevents chatter)
+    if (std::abs(azError_deg) < cfg.positionDeadbandDeg) azErrorRate_dps = 0.0;
+    if (std::abs(elError_deg) < cfg.positionDeadbandDeg) elErrorRate_dps = 0.0;
+
+    dbg.azError_deg = azErrorForP;
+    dbg.elError_deg = elErrorForP;
+
+    // PD Control with corrected terms
+    double azPositionCorr_dps = cfg.kpPosition * azErrorForP + cfg.kdPosition * azErrorRate_dps;
+    double elPositionCorr_dps = cfg.kpPosition * elErrorForP + cfg.kdPosition * elErrorRate_dps;
     dbg.azPosCorr_dps = azPositionCorr_dps;
     dbg.elPosCorr_dps = elPositionCorr_dps;
 
-    // ========================================================================
-    // COMPONENT 2: Rate Feed-Forward (Gyro-based transient compensation)
-    // ========================================================================
+ // ========================================================================
+// COMPONENT 2: Rate Feed-Forward (Gyro-based, SMOOTH & SAFE)
+// ========================================================================
 
-    // Transform platform motion to gimbal frame
-    auto [azRateFF_dps, elRateFF_dps] = computeRateFeedForward(
-        dbg.p_dps, dbg.q_dps, dbg.r_dps,
-        currentAz_deg, currentEl_deg
-    );
+auto [azRateFF_raw, elRateFF_raw] = computeRateFeedForward(
+    dbg.p_dps, dbg.q_dps, dbg.r_dps,
+    currentAz_deg, currentEl_deg
+);
 
-    // Clamp rate feed-forward velocities
-    azRateFF_dps = std::clamp(azRateFF_dps, -cfg.maxVelocityCorr, cfg.maxVelocityCorr);
-    elRateFF_dps = std::clamp(elRateFF_dps, -cfg.maxVelocityCorr, cfg.maxVelocityCorr);
-    dbg.azRateFF_dps = azRateFF_dps;
-    dbg.elRateFF_dps = elRateFF_dps;
+// Clamp raw FF
+azRateFF_raw = std::clamp(azRateFF_raw, -cfg.maxVelocityCorr, cfg.maxVelocityCorr);
+elRateFF_raw = std::clamp(elRateFF_raw, -cfg.maxVelocityCorr, cfg.maxVelocityCorr);
 
-    // ========================================================================
-    // COMPONENT 3: Velocity Composition
-    // ========================================================================
+// ------------------------------------------------------------------
+// Smooth gyro-based FF ramp (NO DISCONTINUITY)
+// ------------------------------------------------------------------
+constexpr double GYRO_DB = 0.3;     // deg/s (noise)
+constexpr double GYRO_FULL = 1.2;   // deg/s (full FF)
 
-    // Combine all three components: user + position correction + rate feed-forward
-    finalAz_dps = desiredAzVel_dps + azPositionCorr_dps + azRateFF_dps;
-    finalEl_dps = desiredElVel_dps + elPositionCorr_dps + elRateFF_dps;
+double yawRate = std::abs(dbg.r_dps);
+double elRate  = std::hypot(dbg.p_dps, dbg.q_dps);
 
-    // Apply total velocity limit
-    finalAz_dps = std::clamp(finalAz_dps, -cfg.maxTotalVel, cfg.maxTotalVel);
-    finalEl_dps = std::clamp(finalEl_dps, -cfg.maxTotalVel, cfg.maxTotalVel);
+double azFFScale = std::clamp((yawRate - GYRO_DB) / (GYRO_FULL - GYRO_DB), 0.0, 1.0);
+double elFFScale = std::clamp((elRate  - GYRO_DB) / (GYRO_FULL - GYRO_DB), 0.0, 1.0);
 
-    dbg.finalAz_dps = finalAz_dps;
-    dbg.finalEl_dps = finalEl_dps;
+// Apply scaling
+azRateFF_raw *= azFFScale;
+elRateFF_raw *= elFFScale;
 
-    return {finalAz_dps, finalEl_dps};
+// ------------------------------------------------------------------
+// FF smoothing (models actuator inertia, kills jitter)
+// ------------------------------------------------------------------
+double alphaFF = 1.0 - std::exp(-dt / 0.10); // τ = 100 ms
+
+m_azFF_smooth += alphaFF * (azRateFF_raw - m_azFF_smooth);
+m_elFF_smooth += alphaFF * (elRateFF_raw - m_elFF_smooth);
+
+dbg.azRateFF_dps = m_azFF_smooth;
+dbg.elRateFF_dps = m_elFF_smooth;
+
+
+// ========================================================================
+// COMPONENT 3: Velocity Composition (ACCEL-LIMITED)
+// ========================================================================
+
+double azCmd = desiredAzVel_dps + azPositionCorr_dps + m_azFF_smooth;
+double elCmd = desiredElVel_dps + elPositionCorr_dps + m_elFF_smooth;
+
+// Total velocity limit
+azCmd = std::clamp(azCmd, -cfg.maxTotalVel, cfg.maxTotalVel);
+elCmd = std::clamp(elCmd, -cfg.maxTotalVel, cfg.maxTotalVel);
+
+// ------------------------------------------------------------------
+// Acceleration limiting (CRITICAL for smoothness)
+// ------------------------------------------------------------------
+constexpr double MAX_ACC_DPS2 = 35.0;   // safe for EO heads
+
+double maxDelta = MAX_ACC_DPS2 * dt;
+
+azCmd = std::clamp(azCmd,
+                   m_prevAzCmd_dps - maxDelta,
+                   m_prevAzCmd_dps + maxDelta);
+
+elCmd = std::clamp(elCmd,
+                   m_prevElCmd_dps - maxDelta,
+                   m_prevElCmd_dps + maxDelta);
+
+// Store
+m_prevAzCmd_dps = azCmd;
+m_prevElCmd_dps = elCmd;
+
+dbg.finalAz_dps = azCmd;
+dbg.finalEl_dps = elCmd;
+
+return { azCmd, elCmd };
 }
 
 // ============================================================================
@@ -280,7 +372,7 @@ std::pair<double,double> GimbalStabilizer::computeRequiredGimbalAngles(
 
     // ✅ EXPERT REVIEW FIX: Negate elevation to match system sign convention
     // Elevation servo wiring convention requires sign inversion
-    gimbalEl_deg = -gimbalEl_deg;
+    //gimbalEl_deg = -gimbalEl_deg;
 
     return {gimbalAz_deg, gimbalEl_deg};
 }

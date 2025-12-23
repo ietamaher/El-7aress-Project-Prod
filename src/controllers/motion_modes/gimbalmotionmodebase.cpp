@@ -154,7 +154,7 @@ void GimbalMotionModeBase::sendStabilizedServoCommands(GimbalController* control
         );
 
         finalAzVelocity = stabAz_dps;
-        finalElVelocity = stabEl_dps;
+        finalElVelocity = - stabEl_dps;
     } else {
         // Not stabilizing - fill debug with raw values
         stabDebug.userAz_dps = desiredAzVelocity;

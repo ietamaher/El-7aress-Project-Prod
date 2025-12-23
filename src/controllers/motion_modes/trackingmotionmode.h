@@ -68,7 +68,8 @@ double m_prevErrEl = 0.0;   // previous loop error for elevation
 
 double m_imageErrAz = 0.0;
 double m_imageErrEl = 0.0;
-
+double m_manualAzOffset_deg = 0.0;
+double m_manualElOffset_deg = 0.0;
 
 double m_gimbalAzRate_dps = 0.0;
 double m_gimbalElRate_dps = 0.0;
