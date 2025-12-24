@@ -74,6 +74,10 @@ double m_manualElOffset_deg = 0.0;
 double m_gimbalAzRate_dps = 0.0;
 double m_gimbalElRate_dps = 0.0;
 
+int m_logCycleCounter = 0;
+double m_lastValidAzRate = 0.0;
+double m_lastValidElRate = 0.0;
+
 };
 
 #endif // TRACKINGMOTIONMODE_H

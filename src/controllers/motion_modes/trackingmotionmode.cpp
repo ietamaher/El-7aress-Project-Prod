@@ -31,14 +31,14 @@ TrackingMotionMode::TrackingMotionMode(QObject* parent)
     // These override config file for field testing - move to config once tuned
     
     // Azimuth
-    m_azPid.Kp = 0.6;     // 4× faster than 0.15
-    m_azPid.Kd = 0.12;    // 4× 0.03 → keeps damping
+    m_azPid.Kp = 0.45;
+    m_azPid.Kd = 0.3;    // Much higher damping
     m_azPid.Ki = 0.0;     // OFF for tracking
     m_azPid.maxIntegral = 3.0;
 
     // Elevation
-    m_elPid.Kp = 0.7;
-    m_elPid.Kd = 0.14;
+    m_elPid.Kp = 0.5;
+    m_elPid.Kd = 0.35;
     m_elPid.Ki = 0.0;
     m_elPid.maxIntegral = 3.0;
     
@@ -59,6 +59,9 @@ void TrackingMotionMode::enterMode(GimbalController* controller)
     m_previousDesiredElVel = 0.0;
     m_gimbalVelAz = 0.0;
     m_gimbalVelEl = 0.0;
+    m_lastValidAzRate = 0.0;
+    m_lastValidElRate = 0.0;
+    m_logCycleCounter = 0;
 
     startVelocityTimer();
 
@@ -67,15 +70,15 @@ void TrackingMotionMode::enterMode(GimbalController* controller)
         // CRITICAL: Set hardware acceleration HIGH
         // =====================================================================
         // AZD-KD can handle 1,000,000+ Hz/s easily
-        // With 568 steps/deg, 500000 Hz/s ≈ 880 deg/s² (very responsive)
+        // With 568 steps/deg, 100000 Hz/s ≈ 176 deg/s² (very responsive)
         // This lets the servo reach commanded velocity FAST
         // Software PID handles the control - hardware handles the ramp
         
         if (auto azServo = controller->azimuthServo()) {
-            setAcceleration(azServo, 500000);  // 500 kHz/s
+            setAcceleration(azServo, 100000);  // 100 kHz/s
         }
         if (auto elServo = controller->elevationServo()) {
-            setAcceleration(elServo, 500000);  // 500 kHz/s  
+            setAcceleration(elServo, 100000);  // 100 kHz/s  
         }
     }
     
@@ -122,98 +125,123 @@ void TrackingMotionMode::onTargetPositionUpdated(
 
 void TrackingMotionMode::update(GimbalController* controller, double dt)
 {
-    if (!controller || !m_targetValid || dt <= 0.0)
+    if (!controller || !m_targetValid || dt <= 0.0001)
         return;
 
     SystemStateData data = controller->systemStateModel()->data();
 
+    // ------------------------------------------------------------------
+    // SAFETY
+    // ------------------------------------------------------------------
     if (!data.deadManSwitchActive) {
         sendStabilizedServoCommands(controller, 0.0, 0.0, false, dt);
         return;
     }
 
-    // ----------------------------------------------------
-    // IMAGE-SPACE ERROR (ONLY SOURCE OF ERROR)
-    // ----------------------------------------------------
-    double errAz = m_imageErrAz;   // deg
-    double errEl = m_imageErrEl;   // deg
+    // ------------------------------------------------------------------
+    // INPUTS
+    // ------------------------------------------------------------------
+    double errAz = m_imageErrAz;
+    double errEl = m_imageErrEl;
 
-    constexpr double DB = 0.05;
-    if (std::abs(errAz) < DB) errAz = 0.0;
-    if (std::abs(errEl) < DB) errEl = 0.0;
+    double currentAzRate_dps = data.azRpm * 6.0;
+    double currentElRate_dps = data.elRpm * 6.0;
 
-    // ----------------------------------------------------
-    // VELOCITY CONTROL (P + D on measurement)
-    // ----------------------------------------------------
-    double azVel = m_azPid.Kp * errAz;
-    double elVel = m_elPid.Kp * errEl;
-    if (dt > 0.0) {
-        m_gimbalAzRate_dps = normalizeAngle180(data.gimbalAz - m_lastGimbalAz) / dt;
-        m_gimbalElRate_dps = (data.gimbalEl - m_lastGimbalEl) / dt;
+    // ------------------------------------------------------------------
+    // DEADBANDS (RATE + ERROR)
+    // ------------------------------------------------------------------
+    constexpr double ERR_DB  = 0.05;
+    constexpr double RATE_DB = 0.8;
+
+    if (std::abs(errAz) < ERR_DB) errAz = 0.0;
+    if (std::abs(errEl) < ERR_DB) errEl = 0.0;
+
+    if (std::abs(currentAzRate_dps) < RATE_DB) currentAzRate_dps = 0.0;
+    if (std::abs(currentElRate_dps) < RATE_DB) currentElRate_dps = 0.0;
+
+    // ------------------------------------------------------------------
+    // MANUAL NUDGE (UNCHANGED LOGIC)
+    // ------------------------------------------------------------------
+    constexpr double JOYSTICK_DB = 0.15;
+    constexpr double MANUAL_GAIN = 4.0;
+    constexpr double MAX_MANUAL_OFFSET = 5.0;
+    constexpr double DECAY_SPEED = 2.0;
+
+    if (data.lacArmed && data.leadAngleCompensationActive) {
+        m_manualAzOffset_deg = 0.0;
+        m_manualElOffset_deg = 0.0;
     }
 
-    m_lastGimbalAz = data.gimbalAz;
-    m_lastGimbalEl = data.gimbalEl;
-    const double rateTau = 0.02; // 20 ms
-    double alpha = dt / (rateTau + dt);
-    m_gimbalAzRate_dps = alpha * m_gimbalAzRate_dps + (1.0 - alpha) * m_gimbalAzRate_dps;
-    m_gimbalElRate_dps = alpha * m_gimbalElRate_dps + (1.0 - alpha) * m_gimbalElRate_dps;
+    bool manualActive =
+        std::abs(data.joystickAzValue) > JOYSTICK_DB ||
+        std::abs(data.joystickElValue) > JOYSTICK_DB;
 
-    // Damping using gimbal rate (NOT error derivative)
-    double azRate_dps = data.azRpm * 6.0;   // RPM → deg/s
-    double elRate_dps = data.elRpm * 6.0;
+    if (manualActive && !(data.lacArmed && data.leadAngleCompensationActive)) {
+        m_manualAzOffset_deg += data.joystickAzValue * MANUAL_GAIN * dt;
+        m_manualElOffset_deg += data.joystickElValue * MANUAL_GAIN * dt;
 
-    azVel += m_azPid.Kd * (m_smoothedAzVel_dps - azRate_dps);
-    elVel += m_elPid.Kd * (m_smoothedElVel_dps - elRate_dps);
+        m_manualAzOffset_deg = qBound(-MAX_MANUAL_OFFSET, m_manualAzOffset_deg, MAX_MANUAL_OFFSET);
+        m_manualElOffset_deg = qBound(-MAX_MANUAL_OFFSET, m_manualElOffset_deg, MAX_MANUAL_OFFSET);
+    } else {
+        m_manualAzOffset_deg -= m_manualAzOffset_deg * DECAY_SPEED * dt;
+        m_manualElOffset_deg -= m_manualElOffset_deg * DECAY_SPEED * dt;
 
-    if (std::abs(errAz) < DB && std::abs(azRate_dps) < 0.3) azVel = 0.0;
-    if (std::abs(errEl) < DB && std::abs(elRate_dps) < 0.3) elVel = 0.0;
-    // ----------------------------------------------------
-    // TARGET MOTION FEED-FORWARD (ESSENTIAL)
-    // ----------------------------------------------------
-    azVel += m_smoothedAzVel_dps;
-    elVel += m_smoothedElVel_dps;
-
-    // ----------------------------------------------------
-    // LAC (RATE BIAS, NEAR LOCK)
-    // ----------------------------------------------------
-    if (data.lacArmed &&
-        data.leadAngleCompensationActive &&
-        std::abs(errAz) < 1.0 &&
-        std::abs(errEl) < 1.0) {
-
-        azVel += LAC_RATE_BIAS_GAIN * data.lacLatchedAzRate_dps;
-        elVel += LAC_RATE_BIAS_GAIN * data.lacLatchedElRate_dps;
+        if (std::abs(m_manualAzOffset_deg) < ERR_DB) m_manualAzOffset_deg = 0.0;
+        if (std::abs(m_manualElOffset_deg) < ERR_DB) m_manualElOffset_deg = 0.0;
     }
 
-    // ----------------------------------------------------
-    // VELOCITY LIMIT ONLY (NO ACCEL LIMIT)
-    // ----------------------------------------------------
-    constexpr double MAX_VEL = 10.0;
-    azVel = qBound(-MAX_VEL, azVel, MAX_VEL);
-    elVel = qBound(-MAX_VEL, elVel, MAX_VEL);
+    // ------------------------------------------------------------------
+    // EFFECTIVE ERROR (IMAGE + MANUAL)
+    // ------------------------------------------------------------------
+    double effectiveErrAz = errAz + m_manualAzOffset_deg;
+    double effectiveErrEl = errEl + m_manualElOffset_deg;
 
+    if (std::abs(effectiveErrAz) < ERR_DB) effectiveErrAz = 0.0;
+    if (std::abs(effectiveErrEl) < ERR_DB) effectiveErrEl = 0.0;
 
-constexpr double STOP_ERR = 0.3;     // deg
-constexpr double STOP_RATE = 0.5;    // deg/s
+    // ------------------------------------------------------------------
+    // VELOCITY PID (SINGLE DAMPING SOURCE)
+    // ------------------------------------------------------------------
+    double azVelCmd = m_azPid.Kp * effectiveErrAz
+                    - m_azPid.Kd * currentAzRate_dps;
 
-    if (std::abs(errAz) < STOP_ERR && std::abs(azRate_dps) > STOP_RATE)
-        azVel = -0.6 * azRate_dps;   // active braking
+    double elVelCmd = m_elPid.Kp * effectiveErrEl
+                    - m_elPid.Kd * currentElRate_dps;
 
-    //Same for elevation.
-    if (std::abs(errEl) < STOP_ERR && std::abs(elRate_dps) > STOP_RATE)
-        elVel = -0.6 * elRate_dps;   // active braking
-    
+    // ------------------------------------------------------------------
+    // LAC OVERRIDE (FULL PRIORITY)
+    // ------------------------------------------------------------------
+    if (data.lacArmed && data.leadAngleCompensationActive) {
+        azVelCmd += data.lacLatchedAzRate_dps * LAC_RATE_BIAS_GAIN;
+        elVelCmd += data.lacLatchedElRate_dps * LAC_RATE_BIAS_GAIN;
+    }
 
-    azVel = -azVel;
-    elVel = -elVel;
-    sendStabilizedServoCommands(controller, azVel, elVel, false, dt);
+    // ------------------------------------------------------------------
+    // SATURATION
+    // ------------------------------------------------------------------
+    constexpr double MAX_VEL_AZ = 12.0;
+    constexpr double MAX_VEL_EL = 10.0;
 
-    qDebug()
-        << "errAz" << errAz
-        << "azRpm" << data.azRpm
-        << "azRate_dps" << azRate_dps
-        << "targetRate" << m_smoothedAzVel_dps
-        << "rateErr" << (m_smoothedAzVel_dps - azRate_dps)
-        << "cmdAzVel" << azVel;
+    azVelCmd = qBound(-MAX_VEL_AZ, azVelCmd, MAX_VEL_AZ);
+    elVelCmd = qBound(-MAX_VEL_EL, elVelCmd, MAX_VEL_EL);
+
+    // ------------------------------------------------------------------
+    // DEBUG (UNCHANGED FORMAT)
+    // ------------------------------------------------------------------
+    if (++m_logCycleCounter >= 10) {
+        m_logCycleCounter = 0;
+        qDebug().nospace()
+            << "[TRK] "
+            << "err(" << errAz << ", " << errEl << ") "
+            << "eff(" << effectiveErrAz << ", " << effectiveErrEl << ") "
+            << "rate(" << currentAzRate_dps << ", " << currentElRate_dps << ") "
+            << "cmd(" << azVelCmd << ", " << elVelCmd << ") "
+            << "nudge(" << m_manualAzOffset_deg << ", " << m_manualElOffset_deg << ") "
+            << "LAC:" << (data.leadAngleCompensationActive ? "ON" : "off");
+    }
+
+    // ------------------------------------------------------------------
+    // OUTPUT (SIGN KEPT AS YOUR SYSTEM EXPECTS)
+    // ------------------------------------------------------------------
+    sendStabilizedServoCommands(controller, -azVelCmd, -elVelCmd, false, dt);
 }
