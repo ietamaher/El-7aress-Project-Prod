@@ -160,22 +160,24 @@ QPointF ReticleAimpointCalculator::calculateReticleImagePositionPx(
     }
 
     // ========================================================================
-    // LEAD ANGLE OFFSET (for CCIP)
+    // BALLISTIC/LEAD OFFSET (for CCIP)
     // ========================================================================
-    // Lead angle compensates for target motion. Positive lead means we need
-    // to aim AHEAD of the target (in the direction of motion).
+    // This offset combines:
+    // 1. Ballistic drop (gravity + wind) - auto-applied when LRF valid
+    // 2. Motion lead (target velocity compensation) - when LAC active
     //
-    // Only apply when LAC is active and status is On or Lag (not ZoomOut).
-    // ZoomOut means the lead is too large to display on current FOV.
+    // CROWS/SARP DOCTRINE FIX:
+    // - Always apply offsets when leadActive is true
+    // - The caller (SystemStateModel) has already combined drop + lead
+    // - leadStatus is for DISPLAY purposes (status text, color) not filtering
+    // - ZoomOut detection is handled by SystemStateModel after position calc
+    //
+    // Previous bug: leadStatus == Off blocked ballistic-only CCIP display
     // ========================================================================
-    bool applyLeadOffset = leadActive &&
-                           (leadStatus == LeadAngleStatus::On ||
-                            leadStatus == LeadAngleStatus::Lag);
-
-    if (applyLeadOffset) {
+    if (leadActive) {
         totalPixelShift += ReticleAimpointCalculator::convertSingleAngularToPixelShift(
-            leadAzDeg,      // Lead in azimuth direction
-            leadElDeg,      // Lead in elevation direction
+            leadAzDeg,      // Combined ballistic + lead in azimuth direction
+            leadElDeg,      // Combined ballistic + lead in elevation direction
             cameraHfovDeg, imageWidthPx, imageHeightPx);
     }
 

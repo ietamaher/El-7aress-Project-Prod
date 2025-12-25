@@ -288,20 +288,37 @@ void OsdController::onFrameDataReady(const FrameData& frmdata)
     //QString ccipStatus = "Off";
     //bool ccipVisible = false;
 
+    // ========================================================================
+    // CROWS/SARP CCIP STATUS LOGIC
+    // ========================================================================
+    // CCIP is visible when ballistic drop is active (LRF valid)
+    // Status can be:
+    //   - "On": Valid firing solution (ballistic-only or LAC active)
+    //   - "Lag": LAC at limit (estimated range, reduced accuracy)
+    //   - "ZoomOut": CCIP outside FOV (need to zoom out camera)
+    //   - "Off": No valid solution (no LRF range)
+    //
+    // CRITICAL: Check ZoomOut FIRST - it can occur from ballistic drop alone
+    // (extreme range) or from LAC (fast target), regardless of LAC state
+    // ========================================================================
     QString ccipStatus;
     bool ccipVisible = frmdata.ballDropActive;
 
     if (!ccipVisible) {
         ccipStatus = "Off";
-    } else if (!frmdata.leadAngleActive ||
-            frmdata.leadAngleStatus == LeadAngleStatus::Off) {
-        ccipStatus = "On";          // ← ballistic-only CCIP
+    } else if (frmdata.leadAngleStatus == LeadAngleStatus::ZoomOut) {
+        // ZoomOut takes priority - CCIP is outside FOV
+        // This can happen with ballistic-only (extreme drop) or LAC (fast target)
+        ccipStatus = "ZoomOut";
+    } else if (!frmdata.leadAngleActive) {
+        // Ballistic-only mode (no LAC) - status based on drop calculation
+        ccipStatus = "On";
     } else {
+        // LAC is active - status based on lead calculation
         switch (frmdata.leadAngleStatus) {
-            case LeadAngleStatus::On:      ccipStatus = "On";      break;
-            case LeadAngleStatus::Lag:     ccipStatus = "Lag";     break;
-            case LeadAngleStatus::ZoomOut: ccipStatus = "ZoomOut"; break;
-            default:                       ccipStatus = "On";     break;
+            case LeadAngleStatus::On:  ccipStatus = "On";  break;
+            case LeadAngleStatus::Lag: ccipStatus = "Lag"; break;
+            default:                   ccipStatus = "On";  break;
         }
     }
         //if (frmdata.leadAngleActive) {

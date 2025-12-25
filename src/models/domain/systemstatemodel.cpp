@@ -1675,13 +1675,14 @@ void SystemStateModel::recalculateDerivedAimpointData() {
     }
 
     // ========================================================================
-    // CROWS ZOOM OUT DETECTION (TM 9-1090-225-10-2)
+    // CROWS/SARP ZOOM OUT DETECTION (TM 9-1090-225-10-2)
     // ========================================================================
     // "If the Lead Angle is greater than the selected camera FOV, ZOOM OUT
     //  appears over the on screen reticle. The message remains on screen until
     //  the hit point is no longer outside the viewing area."
     //
     // Check if CCIP is outside the current camera FOV boundaries
+    // Also set proper status for ballistic-only mode (when LAC is not active)
     // ========================================================================
     if (data.leadAngleCompensationActive || data.ballisticDropActive) {
         bool ccipOutOfFov =
@@ -1692,8 +1693,12 @@ void SystemStateModel::recalculateDerivedAimpointData() {
 
         if (ccipOutOfFov) {
             data.currentLeadAngleStatus = LeadAngleStatus::ZoomOut;
+        } else if (!data.leadAngleCompensationActive && data.ballisticDropActive) {
+            // Ballistic-only mode with CCIP in FOV - set status to On
+            // This ensures consistent status for OSD display
+            data.currentLeadAngleStatus = LeadAngleStatus::On;
         }
-        // Note: Lag status is set by WeaponController when lead is clamped
+        // Note: When LAC is active, Lag status is set by WeaponController when lead is clamped
         // On status is the default when LAC active and not ZoomOut/Lag
     }
 
@@ -1705,11 +1710,21 @@ void SystemStateModel::recalculateDerivedAimpointData() {
     else if (data.zeroingModeActive) data.zeroingStatusText = "ZEROING";
     else data.zeroingStatusText = "";
 
-    if (data.leadAngleCompensationActive) {
+    // ========================================================================
+    // CROWS/SARP STATUS TEXT LOGIC
+    // ========================================================================
+    // ZoomOut can occur from ballistic drop alone (extreme range) or LAC
+    // Display "ZOOM OUT" in both cases since CCIP is outside FOV
+    // LAC-specific status texts only shown when LAC is active
+    // ========================================================================
+    if (data.currentLeadAngleStatus == LeadAngleStatus::ZoomOut &&
+        (data.leadAngleCompensationActive || data.ballisticDropActive)) {
+        // ZOOM OUT from either LAC or ballistic drop
+        data.leadStatusText = "ZOOM OUT";
+    } else if (data.leadAngleCompensationActive) {
         switch(data.currentLeadAngleStatus) {
             case LeadAngleStatus::On: data.leadStatusText = "LEAD ANGLE ON"; break;
             case LeadAngleStatus::Lag: data.leadStatusText = "LEAD ANGLE LAG"; break;
-            case LeadAngleStatus::ZoomOut: data.leadStatusText = "ZOOM OUT"; break;
             default: data.leadStatusText = "";
         }
     } else {
