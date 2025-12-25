@@ -668,6 +668,18 @@ void WeaponController::startFiring()
                 s.currentTargetAngularRateEl
             );
         }
+
+        // =====================================================================
+        // LAC ENGAGEMENT ON FIRE TRIGGER
+        // =====================================================================
+        // LAC arm/engage separation: When LAC is armed (rates latched), the actual
+        // lead injection only activates when fire trigger is pulled. This allows
+        // gimbal movement while LAC is armed but not yet engaged.
+        // =====================================================================
+        if (s.lacArmed && !s.leadAngleCompensationActive) {
+            qInfo() << "[CROWS] LAC ENGAGED - Fire trigger pulled with LAC armed";
+            m_stateModel->setLeadAngleCompensationActive(true);
+        }
     }
 
     // All OK — send solenoid command
@@ -688,6 +700,18 @@ void WeaponController::stopFiring()
         SystemStateData s = m_stateModel->data();
         if (s.deadReckoningActive) {
             m_stateModel->exitDeadReckoning();
+        }
+
+        // =====================================================================
+        // LAC DISENGAGEMENT ON FIRE STOP
+        // =====================================================================
+        // When fire trigger is released, disengage LAC (stop lead injection).
+        // LAC remains "armed" (rates latched) so next fire trigger will re-engage.
+        // This allows RECENTER state in TrackingMotionMode to smoothly blend back.
+        // =====================================================================
+        if (s.leadAngleCompensationActive) {
+            qInfo() << "[CROWS] LAC DISENGAGED - Fire trigger released";
+            m_stateModel->setLeadAngleCompensationActive(false);
         }
     }
 }

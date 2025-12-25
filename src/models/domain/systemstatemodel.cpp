@@ -1849,7 +1849,9 @@ void SystemStateModel::armLAC(float azRate_dps, float elRate_dps) {
 
     SystemStateData& data = m_currentStateData;
 
-    data.leadAngleCompensationActive = true;
+    // NOTE: Do NOT set leadAngleCompensationActive here!
+    // LAC is only "armed" (rates latched), actual lead injection happens on fire trigger.
+    // This separation allows gimbal movement while LAC is armed but not engaged.
     data.lacArmed = true;
     data.lacLatchedAzRate_dps = azRate_dps;
     data.lacLatchedElRate_dps = elRate_dps;

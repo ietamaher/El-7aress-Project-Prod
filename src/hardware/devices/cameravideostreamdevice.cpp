@@ -115,7 +115,8 @@ CameraVideoStreamDevice::CameraVideoStreamDevice(int cameraIndex,
     m_reticleType(ReticleType::BoxCrosshair),
     m_colorStyle(70, 226, 165),
     m_isLacActiveForReticle(false),
-    
+    m_ballisticDropActive(false),
+
     // YoloInference Engine (last member)
     // CUDA is always enabled for GPU acceleration
     // Inference runs only on day camera (controlled by runtime check at line 614)
@@ -369,6 +370,7 @@ void CameraVideoStreamDevice::onSystemStateChanged(const SystemStateData &newSta
     // Update the gimbal stopped at NTZ limit status
     m_currentGimbalStoppedAtNTZLimit = newState.isReticleInNoTraverseZone; // Assuming this is the NTZ limit status
     m_isLacActiveForReticle = newState.leadAngleCompensationActive; // Assuming this is the LAC status
+    m_ballisticDropActive = newState.ballisticDropActive; // Ballistic drop active when LRF range valid
     m_currentReticleAimpointImageX_px= newState.reticleAimpointImageX_px; // Reticle: gun boresight with zeroing ONLY
     m_currentReticleAimpointImageY_px= newState.reticleAimpointImageY_px; // Reticle: gun boresight with zeroing ONLY
     m_currentCcipImpactImageX_px = newState.ccipImpactImageX_px; // ✅ CCIP: bullet impact with zeroing + lead
@@ -1050,6 +1052,7 @@ bool CameraVideoStreamDevice::processFrame(GstBuffer *buffer)
         data.isReticleInNoFireZone = m_currentIsReticleInNoFireZone;
         data.gimbalStoppedAtNTZLimit = m_currentGimbalStoppedAtNTZLimit;
         data.leadAngleActive = m_isLacActiveForReticle; // Assuming this is the LAC status
+        data.ballisticDropActive = m_ballisticDropActive; // Ballistic drop active when LRF range valid
         data.reticleAimpointImageX_px = m_currentReticleAimpointImageX_px; // Reticle: gun boresight with zeroing ONLY
         data.reticleAimpointImageY_px = m_currentReticleAimpointImageY_px; // Reticle: gun boresight with zeroing ONLY
         data.ccipImpactImageX_px = m_currentCcipImpactImageX_px; // ✅ CCIP: bullet impact with zeroing + lead
