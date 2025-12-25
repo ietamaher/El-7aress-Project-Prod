@@ -191,12 +191,12 @@ QPointF ReticleAimpointCalculator::calculateReticleImagePositionPx(
                      screenCenterY_px + totalPixelShift.y());
 
     // Debug output (throttled in production)
-    qDebug() << "🎯 ReticleAimpointCalculator [TAN-PROJECTION]:"
+    /*qDebug() << "🎯 ReticleAimpointCalculator [TAN-PROJECTION]:"
              << "HFOV=" << cameraHfovDeg << "°"
              << "| Zeroing(" << zeroingAzDeg << "," << zeroingElDeg << ")°"
              << "| Lead(" << leadAzDeg << "," << leadElDeg << ")°"
              << "| Shift(" << totalPixelShift.x() << "," << totalPixelShift.y() << ")px"
-             << "| Final(" << finalPos.x() << "," << finalPos.y() << ")px";
+             << "| Final(" << finalPos.x() << "," << finalPos.y() << ")px";*/
 
     return finalPos;
 }
