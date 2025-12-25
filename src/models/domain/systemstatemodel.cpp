@@ -1682,9 +1682,11 @@ void SystemStateModel::recalculateDerivedAimpointData() {
     //  the hit point is no longer outside the viewing area."
     //
     // Check if CCIP is outside the current camera FOV boundaries
+    // When ZoomOut, CCIP returns to screen center (red diamond at center)
     // ========================================================================
+    bool ccipOutOfFov = false;
     if (data.leadAngleCompensationActive || data.ballisticDropActive) {
-        bool ccipOutOfFov =
+        ccipOutOfFov =
             data.ccipImpactImageX_px < 0 ||
             data.ccipImpactImageX_px > data.currentImageWidthPx ||
             data.ccipImpactImageY_px < 0 ||
@@ -1692,9 +1694,14 @@ void SystemStateModel::recalculateDerivedAimpointData() {
 
         if (ccipOutOfFov) {
             data.currentLeadAngleStatus = LeadAngleStatus::ZoomOut;
+            // ZOOM OUT: Return CCIP to screen center (red diamond at center)
+            data.ccipImpactImageX_px = data.currentImageWidthPx / 2.0f;
+            data.ccipImpactImageY_px = data.currentImageHeightPx / 2.0f;
+            ccipPosChanged = true;
+        } else if (data.currentLeadAngleStatus == LeadAngleStatus::ZoomOut) {
+            // CCIP is back in FOV - restore to On (Lag is set by WeaponController)
+            data.currentLeadAngleStatus = LeadAngleStatus::On;
         }
-        // Note: Lag status is set by WeaponController when lead is clamped
-        // On status is the default when LAC active and not ZoomOut/Lag
     }
 
     // Update status texts
@@ -1705,13 +1712,29 @@ void SystemStateModel::recalculateDerivedAimpointData() {
     else if (data.zeroingModeActive) data.zeroingStatusText = "ZEROING";
     else data.zeroingStatusText = "";
 
-    if (data.leadAngleCompensationActive) {
+    // ========================================================================
+    // Lead Angle Status Text Display Logic
+    // ========================================================================
+    // Priority order:
+    // 1. ZOOM OUT - shown when CCIP is outside FOV (critical warning)
+    // 2. LAC engaged status (LEAD ANGLE ON/LAG) - during firing
+    // 3. LAC ARMED - armed but not yet engaged
+    // 4. Empty - no LAC active
+    // ========================================================================
+    if (ccipOutOfFov && (data.leadAngleCompensationActive || data.ballisticDropActive)) {
+        // ZOOM OUT takes priority - CCIP is outside visible area
+        data.leadStatusText = "ZOOM OUT";
+    } else if (data.leadAngleCompensationActive) {
+        // LAC is engaged (fire trigger pulled with LAC armed)
         switch(data.currentLeadAngleStatus) {
             case LeadAngleStatus::On: data.leadStatusText = "LEAD ANGLE ON"; break;
             case LeadAngleStatus::Lag: data.leadStatusText = "LEAD ANGLE LAG"; break;
             case LeadAngleStatus::ZoomOut: data.leadStatusText = "ZOOM OUT"; break;
-            default: data.leadStatusText = "";
+            default: data.leadStatusText = "LEAD ANGLE ON";
         }
+    } else if (data.lacArmed) {
+        // LAC is armed but not yet engaged (waiting for fire trigger)
+        data.leadStatusText = "LAC ARMED";
     } else {
         data.leadStatusText = "";
     }
@@ -1849,7 +1872,9 @@ void SystemStateModel::armLAC(float azRate_dps, float elRate_dps) {
 
     SystemStateData& data = m_currentStateData;
 
-    data.leadAngleCompensationActive = true;
+    // NOTE: Do NOT set leadAngleCompensationActive here!
+    // LAC is only "armed" (rates latched), actual lead injection happens on fire trigger.
+    // This separation allows gimbal movement while LAC is armed but not engaged.
     data.lacArmed = true;
     data.lacLatchedAzRate_dps = azRate_dps;
     data.lacLatchedElRate_dps = elRate_dps;
@@ -1866,6 +1891,8 @@ void SystemStateModel::armLAC(float azRate_dps, float elRate_dps) {
     qWarning() << "[CROWS WARNING] Must RESET LAC before engaging new target!";
     qWarning() << "[CROWS WARNING] Minimum 2 seconds between LAC toggles.";
 
+    // Recalculate derived data (updates leadStatusText to "LAC ARMED")
+    recalculateDerivedAimpointData();
     emit dataChanged(m_currentStateData);
 }
 
@@ -1908,6 +1935,8 @@ bool SystemStateModel::disarmLAC() {
     qInfo() << "========================================";
     qInfo() << "";
 
+    // Recalculate derived data (clears leadStatusText)
+    recalculateDerivedAimpointData();
     emit dataChanged(m_currentStateData);
     return true;
 }

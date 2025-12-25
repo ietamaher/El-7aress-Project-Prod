@@ -279,30 +279,42 @@ void OsdController::onFrameDataReady(const FrameData& frmdata)
     // ========================================================================
     // === CCIP PIPPER UPDATE (Ballistic Impact Prediction) ===
     // ========================================================================
-    // CCIP shows where bullets will hit with lead angle compensation
-    // Visible only when LAC is active
-    // Position comes from reticleAimpointImageX/Y which includes lead offsets
+    // CCIP shows where bullets will hit with ballistic compensation:
+    // - Ballistic drop: gravity + wind (auto when LRF range valid)
+    // - Motion lead: target velocity compensation (when LAC active)
+    //
+    // CCIP is visible when EITHER ballistic drop OR LAC is active
     // ========================================================================
 
-    // Determine CCIP status string
+    // Determine CCIP visibility and status
     QString ccipStatus = "Off";
     bool ccipVisible = false;
 
-    if (frmdata.leadAngleActive) {
+    // CCIP visible when ballistic drop OR LAC active
+    bool ccipActive = frmdata.ballisticDropActive || frmdata.leadAngleActive;
+
+    if (ccipActive) {
         ccipVisible = true;
-        switch (frmdata.leadAngleStatus) {
-            case LeadAngleStatus::On:
-                ccipStatus = "On";
-                break;
-            case LeadAngleStatus::Lag:
-                ccipStatus = "Lag";
-                break;
-            case LeadAngleStatus::ZoomOut:
-                ccipStatus = "ZoomOut";
-                break;
-            default:
-                ccipStatus = "Off";
-                ccipVisible = false;
+
+        // Status reflects LAC state if active, otherwise shows as "On" for drop-only
+        if (frmdata.leadAngleActive) {
+            switch (frmdata.leadAngleStatus) {
+                case LeadAngleStatus::On:
+                    ccipStatus = "On";
+                    break;
+                case LeadAngleStatus::Lag:
+                    ccipStatus = "Lag";
+                    break;
+                case LeadAngleStatus::ZoomOut:
+                    ccipStatus = "ZoomOut";
+                    // Still show CCIP but clipped to edge when ZoomOut
+                    break;
+                default:
+                    ccipStatus = "On";  // Default to On for ballistic-drop-only case
+            }
+        } else {
+            // Only ballistic drop active (no LAC) - show as "On"
+            ccipStatus = "On";
         }
     }
 

@@ -668,6 +668,18 @@ void WeaponController::startFiring()
                 s.currentTargetAngularRateEl
             );
         }
+
+        // =====================================================================
+        // LAC ENGAGEMENT ON FIRE TRIGGER
+        // =====================================================================
+        // LAC arm/engage separation: When LAC is armed (rates latched), the actual
+        // lead injection only activates when fire trigger is pulled. This allows
+        // gimbal movement while LAC is armed but not yet engaged.
+        // =====================================================================
+        if (s.lacArmed && !s.leadAngleCompensationActive) {
+            qInfo() << "[CROWS] LAC ENGAGED - Fire trigger pulled with LAC armed";
+            m_stateModel->setLeadAngleCompensationActive(true);
+        }
     }
 
     // All OK — send solenoid command
@@ -688,6 +700,18 @@ void WeaponController::stopFiring()
         SystemStateData s = m_stateModel->data();
         if (s.deadReckoningActive) {
             m_stateModel->exitDeadReckoning();
+        }
+
+        // =====================================================================
+        // LAC DISENGAGEMENT ON FIRE STOP
+        // =====================================================================
+        // When fire trigger is released, disengage LAC (stop lead injection).
+        // LAC remains "armed" (rates latched) so next fire trigger will re-engage.
+        // This allows RECENTER state in TrackingMotionMode to smoothly blend back.
+        // =====================================================================
+        if (s.leadAngleCompensationActive) {
+            qInfo() << "[CROWS] LAC DISENGAGED - Fire trigger released";
+            m_stateModel->setLeadAngleCompensationActive(false);
         }
     }
 }
@@ -836,38 +860,21 @@ void WeaponController::updateFireControlSolution()
     }
 
     // ========================================================================
-    // STEP 3: MOTION LEAD - ONLY WHEN LAC TOGGLE ACTIVE (Professional FCS)
+    // STEP 3: MOTION LEAD FOR CCIP PREVIEW
     // ========================================================================
-    if (!sData.leadAngleCompensationActive) {
-        // LAC toggle is OFF - clear motion lead
-        if (sData.motionLeadOffsetAz != 0.0f || sData.motionLeadOffsetEl != 0.0f ||
-            sData.currentLeadAngleStatus != LeadAngleStatus::Off) {
-
-            SystemStateData updatedData = sData;
-            updatedData.motionLeadOffsetAz = 0.0f;
-            updatedData.motionLeadOffsetEl = 0.0f;
-            updatedData.currentLeadAngleStatus = LeadAngleStatus::Off;
-            // Backward compatibility
-            updatedData.leadAngleOffsetAz = 0.0f;
-            updatedData.leadAngleOffsetEl = 0.0f;
-            m_stateModel->updateData(updatedData);
-
-            qDebug() << "[WeaponController] MOTION LEAD CLEARED (LAC off)";
-        }
-        return;  // Exit - drop already applied above if range valid
-    }
-
-    // LAC is ACTIVE - calculate motion lead for moving target
+    // Calculate motion lead based on current angular rate for CCIP display.
+    // This gives the operator a real-time preview of where bullets will hit.
+    // The lead is ALWAYS calculated for CCIP, regardless of LAC state.
+    //
+    // Note: During firing with LAC armed, the TrackingMotionMode uses the
+    // LATCHED rates for gimbal commands, not the current rates. This is
+    // the CROWS-compliant behavior for dead reckoning during fire.
+    // ========================================================================
     float targetAngRateAz = sData.currentTargetAngularRateAz;
     float targetAngRateEl = sData.currentTargetAngularRateEl;
 
     // ========================================================================
-    // BUG FIX: USE DEFAULT RANGE FOR MOTION LEAD WHEN LRF IS CLEARED
-    // ========================================================================
-    // Motion lead requires TOF which depends on range. When LRF is cleared:
-    // - Use DEFAULT_LAC_RANGE (500m) for TOF calculation
-    // - This allows CCIP to work for close-range moving targets
-    // - Status will show "Lag" to indicate estimated range is used
+    // USE DEFAULT RANGE FOR MOTION LEAD WHEN LRF IS CLEARED
     // ========================================================================
     float leadCalculationRange = (targetRange > 0.1f) ? targetRange : DEFAULT_LAC_RANGE;
 
@@ -879,29 +886,42 @@ void WeaponController::updateFireControlSolution()
         currentVFOV
     );
 
-    // If using default range (no LRF), force Lag status to indicate estimation
-    if (targetRange <= 0.1f && lead.status == LeadAngleStatus::On) {
-        lead.status = LeadAngleStatus::Lag;
+    // Determine lead angle status from ballistics calculation
+    LeadAngleStatus displayStatus = lead.status;
+
+    // If using default range (no LRF), show as Lag to indicate estimation
+    if (targetRange <= 0.1f && displayStatus == LeadAngleStatus::On) {
+        displayStatus = LeadAngleStatus::Lag;
     }
 
-    SystemStateData updatedData = sData;
-    updatedData.motionLeadOffsetAz = lead.leadAzimuthDegrees;
-    updatedData.motionLeadOffsetEl = lead.leadElevationDegrees;
-    updatedData.currentLeadAngleStatus = lead.status;
-    // Backward compatibility
-    updatedData.leadAngleOffsetAz = lead.leadAzimuthDegrees;
-    updatedData.leadAngleOffsetEl = lead.leadElevationDegrees;
-    m_stateModel->updateData(updatedData);
+    // Note: ZoomOut detection is handled in SystemStateModel::recalculateDerivedAimpointData()
+    // based on actual CCIP position vs FOV bounds. Don't override status here.
 
-    qDebug() << "[WeaponController] MOTION LEAD:"
-             << "Az:" << lead.leadAzimuthDegrees << "deg"
-             << "| El:" << lead.leadElevationDegrees << "deg"
-             << "| Range:" << leadCalculationRange << "m"
-             << (targetRange <= 0.1f ? "(DEFAULT)" : "(LRF)")
-             << "| Status:" << static_cast<int>(lead.status)
-             << (lead.status == LeadAngleStatus::On ? "(On)" :
-                 lead.status == LeadAngleStatus::Lag ? "(Lag)" :
-                 lead.status == LeadAngleStatus::ZoomOut ? "(ZoomOut)" : "(Unknown)");
+    // Update motion lead values for CCIP display
+    bool leadChanged = !qFuzzyCompare(sData.motionLeadOffsetAz, lead.leadAzimuthDegrees) ||
+                       !qFuzzyCompare(sData.motionLeadOffsetEl, lead.leadElevationDegrees) ||
+                       sData.currentLeadAngleStatus != displayStatus;
+
+    if (leadChanged) {
+        SystemStateData updatedData = sData;
+        updatedData.motionLeadOffsetAz = lead.leadAzimuthDegrees;
+        updatedData.motionLeadOffsetEl = lead.leadElevationDegrees;
+        updatedData.currentLeadAngleStatus = displayStatus;
+        // Backward compatibility
+        updatedData.leadAngleOffsetAz = lead.leadAzimuthDegrees;
+        updatedData.leadAngleOffsetEl = lead.leadElevationDegrees;
+        m_stateModel->updateData(updatedData);
+
+        if (std::abs(lead.leadAzimuthDegrees) > 0.01f || std::abs(lead.leadElevationDegrees) > 0.01f) {
+            qDebug() << "[WeaponController] MOTION LEAD:"
+                     << "Az:" << lead.leadAzimuthDegrees << "deg"
+                     << "| El:" << lead.leadElevationDegrees << "deg"
+                     << "| Range:" << leadCalculationRange << "m"
+                     << (targetRange <= 0.1f ? "(DEFAULT)" : "(LRF)")
+                     << "| Status:" << static_cast<int>(displayStatus)
+                     << (sData.leadAngleCompensationActive ? "(LAC ACTIVE)" : "(preview)");
+        }
+    }
 }
 
 // ============================================================================

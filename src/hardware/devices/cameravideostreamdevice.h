@@ -130,6 +130,7 @@ struct FrameData {
 
     // Ballistics - Lead Angle Compensation
     bool leadAngleActive = false;
+    bool ballisticDropActive = false;    // Ballistic drop (gravity+wind) active when LRF valid
     LeadAngleStatus leadAngleStatus;
     float leadAngleOffsetAz_deg;
     float leadAngleOffsetEl_deg;
@@ -380,6 +381,7 @@ private:
 
     // Ballistics - Lead Angle
     bool m_isLacActiveForReticle;
+    bool m_ballisticDropActive;            // Ballistic drop active (LRF valid)
     LeadAngleStatus m_currentLeadAngleStatus;
     float m_currentLeadAngleOffsetAz;
     float m_currentLeadAngleOffsetEl;
