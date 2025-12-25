@@ -285,10 +285,27 @@ void OsdController::onFrameDataReady(const FrameData& frmdata)
     // ========================================================================
 
     // Determine CCIP status string
-    QString ccipStatus = "Off";
-    bool ccipVisible = false;
+    //QString ccipStatus = "Off";
+    //bool ccipVisible = false;
 
-    if (frmdata.leadAngleActive) {
+    QString ccipStatus;
+    bool ccipVisible = frmdata.ballDropActive;
+
+    if (!ccipVisible) {
+        ccipStatus = "Off";
+    } else if (!frmdata.leadAngleActive ||
+            frmdata.leadAngleStatus == LeadAngleStatus::Off) {
+        ccipStatus = "On";          // ← ballistic-only CCIP
+    } else {
+        switch (frmdata.leadAngleStatus) {
+            case LeadAngleStatus::On:      ccipStatus = "On";      break;
+            case LeadAngleStatus::Lag:     ccipStatus = "Lag";     break;
+            case LeadAngleStatus::ZoomOut: ccipStatus = "ZoomOut"; break;
+            default:                       ccipStatus = "On";     break;
+        }
+    }
+        //if (frmdata.leadAngleActive) {
+   /*if (frmdata.ballDropActive){
         ccipVisible = true;
         switch (frmdata.leadAngleStatus) {
             case LeadAngleStatus::On:
@@ -304,7 +321,7 @@ void OsdController::onFrameDataReady(const FrameData& frmdata)
                 ccipStatus = "Off";
                 ccipVisible = false;
         }
-    }
+    }*/
 
     // ========================================================================
     // CCIP PIPPER POSITION - PROPER ARCHITECTURAL FIX

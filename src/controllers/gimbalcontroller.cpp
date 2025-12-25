@@ -254,8 +254,7 @@ void GimbalController::update()
         // 1. In Manual motion mode (not AutoTrack)
         // 2. LAC toggle is active
         // 3. Not in any scan modes or other automated modes
-        if (currentState.motionMode == MotionMode::Manual &&
-            currentState.leadAngleCompensationActive) {
+        if ((currentState.motionMode == MotionMode::Manual || currentState.motionMode == MotionMode::AutoTrack)  &&             currentState.leadAngleCompensationActive)   {
             // Use gimbal angular velocity as "target angular rate" for LAC
             // This matches CROWS behavior where operator tracking speed is used
             m_stateModel->updateTargetAngularRates(
