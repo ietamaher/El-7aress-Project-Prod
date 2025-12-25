@@ -555,3 +555,103 @@ Target + Drop + Lead → CCIP Display
 5. `src/controllers/joystickcontroller.cpp` - LAC button handling
 6. `src/controllers/weaponcontroller.cpp` - Dead reckoning + fire authorization
 7. `src/controllers/osdcontroller.cpp` - Verify CCIP vs reticle separation
+
+---
+
+## Implementation Status (Updated 2025-12-25)
+
+### LAC Arm/Engage Separation (IMPLEMENTED)
+
+The LAC system now implements proper arm/engage separation:
+
+**Arming LAC (Button 2 press):**
+```cpp
+void SystemStateModel::armLAC(float azRate_dps, float elRate_dps) {
+    data.lacArmed = true;  // LAC is armed (rates latched)
+    // NOTE: leadAngleCompensationActive is NOT set here!
+    // LAC only latches rates, doesn't engage lead injection
+    data.lacLatchedAzRate_dps = azRate_dps;
+    data.lacLatchedElRate_dps = elRate_dps;
+    data.currentLeadAngleStatus = LeadAngleStatus::On;
+}
+```
+
+**Engaging LAC (Fire trigger pulled with LAC armed):**
+```cpp
+void WeaponController::startFiring() {
+    if (s.lacArmed && !s.leadAngleCompensationActive) {
+        m_stateModel->setLeadAngleCompensationActive(true);
+        // Now lead injection is active
+    }
+}
+```
+
+**Disengaging LAC (Fire trigger released):**
+```cpp
+void WeaponController::stopFiring() {
+    if (s.leadAngleCompensationActive) {
+        m_stateModel->setLeadAngleCompensationActive(false);
+        // Lead injection stops, but LAC remains armed
+    }
+}
+```
+
+### CCIP Display Logic (IMPLEMENTED)
+
+**CCIP Position Calculation:**
+- Always calculated based on: Zeroing + Ballistic Drop + Motion Lead
+- Motion lead is calculated continuously for CCIP preview (not just when LAC active)
+- Uses current angular rate from gimbal (manual mode) or tracker (tracking mode)
+
+**CCIP Visibility:**
+- Visible when `ballisticDropActive` OR `leadAngleCompensationActive`
+- Position is absolute screen coordinates
+
+**Lead Angle Status Text Display:**
+| Condition | Display Text |
+|-----------|--------------|
+| CCIP outside FOV (any mode) | "ZOOM OUT" |
+| LAC engaged, status On | "LEAD ANGLE ON" |
+| LAC engaged, status Lag | "LEAD ANGLE LAG" |
+| LAC armed, not engaged | "LAC ARMED" |
+| No LAC active | (empty) |
+
+### ZoomOut Detection (IMPLEMENTED)
+
+ZoomOut is detected in `SystemStateModel::recalculateDerivedAimpointData()`:
+```cpp
+if (data.leadAngleCompensationActive || data.ballisticDropActive) {
+    bool ccipOutOfFov =
+        data.ccipImpactImageX_px < 0 ||
+        data.ccipImpactImageX_px > data.currentImageWidthPx ||
+        data.ccipImpactImageY_px < 0 ||
+        data.ccipImpactImageY_px > data.currentImageHeightPx;
+
+    if (ccipOutOfFov) {
+        data.currentLeadAngleStatus = LeadAngleStatus::ZoomOut;
+    } else if (data.currentLeadAngleStatus == LeadAngleStatus::ZoomOut) {
+        // CCIP back in FOV - restore to On
+        data.currentLeadAngleStatus = LeadAngleStatus::On;
+    }
+}
+```
+
+### LAC Workflow
+
+1. **Arm LAC** (Button 2) while tracking/moving
+   - Rates are latched at current angular velocity
+   - "LAC ARMED" displayed
+   - Gimbal can still move freely
+
+2. **Pull Fire Trigger** (Button 5)
+   - LAC engages (`leadAngleCompensationActive = true`)
+   - "LEAD ANGLE ON" displayed (or LAG/ZOOM OUT as appropriate)
+   - In tracking mode: enters dead reckoning with latched rates
+
+3. **Release Fire Trigger**
+   - LAC disengages (`leadAngleCompensationActive = false`)
+   - Returns to "LAC ARMED" (LAC still armed for next fire)
+
+4. **Disarm LAC** (Button 2 again, after 2 second minimum)
+   - LAC fully disarmed
+   - Status text cleared

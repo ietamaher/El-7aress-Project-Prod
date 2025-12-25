@@ -1682,9 +1682,11 @@ void SystemStateModel::recalculateDerivedAimpointData() {
     //  the hit point is no longer outside the viewing area."
     //
     // Check if CCIP is outside the current camera FOV boundaries
+    // This applies to both LAC active AND ballistic-drop-only modes
     // ========================================================================
+    bool ccipOutOfFov = false;
     if (data.leadAngleCompensationActive || data.ballisticDropActive) {
-        bool ccipOutOfFov =
+        ccipOutOfFov =
             data.ccipImpactImageX_px < 0 ||
             data.ccipImpactImageX_px > data.currentImageWidthPx ||
             data.ccipImpactImageY_px < 0 ||
@@ -1692,9 +1694,10 @@ void SystemStateModel::recalculateDerivedAimpointData() {
 
         if (ccipOutOfFov) {
             data.currentLeadAngleStatus = LeadAngleStatus::ZoomOut;
+        } else if (data.currentLeadAngleStatus == LeadAngleStatus::ZoomOut) {
+            // CCIP is back in FOV - restore to On (Lag is set by WeaponController)
+            data.currentLeadAngleStatus = LeadAngleStatus::On;
         }
-        // Note: Lag status is set by WeaponController when lead is clamped
-        // On status is the default when LAC active and not ZoomOut/Lag
     }
 
     // Update status texts
@@ -1705,10 +1708,19 @@ void SystemStateModel::recalculateDerivedAimpointData() {
     else if (data.zeroingModeActive) data.zeroingStatusText = "ZEROING";
     else data.zeroingStatusText = "";
 
-    // Lead Angle Status Text:
-    // - "LAC ARMED" when LAC is armed but not engaged (ready to fire)
-    // - "LEAD ANGLE ON/LAG/ZOOM OUT" when LAC is actively engaged (during firing)
-    if (data.leadAngleCompensationActive) {
+    // ========================================================================
+    // Lead Angle Status Text Display Logic
+    // ========================================================================
+    // Priority order:
+    // 1. ZOOM OUT - shown when CCIP is outside FOV (critical warning)
+    // 2. LAC engaged status (LEAD ANGLE ON/LAG) - during firing
+    // 3. LAC ARMED - armed but not yet engaged
+    // 4. Empty - no LAC active
+    // ========================================================================
+    if (ccipOutOfFov && (data.leadAngleCompensationActive || data.ballisticDropActive)) {
+        // ZOOM OUT takes priority - CCIP is outside visible area
+        data.leadStatusText = "ZOOM OUT";
+    } else if (data.leadAngleCompensationActive) {
         // LAC is engaged (fire trigger pulled with LAC armed)
         switch(data.currentLeadAngleStatus) {
             case LeadAngleStatus::On: data.leadStatusText = "LEAD ANGLE ON"; break;

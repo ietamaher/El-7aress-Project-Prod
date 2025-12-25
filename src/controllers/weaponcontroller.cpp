@@ -886,7 +886,7 @@ void WeaponController::updateFireControlSolution()
         currentVFOV
     );
 
-    // Determine lead angle status
+    // Determine lead angle status from ballistics calculation
     LeadAngleStatus displayStatus = lead.status;
 
     // If using default range (no LRF), show as Lag to indicate estimation
@@ -894,11 +894,8 @@ void WeaponController::updateFireControlSolution()
         displayStatus = LeadAngleStatus::Lag;
     }
 
-    // If LAC is not active (not armed and engaged), show status as Off for OSD
-    // but still calculate lead for CCIP preview
-    if (!sData.leadAngleCompensationActive) {
-        displayStatus = LeadAngleStatus::Off;
-    }
+    // Note: ZoomOut detection is handled in SystemStateModel::recalculateDerivedAimpointData()
+    // based on actual CCIP position vs FOV bounds. Don't override status here.
 
     // Update motion lead values for CCIP display
     bool leadChanged = !qFuzzyCompare(sData.motionLeadOffsetAz, lead.leadAzimuthDegrees) ||
