@@ -451,6 +451,19 @@ void GimbalController::onSystemStateChanged(const SystemStateData& newData)
                             activeHfov
                         );
 
+                    // ================================================================
+                    // BUG FIX: Update target angular rates for CCIP calculation
+                    // ================================================================
+                    // In tracking mode, target velocity from tracker must be passed
+                    // to SystemStateModel so WeaponController can calculate motion lead.
+                    // Previously, this was only done in Manual mode, causing CCIP
+                    // to show fixed drop position without motion compensation.
+                    // ================================================================
+                    m_stateModel->updateTargetAngularRates(
+                        static_cast<float>(angularVelocity.x()),
+                        static_cast<float>(angularVelocity.y())
+                    );
+
                     // ✔ EMIT IMAGE-SPACE DATA ONLY
                     emit trackingTargetUpdated(
                         angularError.x(),          // image-based angular error (deg)
@@ -458,7 +471,7 @@ void GimbalController::onSystemStateChanged(const SystemStateData& newData)
                         angularVelocity.x(),       // target angular velocity (deg/s)
                         angularVelocity.y(),
                         true
-                    ) ;
+                    );
                 } else {
                     // Target lost - clear angular rates and emit invalid signal
                     m_stateModel->updateTargetAngularRates(0.0f, 0.0f);

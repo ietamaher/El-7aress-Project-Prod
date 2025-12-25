@@ -1699,8 +1699,21 @@ void SystemStateModel::recalculateDerivedAimpointData() {
             data.ccipImpactImageY_px = data.currentImageHeightPx / 2.0f;
             ccipPosChanged = true;
         } else if (data.currentLeadAngleStatus == LeadAngleStatus::ZoomOut) {
-            // CCIP is back in FOV - restore to On (Lag is set by WeaponController)
-            data.currentLeadAngleStatus = LeadAngleStatus::On;
+            // ================================================================
+            // BUG FIX: CCIP back in FOV - determine correct status
+            // ================================================================
+            // Previously, this always set status to On, ignoring Lag condition.
+            // Now we recalculate based on motion lead limits (matching ballistics).
+            // This ensures Yellow (Lag) shows when lead is at tracking limit.
+            // ================================================================
+            const float MAX_LEAD_ANGLE_DEGREES = 10.0f;  // Must match BallisticsProcessor
+            bool isLag = std::abs(data.motionLeadOffsetAz) > MAX_LEAD_ANGLE_DEGREES ||
+                         std::abs(data.motionLeadOffsetEl) > MAX_LEAD_ANGLE_DEGREES;
+            data.currentLeadAngleStatus = isLag ? LeadAngleStatus::Lag : LeadAngleStatus::On;
+            qDebug() << "SystemStateModel: CCIP back in FOV - status ="
+                     << (isLag ? "Lag" : "On")
+                     << "motion lead Az:" << data.motionLeadOffsetAz
+                     << "El:" << data.motionLeadOffsetEl;
         }
     }
 
