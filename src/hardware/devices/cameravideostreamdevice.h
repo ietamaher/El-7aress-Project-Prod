@@ -102,6 +102,7 @@ struct FrameData {
 
     // Laser Range Finder
     float lrfDistance = 0.0f;
+    bool ballDropActive = false;
 
     // Weapon System Status
     bool sysCharged = false;
@@ -359,6 +360,7 @@ private:
     bool m_sysReady;
     bool m_currentAmmunitionLevel;
     FireMode m_fireMode;
+    bool m_ballDropActive;
 
     // Ammunition Feed Status (for OSD display)
     AmmoFeedState m_ammoFeedState = AmmoFeedState::Idle;

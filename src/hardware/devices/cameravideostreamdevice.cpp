@@ -115,6 +115,7 @@ CameraVideoStreamDevice::CameraVideoStreamDevice(int cameraIndex,
     m_reticleType(ReticleType::BoxCrosshair),
     m_colorStyle(70, 226, 165),
     m_isLacActiveForReticle(false),
+    m_ballDropActive(false),
     
     // YoloInference Engine (last member)
     // CUDA is always enabled for GPU acceleration
@@ -375,6 +376,7 @@ void CameraVideoStreamDevice::onSystemStateChanged(const SystemStateData &newSta
     m_currentCcipImpactImageY_px = newState.ccipImpactImageY_px; // ✅ CCIP: bullet impact with zeroing + lead
      m_currentLeadStatusText= newState.leadStatusText; // Assuming this is the lead status text
     m_currentScanName = newState.currentScanName; // Assuming this is the current scan name
+    m_ballDropActive = newState.ballisticDropActive;
     // Note: Don't update m_trackingEnabled here directly from newState.trackingActive.
     // m_trackingEnabled is the *command* given via setTrackingEnabled slot.
     // The actual tracking status displayed on OSD should come from newState.trackingActive
@@ -1066,6 +1068,7 @@ bool CameraVideoStreamDevice::processFrame(GstBuffer *buffer)
         data.leadAngleOffsetAz_deg = m_currentLeadAngleOffsetAz;
         data.leadAngleOffsetEl_deg = m_currentLeadAngleOffsetEl;
         data.stationAmmunitionLevel = m_currentAmmunitionLevel;
+        data.ballDropActive = m_ballDropActive;
 
         // Ammunition Feed Status (for OSD display)
         data.ammoFeedState = m_ammoFeedState;
