@@ -1682,7 +1682,7 @@ void SystemStateModel::recalculateDerivedAimpointData() {
     //  the hit point is no longer outside the viewing area."
     //
     // Check if CCIP is outside the current camera FOV boundaries
-    // This applies to both LAC active AND ballistic-drop-only modes
+    // When ZoomOut, CCIP returns to screen center (red diamond at center)
     // ========================================================================
     bool ccipOutOfFov = false;
     if (data.leadAngleCompensationActive || data.ballisticDropActive) {
@@ -1694,6 +1694,10 @@ void SystemStateModel::recalculateDerivedAimpointData() {
 
         if (ccipOutOfFov) {
             data.currentLeadAngleStatus = LeadAngleStatus::ZoomOut;
+            // ZOOM OUT: Return CCIP to screen center (red diamond at center)
+            data.ccipImpactImageX_px = data.currentImageWidthPx / 2.0f;
+            data.ccipImpactImageY_px = data.currentImageHeightPx / 2.0f;
+            ccipPosChanged = true;
         } else if (data.currentLeadAngleStatus == LeadAngleStatus::ZoomOut) {
             // CCIP is back in FOV - restore to On (Lag is set by WeaponController)
             data.currentLeadAngleStatus = LeadAngleStatus::On;
