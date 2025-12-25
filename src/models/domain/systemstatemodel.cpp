@@ -1684,8 +1684,9 @@ void SystemStateModel::recalculateDerivedAimpointData() {
     // Check if CCIP is outside the current camera FOV boundaries
     // Also set proper status for ballistic-only mode (when LAC is not active)
     // ========================================================================
+    bool ccipOutOfFov = false;
     if (data.leadAngleCompensationActive || data.ballisticDropActive) {
-        bool ccipOutOfFov =
+        ccipOutOfFov =
             data.ccipImpactImageX_px < 0 ||
             data.ccipImpactImageX_px > data.currentImageWidthPx ||
             data.ccipImpactImageY_px < 0 ||
@@ -1693,6 +1694,11 @@ void SystemStateModel::recalculateDerivedAimpointData() {
 
         if (ccipOutOfFov) {
             data.currentLeadAngleStatus = LeadAngleStatus::ZoomOut;
+            // ZOOM OUT: Return CCIP to screen center (red diamond at center)
+            data.ccipImpactImageX_px = data.currentImageWidthPx / 2.0f;
+            data.ccipImpactImageY_px = data.currentImageHeightPx / 2.0f;
+            ccipPosChanged = true;
+
         } else if (!data.leadAngleCompensationActive && data.ballisticDropActive) {
             // Ballistic-only mode with CCIP in FOV - set status to On
             // This ensures consistent status for OSD display

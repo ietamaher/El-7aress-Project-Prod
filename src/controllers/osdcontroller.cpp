@@ -313,6 +313,10 @@ void OsdController::onFrameDataReady(const FrameData& frmdata)
     } else if (!frmdata.leadAngleActive) {
         // Ballistic-only mode (no LAC) - status based on drop calculation
         ccipStatus = "On";
+        // check ccipImpactImageX_px and ccipImpactImageY_px  are in center of screen (currentImageWidthPx / 2.0f, currentImageHeightPx / 2.0f)
+        if (frmdata.ccipImpactImageX_px == 512 && frmdata.ccipImpactImageY_px ==384){
+            ccipStatus = "ZoomOut";
+        }  
     } else {
         // LAC is active - status based on lead calculation
         switch (frmdata.leadAngleStatus) {
