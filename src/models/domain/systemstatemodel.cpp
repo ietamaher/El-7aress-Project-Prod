@@ -1705,13 +1705,20 @@ void SystemStateModel::recalculateDerivedAimpointData() {
     else if (data.zeroingModeActive) data.zeroingStatusText = "ZEROING";
     else data.zeroingStatusText = "";
 
+    // Lead Angle Status Text:
+    // - "LAC ARMED" when LAC is armed but not engaged (ready to fire)
+    // - "LEAD ANGLE ON/LAG/ZOOM OUT" when LAC is actively engaged (during firing)
     if (data.leadAngleCompensationActive) {
+        // LAC is engaged (fire trigger pulled with LAC armed)
         switch(data.currentLeadAngleStatus) {
             case LeadAngleStatus::On: data.leadStatusText = "LEAD ANGLE ON"; break;
             case LeadAngleStatus::Lag: data.leadStatusText = "LEAD ANGLE LAG"; break;
             case LeadAngleStatus::ZoomOut: data.leadStatusText = "ZOOM OUT"; break;
-            default: data.leadStatusText = "";
+            default: data.leadStatusText = "LEAD ANGLE ON";
         }
+    } else if (data.lacArmed) {
+        // LAC is armed but not yet engaged (waiting for fire trigger)
+        data.leadStatusText = "LAC ARMED";
     } else {
         data.leadStatusText = "";
     }
@@ -1868,6 +1875,8 @@ void SystemStateModel::armLAC(float azRate_dps, float elRate_dps) {
     qWarning() << "[CROWS WARNING] Must RESET LAC before engaging new target!";
     qWarning() << "[CROWS WARNING] Minimum 2 seconds between LAC toggles.";
 
+    // Recalculate derived data (updates leadStatusText to "LAC ARMED")
+    recalculateDerivedAimpointData();
     emit dataChanged(m_currentStateData);
 }
 
@@ -1910,6 +1919,8 @@ bool SystemStateModel::disarmLAC() {
     qInfo() << "========================================";
     qInfo() << "";
 
+    // Recalculate derived data (clears leadStatusText)
+    recalculateDerivedAimpointData();
     emit dataChanged(m_currentStateData);
     return true;
 }

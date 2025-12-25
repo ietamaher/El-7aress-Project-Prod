@@ -250,25 +250,30 @@ void GimbalController::update()
         filteredGimbalVelAz = alpha * gimbalAngularVelAz + (1.0 - alpha) * filteredGimbalVelAz;
         filteredGimbalVelEl = alpha * gimbalAngularVelEl + (1.0 - alpha) * filteredGimbalVelEl;
 
-        // Apply Manual mode LAC when:
-        // 1. In Manual motion mode (not AutoTrack)
-        // 2. LAC toggle is active
-        // 3. Not in any scan modes or other automated modes
-        if (currentState.motionMode == MotionMode::Manual &&
-            currentState.leadAngleCompensationActive) {
-            // Use gimbal angular velocity as "target angular rate" for LAC
-            // This matches CROWS behavior where operator tracking speed is used
+        // ====================================================================
+        // UPDATE TARGET ANGULAR RATES FOR CCIP PREVIEW
+        // ====================================================================
+        // In Manual mode, use gimbal angular velocity as "target angular rate"
+        // for CCIP motion lead calculation. This gives the operator a real-time
+        // preview of where bullets will hit based on their joystick motion.
+        //
+        // Note: This is always updated in Manual mode, not just when LAC is
+        // active. The CCIP preview helps aiming even before LAC is engaged.
+        // ====================================================================
+        if (currentState.motionMode == MotionMode::Manual) {
             m_stateModel->updateTargetAngularRates(
                 static_cast<float>(filteredGimbalVelAz),
                 static_cast<float>(filteredGimbalVelEl)
             );
 
-            // Debug output (throttled)
+            // Debug output (throttled) - only when moving
             static int manualLacLogCounter = 0;
-            if (++manualLacLogCounter % 40 == 0) {  // Every 2 seconds @ 20Hz
-                qDebug() << "[GimbalController] MANUAL MODE LAC:"
-                         << "Gimbal velocity Az:" << filteredGimbalVelAz << "°/s"
-                         << "El:" << filteredGimbalVelEl << "°/s";
+            if (++manualLacLogCounter % 40 == 0 &&
+                (std::abs(filteredGimbalVelAz) > 0.1 || std::abs(filteredGimbalVelEl) > 0.1)) {
+                qDebug() << "[GimbalController] MANUAL MODE - Gimbal velocity:"
+                         << "Az:" << filteredGimbalVelAz << "°/s"
+                         << "El:" << filteredGimbalVelEl << "°/s"
+                         << (currentState.leadAngleCompensationActive ? "(LAC ACTIVE)" : "(preview)");
             }
         }
     }
