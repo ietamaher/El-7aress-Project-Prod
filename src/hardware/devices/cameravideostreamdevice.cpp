@@ -369,7 +369,8 @@ void CameraVideoStreamDevice::onSystemStateChanged(const SystemStateData &newSta
     m_currentIsReticleInNoFireZone  = newState.isReticleInNoFireZone; // Assuming this is the no-fire zone status
     // Update the gimbal stopped at NTZ limit status
     m_currentGimbalStoppedAtNTZLimit = newState.isReticleInNoTraverseZone; // Assuming this is the NTZ limit status
-    m_isLacActiveForReticle = newState.leadAngleCompensationActive; // Assuming this is the LAC status
+    m_isLacActiveForReticle = newState.leadAngleCompensationActive; // LAC is engaged (lead applied)
+    m_isLacArmed = newState.lacArmed;  // LAC is armed (rates latched, waiting for fire trigger)
     m_currentReticleAimpointImageX_px= newState.reticleAimpointImageX_px; // Reticle: gun boresight with zeroing ONLY
     m_currentReticleAimpointImageY_px= newState.reticleAimpointImageY_px; // Reticle: gun boresight with zeroing ONLY
     m_currentCcipImpactImageX_px = newState.ccipImpactImageX_px; // ✅ CCIP: bullet impact with zeroing + lead
@@ -1051,7 +1052,8 @@ bool CameraVideoStreamDevice::processFrame(GstBuffer *buffer)
         data.calculatedCrosswindMS = m_currentCalculatedCrosswind;
         data.isReticleInNoFireZone = m_currentIsReticleInNoFireZone;
         data.gimbalStoppedAtNTZLimit = m_currentGimbalStoppedAtNTZLimit;
-        data.leadAngleActive = m_isLacActiveForReticle; // Assuming this is the LAC status
+        data.leadAngleActive = m_isLacActiveForReticle; // LAC is engaged (lead applied)
+        data.lacArmed = m_isLacArmed;  // LAC is armed (rates latched, waiting for fire trigger)
         data.reticleAimpointImageX_px = m_currentReticleAimpointImageX_px; // Reticle: gun boresight with zeroing ONLY
         data.reticleAimpointImageY_px = m_currentReticleAimpointImageY_px; // Reticle: gun boresight with zeroing ONLY
         data.ccipImpactImageX_px = m_currentCcipImpactImageX_px; // ✅ CCIP: bullet impact with zeroing + lead

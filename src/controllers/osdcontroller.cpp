@@ -366,18 +366,29 @@ void OsdController::onFrameDataReady(const FrameData& frmdata)
     // ========================================================================
     // === LAC VISUAL INDICATORS (for display elements) ===
     // ========================================================================
+    // CROWS/SARP LAC STATES:
+    // 1. LAC OFF: lacArmed=false, leadAngleActive=false
+    // 2. LAC ARMED: lacArmed=true, leadAngleActive=false (waiting for fire)
+    // 3. LAC ENGAGED: lacArmed=true, leadAngleActive=true (lead applied)
+    // ========================================================================
 
-    // Determine if LAC is "effectively active" (On or Lag, not ZoomOut)
+    // Determine if LAC is "effectively active" (engaged with On or Lag status)
     bool lacEffectivelyActive = frmdata.leadAngleActive &&
                                 (frmdata.leadAngleStatus == LeadAngleStatus::On ||
                                  frmdata.leadAngleStatus == LeadAngleStatus::Lag);
+
+    // Also consider "armed but not engaged" as a visual state (for UI highlighting)
+    bool lacArmedOrActive = frmdata.lacArmed || frmdata.leadAngleActive;
 
     m_viewModel->updateLacActive(lacEffectivelyActive);
     m_viewModel->updateRangeMeters(frmdata.lrfDistance);
 
     // LAC Confidence level based on lead angle status
-    float lacConfidence = 1.0f;
-    if (frmdata.leadAngleActive) {
+    float lacConfidence = 0.0f;
+    if (frmdata.lacArmed && !frmdata.leadAngleActive) {
+        // LAC armed but not engaged - show partial confidence (ready to fire)
+        lacConfidence = 0.3f;
+    } else if (frmdata.leadAngleActive) {
         switch (frmdata.leadAngleStatus) {
         case LeadAngleStatus::On:
             lacConfidence = 1.0f;
@@ -440,7 +451,19 @@ void OsdController::onFrameDataReady(const FrameData& frmdata)
         );
 
     // === LEAD ANGLE STATUS TEXT ===
-    m_viewModel->updateLeadAngleDisplay(frmdata.leadStatusText);
+    // ========================================================================
+    // CROWS/SARP LAC STATUS DISPLAY
+    // ========================================================================
+    // - "LAC ARMED": lacArmed=true, leadAngleActive=false (waiting for fire)
+    // - "LEAD ANGLE ON/LAG/ZOOM OUT": leadAngleActive=true (lead applied)
+    // - "": Neither armed nor active
+    // ========================================================================
+    QString lacStatusText = frmdata.leadStatusText;
+    if (frmdata.lacArmed && !frmdata.leadAngleActive) {
+        // LAC is armed but not engaged - show "LAC ARMED"
+        lacStatusText = "LAC ARMED";
+    }
+    m_viewModel->updateLeadAngleDisplay(lacStatusText);
 
     // === SCAN NAME ===
     m_viewModel->updateCurrentScanName(frmdata.currentScanName);

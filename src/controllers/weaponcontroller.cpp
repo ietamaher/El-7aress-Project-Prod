@@ -653,6 +653,17 @@ void WeaponController::startFiring()
         }
 
         // =====================================================================
+        // CROWS/SARP LAC WORKFLOW - ENGAGE LAC ON FIRE TRIGGER
+        // =====================================================================
+        // Per CROWS doctrine: Lead is only applied when fire trigger is pressed.
+        // If LAC is armed, engage it now to apply motion lead to CCIP.
+        // =====================================================================
+        if (s.lacArmed && !s.leadAngleCompensationActive) {
+            qInfo() << "[CROWS] FIRE TRIGGER - Engaging LAC (lead now applied)";
+            m_stateModel->engageLAC();
+        }
+
+        // =====================================================================
         // CROWS DEAD RECKONING (TM 9-1090-225-10-2 page 38)
         // =====================================================================
         // "When firing is initiated, CROWS aborts Target Tracking. Instead the
@@ -678,14 +689,26 @@ void WeaponController::stopFiring()
 {
     m_plc42->setSolenoidState(0);
 
-    // =========================================================================
-    // CROWS: Exit dead reckoning when firing stops
-    // =========================================================================
-    // Per CROWS doctrine: Firing terminates tracking completely.
-    // After firing, operator must re-acquire target to resume tracking.
-    // =========================================================================
     if (m_stateModel) {
         SystemStateData s = m_stateModel->data();
+
+        // =========================================================================
+        // CROWS/SARP LAC WORKFLOW - DISENGAGE LAC ON TRIGGER RELEASE
+        // =========================================================================
+        // Per CROWS doctrine: Lead is only applied during firing.
+        // When fire trigger is released, disengage LAC (but keep it armed).
+        // =========================================================================
+        if (s.lacArmed && s.leadAngleCompensationActive) {
+            qInfo() << "[CROWS] TRIGGER RELEASED - Disengaging LAC (lead removed, LAC still armed)";
+            m_stateModel->disengageLAC();
+        }
+
+        // =========================================================================
+        // CROWS: Exit dead reckoning when firing stops
+        // =========================================================================
+        // Per CROWS doctrine: Firing terminates tracking completely.
+        // After firing, operator must re-acquire target to resume tracking.
+        // =========================================================================
         if (s.deadReckoningActive) {
             m_stateModel->exitDeadReckoning();
         }
