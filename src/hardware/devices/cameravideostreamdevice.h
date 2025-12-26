@@ -130,7 +130,8 @@ struct FrameData {
     float calculatedCrosswindMS = 0.0f;
 
     // Ballistics - Lead Angle Compensation
-    bool leadAngleActive = false;
+    bool leadAngleActive = false;       // LAC is engaged (lead applied to CCIP)
+    bool lacArmed = false;              // LAC is armed (rates latched, waiting for fire trigger)
     LeadAngleStatus leadAngleStatus;
     float leadAngleOffsetAz_deg;
     float leadAngleOffsetEl_deg;
@@ -381,7 +382,8 @@ private:
     float m_currentCalculatedCrosswind;
 
     // Ballistics - Lead Angle
-    bool m_isLacActiveForReticle;
+    bool m_isLacActiveForReticle;       // LAC is engaged (lead applied to CCIP)
+    bool m_isLacArmed;                  // LAC is armed (rates latched, waiting for fire trigger)
     LeadAngleStatus m_currentLeadAngleStatus;
     float m_currentLeadAngleOffsetAz;
     float m_currentLeadAngleOffsetEl;

@@ -295,6 +295,22 @@ public:
      */
     bool canRearmLAC() const;
 
+    /**
+     * @brief Engages LAC when fire trigger is pressed.
+     *
+     * Sets leadAngleCompensationActive = true so CCIP includes motion lead.
+     * Only works if LAC is already armed. Lead is calculated using latched rates.
+     */
+    void engageLAC();
+
+    /**
+     * @brief Disengages LAC when fire trigger is released.
+     *
+     * Sets leadAngleCompensationActive = false so CCIP returns to ballistic-only.
+     * LAC remains armed (latched rates preserved) for re-engagement.
+     */
+    void disengageLAC();
+
     // =================================
     // DEAD RECKONING (Firing during tracking)
     // =================================

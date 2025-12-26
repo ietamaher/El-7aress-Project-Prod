@@ -1675,16 +1675,18 @@ void SystemStateModel::recalculateDerivedAimpointData() {
     }
 
     // ========================================================================
-    // CROWS ZOOM OUT DETECTION (TM 9-1090-225-10-2)
+    // CROWS/SARP ZOOM OUT DETECTION (TM 9-1090-225-10-2)
     // ========================================================================
     // "If the Lead Angle is greater than the selected camera FOV, ZOOM OUT
     //  appears over the on screen reticle. The message remains on screen until
     //  the hit point is no longer outside the viewing area."
     //
     // Check if CCIP is outside the current camera FOV boundaries
+    // Also set proper status for ballistic-only mode (when LAC is not active)
     // ========================================================================
+    bool ccipOutOfFov = false;
     if (data.leadAngleCompensationActive || data.ballisticDropActive) {
-        bool ccipOutOfFov =
+        ccipOutOfFov =
             data.ccipImpactImageX_px < 0 ||
             data.ccipImpactImageX_px > data.currentImageWidthPx ||
             data.ccipImpactImageY_px < 0 ||
@@ -1692,8 +1694,17 @@ void SystemStateModel::recalculateDerivedAimpointData() {
 
         if (ccipOutOfFov) {
             data.currentLeadAngleStatus = LeadAngleStatus::ZoomOut;
+            // ZOOM OUT: Return CCIP to screen center (red diamond at center)
+            data.ccipImpactImageX_px = data.currentImageWidthPx / 2.0f;
+            data.ccipImpactImageY_px = data.currentImageHeightPx / 2.0f;
+            ccipPosChanged = true;
+
+        } else if (!data.leadAngleCompensationActive && data.ballisticDropActive) {
+            // Ballistic-only mode with CCIP in FOV - set status to On
+            // This ensures consistent status for OSD display
+            data.currentLeadAngleStatus = LeadAngleStatus::On;
         }
-        // Note: Lag status is set by WeaponController when lead is clamped
+        // Note: When LAC is active, Lag status is set by WeaponController when lead is clamped
         // On status is the default when LAC active and not ZoomOut/Lag
     }
 
@@ -1705,11 +1716,21 @@ void SystemStateModel::recalculateDerivedAimpointData() {
     else if (data.zeroingModeActive) data.zeroingStatusText = "ZEROING";
     else data.zeroingStatusText = "";
 
-    if (data.leadAngleCompensationActive) {
+    // ========================================================================
+    // CROWS/SARP STATUS TEXT LOGIC
+    // ========================================================================
+    // ZoomOut can occur from ballistic drop alone (extreme range) or LAC
+    // Display "ZOOM OUT" in both cases since CCIP is outside FOV
+    // LAC-specific status texts only shown when LAC is active
+    // ========================================================================
+    if (data.currentLeadAngleStatus == LeadAngleStatus::ZoomOut &&
+        (data.leadAngleCompensationActive || data.ballisticDropActive)) {
+        // ZOOM OUT from either LAC or ballistic drop
+        data.leadStatusText = "ZOOM OUT";
+    } else if (data.leadAngleCompensationActive) {
         switch(data.currentLeadAngleStatus) {
             case LeadAngleStatus::On: data.leadStatusText = "LEAD ANGLE ON"; break;
             case LeadAngleStatus::Lag: data.leadStatusText = "LEAD ANGLE LAG"; break;
-            case LeadAngleStatus::ZoomOut: data.leadStatusText = "ZOOM OUT"; break;
             default: data.leadStatusText = "";
         }
     } else {
@@ -1833,37 +1854,48 @@ void SystemStateModel::updateTargetAngularRates(float rateAzDegS, float rateElDe
 
 void SystemStateModel::armLAC(float azRate_dps, float elRate_dps) {
     // ========================================================================
+    // CROWS/SARP LAC WORKFLOW - ARM STEP (TM 9-1090-225-10-2)
+    // ========================================================================
+    // When operator presses LAC button:
+    // 1. Latch current angular rates (capture target motion)
+    // 2. Display "LAC ARMED" on OSD
+    // 3. DO NOT apply lead yet - wait for fire trigger
+    //
     // Per TM 9-1090-225-10-2:
     // "The computer is constantly monitoring the change in rotation of the
     //  elevation and azimuth axes and measuring the speed."
-    //
-    // LAC latches the tracking rate at the moment of arming. This rate is then
-    // used as a feed-forward bias to help maintain tracking of constant-velocity
-    // targets without requiring continuous joystick input.
     //
     // WARNING from manual:
     // "If target #2 is not properly acquired, the WS will fire outside the
     //  desired engagement area by continuing to apply the lead angle acquired
     //  from target #1"
+    //
+    // NOTE: leadAngleCompensationActive is set TRUE only when fire trigger
+    // is pressed. This ensures joystick motion NEVER produces lead unless
+    // both LAC is armed AND fire trigger is active.
     // ========================================================================
 
     SystemStateData& data = m_currentStateData;
 
-    data.leadAngleCompensationActive = true;
+    // ARM LAC - latch rates but do NOT apply lead yet
     data.lacArmed = true;
     data.lacLatchedAzRate_dps = azRate_dps;
     data.lacLatchedElRate_dps = elRate_dps;
     data.lacArmTimestampMs = QDateTime::currentMSecsSinceEpoch();
-    data.currentLeadAngleStatus = LeadAngleStatus::On;
+
+    // NOTE: Do NOT set leadAngleCompensationActive here!
+    // Lead is only applied when fire trigger is pressed (engageLAC).
+    // This separation allows gimbal movement while LAC is armed but not engaged.
 
     qInfo() << "";
     qInfo() << "========================================";
-    qInfo() << "  LAC ARMED (CROWS-Compliant)";
+    qInfo() << "  LAC ARMED (Rates Latched)";
     qInfo() << "========================================";
     qInfo() << "  Latched rates: Az=" << azRate_dps << "°/s, El=" << elRate_dps << "°/s";
+    qInfo() << "  Lead NOT applied - waiting for fire trigger";
     qInfo() << "";
     qWarning() << "[CROWS WARNING] LAC armed with latched rates.";
-    qWarning() << "[CROWS WARNING] Must RESET LAC before engaging new target!";
+    qWarning() << "[CROWS WARNING] Lead will be applied when fire trigger pressed.";
     qWarning() << "[CROWS WARNING] Minimum 2 seconds between LAC toggles.";
 
     emit dataChanged(m_currentStateData);
@@ -1916,6 +1948,66 @@ bool SystemStateModel::canRearmLAC() const {
     qint64 now = QDateTime::currentMSecsSinceEpoch();
     qint64 timeSinceArm = now - m_currentStateData.lacArmTimestampMs;
     return timeSinceArm >= SystemStateData::LAC_MIN_RESET_INTERVAL_MS;
+}
+
+void SystemStateModel::engageLAC() {
+    // ========================================================================
+    // CROWS/SARP LAC WORKFLOW - ENGAGE STEP (Fire Trigger Pressed)
+    // ========================================================================
+    // When fire trigger is pressed and LAC is armed:
+    // 1. Set leadAngleCompensationActive = true
+    // 2. CCIP now includes motion lead (using latched rates)
+    // 3. Display "LEAD ANGLE ON/LAG/ZOOM OUT"
+    //
+    // This is the moment when lead is actually applied to the firing solution.
+    // Lead is calculated using the latched rates from armLAC().
+    // ========================================================================
+
+    if (!m_currentStateData.lacArmed) {
+        qDebug() << "[LAC] engageLAC called but LAC is not armed - ignoring";
+        return;
+    }
+
+    if (m_currentStateData.leadAngleCompensationActive) {
+        // Already engaged - no change needed
+        return;
+    }
+
+    m_currentStateData.leadAngleCompensationActive = true;
+    m_currentStateData.currentLeadAngleStatus = LeadAngleStatus::On;
+
+    qInfo() << "[LAC] ENGAGED - Lead compensation now active"
+            << "| Latched rates: Az=" << m_currentStateData.lacLatchedAzRate_dps
+            << "°/s, El=" << m_currentStateData.lacLatchedElRate_dps << "°/s";
+
+    emit dataChanged(m_currentStateData);
+}
+
+void SystemStateModel::disengageLAC() {
+    // ========================================================================
+    // CROWS/SARP LAC WORKFLOW - DISENGAGE STEP (Fire Trigger Released)
+    // ========================================================================
+    // When fire trigger is released:
+    // 1. Set leadAngleCompensationActive = false
+    // 2. CCIP returns to ballistic-only (no motion lead)
+    // 3. LAC remains armed (latched rates preserved)
+    //
+    // Lead is NOT applied outside of firing. Operator can re-engage
+    // by pressing fire trigger again (with same latched rates).
+    // ========================================================================
+
+    if (!m_currentStateData.leadAngleCompensationActive) {
+        // Already disengaged - no change needed
+        return;
+    }
+
+    m_currentStateData.leadAngleCompensationActive = false;
+    // Note: Do NOT clear motionLeadOffsets - let WeaponController handle that
+    // Also keep lacArmed = true so operator can re-engage
+
+    qInfo() << "[LAC] DISENGAGED - Lead compensation inactive, LAC remains armed";
+
+    emit dataChanged(m_currentStateData);
 }
 
 // =============================================================================

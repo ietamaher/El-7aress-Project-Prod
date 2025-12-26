@@ -322,7 +322,7 @@ LeadCalculationResult BallisticsProcessorLUT::calculateMotionLead(
         result.status = LeadAngleStatus::Lag;
     }
 
-    qDebug() << "[BallisticsProcessorLUT] 🎯 LEAD:" << targetRangeMeters << "m"
+    /*qDebug() << "[BallisticsProcessorLUT] 🎯 LEAD:" << targetRangeMeters << "m"
              << "| TOF:" << tof_s << "s"
              << "| Target Rate: Az=" << targetAngularRateAzDegS << "°/s El=" << targetAngularRateElDegS << "°/s"
              << "| Motion Lead: Az=" << result.leadAzimuthDegrees << "° El=" << result.leadElevationDegrees << "°"
@@ -330,7 +330,7 @@ LeadCalculationResult BallisticsProcessorLUT::calculateMotionLead(
              << "| Status:" << static_cast<int>(result.status)
              << (result.status == LeadAngleStatus::On ? "(On)" :
                  result.status == LeadAngleStatus::Lag ? "(Lag)" :
-                 result.status == LeadAngleStatus::ZoomOut ? "(ZoomOut)" : "(Unknown)");
+                 result.status == LeadAngleStatus::ZoomOut ? "(ZoomOut)" : "(Unknown)");*/
 
     return result;
 }

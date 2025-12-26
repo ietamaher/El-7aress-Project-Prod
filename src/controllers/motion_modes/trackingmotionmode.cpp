@@ -157,7 +157,7 @@ void TrackingMotionMode::update(GimbalController* controller, double dt)
     // =========================================================================
     TrackingState prevState = m_state;
 
-    if (data.lacArmed && data.leadAngleCompensationActive) {
+    if (data.lacArmed && data.deadReckoningActive) {
         m_state = TrackingState::FIRE_LEAD;
     } else {
         if (prevState == TrackingState::FIRE_LEAD) {
@@ -214,8 +214,8 @@ void TrackingMotionMode::update(GimbalController* controller, double dt)
 
     // Manual input ONLY when lead influence is negligible
     if (manualActive && m_lacBlendFactor < 0.1) {
-        m_manualAzOffset_deg += data.joystickAzValue * MANUAL_GAIN * dt;
-        m_manualElOffset_deg += data.joystickElValue * MANUAL_GAIN * dt;
+        m_manualAzOffset_deg -= data.joystickAzValue * MANUAL_GAIN * dt;
+        m_manualElOffset_deg -= data.joystickElValue * MANUAL_GAIN * dt;
 
         m_manualAzOffset_deg = qBound(-MAX_MANUAL, m_manualAzOffset_deg, MAX_MANUAL);
         m_manualElOffset_deg = qBound(-MAX_MANUAL, m_manualElOffset_deg, MAX_MANUAL);
@@ -259,7 +259,9 @@ void TrackingMotionMode::update(GimbalController* controller, double dt)
     // This is CORRECT behavior - the gun must aim ahead of the target.
     double lacAzCmd = data.lacLatchedAzRate_dps * LAC_RATE_BIAS_GAIN;
     double lacElCmd = data.lacLatchedElRate_dps * LAC_RATE_BIAS_GAIN;
-
+    qDebug() << "LAC latched rates:"
+            << data.lacLatchedAzRate_dps
+            << data.lacLatchedElRate_dps;
     // =========================================================================
     // 6. FINAL BLEND
     // =========================================================================

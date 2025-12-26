@@ -178,19 +178,61 @@ void JoystickController::onButtonChanged(int button, bool pressed)
     // PDF: Press = Enter Engagement mode (stores previous mode)
     //      Release = Return to previous mode (Surveillance/Tracking/etc)
     // ==========================================================================
-    case 0:
+    /*case 0:
         if (pressed) {
             if (!curr.stationEnabled) {
                 qDebug() << "Cannot enter engagement, station is off.";
                 return;
             }
             m_stateModel->commandEngagement(true);
+
         } else {
             // BUG FIX: Exit engagement on button release
             m_stateModel->commandEngagement(false);
         }
-        break;
+        break;*/
 
+    // BUTTON 0 — FIRE INTENT (half-press)
+    case 0:
+        if (pressed) {
+            if (curr.lacArmed && !curr.leadAngleCompensationActive) {
+                m_stateModel->engageLAC();     // ✅ engage lead early
+            }
+
+            if (curr.currentTrackingPhase == TrackingPhase::Tracking_ActiveLock ||
+                curr.currentTrackingPhase == TrackingPhase::Tracking_Coast) {
+                m_stateModel->enterDeadReckoning(
+                    curr.currentTargetAngularRateAz,
+                    curr.currentTargetAngularRateEl
+                );
+            }
+            m_stateModel->commandEngagement(true);
+
+        } else {
+            // Release half-press → remove lead, keep LAC armed
+        // =========================================================================
+        // CROWS/SARP LAC WORKFLOW - DISENGAGE LAC ON TRIGGER RELEASE
+        // =========================================================================
+        // Per CROWS doctrine: Lead is only applied during firing.
+        // When fire trigger is released, disengage LAC (but keep it armed).
+        // =========================================================================
+        if (curr.lacArmed && curr.leadAngleCompensationActive) {
+            qInfo() << "[CROWS] TRIGGER RELEASED - Disengaging LAC (lead removed, LAC still armed)";
+            m_stateModel->disengageLAC();
+        }
+
+        // =========================================================================
+        // CROWS: Exit dead reckoning when firing stops
+        // =========================================================================
+        // Per CROWS doctrine: Firing terminates tracking completely.
+        // After firing, operator must re-acquire target to resume tracking.
+        // =========================================================================
+        if (curr.deadReckoningActive) {
+            m_stateModel->exitDeadReckoning();
+        }            
+            m_stateModel->commandEngagement(false);
+        }
+        break;
     // ==========================================================================
     // BUTTON 1: LRF TRIGGER (Laser Range Finder)
     // PDF: Single press = single LRF measurement
@@ -268,11 +310,13 @@ void JoystickController::onButtonChanged(int button, bool pressed)
                     return;
                 }
 
+                float azRate_dps = curr.azRpm * 6.0f;
+                float elRate_dps = curr.elRpm * 6.0f;
+
+ 
                 // Latch current tracking rate
-                m_stateModel->armLAC(
-                    curr.currentTargetAngularRateAz,
-                    curr.currentTargetAngularRateEl
-                );
+                m_stateModel->armLAC(-azRate_dps, -elRate_dps);
+ 
 
                 // Trigger initial fire control calculation with new LAC state
                 if (m_weaponController) {

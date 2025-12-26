@@ -288,20 +288,41 @@ void OsdController::onFrameDataReady(const FrameData& frmdata)
     //QString ccipStatus = "Off";
     //bool ccipVisible = false;
 
+    // ========================================================================
+    // CROWS/SARP CCIP STATUS LOGIC
+    // ========================================================================
+    // CCIP is visible when ballistic drop is active (LRF valid)
+    // Status can be:
+    //   - "On": Valid firing solution (ballistic-only or LAC active)
+    //   - "Lag": LAC at limit (estimated range, reduced accuracy)
+    //   - "ZoomOut": CCIP outside FOV (need to zoom out camera)
+    //   - "Off": No valid solution (no LRF range)
+    //
+    // CRITICAL: Check ZoomOut FIRST - it can occur from ballistic drop alone
+    // (extreme range) or from LAC (fast target), regardless of LAC state
+    // ========================================================================
     QString ccipStatus;
     bool ccipVisible = frmdata.ballDropActive;
 
     if (!ccipVisible) {
         ccipStatus = "Off";
-    } else if (!frmdata.leadAngleActive ||
-            frmdata.leadAngleStatus == LeadAngleStatus::Off) {
-        ccipStatus = "On";          // ← ballistic-only CCIP
+    } else if (frmdata.leadAngleStatus == LeadAngleStatus::ZoomOut) {
+        // ZoomOut takes priority - CCIP is outside FOV
+        // This can happen with ballistic-only (extreme drop) or LAC (fast target)
+        ccipStatus = "ZoomOut";
+    } else if (!frmdata.leadAngleActive) {
+        // Ballistic-only mode (no LAC) - status based on drop calculation
+        ccipStatus = "On";
+        // check ccipImpactImageX_px and ccipImpactImageY_px  are in center of screen (currentImageWidthPx / 2.0f, currentImageHeightPx / 2.0f)
+        if (frmdata.ccipImpactImageX_px == 512 && frmdata.ccipImpactImageY_px ==384){
+            ccipStatus = "ZoomOut";
+        }  
     } else {
+        // LAC is active - status based on lead calculation
         switch (frmdata.leadAngleStatus) {
-            case LeadAngleStatus::On:      ccipStatus = "On";      break;
-            case LeadAngleStatus::Lag:     ccipStatus = "Lag";     break;
-            case LeadAngleStatus::ZoomOut: ccipStatus = "ZoomOut"; break;
-            default:                       ccipStatus = "On";     break;
+            case LeadAngleStatus::On:  ccipStatus = "On";  break;
+            case LeadAngleStatus::Lag: ccipStatus = "Lag"; break;
+            default:                   ccipStatus = "On";  break;
         }
     }
         //if (frmdata.leadAngleActive) {
@@ -345,18 +366,29 @@ void OsdController::onFrameDataReady(const FrameData& frmdata)
     // ========================================================================
     // === LAC VISUAL INDICATORS (for display elements) ===
     // ========================================================================
+    // CROWS/SARP LAC STATES:
+    // 1. LAC OFF: lacArmed=false, leadAngleActive=false
+    // 2. LAC ARMED: lacArmed=true, leadAngleActive=false (waiting for fire)
+    // 3. LAC ENGAGED: lacArmed=true, leadAngleActive=true (lead applied)
+    // ========================================================================
 
-    // Determine if LAC is "effectively active" (On or Lag, not ZoomOut)
+    // Determine if LAC is "effectively active" (engaged with On or Lag status)
     bool lacEffectivelyActive = frmdata.leadAngleActive &&
                                 (frmdata.leadAngleStatus == LeadAngleStatus::On ||
                                  frmdata.leadAngleStatus == LeadAngleStatus::Lag);
+
+    // Also consider "armed but not engaged" as a visual state (for UI highlighting)
+    bool lacArmedOrActive = frmdata.lacArmed || frmdata.leadAngleActive;
 
     m_viewModel->updateLacActive(lacEffectivelyActive);
     m_viewModel->updateRangeMeters(frmdata.lrfDistance);
 
     // LAC Confidence level based on lead angle status
-    float lacConfidence = 1.0f;
-    if (frmdata.leadAngleActive) {
+    float lacConfidence = 0.0f;
+    if (frmdata.lacArmed && !frmdata.leadAngleActive) {
+        // LAC armed but not engaged - show partial confidence (ready to fire)
+        lacConfidence = 0.3f;
+    } else if (frmdata.leadAngleActive) {
         switch (frmdata.leadAngleStatus) {
         case LeadAngleStatus::On:
             lacConfidence = 1.0f;
@@ -419,7 +451,19 @@ void OsdController::onFrameDataReady(const FrameData& frmdata)
         );
 
     // === LEAD ANGLE STATUS TEXT ===
-    m_viewModel->updateLeadAngleDisplay(frmdata.leadStatusText);
+    // ========================================================================
+    // CROWS/SARP LAC STATUS DISPLAY
+    // ========================================================================
+    // - "LAC ARMED": lacArmed=true, leadAngleActive=false (waiting for fire)
+    // - "LEAD ANGLE ON/LAG/ZOOM OUT": leadAngleActive=true (lead applied)
+    // - "": Neither armed nor active
+    // ========================================================================
+    QString lacStatusText = frmdata.leadStatusText;
+    if (frmdata.lacArmed && !frmdata.leadAngleActive) {
+        // LAC is armed but not engaged - show "LAC ARMED"
+        lacStatusText = "LAC ARMED";
+    }
+    m_viewModel->updateLeadAngleDisplay(lacStatusText);
 
     // === SCAN NAME ===
     m_viewModel->updateCurrentScanName(frmdata.currentScanName);
