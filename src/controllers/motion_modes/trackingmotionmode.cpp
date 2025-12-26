@@ -50,7 +50,7 @@ TrackingMotionMode::TrackingMotionMode(QObject* parent)
 
 void TrackingMotionMode::enterMode(GimbalController* controller)
 {
-    qDebug() << "[TrackingMotionMode] Enter - P+D+FF Control (Stability Fix v5 - Filtered dErr)";
+    qDebug() << "[TrackingMotionMode] Enter - P+D+FF Control (v6 - Filtered dErr + Filtered FF)";
 
     m_targetValid = false;
     m_azPid.reset();
@@ -69,6 +69,10 @@ void TrackingMotionMode::enterMode(GimbalController* controller)
     m_prevErrEl = 0.0;
     m_filteredDErrAz = 0.0;
     m_filteredDErrEl = 0.0;
+
+    // Reset feedforward filter state
+    m_filteredTargetVelAz = 0.0;
+    m_filteredTargetVelEl = 0.0;
 
     // Initialize LAC state machine
     m_state = TrackingState::TRACK;
@@ -280,11 +284,32 @@ void TrackingMotionMode::update(GimbalController* controller, double dt)
     // -------------------------------------------------------------------------
     // FEEDFORWARD: Use target velocity to eliminate "chasing" lag
     // -------------------------------------------------------------------------
-    // Without FF: gimbal always lags behind moving target (Kp must "stretch" error)
-    // With FF: gimbal anticipates target motion → near-zero steady-state error
-    constexpr double FF_GAIN = 1.0;  // 1.0 = full velocity matching
-    double ffAz = m_smoothedAzVel_dps * FF_GAIN;
-    double ffEl = m_smoothedElVel_dps * FF_GAIN;
+    // STABILITY FIX v6: Raw FF was causing divergence!
+    // When tracker glitched, m_smoothedAzVel_dps spiked → huge FF → divergence
+    //
+    // SOLUTION:
+    // 1. Filter FF velocity (same tau as dErr filter)
+    // 2. Clamp FF to reasonable max (±3 deg/s)
+    // 3. Disable FF when error is large (FF is for fine tracking, not recovery)
+    // 4. Reduce FF_GAIN to 0.5 (partial velocity matching)
+
+    constexpr double FF_GAIN = 0.5;  // Reduced from 1.0 - partial velocity match
+    constexpr double FF_FILTER_TAU = 0.15;  // 150ms time constant
+    constexpr double MAX_FF = 3.0;  // Max FF contribution (deg/s)
+    constexpr double FF_ERROR_THRESHOLD = 2.0;  // Disable FF when |error| > 2°
+
+    // Filter the target velocity (reject tracker glitches)
+    double ffAlpha = (dt > 0) ? (1.0 - std::exp(-dt / FF_FILTER_TAU)) : 0.0;
+    m_filteredTargetVelAz = ffAlpha * m_smoothedAzVel_dps + (1.0 - ffAlpha) * m_filteredTargetVelAz;
+    m_filteredTargetVelEl = ffAlpha * m_smoothedElVel_dps + (1.0 - ffAlpha) * m_filteredTargetVelEl;
+
+    // Compute FF with gain and clamp
+    double ffAz = qBound(-MAX_FF, m_filteredTargetVelAz * FF_GAIN, MAX_FF);
+    double ffEl = qBound(-MAX_FF, m_filteredTargetVelEl * FF_GAIN, MAX_FF);
+
+    // Disable FF when error is large (we're in recovery mode, not steady tracking)
+    if (std::abs(effectiveErrAz) > FF_ERROR_THRESHOLD) ffAz = 0.0;
+    if (std::abs(effectiveErrEl) > FF_ERROR_THRESHOLD) ffEl = 0.0;
 
     // -------------------------------------------------------------------------
     // P + D CONTROL (Derivative on Error - synchronized with camera)
