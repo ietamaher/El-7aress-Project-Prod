@@ -49,7 +49,7 @@ TrackingMotionMode::TrackingMotionMode(QObject* parent)
 
 void TrackingMotionMode::enterMode(GimbalController* controller)
 {
-    qDebug() << "[TrackingMotionMode] Enter - Rigid Cradle LAC v3";
+    qDebug() << "[TrackingMotionMode] Enter - P+D+FF Control (Stability Fix v4)";
 
     m_targetValid = false;
     m_azPid.reset();
@@ -62,6 +62,10 @@ void TrackingMotionMode::enterMode(GimbalController* controller)
     m_lastValidAzRate = 0.0;
     m_lastValidElRate = 0.0;
     m_logCycleCounter = 0;
+
+    // Reset derivative-on-error state (prevents initial kick)
+    m_prevErrAz = 0.0;
+    m_prevErrEl = 0.0;
 
     // Initialize LAC state machine
     m_state = TrackingState::TRACK;
@@ -195,8 +199,20 @@ void TrackingMotionMode::update(GimbalController* controller, double dt)
     double errAz = m_imageErrAz;
     double errEl = m_imageErrEl;
 
-    double currentAzRate_dps = data.azRpm * 6.0;
-    double currentElRate_dps = data.elRpm * 6.0;
+    // =========================================================================
+    // 2a. DERIVATIVE-ON-ERROR (Synchronized with camera, not laggy servo RPM)
+    // =========================================================================
+    // CRITICAL FIX: Servo RPM feedback has 100-200ms Modbus latency, which
+    // turns damping into positive feedback at 20Hz update rate.
+    // Instead, compute derivative from image error change - synchronized with camera.
+    double dErrAz = 0.0;
+    double dErrEl = 0.0;
+    if (dt > 1e-4) {
+        dErrAz = (errAz - m_prevErrAz) / dt;
+        dErrEl = (errEl - m_prevErrEl) / dt;
+    }
+    m_prevErrAz = errAz;
+    m_prevErrEl = errEl;
 
     // =========================================================================
     // 3. MANUAL NUDGE (POSITION OFFSET - TRACK STATE ONLY)
@@ -206,7 +222,7 @@ void TrackingMotionMode::update(GimbalController* controller, double dt)
     constexpr double MAX_MANUAL  = 5.0;
     constexpr double DECAY       = 2.0;
     constexpr double ERR_DB      = 0.05;
-    constexpr double RATE_DB     = 0.8;
+    // REMOVED: constexpr double RATE_DB = 0.8; // DEADBAND DEATH SPIRAL - was causing divergent oscillations!
 
     bool manualActive =
         std::abs(data.joystickAzValue) > JOYSTICK_DB ||
@@ -229,26 +245,50 @@ void TrackingMotionMode::update(GimbalController* controller, double dt)
     }
 
     // =========================================================================
-    // 4. TRACKING CONTROL (PURE VELOCITY LOOP - P + D)
+    // 4. TRACKING CONTROL (P + D + FEEDFORWARD)
     // =========================================================================
-    // Apply deadbands
+    // STABILITY FIX: Removed RATE_DB deadband - was causing "Deadband Death Spiral"
+    // When rate dropped below 0.8 deg/s, damping vanished → undamped P-control → divergent oscillation
+
+    // Apply small error deadband (prevents hunting around zero)
     double effectiveErrAz = errAz + m_manualAzOffset_deg;
     double effectiveErrEl = errEl + m_manualElOffset_deg;
 
     if (std::abs(effectiveErrAz) < ERR_DB) effectiveErrAz = 0.0;
     if (std::abs(effectiveErrEl) < ERR_DB) effectiveErrEl = 0.0;
 
-    if (std::abs(currentAzRate_dps) < RATE_DB) currentAzRate_dps = 0.0;
-    if (std::abs(currentElRate_dps) < RATE_DB) currentElRate_dps = 0.0;
+    // REMOVED: Rate deadband was the PRIMARY cause of oscillation!
+    // The 0.8 deg/s threshold created an undamped zone where P-only control oscillated.
 
-    // P + D (single damping source from measured rate)
+    // -------------------------------------------------------------------------
+    // FEEDFORWARD: Use target velocity to eliminate "chasing" lag
+    // -------------------------------------------------------------------------
+    // Without FF: gimbal always lags behind moving target (Kp must "stretch" error)
+    // With FF: gimbal anticipates target motion → near-zero steady-state error
+    constexpr double FF_GAIN = 1.0;  // 1.0 = full velocity matching
+    double ffAz = m_smoothedAzVel_dps * FF_GAIN;
+    double ffEl = m_smoothedElVel_dps * FF_GAIN;
+
+    // -------------------------------------------------------------------------
+    // P + D CONTROL (Derivative on Error - synchronized with camera)
+    // -------------------------------------------------------------------------
+    // CRITICAL: Using dErr/dt (computed from image error) instead of servo RPM
+    // Servo RPM has 100-200ms Modbus latency → turns damping into positive feedback!
+    // dErr is synchronized with camera → proper phase relationship for damping
+    //
+    // Control Law:  cmd = Kp*error + Kd*dError + FF
+    //   - Kp drives toward target
+    //   - Kd damps when error is decreasing (prevents overshoot)
+    //   - FF matches target velocity (eliminates chase lag)
     double trackAzCmd =
-        m_azPid.Kp * effectiveErrAz -
-        m_azPid.Kd * currentAzRate_dps;
+        m_azPid.Kp * effectiveErrAz +
+        m_azPid.Kd * dErrAz +
+        ffAz;
 
     double trackElCmd =
-        m_elPid.Kp * effectiveErrEl -
-        m_elPid.Kd * currentElRate_dps;
+        m_elPid.Kp * effectiveErrEl +
+        m_elPid.Kd * dErrEl +
+        ffEl;
 
     // =========================================================================
     // 5. LEAD INJECTION (OPEN-LOOP VELOCITY - PHYSICS BASED)
@@ -259,9 +299,6 @@ void TrackingMotionMode::update(GimbalController* controller, double dt)
     // This is CORRECT behavior - the gun must aim ahead of the target.
     double lacAzCmd = data.lacLatchedAzRate_dps * LAC_RATE_BIAS_GAIN;
     double lacElCmd = data.lacLatchedElRate_dps * LAC_RATE_BIAS_GAIN;
-    qDebug() << "LAC latched rates:"
-            << data.lacLatchedAzRate_dps
-            << data.lacLatchedElRate_dps;
     // =========================================================================
     // 6. FINAL BLEND
     // =========================================================================
@@ -285,22 +322,27 @@ void TrackingMotionMode::update(GimbalController* controller, double dt)
     finalElCmd = qBound(-MAX_VEL_EL, finalElCmd, MAX_VEL_EL);
 
     // =========================================================================
-    // 8. DEBUG OUTPUT
+    // 8. DEBUG OUTPUT (Enhanced with P+D+FF breakdown)
     // =========================================================================
     if (++m_logCycleCounter >= 10) {
         m_logCycleCounter = 0;
 
         const char* stateNames[] = {"TRACK", "FIRE_LEAD", "RECENTER"};
+
+        // Compute individual control terms for debugging
+        double pTermAz = m_azPid.Kp * effectiveErrAz;
+        double dTermAz = m_azPid.Kd * dErrAz;
+
         qDebug().nospace()
             << "[TRK] "
             << "state=" << stateNames[static_cast<int>(m_state)] << " "
-            << "blend=" << QString::number(m_lacBlendFactor, 'f', 2).toStdString().c_str() << " "
             << "err(" << QString::number(errAz, 'f', 2).toStdString().c_str() << ", "
                       << QString::number(errEl, 'f', 2).toStdString().c_str() << ") "
-            << "track(" << QString::number(trackAzCmd, 'f', 2).toStdString().c_str() << ", "
-                        << QString::number(trackElCmd, 'f', 2).toStdString().c_str() << ") "
-            << "lac(" << QString::number(lacAzCmd, 'f', 2).toStdString().c_str() << ", "
-                      << QString::number(lacElCmd, 'f', 2).toStdString().c_str() << ") "
+            << "P=" << QString::number(pTermAz, 'f', 2).toStdString().c_str() << " "
+            << "D=" << QString::number(dTermAz, 'f', 2).toStdString().c_str() << " "
+            << "FF=" << QString::number(ffAz, 'f', 2).toStdString().c_str() << " "
+            << "cmd(" << QString::number(trackAzCmd, 'f', 2).toStdString().c_str() << ", "
+                      << QString::number(trackElCmd, 'f', 2).toStdString().c_str() << ") "
             << "final(" << QString::number(finalAzCmd, 'f', 2).toStdString().c_str() << ", "
                         << QString::number(finalElCmd, 'f', 2).toStdString().c_str() << ")";
     }
