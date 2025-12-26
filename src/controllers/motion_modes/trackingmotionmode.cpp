@@ -33,13 +33,13 @@ TrackingMotionMode::TrackingMotionMode(QObject* parent)
 
     // Azimuth
     m_azPid.Kp = 0.5;     // Slightly higher P for faster response
-    m_azPid.Kd = 0.15;    // Reduced D (filter adds lag, raw dErr was too noisy)
+    m_azPid.Kd = 0.2;    // Reduced D (filter adds lag, raw dErr was too noisy)
     m_azPid.Ki = 0.0;     // OFF for tracking
     m_azPid.maxIntegral = 3.0;
 
     // Elevation
     m_elPid.Kp = 0.55;
-    m_elPid.Kd = 0.18;
+    m_elPid.Kd = 0.22;
     m_elPid.Ki = 0.0;
     m_elPid.maxIntegral = 3.0;
     
@@ -296,7 +296,7 @@ void TrackingMotionMode::update(GimbalController* controller, double dt)
     constexpr double FF_GAIN = 0.5;  // Reduced from 1.0 - partial velocity match
     constexpr double FF_FILTER_TAU = 0.15;  // 150ms time constant
     constexpr double MAX_FF = 3.0;  // Max FF contribution (deg/s)
-    constexpr double FF_ERROR_THRESHOLD = 2.0;  // Disable FF when |error| > 2°
+    constexpr double FF_ERROR_THRESHOLD = 0.15;  // Disable FF when |error| > 0.15°
 
     // Filter the target velocity (reject tracker glitches)
     double ffAlpha = (dt > 0) ? (1.0 - std::exp(-dt / FF_FILTER_TAU)) : 0.0;

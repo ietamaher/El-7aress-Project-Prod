@@ -107,8 +107,8 @@
       "slaveId": 2,
       "parity": "none",
       "pollIntervalMs": 50,
-      "temperatureIntervalMs": 2000,
-      "timeoutMs": 500,
+      "temperatureIntervalMs": 10000,
+      "timeoutMs": 30,
       "retries": 3
     },
     "elevation": {
@@ -118,7 +118,7 @@
       "slaveId": 1,
       "parity": "none",
       "pollIntervalMs": 50,
-      "temperatureIntervalMs": 2000,
+      "temperatureIntervalMs": 10000,
       "timeoutMs": 500,
       "retries": 3
     }
