@@ -26,19 +26,20 @@ TrackingMotionMode::TrackingMotionMode(QObject* parent)
     , m_gimbalVelAz(0.0), m_gimbalVelEl(0.0)
 {
     // -------------------------------------------------------------------------
-    // TUNED PID GAINS FOR 50ms UPDATE CYCLE
+    // TUNED PID GAINS FOR 50ms UPDATE CYCLE + FILTERED dErr
     // -------------------------------------------------------------------------
-    // These override config file for field testing - move to config once tuned
-    
+    // v5: Reduced Kd because dErr filter adds ~50ms phase lag
+    //     Using filtered derivative-on-error for noise immunity
+
     // Azimuth
-    m_azPid.Kp = 0.45;
-    m_azPid.Kd = 0.3;    // Much higher damping
+    m_azPid.Kp = 0.5;     // Slightly higher P for faster response
+    m_azPid.Kd = 0.15;    // Reduced D (filter adds lag, raw dErr was too noisy)
     m_azPid.Ki = 0.0;     // OFF for tracking
     m_azPid.maxIntegral = 3.0;
 
     // Elevation
-    m_elPid.Kp = 0.5;
-    m_elPid.Kd = 0.35;
+    m_elPid.Kp = 0.55;
+    m_elPid.Kd = 0.18;
     m_elPid.Ki = 0.0;
     m_elPid.maxIntegral = 3.0;
     
@@ -49,7 +50,7 @@ TrackingMotionMode::TrackingMotionMode(QObject* parent)
 
 void TrackingMotionMode::enterMode(GimbalController* controller)
 {
-    qDebug() << "[TrackingMotionMode] Enter - P+D+FF Control (Stability Fix v4)";
+    qDebug() << "[TrackingMotionMode] Enter - P+D+FF Control (Stability Fix v5 - Filtered dErr)";
 
     m_targetValid = false;
     m_azPid.reset();
@@ -66,6 +67,8 @@ void TrackingMotionMode::enterMode(GimbalController* controller)
     // Reset derivative-on-error state (prevents initial kick)
     m_prevErrAz = 0.0;
     m_prevErrEl = 0.0;
+    m_filteredDErrAz = 0.0;
+    m_filteredDErrEl = 0.0;
 
     // Initialize LAC state machine
     m_state = TrackingState::TRACK;
@@ -200,19 +203,33 @@ void TrackingMotionMode::update(GimbalController* controller, double dt)
     double errEl = m_imageErrEl;
 
     // =========================================================================
-    // 2a. DERIVATIVE-ON-ERROR (Synchronized with camera, not laggy servo RPM)
+    // 2a. FILTERED DERIVATIVE-ON-ERROR (Noise-resistant damping)
     // =========================================================================
-    // CRITICAL FIX: Servo RPM feedback has 100-200ms Modbus latency, which
-    // turns damping into positive feedback at 20Hz update rate.
-    // Instead, compute derivative from image error change - synchronized with camera.
-    double dErrAz = 0.0;
-    double dErrEl = 0.0;
+    // PROBLEM IDENTIFIED: Raw dErr amplifies tracker noise → command spikes →
+    // gimbal jerks → image blur → more tracker noise → positive feedback!
+    //
+    // SOLUTION: Filter dErr with IIR low-pass + hard clamp to prevent spikes
+    // This provides damping synchronized with camera while rejecting noise.
+
+    double rawDErrAz = 0.0;
+    double rawDErrEl = 0.0;
     if (dt > 1e-4) {
-        dErrAz = (errAz - m_prevErrAz) / dt;
-        dErrEl = (errEl - m_prevErrEl) / dt;
+        rawDErrAz = (errAz - m_prevErrAz) / dt;
+        rawDErrEl = (errEl - m_prevErrEl) / dt;
     }
     m_prevErrAz = errAz;
     m_prevErrEl = errEl;
+
+    // Low-pass filter on dErr (tau = 0.1s → ~10Hz cutoff, rejects tracker jitter)
+    constexpr double DERR_FILTER_TAU = 0.1;  // 100ms time constant
+    double alpha = (dt > 0) ? (1.0 - std::exp(-dt / DERR_FILTER_TAU)) : 0.0;
+    m_filteredDErrAz = alpha * rawDErrAz + (1.0 - alpha) * m_filteredDErrAz;
+    m_filteredDErrEl = alpha * rawDErrEl + (1.0 - alpha) * m_filteredDErrEl;
+
+    // Hard clamp to prevent tracker glitches from causing huge D-term spikes
+    constexpr double MAX_DERR = 8.0;  // deg/s - max believable error rate
+    double dErrAz = qBound(-MAX_DERR, m_filteredDErrAz, MAX_DERR);
+    double dErrEl = qBound(-MAX_DERR, m_filteredDErrEl, MAX_DERR);
 
     // =========================================================================
     // 3. MANUAL NUDGE (POSITION OFFSET - TRACK STATE ONLY)
