@@ -56,6 +56,13 @@ void GimbalMotionModeBase::writeVelocityCommand(ServoDriverDevice* driverInterfa
     // Use lround for proper rounding instead of truncation
     qint32 speedHz = static_cast<qint32>(std::lround(finalVelocity * scalingFactor));
 
+    // ⭐ ADD THIS DEBUG LINE:
+    /*if (finalVelocity == 0.0) {
+        qDebug() << "⚠️ STOP CMD: speedHz=" << speedHz 
+                 << "lastSpeedHz=" << lastSpeedHz 
+                 << "WILL_WRITE=" << (speedHz != lastSpeedHz);
+    }*/
+
     // 2. ✅ CRITICAL FIX: Only write if speed actually changed!
     // This prevents redundant Modbus writes (was 60 ops/sec, now 2-6 ops/sec)
     if (speedHz != lastSpeedHz) {
@@ -154,7 +161,7 @@ void GimbalMotionModeBase::sendStabilizedServoCommands(GimbalController* control
         );
 
         finalAzVelocity = stabAz_dps;
-        finalElVelocity = - stabEl_dps;
+        finalElVelocity =  stabEl_dps;
     } else {
         // Not stabilizing - fill debug with raw values
         stabDebug.userAz_dps = desiredAzVelocity;
@@ -289,6 +296,9 @@ void GimbalMotionModeBase::stopServos(GimbalController* controller)
         // During shutdown, just return - no commands needed
         return;
     }
+        // ⭐ FIX: Force write by invalidating last speed cache
+    //m_lastAzSpeedHz = INT32_MAX;  // Impossible value forces write
+    //m_lastElSpeedHz = INT32_MAX;
     // Send a zero-velocity command through the new architecture.
     // Disable stabilization when stopping (no need to hold position)
     const double dt = 0.05; // 50ms nominal, doesn't matter for zero velocity

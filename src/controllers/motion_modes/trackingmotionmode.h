@@ -105,6 +105,14 @@ private:
     double m_imageErrAz = 0.0;  // current image error azimuth
     double m_imageErrEl = 0.0;  // current image error elevation
 
+    // Filtered derivative-on-error (noise rejection for D-term)
+    double m_filteredDErrAz = 0.0;  // low-pass filtered dErr azimuth
+    double m_filteredDErrEl = 0.0;  // low-pass filtered dErr elevation
+
+    // Filtered feedforward velocity (noise rejection for FF term)
+    double m_filteredTargetVelAz = 0.0;  // low-pass filtered target velocity Az
+    double m_filteredTargetVelEl = 0.0;  // low-pass filtered target velocity El
+
     // Manual nudge offsets (degrees)
     double m_manualAzOffset_deg = 0.0;
     double m_manualElOffset_deg = 0.0;

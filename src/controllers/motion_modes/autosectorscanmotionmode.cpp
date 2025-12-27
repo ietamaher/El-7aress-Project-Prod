@@ -168,7 +168,7 @@ void AutoSectorScanMotionMode::update(GimbalController* controller, double dt)
             m_timeAtTarget += dt;
             m_previousDesiredAzVel = 0.0;
 
-            sendStabilizedServoCommands(controller, 0.0, 0.0, false, dt);
+            sendStabilizedServoCommands(controller, 0.0, 0.0, true, dt);
 
             if (m_timeAtTarget >= TURN_AROUND_DELAY_SEC) {
                 m_movingToPoint2 = !m_movingToPoint2;
@@ -224,6 +224,6 @@ void AutoSectorScanMotionMode::update(GimbalController* controller, double dt)
                          : v_max * 1.5;
         finalCmd = std::clamp(finalCmd, -globalMax, globalMax);
 
-        sendStabilizedServoCommands(controller, finalCmd, 0.0, false, dt);
+        sendStabilizedServoCommands(controller, finalCmd, 0.0, true, dt);
     }
 }

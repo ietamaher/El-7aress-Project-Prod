@@ -310,7 +310,16 @@ void ServoDriverDevice::setTemperatureInterval(int intervalMs) {
 
 void ServoDriverDevice::sendWriteRequest(int startAddress, const QVector<quint16>& values) {
     if (state() != DeviceState::Online || !m_transport) return;
-
+    // ⭐ RATE LIMIT: Skip if too many pending writes (prevents queue buildup)
+    if (m_pendingWrites > 2) {
+        //log when skipping writes
+        qDebug() << "⚠️ [MODBUS WRITE] " << m_identifier 
+                 << "pending writes:" << m_pendingWrites.load() 
+                 << "exceeds limit - skipping write to" << startAddress;
+        // Queue is backing up - skip this write to let it drain
+        return;
+    }
+    m_pendingWrites++;  // Increment before send
     // ✅ LATENCY PROFILING: Start timing the Modbus write operation
     m_modbusWriteTimer.start();
 
@@ -346,10 +355,17 @@ void ServoDriverDevice::sendWriteRequest(int startAddress, const QVector<quint16
         m_modbusWriteMinNs = 999999999;
         m_modbusWriteCount = 0;
     }
-
     if (reply) {
-        connect(reply, &QModbusReply::finished, reply, &QModbusReply::deleteLater);
+        connect(reply, &QModbusReply::finished, this, [this, reply]() {
+            m_pendingWrites--;  // Decrement when complete
+            reply->deleteLater();
+        });
+    } else {
+        m_pendingWrites--;  // Decrement if send failed
     }
+    /*if (reply) {
+        connect(reply, &QModbusReply::finished, reply, &QModbusReply::deleteLater);
+    }*/
 }
 
 //================================================================================

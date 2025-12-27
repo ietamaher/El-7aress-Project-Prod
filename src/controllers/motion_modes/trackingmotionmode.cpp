@@ -26,19 +26,20 @@ TrackingMotionMode::TrackingMotionMode(QObject* parent)
     , m_gimbalVelAz(0.0), m_gimbalVelEl(0.0)
 {
     // -------------------------------------------------------------------------
-    // TUNED PID GAINS FOR 50ms UPDATE CYCLE
+    // TUNED PID GAINS FOR 50ms UPDATE CYCLE + FILTERED dErr
     // -------------------------------------------------------------------------
-    // These override config file for field testing - move to config once tuned
-    
+    // v5: Reduced Kd because dErr filter adds ~50ms phase lag
+    //     Using filtered derivative-on-error for noise immunity
+
     // Azimuth
-    m_azPid.Kp = 0.45;
-    m_azPid.Kd = 0.3;    // Much higher damping
+    m_azPid.Kp = 1;     // Slightly higher P for faster response
+    m_azPid.Kd = 0.35;    // Reduced D (filter adds lag, raw dErr was too noisy)
     m_azPid.Ki = 0.0;     // OFF for tracking
     m_azPid.maxIntegral = 3.0;
 
     // Elevation
-    m_elPid.Kp = 0.5;
-    m_elPid.Kd = 0.35;
+    m_elPid.Kp = 1.2;
+    m_elPid.Kd = 0.4;
     m_elPid.Ki = 0.0;
     m_elPid.maxIntegral = 3.0;
     
@@ -49,7 +50,7 @@ TrackingMotionMode::TrackingMotionMode(QObject* parent)
 
 void TrackingMotionMode::enterMode(GimbalController* controller)
 {
-    qDebug() << "[TrackingMotionMode] Enter - Rigid Cradle LAC v3";
+    qDebug() << "[TrackingMotionMode] Enter - P+D+FF Control (v6 - Filtered dErr + Filtered FF)";
 
     m_targetValid = false;
     m_azPid.reset();
@@ -62,6 +63,16 @@ void TrackingMotionMode::enterMode(GimbalController* controller)
     m_lastValidAzRate = 0.0;
     m_lastValidElRate = 0.0;
     m_logCycleCounter = 0;
+
+    // Reset derivative-on-error state (prevents initial kick)
+    m_prevErrAz = 0.0;
+    m_prevErrEl = 0.0;
+    m_filteredDErrAz = 0.0;
+    m_filteredDErrEl = 0.0;
+
+    // Reset feedforward filter state
+    m_filteredTargetVelAz = 0.0;
+    m_filteredTargetVelEl = 0.0;
 
     // Initialize LAC state machine
     m_state = TrackingState::TRACK;
@@ -195,8 +206,34 @@ void TrackingMotionMode::update(GimbalController* controller, double dt)
     double errAz = m_imageErrAz;
     double errEl = m_imageErrEl;
 
-    double currentAzRate_dps = data.azRpm * 6.0;
-    double currentElRate_dps = data.elRpm * 6.0;
+    // =========================================================================
+    // 2a. FILTERED DERIVATIVE-ON-ERROR (Noise-resistant damping)
+    // =========================================================================
+    // PROBLEM IDENTIFIED: Raw dErr amplifies tracker noise → command spikes →
+    // gimbal jerks → image blur → more tracker noise → positive feedback!
+    //
+    // SOLUTION: Filter dErr with IIR low-pass + hard clamp to prevent spikes
+    // This provides damping synchronized with camera while rejecting noise.
+
+    double rawDErrAz = 0.0;
+    double rawDErrEl = 0.0;
+    if (dt > 1e-4) {
+        rawDErrAz = (errAz - m_prevErrAz) / dt;
+        rawDErrEl = (errEl - m_prevErrEl) / dt;
+    }
+    m_prevErrAz = errAz;
+    m_prevErrEl = errEl;
+
+    // Low-pass filter on dErr (tau = 0.1s → ~10Hz cutoff, rejects tracker jitter)
+    constexpr double DERR_FILTER_TAU = 0.1;  // 100ms time constant
+    double alpha = (dt > 0) ? (1.0 - std::exp(-dt / DERR_FILTER_TAU)) : 0.0;
+    m_filteredDErrAz = alpha * rawDErrAz + (1.0 - alpha) * m_filteredDErrAz;
+    m_filteredDErrEl = alpha * rawDErrEl + (1.0 - alpha) * m_filteredDErrEl;
+
+    // Hard clamp to prevent tracker glitches from causing huge D-term spikes
+    constexpr double MAX_DERR = 8.0;  // deg/s - max believable error rate
+    double dErrAz = qBound(-MAX_DERR, m_filteredDErrAz, MAX_DERR);
+    double dErrEl = qBound(-MAX_DERR, m_filteredDErrEl, MAX_DERR);
 
     // =========================================================================
     // 3. MANUAL NUDGE (POSITION OFFSET - TRACK STATE ONLY)
@@ -206,7 +243,7 @@ void TrackingMotionMode::update(GimbalController* controller, double dt)
     constexpr double MAX_MANUAL  = 5.0;
     constexpr double DECAY       = 2.0;
     constexpr double ERR_DB      = 0.05;
-    constexpr double RATE_DB     = 0.8;
+    // REMOVED: constexpr double RATE_DB = 0.8; // DEADBAND DEATH SPIRAL - was causing divergent oscillations!
 
     bool manualActive =
         std::abs(data.joystickAzValue) > JOYSTICK_DB ||
@@ -229,26 +266,71 @@ void TrackingMotionMode::update(GimbalController* controller, double dt)
     }
 
     // =========================================================================
-    // 4. TRACKING CONTROL (PURE VELOCITY LOOP - P + D)
+    // 4. TRACKING CONTROL (P + D + FEEDFORWARD)
     // =========================================================================
-    // Apply deadbands
+    // STABILITY FIX: Removed RATE_DB deadband - was causing "Deadband Death Spiral"
+    // When rate dropped below 0.8 deg/s, damping vanished → undamped P-control → divergent oscillation
+
+    // Apply small error deadband (prevents hunting around zero)
     double effectiveErrAz = errAz + m_manualAzOffset_deg;
     double effectiveErrEl = errEl + m_manualElOffset_deg;
 
     if (std::abs(effectiveErrAz) < ERR_DB) effectiveErrAz = 0.0;
     if (std::abs(effectiveErrEl) < ERR_DB) effectiveErrEl = 0.0;
 
-    if (std::abs(currentAzRate_dps) < RATE_DB) currentAzRate_dps = 0.0;
-    if (std::abs(currentElRate_dps) < RATE_DB) currentElRate_dps = 0.0;
+    // REMOVED: Rate deadband was the PRIMARY cause of oscillation!
+    // The 0.8 deg/s threshold created an undamped zone where P-only control oscillated.
 
-    // P + D (single damping source from measured rate)
+    // -------------------------------------------------------------------------
+    // FEEDFORWARD: Use target velocity to eliminate "chasing" lag
+    // -------------------------------------------------------------------------
+    // STABILITY FIX v6: Raw FF was causing divergence!
+    // When tracker glitched, m_smoothedAzVel_dps spiked → huge FF → divergence
+    //
+    // SOLUTION:
+    // 1. Filter FF velocity (same tau as dErr filter)
+    // 2. Clamp FF to reasonable max (±3 deg/s)
+    // 3. Disable FF when error is large (FF is for fine tracking, not recovery)
+    // 4. Reduce FF_GAIN to 0.5 (partial velocity matching)
+
+    constexpr double FF_GAIN = 0.5;  // Reduced from 1.0 - partial velocity match
+    constexpr double FF_FILTER_TAU = 0.15;  // 150ms time constant
+    constexpr double MAX_FF = 3.0;  // Max FF contribution (deg/s)
+    constexpr double FF_ERROR_THRESHOLD = 0.15;  // Disable FF when |error| > 0.15°
+
+    // Filter the target velocity (reject tracker glitches)
+    double ffAlpha = (dt > 0) ? (1.0 - std::exp(-dt / FF_FILTER_TAU)) : 0.0;
+    m_filteredTargetVelAz = ffAlpha * m_smoothedAzVel_dps + (1.0 - ffAlpha) * m_filteredTargetVelAz;
+    m_filteredTargetVelEl = ffAlpha * m_smoothedElVel_dps + (1.0 - ffAlpha) * m_filteredTargetVelEl;
+
+    // Compute FF with gain and clamp
+    double ffAz = qBound(-MAX_FF, m_filteredTargetVelAz * FF_GAIN, MAX_FF);
+    double ffEl = qBound(-MAX_FF, m_filteredTargetVelEl * FF_GAIN, MAX_FF);
+
+    // Disable FF when error is large (we're in recovery mode, not steady tracking)
+    if (std::abs(effectiveErrAz) > FF_ERROR_THRESHOLD) ffAz = 0.0;
+    if (std::abs(effectiveErrEl) > FF_ERROR_THRESHOLD) ffEl = 0.0;
+
+    // -------------------------------------------------------------------------
+    // P + D CONTROL (Derivative on Error - synchronized with camera)
+    // -------------------------------------------------------------------------
+    // CRITICAL: Using dErr/dt (computed from image error) instead of servo RPM
+    // Servo RPM has 100-200ms Modbus latency → turns damping into positive feedback!
+    // dErr is synchronized with camera → proper phase relationship for damping
+    //
+    // Control Law:  cmd = Kp*error + Kd*dError + FF
+    //   - Kp drives toward target
+    //   - Kd damps when error is decreasing (prevents overshoot)
+    //   - FF matches target velocity (eliminates chase lag)
     double trackAzCmd =
-        m_azPid.Kp * effectiveErrAz -
-        m_azPid.Kd * currentAzRate_dps;
+        m_azPid.Kp * effectiveErrAz +
+        m_azPid.Kd * dErrAz +
+        ffAz;
 
     double trackElCmd =
-        m_elPid.Kp * effectiveErrEl -
-        m_elPid.Kd * currentElRate_dps;
+        m_elPid.Kp * effectiveErrEl +
+        m_elPid.Kd * dErrEl +
+        ffEl;
 
     // =========================================================================
     // 5. LEAD INJECTION (OPEN-LOOP VELOCITY - PHYSICS BASED)
@@ -259,9 +341,6 @@ void TrackingMotionMode::update(GimbalController* controller, double dt)
     // This is CORRECT behavior - the gun must aim ahead of the target.
     double lacAzCmd = data.lacLatchedAzRate_dps * LAC_RATE_BIAS_GAIN;
     double lacElCmd = data.lacLatchedElRate_dps * LAC_RATE_BIAS_GAIN;
-    qDebug() << "LAC latched rates:"
-            << data.lacLatchedAzRate_dps
-            << data.lacLatchedElRate_dps;
     // =========================================================================
     // 6. FINAL BLEND
     // =========================================================================
@@ -285,22 +364,27 @@ void TrackingMotionMode::update(GimbalController* controller, double dt)
     finalElCmd = qBound(-MAX_VEL_EL, finalElCmd, MAX_VEL_EL);
 
     // =========================================================================
-    // 8. DEBUG OUTPUT
+    // 8. DEBUG OUTPUT (Enhanced with P+D+FF breakdown)
     // =========================================================================
     if (++m_logCycleCounter >= 10) {
         m_logCycleCounter = 0;
 
         const char* stateNames[] = {"TRACK", "FIRE_LEAD", "RECENTER"};
+
+        // Compute individual control terms for debugging
+        double pTermAz = m_azPid.Kp * effectiveErrAz;
+        double dTermAz = m_azPid.Kd * dErrAz;
+
         qDebug().nospace()
             << "[TRK] "
             << "state=" << stateNames[static_cast<int>(m_state)] << " "
-            << "blend=" << QString::number(m_lacBlendFactor, 'f', 2).toStdString().c_str() << " "
             << "err(" << QString::number(errAz, 'f', 2).toStdString().c_str() << ", "
                       << QString::number(errEl, 'f', 2).toStdString().c_str() << ") "
-            << "track(" << QString::number(trackAzCmd, 'f', 2).toStdString().c_str() << ", "
-                        << QString::number(trackElCmd, 'f', 2).toStdString().c_str() << ") "
-            << "lac(" << QString::number(lacAzCmd, 'f', 2).toStdString().c_str() << ", "
-                      << QString::number(lacElCmd, 'f', 2).toStdString().c_str() << ") "
+            << "P=" << QString::number(pTermAz, 'f', 2).toStdString().c_str() << " "
+            << "D=" << QString::number(dTermAz, 'f', 2).toStdString().c_str() << " "
+            << "FF=" << QString::number(ffAz, 'f', 2).toStdString().c_str() << " "
+            << "cmd(" << QString::number(trackAzCmd, 'f', 2).toStdString().c_str() << ", "
+                      << QString::number(trackElCmd, 'f', 2).toStdString().c_str() << ") "
             << "final(" << QString::number(finalAzCmd, 'f', 2).toStdString().c_str() << ", "
                         << QString::number(finalElCmd, 'f', 2).toStdString().c_str() << ")";
     }

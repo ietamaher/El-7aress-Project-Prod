@@ -104,7 +104,7 @@ private:
     QTimer* m_temperatureTimer;
     QTimer* m_communicationWatchdog;
     bool m_temperatureEnabled = true;
-
+    std::atomic<int> m_pendingWrites{0};
     static constexpr int COMMUNICATION_TIMEOUT_MS = 3000;  // 3 seconds without data = disconnected
 
     // ✅ LATENCY PROFILING: Track Modbus write timing to detect event queue blocking
