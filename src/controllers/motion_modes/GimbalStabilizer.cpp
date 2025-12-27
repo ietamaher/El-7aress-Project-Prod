@@ -23,85 +23,19 @@ std::pair<double,double> GimbalStabilizer::computeStabilizedVelocity(
     double dt) const
 {
     // ========================================================================
-    // Control Law: ω_cmd = ω_user + ω_feedforward + Kp × (angle_error)
+    // DELEGATE TO DEBUG VERSION
+    // The WithDebug version contains the complete, production-quality implementation
+    // including: AHRS filtering, position deadband, FF smoothing, accel limiting
     // ========================================================================
-
-    double finalAz_dps = desiredAzVel_dps;
-    double finalEl_dps = desiredElVel_dps;
-
-    // If world-frame target holding is disabled, return user velocity only
-    if (!useWorldTarget) {
-        return {finalAz_dps, finalEl_dps};
-    }
-
-    // ========================================================================
-    // COMPONENT 1: Position Correction (AHRS-based drift compensation)
-    // ========================================================================
-
-    // Access runtime-configurable tuning parameters
-    const auto& cfg = MotionTuningConfig::instance().stabilizer;
-
-    // Compute required gimbal angles to point at world target
-    auto [requiredAz_deg, requiredEl_deg] = computeRequiredGimbalAngles(
+    SystemStateData::StabilizationDebug unusedDebug;
+    return computeStabilizedVelocityWithDebug(
+        unusedDebug,
+        desiredAzVel_dps, desiredElVel_dps,
         imuRoll_deg, imuPitch_deg, imuYaw_deg,
-        targetAz_world, targetEl_world
-    );
-
-    // Calculate angle errors (required - current)
-    double azError_deg = normalizeAngle180(requiredAz_deg - currentAz_deg);
-    double elError_deg = normalizeAngle180(requiredEl_deg - currentEl_deg);
-
-    // Convert to velocity correction: v_correction = Kp × error
-    //double azPositionCorr_dps = cfg.kpPosition * azError_deg;
-    //double elPositionCorr_dps = cfg.kpPosition * elError_deg;
-
-    // ✅ NEW: Derivative term for damping (error rate estimation)
-    double azErrorRate_dps = (azError_deg - m_prevAzError_deg) / dt;
-    double elErrorRate_dps = (elError_deg - m_prevElError_deg) / dt;
-    m_prevAzError_deg = azError_deg;
-    m_prevElError_deg = elError_deg;
-
-    // ✅ NEW: Filter derivative to reduce noise (optional but recommended)
-    azErrorRate_dps = std::clamp(azErrorRate_dps, -cfg.maxErrorRate, cfg.maxErrorRate);
-    elErrorRate_dps = std::clamp(elErrorRate_dps, -cfg.maxErrorRate, cfg.maxErrorRate);
-
-    // Convert to velocity correction: PD control
-    // v_correction = Kp × error + Kd × error_rate
-    double azPositionCorr_dps = cfg.kpPosition * azError_deg + cfg.kdPosition * azErrorRate_dps;
-    double elPositionCorr_dps = cfg.kpPosition * elError_deg + cfg.kdPosition * elErrorRate_dps;
-
-    // ========================================================================
-    // COMPONENT 2: Rate Feed-Forward (Gyro-based transient compensation)
-    // ========================================================================
-
-    // IMU body rates: X→p (roll), Y→q (pitch), Z→r (yaw, inverted)
-    double p_dps = gyroX_dps;
-    double q_dps = gyroY_dps;
-    double r_dps = -gyroZ_dps;  // Negate because IMU Z is DOWN
-
-    // Transform platform motion to gimbal frame
-    auto [azRateFF_dps, elRateFF_dps] = computeRateFeedForward(
-        p_dps, q_dps, r_dps,
-        currentAz_deg, currentEl_deg
-    );
-
-    // Clamp rate feed-forward velocities
-    azRateFF_dps = std::clamp(azRateFF_dps, -cfg.maxVelocityCorr, cfg.maxVelocityCorr);
-    elRateFF_dps = std::clamp(elRateFF_dps, -cfg.maxVelocityCorr, cfg.maxVelocityCorr);
-
-    // ========================================================================
-    // COMPONENT 3: Velocity Composition
-    // ========================================================================
-
-    // Combine all three components: user + position correction + rate feed-forward
-    finalAz_dps = desiredAzVel_dps + azPositionCorr_dps + azRateFF_dps;
-    finalEl_dps = desiredElVel_dps + elPositionCorr_dps + elRateFF_dps;
-
-    // Apply total velocity limit
-    finalAz_dps = std::clamp(finalAz_dps, -cfg.maxTotalVel, cfg.maxTotalVel);
-    finalEl_dps = std::clamp(finalEl_dps, -cfg.maxTotalVel, cfg.maxTotalVel);
-
-    return {finalAz_dps, finalEl_dps};
+        gyroX_dps, gyroY_dps, gyroZ_dps,
+        currentAz_deg, currentEl_deg,
+        targetAz_world, targetEl_world,
+        useWorldTarget, dt);
 }
 
 // ============================================================================

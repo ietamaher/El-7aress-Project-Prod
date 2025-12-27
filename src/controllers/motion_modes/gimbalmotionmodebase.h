@@ -372,32 +372,13 @@ private:
     // LEGACY FUNCTIONS (Deprecated - use GimbalStabilizer instead)
     // ========================================================================
 
-    /**
-     * @brief [DEPRECATED] Use GimbalStabilizer::computeRequiredGimbalAngles() instead
-     * @deprecated Replaced by matrix-based GimbalStabilizer for production code
-     */
-    [[deprecated("Use GimbalStabilizer::computeRequiredGimbalAngles() instead")]]
-    void calculateRequiredGimbalAngles(double platform_roll, double platform_pitch, double platform_yaw,
-                                       double target_az_world, double target_el_world,
-                                       double& required_gimbal_az, double& required_gimbal_el);
-
-    /**
-     * @brief [DEPRECATED] Use GimbalStabilizer::computeStabilizedVelocity() instead
-     * @deprecated Replaced by velocity-based GimbalStabilizer for production code
-     */
-    [[deprecated("Use GimbalStabilizer::computeStabilizedVelocity() instead")]]
-    void calculateHybridStabilizationCorrection(const SystemStateData& state,
-                                                double& azCorrection_dps, double& elCorrection_dps,
-                                                double dt);
-
-    /**
-     * @brief [DEPRECATED] Legacy stabilization function (diagnostic only)
-     * @deprecated Replaced by velocity-based GimbalStabilizer for production code
-     */
-    [[deprecated("Legacy function - use GimbalStabilizer for production code")]]
-    void calculateStabilizationCorrection(double currentAz_deg, double currentEl_deg,
-                                                            double gyroX_dps_raw, double gyroY_dps_raw, double gyroZ_dps_raw,
-                                                            double& azCorrection_dps, double& elCorrection_dps);
+    // ========================================================================
+    // DEPRECATED FUNCTIONS REMOVED (2025-12-27)
+    // The following functions were removed - use GimbalStabilizer instead:
+    //   - calculateRequiredGimbalAngles()
+    //   - calculateHybridStabilizationCorrection()
+    //   - calculateStabilizationCorrection()
+    // ========================================================================
 };
 
 #endif // GIMBALMOTIONMO
