@@ -8,6 +8,7 @@
 #include "config/MotionTuningConfig.h"
 #include "config/ConfigurationValidator.h"
 #include <gst/gst.h>
+#include "version.h"
 
 int main(int argc, char *argv[])
 {
@@ -34,6 +35,11 @@ int main(int argc, char *argv[])
     
     // NOW create QGuiApplication (reads environment variables above)
     QGuiApplication app(argc, argv);
+
+    // Set application metadata
+    app.setApplicationName("El Harress RCWS");
+    app.setOrganizationName("Tunisian Ministry of Defense");
+    app.setApplicationVersion(AppVersion::version());
     
     qInfo() << "QPA Platform:" << app.platformName();
     

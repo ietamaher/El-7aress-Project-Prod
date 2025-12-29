@@ -1,3 +1,14 @@
+# =================================
+# VERSION INFORMATION
+# =================================
+VERSION = 1.0.0
+DEFINES += APP_VERSION=\\\"$$VERSION\\\"
+DEFINES += APP_VERSION_MAJOR=1
+DEFINES += APP_VERSION_MINOR=0
+DEFINES += APP_VERSION_PATCH=0
+DEFINES += APP_VERSION_SUFFIX=\\\"rc1\\\"
+DEFINES += APP_VERSION_FULL=\\\"1.0.0-rc1\\\"
+
 QT += quick serialbus serialport dbus
 
 # =================================
