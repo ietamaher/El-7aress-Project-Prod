@@ -5,6 +5,7 @@
 #include "controllers/zeroingcontroller.h"
 #include "controllers/windagecontroller.h"
 #include "controllers/environmentalcontroller.h"
+#include "controllers/brightnesscontroller.h"
 #include "controllers/presethomepositioncontroller.h"
 #include "controllers/zonedefinitioncontroller.h"
 // #include "controllers/systemstatuscontroller.h"  // DISABLED
@@ -23,6 +24,7 @@ ApplicationController::ApplicationController(QObject *parent)
     , m_zeroingController(nullptr)
     , m_windageController(nullptr)
     , m_environmentalController(nullptr)
+    , m_brightnessController(nullptr)
     , m_presetHomePositionController(nullptr)
     , m_zoneDefinitionController(nullptr)
     , m_systemStateModel(nullptr)
@@ -62,6 +64,11 @@ void ApplicationController::setWindageController(WindageController* controller)
 void ApplicationController::setEnvironmentalController(EnvironmentalController* controller)
 {
     m_environmentalController = controller;
+}
+
+void ApplicationController::setBrightnessController(BrightnessController* controller)
+{
+    m_brightnessController = controller;
 }
 
 void ApplicationController::setPresetHomePositionController(PresetHomePositionController* controller)
@@ -104,6 +111,7 @@ void ApplicationController::initialize()
     Q_ASSERT(m_zeroingController);
     Q_ASSERT(m_windageController);
     Q_ASSERT(m_environmentalController);
+    Q_ASSERT(m_brightnessController);
     Q_ASSERT(m_presetHomePositionController);
     Q_ASSERT(m_zoneDefinitionController);
     // Q_ASSERT(m_systemStatusController);  // DISABLED
@@ -117,6 +125,8 @@ void ApplicationController::initialize()
             this, &ApplicationController::handlePersonalizeReticle);
     connect(m_mainMenuController, &MainMenuController::personalizeColorsRequested,
             this, &ApplicationController::handlePersonalizeColors);
+    connect(m_mainMenuController, &MainMenuController::brightnessRequested,
+            this, &ApplicationController::handleBrightness);
     connect(m_mainMenuController, &MainMenuController::zeroingRequested,
             this, &ApplicationController::handleZeroing);
     connect(m_mainMenuController, &MainMenuController::clearZeroRequested,
@@ -185,6 +195,14 @@ void ApplicationController::initialize()
             this, &ApplicationController::handleReturnToMainMenu);
     connect(m_environmentalController, &EnvironmentalController::environmentalFinished,
             this, &ApplicationController::handleEnvironmentalFinished);
+
+    // =========================================================================
+    // BRIGHTNESS CONNECTIONS
+    // =========================================================================
+    connect(m_brightnessController, &BrightnessController::returnToMainMenu,
+            this, &ApplicationController::handleReturnToMainMenu);
+    connect(m_brightnessController, &BrightnessController::brightnessFinished,
+            this, &ApplicationController::handleBrightnessFinished);
 
     // =========================================================================
     // PRESET HOME POSITION CONNECTIONS
@@ -263,6 +281,7 @@ void ApplicationController::hideAllMenus()
     m_zeroingController->hide();
     m_windageController->hide();
     m_environmentalController->hide();
+    m_brightnessController->hide();
     m_presetHomePositionController->hide();
     m_zoneDefinitionController->hide();
     // m_systemStatusController->hide();  // DISABLED
@@ -282,6 +301,7 @@ void ApplicationController::onMenuValButtonPressed()
     if (m_currentMenuState == MenuState::ZeroingProcedure ||
         m_currentMenuState == MenuState::WindageProcedure ||
         m_currentMenuState == MenuState::EnvironmentalProcedure ||
+        m_currentMenuState == MenuState::BrightnessProcedure ||
         m_currentMenuState == MenuState::PresetHomePositionProcedure ||
         m_currentMenuState == MenuState::ZoneDefinition     ||
         m_currentMenuState == MenuState::HelpAbout ||
@@ -360,6 +380,9 @@ void ApplicationController::handleMenuValInProcedure()
     case MenuState::EnvironmentalProcedure:
         m_environmentalController->onSelectButtonPressed();
         break;
+    case MenuState::BrightnessProcedure:
+        m_brightnessController->onSelectButtonPressed();
+        break;
     case MenuState::PresetHomePositionProcedure:
         m_presetHomePositionController->onSelectButtonPressed();
         break;
@@ -399,6 +422,9 @@ void ApplicationController::onUpButtonPressed()
         break;
     case MenuState::EnvironmentalProcedure:
         m_environmentalController->onUpButtonPressed();
+        break;
+    case MenuState::BrightnessProcedure:
+        m_brightnessController->onUpButtonPressed();
         break;
     case MenuState::PresetHomePositionProcedure:
         m_presetHomePositionController->onUpButtonPressed();
@@ -441,6 +467,9 @@ void ApplicationController::onDownButtonPressed()
         break;
     case MenuState::EnvironmentalProcedure:
         m_environmentalController->onDownButtonPressed();
+        break;
+    case MenuState::BrightnessProcedure:
+        m_brightnessController->onDownButtonPressed();
         break;
     case MenuState::PresetHomePositionProcedure:
         m_presetHomePositionController->onDownButtonPressed();
@@ -529,6 +558,14 @@ void ApplicationController::handleClearEnvironmental()
         m_systemStateModel->clearEnvironmental();
     }
     showMainMenu();
+}
+
+void ApplicationController::handleBrightness()
+{
+    qDebug() << "ApplicationController: Brightness settings requested";
+    hideAllMenus();
+    m_brightnessController->show();
+    setMenuState(MenuState::BrightnessProcedure);
 }
 
 void ApplicationController::handlePresetHomePosition()
@@ -652,6 +689,11 @@ void ApplicationController::handleWindageFinished()
 void ApplicationController::handleEnvironmentalFinished()
 {
     qDebug() << "ApplicationController: Environmental procedure finished";
+}
+
+void ApplicationController::handleBrightnessFinished()
+{
+    qDebug() << "ApplicationController: Brightness procedure finished";
 }
 
 void ApplicationController::handlePresetHomePositionFinished()

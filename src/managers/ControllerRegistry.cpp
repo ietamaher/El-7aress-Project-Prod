@@ -17,6 +17,7 @@
 #include "controllers/zeroingcontroller.h"
 #include "controllers/windagecontroller.h"
 #include "controllers/environmentalcontroller.h"
+#include "controllers/brightnesscontroller.h"
 #include "controllers/presethomepositioncontroller.h"
 #include "controllers/osdcontroller.h"
 #include "controllers/zonedefinitioncontroller.h"
@@ -190,6 +191,11 @@ bool ControllerRegistry::createQmlControllers()
         m_environmentalController->setViewModel(m_viewModelRegistry->environmentalViewModel());
         m_environmentalController->setStateModel(m_systemStateModel);
 
+        // Brightness Controller
+        m_brightnessController = new BrightnessController(this);
+        m_brightnessController->setViewModel(m_viewModelRegistry->brightnessViewModel());
+        m_brightnessController->setStateModel(m_systemStateModel);
+
         // Preset Home Position Controller
         m_presetHomePositionController = new PresetHomePositionController(this);
         m_presetHomePositionController->setViewModel(m_viewModelRegistry->presetHomePositionViewModel());
@@ -225,6 +231,7 @@ bool ControllerRegistry::createQmlControllers()
         m_appController->setZeroingController(m_zeroingController);
         m_appController->setWindageController(m_windageController);
         m_appController->setEnvironmentalController(m_environmentalController);
+        m_appController->setBrightnessController(m_brightnessController);
         m_appController->setPresetHomePositionController(m_presetHomePositionController);
         m_appController->setZoneDefinitionController(m_zoneDefinitionController);
         // m_appController->setSystemStatusController(m_systemStatusController);  // DISABLED
@@ -258,6 +265,7 @@ bool ControllerRegistry::initializeControllers()
         m_zeroingController->initialize();
         m_windageController->initialize();
         m_environmentalController->initialize();
+        m_brightnessController->initialize();
         m_presetHomePositionController->initialize();
         m_zoneDefinitionController->initialize();
         // m_systemStatusController->initialize();  // DISABLED

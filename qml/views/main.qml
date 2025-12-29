@@ -123,6 +123,16 @@ Window {
         z: 100
     }
 
+    // === BRIGHTNESS OVERLAY ===
+    BrightnessOverlay {
+        id: brightnessOverlay
+        anchors.top: parent.top
+        anchors.left: parent.left
+        anchors.topMargin: 120
+        anchors.leftMargin: 10
+        z: 100
+    }
+
     // === PRESET HOME POSITION OVERLAY ===
     PresetHomePositionOverlay {
         id: presetHomePositionOverlay

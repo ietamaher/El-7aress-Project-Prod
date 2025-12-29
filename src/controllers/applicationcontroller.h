@@ -11,6 +11,7 @@ class ColorMenuController;
 class ZeroingController;
 class WindageController;
 class EnvironmentalController;
+class BrightnessController;
 class PresetHomePositionController;
 class ZoneDefinitionController;
 // class SystemStatusController;  // DISABLED
@@ -37,6 +38,7 @@ public:
     void setZeroingController(ZeroingController* controller);
     void setWindageController(WindageController* controller);
     void setEnvironmentalController(EnvironmentalController* controller);
+    void setBrightnessController(BrightnessController* controller);
     void setPresetHomePositionController(PresetHomePositionController* controller);
     void setZoneDefinitionController(ZoneDefinitionController* controller);
     // void setSystemStatusController(SystemStatusController* controller);  // DISABLED
@@ -55,6 +57,7 @@ public:
         ZeroingProcedure,
         WindageProcedure,
         EnvironmentalProcedure,
+        BrightnessProcedure,
         PresetHomePositionProcedure,
         ZoneDefinition,
         // SystemStatus,  // DISABLED
@@ -79,6 +82,7 @@ private slots:
     void handleClearWindage();
     void handleEnvironmental();
     void handleClearEnvironmental();
+    void handleBrightness();
     void handlePresetHomePosition();
     void handleZoneDefinitions();
     // void handleSystemStatus();  // DISABLED
@@ -94,6 +98,7 @@ private slots:
     void handleZeroingFinished();
     void handleWindageFinished();
     void handleEnvironmentalFinished();
+    void handleBrightnessFinished();
     void handlePresetHomePositionFinished();
     void handleZoneDefinitionFinished();
     // void handleSystemStatusFinished();  // DISABLED
@@ -130,6 +135,7 @@ private:
     ZeroingController* m_zeroingController;
     WindageController* m_windageController;
     EnvironmentalController* m_environmentalController;
+    BrightnessController* m_brightnessController;
     PresetHomePositionController* m_presetHomePositionController;
     ZoneDefinitionController* m_zoneDefinitionController;
     // SystemStatusController* m_systemStatusController;  // DISABLED

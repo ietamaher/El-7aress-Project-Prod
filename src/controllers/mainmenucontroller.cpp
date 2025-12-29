@@ -59,6 +59,7 @@ QStringList MainMenuController::buildMainMenuOptions() const
     options << "--- RETICLE & DISPLAY ---"
             << "Personalize Reticle"
             << "Personalize Colors"
+            << "Display Brightness"
             << "--- BALLISTICS ---"
             << "Zeroing"
             << "Clear Active Zero"
@@ -128,6 +129,10 @@ void MainMenuController::handleMenuOptionSelected(const QString& option)
     else if (option == "Personalize Colors") {
         emit personalizeColorsRequested();
         emit menuFinished();
+    }
+    else if (option == "Display Brightness") {
+        emit brightnessRequested();
+        // DON'T emit menuFinished() - brightness is a procedure
     }
     else if (option == "Zeroing") {
         emit zeroingRequested();
