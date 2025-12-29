@@ -36,8 +36,6 @@ signals:
     void clearWindageRequested();
     void environmentalRequested();
     void clearEnvironmentalRequested();
-    void homeCalibrationRequested();
-    void clearHomeCalibrationRequested();
     void presetHomePositionRequested();
     void zoneDefinitionsRequested();
     void systemStatusRequested();

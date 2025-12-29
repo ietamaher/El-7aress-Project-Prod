@@ -6,7 +6,6 @@
         <file>../qml/components/WindageOverlay.qml</file>
         <file>../qml/components/EnvironmentalOverlay.qml</file>
         <file>../qml/components/ZeroingOverlay.qml</file>
-        <file>../qml/components/HomeCalibrationOverlay.qml</file>
         <file>../qml/components/PresetHomePositionOverlay.qml</file>
 	<file>../qml/components/AreaZoneParameterPanel.qml</file>
 	<file>../qml/components/SectorScanParameterPanel.qml</file>
