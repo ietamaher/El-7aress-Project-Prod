@@ -18,7 +18,6 @@
 #include "controllers/windagecontroller.h"
 #include "controllers/environmentalcontroller.h"
 #include "controllers/brightnesscontroller.h"
-#include "controllers/homecalibrationcontroller.h"
 #include "controllers/presethomepositioncontroller.h"
 #include "controllers/osdcontroller.h"
 #include "controllers/zonedefinitioncontroller.h"
@@ -35,7 +34,6 @@
 #include "models/trpparameterviewmodel.h"
 #include "models/zeroingviewmodel.h"
 #include "models/windageviewmodel.h"
-#include "models/homecalibrationviewmodel.h"
 #include "models/presethomepositionviewmodel.h"
 // #include "models/systemstatusviewmodel.h"  // DISABLED
 #include "models/aboutviewmodel.h"
@@ -198,11 +196,6 @@ bool ControllerRegistry::createQmlControllers()
         m_brightnessController->setViewModel(m_viewModelRegistry->brightnessViewModel());
         m_brightnessController->setStateModel(m_systemStateModel);
 
-        // Home Calibration Controller
-        m_homeCalibrationController = new HomeCalibrationController(this);
-        m_homeCalibrationController->setViewModel(m_viewModelRegistry->homeCalibrationViewModel());
-        m_homeCalibrationController->setStateModel(m_systemStateModel);
-
         // Preset Home Position Controller
         m_presetHomePositionController = new PresetHomePositionController(this);
         m_presetHomePositionController->setViewModel(m_viewModelRegistry->presetHomePositionViewModel());
@@ -239,7 +232,6 @@ bool ControllerRegistry::createQmlControllers()
         m_appController->setWindageController(m_windageController);
         m_appController->setEnvironmentalController(m_environmentalController);
         m_appController->setBrightnessController(m_brightnessController);
-        m_appController->setHomeCalibrationController(m_homeCalibrationController);
         m_appController->setPresetHomePositionController(m_presetHomePositionController);
         m_appController->setZoneDefinitionController(m_zoneDefinitionController);
         // m_appController->setSystemStatusController(m_systemStatusController);  // DISABLED
@@ -274,7 +266,6 @@ bool ControllerRegistry::initializeControllers()
         m_windageController->initialize();
         m_environmentalController->initialize();
         m_brightnessController->initialize();
-        m_homeCalibrationController->initialize();
         m_presetHomePositionController->initialize();
         m_zoneDefinitionController->initialize();
         // m_systemStatusController->initialize();  // DISABLED

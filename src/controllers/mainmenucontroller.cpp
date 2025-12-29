@@ -55,11 +55,6 @@ QStringList MainMenuController::buildMainMenuOptions() const
             : "Detection: DISABLED";
     }
 
-    // Build home calibration option with status
-    QString homeCalibOption = data.azHomeOffsetApplied
-        ? "Az Home Calibration [H]"
-        : "Az Home Calibration";
-
     QStringList options;
     options << "--- RETICLE & DISPLAY ---"
             << "Personalize Reticle"
@@ -73,8 +68,6 @@ QStringList MainMenuController::buildMainMenuOptions() const
             << "Environmental Settings"
             << "Clear Environmental Settings"
             << "--- CALIBRATION ---"
-            << homeCalibOption
-            << "Clear Az Home Calibration"
             << "Preset Home Position"
             << "--- SYSTEM ---"
             << "Zone Definitions"
@@ -163,14 +156,6 @@ void MainMenuController::handleMenuOptionSelected(const QString& option)
     }
     else if (option == "Clear Environmental Settings") {
         emit clearEnvironmentalRequested();
-        emit menuFinished();
-    }
-    else if (option.startsWith("Az Home Calibration")) {
-        emit homeCalibrationRequested();
-        // DON'T emit menuFinished() - home calibration is a procedure
-    }
-    else if (option == "Clear Az Home Calibration") {
-        emit clearHomeCalibrationRequested();
         emit menuFinished();
     }
     else if (option == "Preset Home Position") {

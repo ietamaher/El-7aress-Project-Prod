@@ -96,12 +96,6 @@ SystemStateModel::SystemStateModel(QObject *parent)
         qInfo() << "No zones file available - starting with empty zones";
     }
 
-    // ========================================================================
-    // AZIMUTH HOME CALIBRATION LOADING
-    // Load any saved home offset calibration for ABZO encoder drift compensation
-    // ========================================================================
-    loadHomeCalibration();
-
     // --- POPULATE DUMMY RADAR DATA FOR TESTING ---
     QVector<SimpleRadarPlot> dummyPlots;
     dummyPlots.append({101, 45.0f, 1500.0f, 180.0f, 0.0f});   // ID 101, NE quadrant, 1.5km, stationary (course away)
@@ -639,25 +633,10 @@ void SystemStateModel::updateNextIdsAfterLoad() {
 
 
 void SystemStateModel::onServoAzDataChanged(const ServoDriverData &azData) {
-    // ========================================================================
-    // AZIMUTH HOME OFFSET CALIBRATION
-    // ========================================================================
-    // Store raw encoder position (before offset) for calibration procedure
-    m_rawAzEncoderSteps = azData.position;
-
-    // Apply home offset if calibration has been performed
-    // offset = encoder position at true mechanical home
-    // corrected position = raw position - offset
-    double correctedPosition = azData.position;
-    if (m_currentStateData.azHomeOffsetApplied) {
-        correctedPosition = azData.position - m_currentStateData.azHomeOffsetSteps;
-    }
-    // ========================================================================
-
     double gearRatio = 174.0/34.0;
     double motorStepDeg = 0.009;
     double degPerSteimbpGal = motorStepDeg / gearRatio;
-    double mechAz = correctedPosition * degPerSteimbpGal;    // corrected mechanical angle
+    double mechAz = azData.position * degPerSteimbpGal;    // mechanical angle
     double displayAz = std::fmod(mechAz, 360.0);
     if (displayAz < 0) displayAz += 360.0;                   // keep in [0, 360)
 
@@ -1394,159 +1373,6 @@ void SystemStateModel::clearEnvironmental() {
     emit dataChanged(m_currentStateData);
     // LATENCY FIX: Dedicated signal for EnvironmentalController to reduce event queue load
     emit environmentalModeChanged(false);
-}
-
-// ============================================================================
-// AZIMUTH HOME OFFSET CALIBRATION
-// ============================================================================
-// Runtime compensation for ABZO encoder drift in Oriental Motor AZD-KD.
-// Drift of ~40,000 steps (~70-80° at gimbal) can occur randomly.
-// This system allows field recalibration without hardware modification.
-//
-// Calibration Procedure:
-// 1. Operator commands "Go to Home" - gimbal moves to encoder's 0 reference
-// 2. Operator manually slews gimbal to true mechanical home (visual reference)
-// 3. Operator clicks "Set as True Home" - system captures encoder position as offset
-// 4. System applies offset to all future position reads/writes
-// 5. Offset is saved to persistent storage for session persistence
-// ============================================================================
-
-void SystemStateModel::startHomeCalibrationProcedure() {
-    if (!m_currentStateData.homeCalibrationModeActive) {
-        m_currentStateData.homeCalibrationModeActive = true;
-        qInfo() << "[HomeCalibration] Procedure started";
-        qInfo() << "[HomeCalibration] Current raw encoder position:" << m_rawAzEncoderSteps << "steps";
-        qInfo() << "[HomeCalibration] Current offset:" << m_currentStateData.azHomeOffsetSteps << "steps";
-        emit dataChanged(m_currentStateData);
-        emit homeCalibrationModeChanged(true);
-    }
-}
-
-double SystemStateModel::getCurrentEncoderPositionSteps() const {
-    return m_rawAzEncoderSteps;
-}
-
-void SystemStateModel::captureAzHomeOffset() {
-    if (m_currentStateData.homeCalibrationModeActive) {
-        // The offset is the current raw encoder position
-        // After applying this offset, the current position will read as 0° (true home)
-        m_currentStateData.azHomeOffsetSteps = m_rawAzEncoderSteps;
-        m_currentStateData.azHomeOffsetApplied = true;
-
-        qInfo() << "[HomeCalibration] Home offset CAPTURED";
-        qInfo() << "[HomeCalibration] Raw encoder position:" << m_rawAzEncoderSteps << "steps";
-        qInfo() << "[HomeCalibration] New offset:" << m_currentStateData.azHomeOffsetSteps << "steps";
-
-        // Recalculate position with new offset (will be done in onServoAzDataChanged)
-        emit dataChanged(m_currentStateData);
-    } else {
-        qWarning() << "[HomeCalibration] Cannot capture offset - calibration mode not active";
-    }
-}
-
-void SystemStateModel::finalizeHomeCalibration() {
-    if (m_currentStateData.homeCalibrationModeActive) {
-        m_currentStateData.homeCalibrationModeActive = false;
-
-        // Save to persistent storage
-        if (saveHomeCalibration()) {
-            qInfo() << "[HomeCalibration] Procedure FINALIZED and SAVED";
-            qInfo() << "[HomeCalibration] Offset:" << m_currentStateData.azHomeOffsetSteps << "steps";
-            qInfo() << "[HomeCalibration] Applied:" << m_currentStateData.azHomeOffsetApplied;
-        } else {
-            qWarning() << "[HomeCalibration] Finalized but FAILED to save to persistent storage!";
-        }
-
-        emit dataChanged(m_currentStateData);
-        emit homeCalibrationModeChanged(false);
-    }
-}
-
-void SystemStateModel::clearAzHomeOffset() {
-    m_currentStateData.azHomeOffsetSteps = 0.0;
-    m_currentStateData.azHomeOffsetApplied = false;
-    m_currentStateData.homeCalibrationModeActive = false;
-
-    // Remove saved calibration file
-    QString calibPath = QCoreApplication::applicationDirPath() + "/config/home_calibration.json";
-    if (QFile::exists(calibPath)) {
-        QFile::remove(calibPath);
-        qInfo() << "[HomeCalibration] Calibration file removed:" << calibPath;
-    }
-
-    qInfo() << "[HomeCalibration] Home offset CLEARED - using encoder reference";
-    emit dataChanged(m_currentStateData);
-    emit homeCalibrationModeChanged(false);
-}
-
-bool SystemStateModel::loadHomeCalibration() {
-    QString calibPath = QCoreApplication::applicationDirPath() + "/config/home_calibration.json";
-
-    if (!QFile::exists(calibPath)) {
-        qInfo() << "[HomeCalibration] No saved calibration file found - using encoder reference";
-        return false;
-    }
-
-    QFile file(calibPath);
-    if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
-        qWarning() << "[HomeCalibration] Failed to open calibration file:" << calibPath;
-        return false;
-    }
-
-    QByteArray jsonData = file.readAll();
-    file.close();
-
-    QJsonParseError parseError;
-    QJsonDocument doc = QJsonDocument::fromJson(jsonData, &parseError);
-    if (parseError.error != QJsonParseError::NoError) {
-        qWarning() << "[HomeCalibration] Failed to parse calibration file:" << parseError.errorString();
-        return false;
-    }
-
-    if (!doc.isObject()) {
-        qWarning() << "[HomeCalibration] Invalid calibration file format";
-        return false;
-    }
-
-    QJsonObject root = doc.object();
-    int version = root.value("version").toInt(0);
-    if (version != 1) {
-        qWarning() << "[HomeCalibration] Unknown calibration file version:" << version;
-        return false;
-    }
-
-    m_currentStateData.azHomeOffsetSteps = root.value("azHomeOffsetSteps").toDouble(0.0);
-    m_currentStateData.azHomeOffsetApplied = root.value("azHomeOffsetApplied").toBool(false);
-
-    qInfo() << "[HomeCalibration] Loaded from file:" << calibPath;
-    qInfo() << "[HomeCalibration] Offset:" << m_currentStateData.azHomeOffsetSteps << "steps";
-    qInfo() << "[HomeCalibration] Applied:" << m_currentStateData.azHomeOffsetApplied;
-
-    return true;
-}
-
-bool SystemStateModel::saveHomeCalibration() {
-    QString calibPath = QCoreApplication::applicationDirPath() + "/config/home_calibration.json";
-
-    QJsonObject root;
-    root["version"] = 1;
-    root["azHomeOffsetSteps"] = m_currentStateData.azHomeOffsetSteps;
-    root["azHomeOffsetApplied"] = m_currentStateData.azHomeOffsetApplied;
-    root["savedAt"] = QDateTime::currentDateTime().toString(Qt::ISODate);
-    root["description"] = "Azimuth home offset calibration for ABZO encoder drift compensation";
-
-    QJsonDocument doc(root);
-    QFile file(calibPath);
-    if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
-        qWarning() << "[HomeCalibration] Failed to save calibration file:" << calibPath;
-        return false;
-    }
-
-    file.write(doc.toJson(QJsonDocument::Indented));
-    file.close();
-
-    qInfo() << "[HomeCalibration] Saved to file:" << calibPath;
-    return true;
 }
 
 void SystemStateModel::setLeadAngleCompensationActive(bool active) {

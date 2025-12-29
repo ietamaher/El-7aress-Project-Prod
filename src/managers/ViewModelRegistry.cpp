@@ -12,7 +12,6 @@
 #include "models/windageviewmodel.h"
 #include "models/environmentalviewmodel.h"
 #include "models/brightnessviewmodel.h"
-#include "models/homecalibrationviewmodel.h"
 #include "models/presethomepositionviewmodel.h"
 // #include "models/systemstatusviewmodel.h"  // DISABLED
 #include "models/aboutviewmodel.h"
@@ -57,7 +56,6 @@ bool ViewModelRegistry::createViewModels()
         m_brightnessViewModel = new BrightnessViewModel(this);
 
         // Calibration ViewModels
-        m_homeCalibrationViewModel = new HomeCalibrationViewModel(this);
         m_presetHomePositionViewModel = new PresetHomePositionViewModel(this);
 
         // System Info ViewModels
@@ -105,7 +103,6 @@ bool ViewModelRegistry::registerWithQml(QQmlContext* context)
     context->setContextProperty("brightnessViewModel", m_brightnessViewModel);
 
     // Calibration
-    context->setContextProperty("homeCalibrationViewModel", m_homeCalibrationViewModel);
     context->setContextProperty("presetHomePositionViewModel", m_presetHomePositionViewModel);
 
     // System Info
