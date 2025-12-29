@@ -436,16 +436,6 @@ struct SystemStateData {
     double gimbalAz = 0.0;              ///< Current gimbal azimuth position in degrees
     double gimbalEl = 0.0;              ///< Current gimbal elevation position in degrees
 
-    // =================================
-    // AZIMUTH HOME OFFSET CALIBRATION
-    // =================================
-    // Runtime compensation for ABZO encoder drift in Oriental Motor AZD-KD
-    // Offset is stored in encoder steps and applied during position conversion
-    // See: Issue - Random Azimuth Home Drift on AZD-KD ABZO Encoder (~40,000 steps / 70-80°)
-    double azHomeOffsetSteps = 0.0;     ///< Azimuth home offset in encoder steps (drift compensation)
-    bool homeCalibrationModeActive = false; ///< True when home calibration procedure is active
-    bool azHomeOffsetApplied = false;   ///< True if a valid home offset is currently being applied
-
     // Azimuth Servo (Enhanced)
     bool azServoConnected = false;      ///< Azimuth servo connection status
     float azMotorTemp = 0.0f;           ///< Azimuth motor temperature in Celsius
@@ -846,11 +836,6 @@ struct SystemStateData {
                // Gimbal & Positioning System
                qFuzzyCompare(gimbalAz, other.gimbalAz) &&
                qFuzzyCompare(gimbalEl, other.gimbalEl) &&
-
-               // Azimuth Home Offset Calibration
-               qFuzzyCompare(azHomeOffsetSteps, other.azHomeOffsetSteps) &&
-               homeCalibrationModeActive == other.homeCalibrationModeActive &&
-               azHomeOffsetApplied == other.azHomeOffsetApplied &&
 
                // Azimuth Servo
                azServoConnected == other.azServoConnected &&

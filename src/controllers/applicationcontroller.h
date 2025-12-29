@@ -11,7 +11,6 @@ class ColorMenuController;
 class ZeroingController;
 class WindageController;
 class EnvironmentalController;
-class HomeCalibrationController;
 class PresetHomePositionController;
 class ZoneDefinitionController;
 // class SystemStatusController;  // DISABLED
@@ -38,7 +37,6 @@ public:
     void setZeroingController(ZeroingController* controller);
     void setWindageController(WindageController* controller);
     void setEnvironmentalController(EnvironmentalController* controller);
-    void setHomeCalibrationController(HomeCalibrationController* controller);
     void setPresetHomePositionController(PresetHomePositionController* controller);
     void setZoneDefinitionController(ZoneDefinitionController* controller);
     // void setSystemStatusController(SystemStatusController* controller);  // DISABLED
@@ -57,7 +55,6 @@ public:
         ZeroingProcedure,
         WindageProcedure,
         EnvironmentalProcedure,
-        HomeCalibrationProcedure,
         PresetHomePositionProcedure,
         ZoneDefinition,
         // SystemStatus,  // DISABLED
@@ -82,8 +79,6 @@ private slots:
     void handleClearWindage();
     void handleEnvironmental();
     void handleClearEnvironmental();
-    void handleHomeCalibration();
-    void handleClearHomeCalibration();
     void handlePresetHomePosition();
     void handleZoneDefinitions();
     // void handleSystemStatus();  // DISABLED
@@ -99,7 +94,6 @@ private slots:
     void handleZeroingFinished();
     void handleWindageFinished();
     void handleEnvironmentalFinished();
-    void handleHomeCalibrationFinished();
     void handlePresetHomePositionFinished();
     void handleZoneDefinitionFinished();
     // void handleSystemStatusFinished();  // DISABLED
@@ -136,7 +130,6 @@ private:
     ZeroingController* m_zeroingController;
     WindageController* m_windageController;
     EnvironmentalController* m_environmentalController;
-    HomeCalibrationController* m_homeCalibrationController;
     PresetHomePositionController* m_presetHomePositionController;
     ZoneDefinitionController* m_zoneDefinitionController;
     // SystemStatusController* m_systemStatusController;  // DISABLED

@@ -65,7 +65,6 @@ SOURCES += \
     src/controllers/colormenucontroller.cpp \
     src/controllers/deviceconfiguration.cpp \
     src/controllers/environmentalcontroller.cpp \
-    src/controllers/homecalibrationcontroller.cpp \
     src/controllers/presethomepositioncontroller.cpp \
     src/controllers/gimbalcontroller.cpp \
     src/controllers/joystickcontroller.cpp \
@@ -107,7 +106,6 @@ SOURCES += \
     src/models/domain/joystickdatamodel.cpp \
     src/models/domain/systemstatemodel.cpp \
     src/models/environmentalviewmodel.cpp \
-    src/models/homecalibrationviewmodel.cpp \
     src/models/presethomepositionviewmodel.cpp \
     src/models/historyviewmodel.cpp \
     src/models/menuviewmodel.cpp \
@@ -167,7 +165,6 @@ HEADERS += \
     src/controllers/colormenucontroller.h \
     src/controllers/deviceconfiguration.h \
     src/controllers/environmentalcontroller.h \
-    src/controllers/homecalibrationcontroller.h \
     src/controllers/presethomepositioncontroller.h \
     src/controllers/gimbalcontroller.h \
     src/controllers/joystickcontroller.h \
@@ -221,7 +218,6 @@ HEADERS += \
     src/models/domain/systemstatedata.h \
     src/models/domain/systemstatemodel.h \
     src/models/environmentalviewmodel.h \
-    src/models/homecalibrationviewmodel.h \
     src/models/presethomepositionviewmodel.h \
     src/models/historyviewmodel.h \
     src/models/menuviewmodel.h \
