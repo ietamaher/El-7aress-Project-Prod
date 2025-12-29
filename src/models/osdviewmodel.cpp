@@ -932,13 +932,17 @@ void OsdViewModel::updateAmmoFeedStatus(int state, bool cycleInProgress, bool lo
     }
 
     if (changed) {
-        // State names for logging
+        // State names for logging - must match AmmoFeedState enum order
         QString stateName;
         switch (state) {
             case 0: stateName = "IDLE"; break;
             case 1: stateName = "EXTENDING"; break;
-            case 2: stateName = "RETRACTING"; break;
-            case 3: stateName = "FAULT"; break;
+            case 2: stateName = "EXTENDED"; break;
+            case 3: stateName = "RETRACTING"; break;
+            case 4: stateName = "LOCKOUT"; break;
+            case 5: stateName = "JAM_DETECTED"; break;
+            case 6: stateName = "SAFE_RETRACT"; break;
+            case 7: stateName = "FAULT"; break;
             default: stateName = "UNKNOWN"; break;
         }
         qDebug() << "[OsdViewModel] Ammo Feed Status:"

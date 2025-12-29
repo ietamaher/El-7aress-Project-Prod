@@ -163,19 +163,47 @@ enum class LeadAngleStatus {
 };
 
 /**
+ * @brief Weapon type enumeration for CROWS M153 charging configuration
+ *
+ * Different weapon types require different charging cycles:
+ * - M2HB (.50 cal): Closed-bolt weapon, requires 2 cycles to charge
+ *   - Cycle 1: Pulls bolt to rear, picks up first round from belt
+ *   - Cycle 2: Pulls bolt to rear again, chambers the round
+ * - M240B/M249: Open-bolt weapons, require only 1 cycle to lock bolt
+ *
+ * Reference: CROWS M153 Technical Manual TM 9-1090-225-10-2
+ */
+enum class WeaponType {
+    M2HB,           ///< .50 cal machine gun - closed bolt, 2 cycles required
+    M240B,          ///< 7.62mm machine gun - open bolt, 1 cycle required
+    M249,           ///< 5.56mm SAW - open bolt, 1 cycle required
+    MK19,           ///< 40mm grenade launcher - 1 cycle required
+    Unknown         ///< Unknown weapon type, defaults to 1 cycle
+};
+
+/**
  * @brief Ammunition feed cycle FSM states
  * Tracks the state of the ammunition feeding mechanism
+ *
+ * CROWS M153 Charging Sequence:
+ * - Short press: Runs complete charge cycle(s) automatically
+ *   - M2HB: Extend → Retract → Extend → Retract → Idle (2 cycles)
+ *   - M240B/M249: Extend → Retract → Idle (1 cycle)
+ * - Long press (hold): Extends and holds until release, then retracts
+ * - After completion: 4-second lockout prevents additional charging
+ * - During charging: Fire circuit is disabled
  */
 enum class AmmoFeedState {
     Idle,           // Ready for new cycle
     Extending,      // Moving to extend position
     Extended,       // Holding at extended position (button held)
     Retracting,     // Moving to retract position
-    
+    Lockout,        // 4-second lockout after charge completion (CROWS spec)
+
     // === JAM HANDLING ===
     JamDetected,    // Jam detected - emergency stop in progress
     SafeRetract,    // Attempting controlled retraction to home
-    
+
     Fault           // Fault state - operator must check gun and reset
 };
 
@@ -701,10 +729,14 @@ struct SystemStateData {
     float currentTargetAngularRateEl = 0.0f;            ///< Target angular rate in elevation (degrees/second)
     float muzzleVelocityMPS = 900.0f;                   ///< Projectile muzzle velocity in meters per second
     
-    // Ammunition Feed Parameters
+    // Ammunition Feed Parameters (CROWS M153 Compliant)
+    WeaponType installedWeaponType = WeaponType::M2HB;  ///< Currently installed weapon type
     AmmoFeedState ammoFeedState = AmmoFeedState::Idle;  ///< Current FSM state (for OSD display)
     bool ammoFeedCycleInProgress = false;   ///< FSM is running (for backward compat)
     bool ammoLoaded = false;                ///< Inferred from successful feed cycle completion
+    int chargeCyclesCompleted = 0;          ///< Number of charge cycles completed (for multi-cycle weapons)
+    int chargeCyclesRequired = 2;           ///< Total cycles required for current weapon (M2HB=2, others=1)
+    bool chargeLockoutActive = false;       ///< 4-second lockout active after charge completion
     // =================================
     // STATUS & INFORMATION DISPLAY
     // =================================
@@ -1000,9 +1032,13 @@ struct SystemStateData {
                qFuzzyCompare(currentTargetAngularRateAz, other.currentTargetAngularRateAz) &&
                qFuzzyCompare(currentTargetAngularRateEl, other.currentTargetAngularRateEl) &&
                qFuzzyCompare(muzzleVelocityMPS, other.muzzleVelocityMPS) &&
+               installedWeaponType == other.installedWeaponType &&
                ammoFeedState == other.ammoFeedState &&
                ammoFeedCycleInProgress == other.ammoFeedCycleInProgress &&
                ammoLoaded == other.ammoLoaded &&
+               chargeCyclesCompleted == other.chargeCyclesCompleted &&
+               chargeCyclesRequired == other.chargeCyclesRequired &&
+               chargeLockoutActive == other.chargeLockoutActive &&
 
                // Status & Information Display
                weaponSystemStatus == other.weaponSystemStatus &&

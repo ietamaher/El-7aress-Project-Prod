@@ -1149,8 +1149,8 @@ Repeater {
 
             // ========================================================================
             // AMMUNITION FEED STATUS INDICATOR (Always Visible)
-            // States: 0=IDLE (gray), 1=Extending (orange pulse), 2=Extended/HOLD (cyan steady),
-            //         3=Retracting (orange pulse), 4=FAULT (red flash)
+            // AmmoFeedState enum: 0=Idle, 1=Extending, 2=Extended, 3=Retracting,
+            //                     4=Lockout, 5=JamDetected, 6=SafeRetract, 7=Fault
             // When ammoLoaded=true: CHARGED (green)
             // ========================================================================
             Rectangle {
@@ -1161,12 +1161,14 @@ Repeater {
                 visible: true  // Always visible
                 color: {
                     if (!viewModel) return "#555555"
-                    // Fault state (4) = RED
-                    if (viewModel.ammoFeedState === 4) return "#FF0000"
+                    // Fault/JamDetected states (5,7) = RED
+                    if (viewModel.ammoFeedState === 5 || viewModel.ammoFeedState === 7) return "#FF0000"
                     // Extended/HOLD state (2) = CYAN (steady - operator holding button)
                     if (viewModel.ammoFeedState === 2) return "#00FFFF"
-                    // Extending/Retracting (1,3) = ORANGE
-                    if (viewModel.ammoFeedState === 1 || viewModel.ammoFeedState === 3) return "#FFA500"
+                    // Lockout state (4) = GREEN (charging complete, waiting)
+                    if (viewModel.ammoFeedState === 4) return "#00FF00"
+                    // Extending/Retracting/SafeRetract (1,3,6) = ORANGE
+                    if (viewModel.ammoFeedState === 1 || viewModel.ammoFeedState === 3 || viewModel.ammoFeedState === 6) return "#FFA500"
                     // Loaded sensor = GREEN
                     if (viewModel.ammoLoaded) return "#00FF00"
                     // Idle (0) = DIM GRAY
@@ -1176,19 +1178,19 @@ Repeater {
                 border.width: 2
                 anchors.verticalCenter: parent.verticalCenter
 
-                // Pulsing animation during feed cycle (Extending=1, Retracting=3)
+                // Pulsing animation during feed cycle (Extending=1, Retracting=3, SafeRetract=6)
                 SequentialAnimation on opacity {
                     id: feedPulseAnim
-                    running: viewModel ? (viewModel.ammoFeedState === 1 || viewModel.ammoFeedState === 3) : false
+                    running: viewModel ? (viewModel.ammoFeedState === 1 || viewModel.ammoFeedState === 3 || viewModel.ammoFeedState === 6) : false
                     loops: Animation.Infinite
                     NumberAnimation { to: 0.4; duration: 300 }
                     NumberAnimation { to: 1.0; duration: 300 }
                 }
 
-                // Fast flash animation for FAULT state (4)
+                // Fast flash animation for FAULT/JAM states (5,7)
                 SequentialAnimation on opacity {
                     id: faultFlashAnim
-                    running: viewModel ? (viewModel.ammoFeedState === 4) : false
+                    running: viewModel ? (viewModel.ammoFeedState === 5 || viewModel.ammoFeedState === 7) : false
                     loops: Animation.Infinite
                     NumberAnimation { to: 0.2; duration: 150 }
                     NumberAnimation { to: 1.0; duration: 150 }
@@ -1199,8 +1201,14 @@ Repeater {
                 visible: true  // Always visible
                 text: {
                     if (!viewModel) return "CHARGE:---"
-                    // Fault state (4) = FAULT
-                    if (viewModel.ammoFeedState === 4) return "FAULT"
+                    // Fault state (7) = FAULT
+                    if (viewModel.ammoFeedState === 7) return "FAULT"
+                    // JamDetected state (5) = JAM
+                    if (viewModel.ammoFeedState === 5) return "JAM"
+                    // SafeRetract state (6) = RECOVERING
+                    if (viewModel.ammoFeedState === 6) return "RECOVERING"
+                    // Lockout state (4) = LOCKOUT (4-second wait)
+                    if (viewModel.ammoFeedState === 4) return "LOCKOUT"
                     // Extended/HOLD state (2) = HOLD (operator holding button)
                     if (viewModel.ammoFeedState === 2) return "HOLD"
                     // Extending/Retracting (1,3) = CHARGING...
@@ -1215,25 +1223,26 @@ Repeater {
                 font.family: "Archivo Narrow"
                 color: {
                     if (!viewModel) return "#555555"
-                    if (viewModel.ammoFeedState === 4) return "#FF0000"  // Red for FAULT
+                    if (viewModel.ammoFeedState === 5 || viewModel.ammoFeedState === 7) return "#FF0000"  // Red for FAULT/JAM
+                    if (viewModel.ammoFeedState === 4) return "#00FF00"  // Green for LOCKOUT
                     if (viewModel.ammoFeedState === 2) return "#00FFFF"  // Cyan for HOLD
-                    if (viewModel.ammoFeedState === 1 || viewModel.ammoFeedState === 3) return "#FFA500"  // Orange
+                    if (viewModel.ammoFeedState === 1 || viewModel.ammoFeedState === 3 || viewModel.ammoFeedState === 6) return "#FFA500"  // Orange
                     if (viewModel.ammoLoaded) return "#00FF00"  // Green
                     return "#888888"  // Dim gray for IDLE
                 }
                 anchors.verticalCenter: parent.verticalCenter
 
-                // Pulsing animation during feed cycle (Extending=1, Retracting=3)
+                // Pulsing animation during feed cycle (Extending=1, Retracting=3, SafeRetract=6)
                 SequentialAnimation on opacity {
-                    running: viewModel ? (viewModel.ammoFeedState === 1 || viewModel.ammoFeedState === 3) : false
+                    running: viewModel ? (viewModel.ammoFeedState === 1 || viewModel.ammoFeedState === 3 || viewModel.ammoFeedState === 6) : false
                     loops: Animation.Infinite
                     NumberAnimation { to: 0.4; duration: 300 }
                     NumberAnimation { to: 1.0; duration: 300 }
                 }
 
-                // Fast flash animation for FAULT state (4)
+                // Fast flash animation for FAULT/JAM states (5,7)
                 SequentialAnimation on opacity {
-                    running: viewModel ? (viewModel.ammoFeedState === 4) : false
+                    running: viewModel ? (viewModel.ammoFeedState === 5 || viewModel.ammoFeedState === 7) : false
                     loops: Animation.Infinite
                     NumberAnimation { to: 0.2; duration: 150 }
                     NumberAnimation { to: 1.0; duration: 150 }
