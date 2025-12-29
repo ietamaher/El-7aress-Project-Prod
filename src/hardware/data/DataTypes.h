@@ -352,7 +352,7 @@ struct Plc42Data {
     bool solenoidActive = false;           ///< Derived: solenoidState != 0
 
     // =========================================================================
-    // HOLDING REGISTERS (10 registers)
+    // HOLDING REGISTERS (11 registers)
     // =========================================================================
     uint16_t solenoidMode = 0;          ///< HR0: Fire mode
     uint16_t gimbalOpMode = 0;          ///< HR1: Gimbal operation mode
@@ -362,6 +362,7 @@ struct Plc42Data {
     uint16_t elevationDirection = 0;    ///< HR7: Elevation direction
     uint16_t solenoidState = 0;         ///< HR8: Trigger command
     uint16_t resetAlarm = 0;            ///< HR9: Error reset
+    uint16_t azimuthReset = 0;          ///< HR10: Azimuth reset (0=Normal, 1=Set Preset Home)
 
     bool operator!=(const Plc42Data &other) const {
         return (isConnected != other.isConnected ||
@@ -381,7 +382,8 @@ struct Plc42Data {
                 azimuthDirection != other.azimuthDirection ||
                 elevationDirection != other.elevationDirection ||
                 solenoidState != other.solenoidState ||
-                resetAlarm != other.resetAlarm);
+                resetAlarm != other.resetAlarm ||
+                azimuthReset != other.azimuthReset);
     }
 };
 

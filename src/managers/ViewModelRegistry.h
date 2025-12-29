@@ -15,6 +15,7 @@ class ZeroingViewModel;
 class WindageViewModel;
 class EnvironmentalViewModel;
 class HomeCalibrationViewModel;
+class PresetHomePositionViewModel;
 // class SystemStatusViewModel;  // DISABLED
 class AboutViewModel;
 
@@ -79,6 +80,7 @@ public:
 
     // Calibration ViewModels
     HomeCalibrationViewModel* homeCalibrationViewModel() const { return m_homeCalibrationViewModel; }
+    PresetHomePositionViewModel* presetHomePositionViewModel() const { return m_presetHomePositionViewModel; }
 
     // System Info ViewModels
     // SystemStatusViewModel* systemStatusViewModel() const { return m_systemStatusViewModel; }  // DISABLED
@@ -115,6 +117,7 @@ private:
 
     // Calibration
     HomeCalibrationViewModel* m_homeCalibrationViewModel = nullptr;
+    PresetHomePositionViewModel* m_presetHomePositionViewModel = nullptr;
 
     // System Info
     // SystemStatusViewModel* m_systemStatusViewModel = nullptr;  // DISABLED

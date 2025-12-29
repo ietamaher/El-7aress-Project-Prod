@@ -133,6 +133,16 @@ Window {
         z: 100
     }
 
+    // === PRESET HOME POSITION OVERLAY ===
+    PresetHomePositionOverlay {
+        id: presetHomePositionOverlay
+        anchors.top: parent.top
+        anchors.left: parent.left
+        anchors.topMargin: 120
+        anchors.leftMargin: 10
+        z: 100
+    }
+
     ZoneDefinitionOverlay {
         id: zoneDefinitionOverlay
         anchors.fill: parent

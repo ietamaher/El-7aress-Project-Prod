@@ -83,8 +83,9 @@ MessagePtr Plc42ProtocolParser::parseHoldingRegistersReply(const QModbusDataUnit
     // HR7: elevationDirection
     // HR8: solenoidState
     // HR9: resetAlarm
-    
-    if (unit.valueCount() >= 10) {
+    // HR10: azimuthReset (0=Normal, 1=Set Preset Home)
+
+    if (unit.valueCount() >= 11) {
         m_data.solenoidMode = unit.value(0);        // HR0
         m_data.gimbalOpMode = unit.value(1);        // HR1
 
@@ -102,11 +103,12 @@ MessagePtr Plc42ProtocolParser::parseHoldingRegistersReply(const QModbusDataUnit
         m_data.elevationDirection = unit.value(7);  // HR7
         m_data.solenoidState = unit.value(8);       // HR8
         m_data.resetAlarm = unit.value(9);          // HR9
-        
+        m_data.azimuthReset = unit.value(10);       // HR10
+
         // emergencyStopActive is derived from gimbalOpMode
         // When gimbalOpMode == 1 (GIMBAL_STOP), emergency stop is active
         m_data.emergencyStopActive = (m_data.gimbalOpMode == 1);
-        
+
         // solenoidActive reflects the solenoid output state
         m_data.solenoidActive = (m_data.solenoidState != 0);
     }

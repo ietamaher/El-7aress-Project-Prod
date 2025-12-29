@@ -6,6 +6,7 @@
 #include "controllers/windagecontroller.h"
 #include "controllers/environmentalcontroller.h"
 #include "controllers/homecalibrationcontroller.h"
+#include "controllers/presethomepositioncontroller.h"
 #include "controllers/zonedefinitioncontroller.h"
 // #include "controllers/systemstatuscontroller.h"  // DISABLED
 #include "controllers/aboutcontroller.h"
@@ -24,6 +25,7 @@ ApplicationController::ApplicationController(QObject *parent)
     , m_windageController(nullptr)
     , m_environmentalController(nullptr)
     , m_homeCalibrationController(nullptr)
+    , m_presetHomePositionController(nullptr)
     , m_zoneDefinitionController(nullptr)
     , m_systemStateModel(nullptr)
     , m_aboutController(nullptr)
@@ -69,6 +71,11 @@ void ApplicationController::setHomeCalibrationController(HomeCalibrationControll
     m_homeCalibrationController = controller;
 }
 
+void ApplicationController::setPresetHomePositionController(PresetHomePositionController* controller)
+{
+    m_presetHomePositionController = controller;
+}
+
 void ApplicationController::setZoneDefinitionController(ZoneDefinitionController* controller)
 {
     m_zoneDefinitionController = controller;
@@ -105,6 +112,7 @@ void ApplicationController::initialize()
     Q_ASSERT(m_windageController);
     Q_ASSERT(m_environmentalController);
     Q_ASSERT(m_homeCalibrationController);
+    Q_ASSERT(m_presetHomePositionController);
     Q_ASSERT(m_zoneDefinitionController);
     // Q_ASSERT(m_systemStatusController);  // DISABLED
     Q_ASSERT(m_aboutController);
@@ -133,6 +141,8 @@ void ApplicationController::initialize()
             this, &ApplicationController::handleHomeCalibration);
     connect(m_mainMenuController, &MainMenuController::clearHomeCalibrationRequested,
             this, &ApplicationController::handleClearHomeCalibration);
+    connect(m_mainMenuController, &MainMenuController::presetHomePositionRequested,
+            this, &ApplicationController::handlePresetHomePosition);
     connect(m_mainMenuController, &MainMenuController::zoneDefinitionsRequested,
             this, &ApplicationController::handleZoneDefinitions);
     // connect(m_mainMenuController, &MainMenuController::systemStatusRequested,  // DISABLED
@@ -195,6 +205,14 @@ void ApplicationController::initialize()
             this, &ApplicationController::handleReturnToMainMenu);
     connect(m_homeCalibrationController, &HomeCalibrationController::calibrationFinished,
             this, &ApplicationController::handleHomeCalibrationFinished);
+
+    // =========================================================================
+    // PRESET HOME POSITION CONNECTIONS
+    // =========================================================================
+    connect(m_presetHomePositionController, &PresetHomePositionController::returnToMainMenu,
+            this, &ApplicationController::handleReturnToMainMenu);
+    connect(m_presetHomePositionController, &PresetHomePositionController::procedureFinished,
+            this, &ApplicationController::handlePresetHomePositionFinished);
 
     // =========================================================================
     // ZONE DEFINITION CONNECTIONS
@@ -266,6 +284,7 @@ void ApplicationController::hideAllMenus()
     m_windageController->hide();
     m_environmentalController->hide();
     m_homeCalibrationController->hide();
+    m_presetHomePositionController->hide();
     m_zoneDefinitionController->hide();
     // m_systemStatusController->hide();  // DISABLED
     m_aboutController->hide();
@@ -285,6 +304,7 @@ void ApplicationController::onMenuValButtonPressed()
         m_currentMenuState == MenuState::WindageProcedure ||
         m_currentMenuState == MenuState::EnvironmentalProcedure ||
         m_currentMenuState == MenuState::HomeCalibrationProcedure ||
+        m_currentMenuState == MenuState::PresetHomePositionProcedure ||
         m_currentMenuState == MenuState::ZoneDefinition     ||
         m_currentMenuState == MenuState::HelpAbout ||
         // m_currentMenuState == MenuState::SystemStatus  ||  // DISABLED
@@ -365,6 +385,9 @@ void ApplicationController::handleMenuValInProcedure()
     case MenuState::HomeCalibrationProcedure:
         m_homeCalibrationController->onSelectButtonPressed();
         break;
+    case MenuState::PresetHomePositionProcedure:
+        m_presetHomePositionController->onSelectButtonPressed();
+        break;
     case MenuState::ZoneDefinition:
         m_zoneDefinitionController->onMenuValButtonPressed();
         break;
@@ -404,6 +427,9 @@ void ApplicationController::onUpButtonPressed()
         break;
     case MenuState::HomeCalibrationProcedure:
         m_homeCalibrationController->onUpButtonPressed();
+        break;
+    case MenuState::PresetHomePositionProcedure:
+        m_presetHomePositionController->onUpButtonPressed();
         break;
     case MenuState::ZoneDefinition:
         m_zoneDefinitionController->onUpButtonPressed();
@@ -446,6 +472,9 @@ void ApplicationController::onDownButtonPressed()
         break;
     case MenuState::HomeCalibrationProcedure:
         m_homeCalibrationController->onDownButtonPressed();
+        break;
+    case MenuState::PresetHomePositionProcedure:
+        m_presetHomePositionController->onDownButtonPressed();
         break;
     case MenuState::ZoneDefinition:
         m_zoneDefinitionController->onDownButtonPressed();
@@ -548,6 +577,14 @@ void ApplicationController::handleClearHomeCalibration()
         m_systemStateModel->clearAzHomeOffset();
     }
     showMainMenu();
+}
+
+void ApplicationController::handlePresetHomePosition()
+{
+    qDebug() << "ApplicationController: Preset Home Position requested";
+    hideAllMenus();
+    m_presetHomePositionController->show();
+    setMenuState(MenuState::PresetHomePositionProcedure);
 }
 
 void ApplicationController::handleZoneDefinitions()
@@ -668,6 +705,11 @@ void ApplicationController::handleEnvironmentalFinished()
 void ApplicationController::handleHomeCalibrationFinished()
 {
     qDebug() << "ApplicationController: Home Calibration procedure finished";
+}
+
+void ApplicationController::handlePresetHomePositionFinished()
+{
+    qDebug() << "ApplicationController: Preset Home Position procedure finished";
 }
 
 void ApplicationController::handleZoneDefinitionFinished()

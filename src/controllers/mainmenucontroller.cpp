@@ -74,6 +74,7 @@ QStringList MainMenuController::buildMainMenuOptions() const
             << "--- CALIBRATION ---"
             << homeCalibOption
             << "Clear Az Home Calibration"
+            << "Preset Home Position"
             << "--- SYSTEM ---"
             << "Zone Definitions"
             // << "System Status"  // DISABLED
@@ -166,6 +167,10 @@ void MainMenuController::handleMenuOptionSelected(const QString& option)
     else if (option == "Clear Az Home Calibration") {
         emit clearHomeCalibrationRequested();
         emit menuFinished();
+    }
+    else if (option == "Preset Home Position") {
+        emit presetHomePositionRequested();
+        // DON'T emit menuFinished() - preset home position is a procedure
     }
     else if (option == "Zone Definitions") {
         emit zoneDefinitionsRequested();
