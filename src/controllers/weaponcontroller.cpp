@@ -136,6 +136,71 @@ WeaponController::~WeaponController()
 void WeaponController::onSystemStateChanged(const SystemStateData& newData)
 {
     // ========================================================================
+    // PRIORITY 1: EMERGENCY STOP HANDLING (HIGHEST PRIORITY - MIL-STD SAFETY)
+    // ========================================================================
+    // When emergency stop is activated:
+    // 1. IMMEDIATELY stop solenoid (cease fire)
+    // 2. IMMEDIATELY stop servo actuator (halt charging mechanism)
+    // 3. Block ALL weapon operations until emergency is cleared
+    //
+    // This is a fail-safe mechanism - we stop FIRST, ask questions later.
+    // ========================================================================
+    if (newData.emergencyStopActive != m_oldState.emergencyStopActive) {
+        if (newData.emergencyStopActive && !m_wasInEmergencyStop) {
+            // EMERGENCY STOP ACTIVATED - IMMEDIATE HALT
+            qCritical() << "";
+            qCritical() << "╔══════════════════════════════════════════════════════════════╗";
+            qCritical() << "║     WEAPON CONTROLLER: EMERGENCY STOP ACTIVATED              ║";
+            qCritical() << "╚══════════════════════════════════════════════════════════════╝";
+
+            // STEP 1: CEASE FIRE IMMEDIATELY
+            if (m_plc42) {
+                m_plc42->setSolenoidState(0);
+                qCritical() << "[WeaponController] SOLENOID DISABLED - Fire circuit interrupted";
+            }
+
+            // STEP 2: STOP SERVO ACTUATOR IMMEDIATELY
+            if (m_servoActuator) {
+                m_servoActuator->stopMove();
+                qCritical() << "[WeaponController] SERVO ACTUATOR STOPPED - Charging halted";
+            }
+
+            // STEP 3: ABORT ANY IN-PROGRESS FEED CYCLE
+            if (m_feedState != AmmoFeedState::Idle && m_feedState != AmmoFeedState::Lockout) {
+                m_feedTimer->stop();
+                transitionFeedState(AmmoFeedState::Fault);
+                if (m_stateModel) {
+                    m_stateModel->setAmmoFeedCycleInProgress(false);
+                }
+                qCritical() << "[WeaponController] FEED CYCLE ABORTED - State set to FAULT";
+            }
+
+            m_wasInEmergencyStop = true;
+            qCritical() << "[WeaponController] ALL WEAPON OPERATIONS BLOCKED";
+            qCritical() << "";
+
+        } else if (!newData.emergencyStopActive && m_wasInEmergencyStop) {
+            // EMERGENCY STOP CLEARED
+            qInfo() << "";
+            qInfo() << "╔══════════════════════════════════════════════════════════════╗";
+            qInfo() << "║     WEAPON CONTROLLER: EMERGENCY STOP CLEARED                ║";
+            qInfo() << "╚══════════════════════════════════════════════════════════════╝";
+            qInfo() << "[WeaponController] Weapon operations now permitted";
+            qInfo() << "[WeaponController] Operator must re-arm and re-charge if needed";
+            qInfo() << "";
+
+            m_wasInEmergencyStop = false;
+        }
+    }
+
+    // If emergency stop is active, skip ALL other processing
+    // This is a hard block on all weapon operations
+    if (newData.emergencyStopActive) {
+        m_oldState = newData;
+        return;
+    }
+
+    // ========================================================================
     // AMMO FEED CYCLE - NEW FSM-BASED APPROACH
     // Detect button PRESS (edge trigger, not level)
     // Button RELEASE is intentionally ignored - FSM controls the cycle
@@ -349,6 +414,14 @@ void WeaponController::onSystemStateChanged(const SystemStateData& newData)
 
 void WeaponController::onOperatorRequestLoad()
 {
+    // ========================================================================
+    // EMERGENCY STOP CHECK (HIGHEST PRIORITY - FAIL-FAST)
+    // ========================================================================
+    if (m_stateModel && m_stateModel->data().emergencyStopActive) {
+        qCritical() << "[WeaponController] CHARGE BLOCKED: EMERGENCY STOP ACTIVE";
+        return;
+    }
+
     qDebug() << "[WeaponController] Operator REQUEST LOAD. Current feed state:"
              << feedStateName(m_feedState)
              << "| Lockout active:" << m_chargeLockoutActive;
@@ -400,6 +473,14 @@ void WeaponController::onOperatorRequestLoad()
 
 void WeaponController::startAmmoFeedCycle()
 {
+    // ========================================================================
+    // EMERGENCY STOP CHECK (HIGHEST PRIORITY - FAIL-FAST)
+    // ========================================================================
+    if (m_stateModel && m_stateModel->data().emergencyStopActive) {
+        qCritical() << "[WeaponController] FEED CYCLE BLOCKED: EMERGENCY STOP ACTIVE";
+        return;
+    }
+
     if (!m_servoActuator) {
         qWarning() << "[WeaponController] No servo actuator - cannot start feed cycle";
         return;
@@ -763,6 +844,14 @@ void WeaponController::fireSingleShot()
 
 void WeaponController::startFiring()
 {
+    // ========================================================================
+    // EMERGENCY STOP CHECK (HIGHEST PRIORITY - FAIL-FAST)
+    // ========================================================================
+    if (m_stateModel && m_stateModel->data().emergencyStopActive) {
+        qCritical() << "[WeaponController] FIRE BLOCKED: EMERGENCY STOP ACTIVE";
+        return;
+    }
+
     if (!m_systemArmed) {
         qDebug() << "[WeaponController] Cannot fire: system is not armed";
         return;

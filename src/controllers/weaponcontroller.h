@@ -247,6 +247,11 @@ private:
     bool m_systemArmed = false;
     bool m_fireReady = false;
 
+    // ========================================================================
+    // EMERGENCY STOP STATE (Military-Grade Safety)
+    // ========================================================================
+    bool m_wasInEmergencyStop = false;  ///< Edge detection for emergency stop
+
 
     // ============================================================================
 // JAM DETECTION PARAMETERS
