@@ -1,0 +1,1 @@
+gst-launch-1.0 v4l2src device="/dev/video0" do-timestamp=true !   video/x-raw,format=YUY2,width=1280,height=720,framerate=30/1 !         videocrop top=0 left=116 bottom=0 right=116 !  videoscale method=nearest-neighbour !  video/x-raw,width=800,height=600 ! queue max-size-buffers=1 leaky=downstream !  autovideosink 
