@@ -362,6 +362,22 @@ void WeaponController::onSystemStateChanged(const SystemStateData& newData)
 
 void WeaponController::onOperatorRequestLoad()
 {
+    // ========================================================================
+    // PRIORITY 0: EMERGENCY STOP - ABSOLUTE OVERRIDE (Military-Grade Safety)
+    // ========================================================================
+    // Emergency stop has ABSOLUTE PRIORITY - nothing can override it
+    // This prevents ammo load button from reactivating servoactuator during emergency
+    // Defense-in-Depth: Check BOTH emergencyStopActive flag AND operational mode
+    if (m_stateModel) {
+        SystemStateData s = m_stateModel->data();
+        if (s.emergencyStopActive || s.opMode == OperationalMode::EmergencyStop) {
+            qCritical() << "[WeaponController] AMMO LOAD BLOCKED: Emergency stop is active!"
+                        << "(emergencyStopActive=" << s.emergencyStopActive
+                        << ", opMode=" << static_cast<int>(s.opMode) << ")";
+            return;
+        }
+    }
+
     qDebug() << "[WeaponController] Operator REQUEST LOAD. Current feed state:"
              << feedStateName(m_feedState)
              << "| Lockout active:" << m_chargeLockoutActive;
@@ -776,6 +792,22 @@ void WeaponController::fireSingleShot()
 
 void WeaponController::startFiring()
 {
+    // ========================================================================
+    // PRIORITY 0: EMERGENCY STOP - ABSOLUTE OVERRIDE (Military-Grade Safety)
+    // ========================================================================
+    // Emergency stop has ABSOLUTE PRIORITY - nothing can override it
+    // This prevents fire button from reactivating solenoid during emergency
+    // Defense-in-Depth: Check BOTH emergencyStopActive flag AND operational mode
+    if (m_stateModel) {
+        SystemStateData s = m_stateModel->data();
+        if (s.emergencyStopActive || s.opMode == OperationalMode::EmergencyStop) {
+            qCritical() << "[WeaponController] FIRE BLOCKED: Emergency stop is active!"
+                        << "(emergencyStopActive=" << s.emergencyStopActive
+                        << ", opMode=" << static_cast<int>(s.opMode) << ")";
+            return;
+        }
+    }
+
     if (!m_systemArmed) {
         qDebug() << "[WeaponController] Cannot fire: system is not armed";
         return;
@@ -865,6 +897,22 @@ void WeaponController::stopFiring()
 
 void WeaponController::unloadAmmo()
 {
+    // ========================================================================
+    // PRIORITY 0: EMERGENCY STOP - ABSOLUTE OVERRIDE (Military-Grade Safety)
+    // ========================================================================
+    // Emergency stop has ABSOLUTE PRIORITY - nothing can override it
+    // This prevents unload from reactivating servoactuator during emergency
+    // Defense-in-Depth: Check BOTH emergencyStopActive flag AND operational mode
+    if (m_stateModel) {
+        SystemStateData s = m_stateModel->data();
+        if (s.emergencyStopActive || s.opMode == OperationalMode::EmergencyStop) {
+            qCritical() << "[WeaponController] UNLOAD BLOCKED: Emergency stop is active!"
+                        << "(emergencyStopActive=" << s.emergencyStopActive
+                        << ", opMode=" << static_cast<int>(s.opMode) << ")";
+            return;
+        }
+    }
+
     // Legacy API - delegate to FSM if not in fault
     // For actual unload cycle, you might want a separate FSM or extend current one
     stopFiring();
@@ -1244,6 +1292,17 @@ void WeaponController::processEmergencyStop(const SystemStateData& data)
         qCritical() << "  [WeaponController] EMERGENCY STOP ACTIVATED";
         qCritical() << "========================================";
         qCritical() << "";
+
+        // ====================================================================
+        // VERIFICATION: Check operational mode (Defense-in-Depth)
+        // ====================================================================
+        if (data.opMode != OperationalMode::EmergencyStop) {
+            qWarning() << "[WeaponController] WARNING: emergencyStopActive=true but opMode="
+                       << static_cast<int>(data.opMode)
+                       << "(expected" << static_cast<int>(OperationalMode::EmergencyStop) << ")";
+        } else {
+            qDebug() << "[WeaponController] Operational mode confirmed: EMERGENCY STOP";
+        }
 
         // ====================================================================
         // STEP 1: STOP SOLENOID - Cease fire immediately
