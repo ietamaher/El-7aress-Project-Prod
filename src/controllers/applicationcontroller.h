@@ -12,6 +12,7 @@ class ZeroingController;
 class WindageController;
 class EnvironmentalController;
 class HomeCalibrationController;
+class PresetHomePositionController;
 class ZoneDefinitionController;
 // class SystemStatusController;  // DISABLED
 class AboutController;
@@ -38,6 +39,7 @@ public:
     void setWindageController(WindageController* controller);
     void setEnvironmentalController(EnvironmentalController* controller);
     void setHomeCalibrationController(HomeCalibrationController* controller);
+    void setPresetHomePositionController(PresetHomePositionController* controller);
     void setZoneDefinitionController(ZoneDefinitionController* controller);
     // void setSystemStatusController(SystemStatusController* controller);  // DISABLED
     void setAboutController(AboutController* controller);
@@ -56,6 +58,7 @@ public:
         WindageProcedure,
         EnvironmentalProcedure,
         HomeCalibrationProcedure,
+        PresetHomePositionProcedure,
         ZoneDefinition,
         // SystemStatus,  // DISABLED
         RadarTargets,
@@ -81,6 +84,7 @@ private slots:
     void handleClearEnvironmental();
     void handleHomeCalibration();
     void handleClearHomeCalibration();
+    void handlePresetHomePosition();
     void handleZoneDefinitions();
     // void handleSystemStatus();  // DISABLED
     void handleToggleDetection();
@@ -96,6 +100,7 @@ private slots:
     void handleWindageFinished();
     void handleEnvironmentalFinished();
     void handleHomeCalibrationFinished();
+    void handlePresetHomePositionFinished();
     void handleZoneDefinitionFinished();
     // void handleSystemStatusFinished();  // DISABLED
     void handleAboutFinished();
@@ -132,6 +137,7 @@ private:
     WindageController* m_windageController;
     EnvironmentalController* m_environmentalController;
     HomeCalibrationController* m_homeCalibrationController;
+    PresetHomePositionController* m_presetHomePositionController;
     ZoneDefinitionController* m_zoneDefinitionController;
     // SystemStatusController* m_systemStatusController;  // DISABLED
     AboutController* m_aboutController;

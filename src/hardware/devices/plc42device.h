@@ -66,6 +66,7 @@ public:
     Q_INVOKABLE void setHomePosition();
     Q_INVOKABLE void setStopGimbal();
     Q_INVOKABLE void setManualMode();
+    Q_INVOKABLE void setPresetHomePosition();  // Set current position as home reference (HR10)
     // Configuration
     Q_INVOKABLE void setPollInterval(int intervalMs);
 

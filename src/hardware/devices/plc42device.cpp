@@ -289,6 +289,26 @@ void Plc42Device::setManualMode() {
     qDebug() << m_identifier << "Returning to MANUAL mode (gimbalOpMode = 0)";
 }
 
+void Plc42Device::setPresetHomePosition() {
+    // Set HR10 to 1 to command the motor to set current position as home reference
+    auto newData = std::make_shared<Plc42Data>(*data());
+    newData->azimuthReset = 1; // Set Preset Home Position
+    updateData(newData);
+    m_hasPendingWrites = true;
+    sendWriteHoldingRegisters();
+    qDebug() << m_identifier << "Setting current position as PRESET HOME (azimuthReset = 1)";
+
+    // After a short delay, reset the flag back to 0
+    QTimer::singleShot(500, this, [this]() {
+        auto newData = std::make_shared<Plc42Data>(*data());
+        newData->azimuthReset = 0; // Clear the reset flag
+        updateData(newData);
+        m_hasPendingWrites = true;
+        sendWriteHoldingRegisters();
+        qDebug() << m_identifier << "Cleared azimuthReset flag (azimuthReset = 0)";
+    });
+}
+
 void Plc42Device::sendWriteHoldingRegisters() {
     if (state() != DeviceState::Online || !m_transport) return;
 
@@ -317,6 +337,7 @@ void Plc42Device::sendWriteHoldingRegisters() {
     writeUnit.setValue(7, currentData->elevationDirection);
     writeUnit.setValue(8, currentData->solenoidState);
     writeUnit.setValue(9, currentData->resetAlarm);
+    writeUnit.setValue(10, currentData->azimuthReset);
 
     QModbusReply* reply = nullptr;
     QMetaObject::invokeMethod(m_transport, "sendWriteRequest",

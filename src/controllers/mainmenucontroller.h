@@ -38,6 +38,7 @@ signals:
     void clearEnvironmentalRequested();
     void homeCalibrationRequested();
     void clearHomeCalibrationRequested();
+    void presetHomePositionRequested();
     void zoneDefinitionsRequested();
     void systemStatusRequested();
     void toggleDetectionRequested();
