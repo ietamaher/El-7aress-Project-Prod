@@ -30,6 +30,7 @@ signals:
     // Events for the root controller to listen to
     void personalizeReticleRequested();
     void personalizeColorsRequested();
+    void brightnessRequested();
     void zeroingRequested();
     void clearZeroRequested();
     void windageRequested();

@@ -5,6 +5,7 @@
         <file>../qml/components/OsdOverlay.qml</file>
         <file>../qml/components/WindageOverlay.qml</file>
         <file>../qml/components/EnvironmentalOverlay.qml</file>
+        <file>../qml/components/BrightnessOverlay.qml</file>
         <file>../qml/components/ZeroingOverlay.qml</file>
         <file>../qml/components/HomeCalibrationOverlay.qml</file>
         <file>../qml/components/PresetHomePositionOverlay.qml</file>

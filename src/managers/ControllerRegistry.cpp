@@ -17,6 +17,7 @@
 #include "controllers/zeroingcontroller.h"
 #include "controllers/windagecontroller.h"
 #include "controllers/environmentalcontroller.h"
+#include "controllers/brightnesscontroller.h"
 #include "controllers/homecalibrationcontroller.h"
 #include "controllers/presethomepositioncontroller.h"
 #include "controllers/osdcontroller.h"
@@ -192,6 +193,11 @@ bool ControllerRegistry::createQmlControllers()
         m_environmentalController->setViewModel(m_viewModelRegistry->environmentalViewModel());
         m_environmentalController->setStateModel(m_systemStateModel);
 
+        // Brightness Controller
+        m_brightnessController = new BrightnessController(this);
+        m_brightnessController->setViewModel(m_viewModelRegistry->brightnessViewModel());
+        m_brightnessController->setStateModel(m_systemStateModel);
+
         // Home Calibration Controller
         m_homeCalibrationController = new HomeCalibrationController(this);
         m_homeCalibrationController->setViewModel(m_viewModelRegistry->homeCalibrationViewModel());
@@ -232,6 +238,7 @@ bool ControllerRegistry::createQmlControllers()
         m_appController->setZeroingController(m_zeroingController);
         m_appController->setWindageController(m_windageController);
         m_appController->setEnvironmentalController(m_environmentalController);
+        m_appController->setBrightnessController(m_brightnessController);
         m_appController->setHomeCalibrationController(m_homeCalibrationController);
         m_appController->setPresetHomePositionController(m_presetHomePositionController);
         m_appController->setZoneDefinitionController(m_zoneDefinitionController);
@@ -266,6 +273,7 @@ bool ControllerRegistry::initializeControllers()
         m_zeroingController->initialize();
         m_windageController->initialize();
         m_environmentalController->initialize();
+        m_brightnessController->initialize();
         m_homeCalibrationController->initialize();
         m_presetHomePositionController->initialize();
         m_zoneDefinitionController->initialize();

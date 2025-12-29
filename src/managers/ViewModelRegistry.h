@@ -14,6 +14,7 @@ class MenuViewModel;
 class ZeroingViewModel;
 class WindageViewModel;
 class EnvironmentalViewModel;
+class BrightnessViewModel;
 class HomeCalibrationViewModel;
 class PresetHomePositionViewModel;
 // class SystemStatusViewModel;  // DISABLED
@@ -77,6 +78,7 @@ public:
     ZeroingViewModel* zeroingViewModel() const { return m_zeroingViewModel; }
     WindageViewModel* windageViewModel() const { return m_windageViewModel; }
     EnvironmentalViewModel* environmentalViewModel() const { return m_environmentalViewModel; }
+    BrightnessViewModel* brightnessViewModel() const { return m_brightnessViewModel; }
 
     // Calibration ViewModels
     HomeCalibrationViewModel* homeCalibrationViewModel() const { return m_homeCalibrationViewModel; }
@@ -114,6 +116,7 @@ private:
     ZeroingViewModel* m_zeroingViewModel = nullptr;
     WindageViewModel* m_windageViewModel = nullptr;
     EnvironmentalViewModel* m_environmentalViewModel = nullptr;
+    BrightnessViewModel* m_brightnessViewModel = nullptr;
 
     // Calibration
     HomeCalibrationViewModel* m_homeCalibrationViewModel = nullptr;

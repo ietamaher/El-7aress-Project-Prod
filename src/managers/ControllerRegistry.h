@@ -19,6 +19,7 @@ class ColorMenuController;
 class ZeroingController;
 class WindageController;
 class EnvironmentalController;
+class BrightnessController;
 class HomeCalibrationController;
 class PresetHomePositionController;
 // class SystemStatusController;  // DISABLED
@@ -110,6 +111,7 @@ public:
     ZeroingController* zeroingController() const { return m_zeroingController; }
     WindageController* windageController() const { return m_windageController; }
     EnvironmentalController* environmentalController() const { return m_environmentalController; }
+    BrightnessController* brightnessController() const { return m_brightnessController; }
     HomeCalibrationController* homeCalibrationController() const { return m_homeCalibrationController; }
     PresetHomePositionController* presetHomePositionController() const { return m_presetHomePositionController; }
     // SystemStatusController* systemStatusController() const { return m_systemStatusController; }  // DISABLED
@@ -142,6 +144,7 @@ private:
     ZeroingController* m_zeroingController = nullptr;
     WindageController* m_windageController = nullptr;
     EnvironmentalController* m_environmentalController = nullptr;
+    BrightnessController* m_brightnessController = nullptr;
     HomeCalibrationController* m_homeCalibrationController = nullptr;
     PresetHomePositionController* m_presetHomePositionController = nullptr;
     // SystemStatusController* m_systemStatusController = nullptr;  // DISABLED

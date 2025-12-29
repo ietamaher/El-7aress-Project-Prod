@@ -11,6 +11,7 @@ class ColorMenuController;
 class ZeroingController;
 class WindageController;
 class EnvironmentalController;
+class BrightnessController;
 class HomeCalibrationController;
 class PresetHomePositionController;
 class ZoneDefinitionController;
@@ -38,6 +39,7 @@ public:
     void setZeroingController(ZeroingController* controller);
     void setWindageController(WindageController* controller);
     void setEnvironmentalController(EnvironmentalController* controller);
+    void setBrightnessController(BrightnessController* controller);
     void setHomeCalibrationController(HomeCalibrationController* controller);
     void setPresetHomePositionController(PresetHomePositionController* controller);
     void setZoneDefinitionController(ZoneDefinitionController* controller);
@@ -57,6 +59,7 @@ public:
         ZeroingProcedure,
         WindageProcedure,
         EnvironmentalProcedure,
+        BrightnessProcedure,
         HomeCalibrationProcedure,
         PresetHomePositionProcedure,
         ZoneDefinition,
@@ -82,6 +85,7 @@ private slots:
     void handleClearWindage();
     void handleEnvironmental();
     void handleClearEnvironmental();
+    void handleBrightness();
     void handleHomeCalibration();
     void handleClearHomeCalibration();
     void handlePresetHomePosition();
@@ -99,6 +103,7 @@ private slots:
     void handleZeroingFinished();
     void handleWindageFinished();
     void handleEnvironmentalFinished();
+    void handleBrightnessFinished();
     void handleHomeCalibrationFinished();
     void handlePresetHomePositionFinished();
     void handleZoneDefinitionFinished();
@@ -136,6 +141,7 @@ private:
     ZeroingController* m_zeroingController;
     WindageController* m_windageController;
     EnvironmentalController* m_environmentalController;
+    BrightnessController* m_brightnessController;
     HomeCalibrationController* m_homeCalibrationController;
     PresetHomePositionController* m_presetHomePositionController;
     ZoneDefinitionController* m_zoneDefinitionController;
