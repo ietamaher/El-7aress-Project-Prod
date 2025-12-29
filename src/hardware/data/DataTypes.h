@@ -20,11 +20,11 @@ struct DayCameraData {
     // Zoom control
     bool zoomMovingIn = false;
     bool zoomMovingOut = false;
-    quint16 zoomPosition = 0;   // 14-bit max for VISCA
+    quint16 zoomPosition = 65535;   // 14-bit max for VISCA
 
     // Focus control
     bool autofocusEnabled = true;
-    quint16 focusPosition = 0;  // 12-bit max
+    quint16 focusPosition = 65535;  // 12-bit max
 
     // Field of view (Sony FCB-EV7520A: 1280×720 native → 1024×768 cropped, NOT square!)
     float currentHFOV = 11.0;  // Horizontal FOV (2.3° - 63.7° zoom range)

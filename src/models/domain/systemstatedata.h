@@ -376,14 +376,14 @@ struct SystemStateData {
     // CAMERA SYSTEMS
     // =================================
     // Day Camera
-    double dayZoomPosition = 0.0;       ///< Day camera zoom position (0-1 normalized)
+    double dayZoomPosition = 65535.0;       ///< Day camera zoom position (0-1 normalized)
     double dayCurrentHFOV = 9.0;        ///< Day camera current horizontal field of view in degrees
     double dayCurrentVFOV = 9.0;        ///< Day camera current vertical field of view in degrees (approx. same as H for day camera)
     bool dayCameraConnected = false;    ///< Day camera connection status
     bool dayCameraError = false;        ///< Day camera error status
     quint8 dayCameraStatus = 0;         ///< Day camera detailed status code
     bool dayAutofocusEnabled = true;    ///< Day camera autofocus enabled status
-    quint16 dayFocusPosition = 0;       ///< Day camera focus position (12-bit max)
+    quint16 dayFocusPosition = 65535;       ///< Day camera focus position (12-bit max)
 
     // Night Camera
     double nightZoomPosition = 0.0;     ///< Night camera zoom position (0-1 normalized)

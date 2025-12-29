@@ -760,53 +760,57 @@ Item {
     // ========================================================================
     // DETECTION BOXES (YOLO Object Detection)
     // ========================================================================
-    Repeater {
-        model: viewModel ? viewModel.detectionBoxes : []
+// ========================================================================
+// DETECTION BOXES (YOLO Object Detection)
+// ========================================================================
+Repeater {
+    visible: viewModel ? viewModel.detectionVisible : false  
+    model: viewModel ? viewModel.detectionBoxes : []
 
-        delegate: Item {
-            x: modelData.x
-            y: modelData.y
-            width: modelData.width
-            height: modelData.height
+    delegate: Item {
+        x: modelData.x
+        y: modelData.y
+        width: modelData.width
+        height: modelData.height
 
-            // Bounding box rectangle
-            Rectangle {
-                anchors.fill: parent
-                color: "transparent"
-                border.color: Qt.rgba(modelData.colorR / 255.0,
-                                     modelData.colorG / 255.0,
-                                     modelData.colorB / 255.0,
-                                     1.0)
-                border.width: 3
-            }
+        // Bounding box rectangle
+        Rectangle {
+            anchors.fill: parent
+            color: "transparent"
+            border.color: Qt.rgba(modelData.colorR / 255.0,
+                                 modelData.colorG / 255.0,
+                                 modelData.colorB / 255.0,
+                                 1.0)
+            border.width: 3
+        }
 
-            // Class label background
-            Rectangle {
-                x: 0
-                y: -24
-                width: labelText.width + 12
-                height: 22
-                color: Qt.rgba(modelData.colorR / 255.0,
-                              modelData.colorG / 255.0,
-                              modelData.colorB / 255.0,
-                              0.8)
-                radius: 3
+        // Class label background
+        Rectangle {
+            x: 0
+            y: -24
+            width: labelText.width + 12
+            height: 22
+            color: Qt.rgba(modelData.colorR / 255.0,
+                          modelData.colorG / 255.0,
+                          modelData.colorB / 255.0,
+                          0.8)
+            radius: 3
 
-                // Class name and confidence
-                Text {
-                    id: labelText
-                    anchors.centerIn: parent
-                    text: modelData.className + " " + (modelData.confidence * 100).toFixed(0) + "%"
-                    font.pixelSize: 14
-                    font.bold: true
-                    font.family: primaryFont
-                    color: "white"
-                    style: Text.Outline
-                    styleColor: "black"
-                }
+            // Class name and confidence
+            Text {
+                id: labelText
+                anchors.centerIn: parent
+                text: modelData.className + " " + (modelData.confidence * 100).toFixed(0) + "%"
+                font.pixelSize: 14
+                font.bold: true
+                font.family: primaryFont
+                color: "white"
+                style: Text.Outline
+                styleColor: "black"
             }
         }
     }
+}
 
     // ========================================================================
     // BOTTOM LEFT - NO FIRE ZONE WARNING
@@ -1297,7 +1301,7 @@ Item {
     // GYROSTABILIZATION DEBUG BOX (Left side, below status block)
     // Toggle visibility with viewModel.toggleStabDebugVisible()
     // ========================================================================
-    Rectangle {
+    /*Rectangle {
         id: stabDebugBox
         x: 10
         y: statusBlock.y + statusBlock.height + 10
@@ -1545,7 +1549,7 @@ Item {
             }
         }
     }
-
+*/
     // ========================================================================
     // HELPER FUNCTIONS
     // ========================================================================

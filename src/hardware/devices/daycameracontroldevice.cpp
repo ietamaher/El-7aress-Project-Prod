@@ -178,7 +178,7 @@ void DayCameraControlDevice::setFocusPosition(quint16 position) {
 }
 
 void DayCameraControlDevice::getCameraStatus() {
-    sendCommand(0x00, 0xA7);
+    sendCommand(0x00, 0x02);
 }
 
 void DayCameraControlDevice::checkCameraStatus() {

@@ -162,10 +162,10 @@ CameraVideoStreamDevice::CameraVideoStreamDevice(int cameraIndex,
         m_cropBottom = 60;
         m_cropLeft = 116;
         m_cropRight = 116;
-                m_cropTop = 16;
-        m_cropBottom = 16;
-        m_cropLeft = 0;
-        m_cropRight = 0;
+       // m_cropTop = 16;
+       // m_cropBottom = 16;
+      //  m_cropLeft = 0;
+       // m_cropRight = 0;
     }
 
     qInfo() << "Cam" << cameraIndex << ": Initialized -"
