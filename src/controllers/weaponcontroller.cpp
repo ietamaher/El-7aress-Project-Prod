@@ -136,6 +136,19 @@ WeaponController::~WeaponController()
 void WeaponController::onSystemStateChanged(const SystemStateData& newData)
 {
     // ========================================================================
+    // PRIORITY 1: EMERGENCY STOP (highest priority!)
+    // ========================================================================
+    if (newData.emergencyStopActive != m_oldState.emergencyStopActive) {
+        processEmergencyStop(newData);
+    }
+
+    // If emergency stop active, skip all other processing
+    if (newData.emergencyStopActive) {
+        m_oldState = newData;
+        return;
+    }
+
+    // ========================================================================
     // AMMO FEED CYCLE - NEW FSM-BASED APPROACH
     // Detect button PRESS (edge trigger, not level)
     // Button RELEASE is intentionally ignored - FSM controls the cycle
@@ -1214,4 +1227,94 @@ float WeaponController::calculateCrosswindComponent(float windSpeedMS,
     float crosswindMS = windSpeedMS * std::sin(relativeAngle * static_cast<float>(M_PI) / 180.0f);
 
     return crosswindMS;
+}
+
+// ============================================================================
+// EMERGENCY STOP HANDLER
+// ============================================================================
+
+void WeaponController::processEmergencyStop(const SystemStateData& data)
+{
+    bool emergencyActive = data.emergencyStopActive;
+
+    // Detect rising edge (emergency stop activation)
+    if (emergencyActive && !m_wasInEmergencyStop) {
+        qCritical() << "";
+        qCritical() << "========================================";
+        qCritical() << "  [WeaponController] EMERGENCY STOP ACTIVATED";
+        qCritical() << "========================================";
+        qCritical() << "";
+
+        // ====================================================================
+        // STEP 1: STOP SOLENOID - Cease fire immediately
+        // ====================================================================
+        if (m_plc42) {
+            m_plc42->setSolenoidState(0);  // Stop firing
+            qCritical() << "[WeaponController] Solenoid STOPPED - firing ceased";
+        } else {
+            qCritical() << "[WeaponController] PLC42 not available - cannot stop solenoid";
+        }
+
+        // ====================================================================
+        // STEP 2: STOP SERVOACTUATOR - Halt any ammo feed movement
+        // ====================================================================
+        if (m_servoActuator) {
+            m_servoActuator->stopMove();  // Emergency stop
+            qCritical() << "[WeaponController] ServoActuator STOPPED - ammo feed halted";
+        } else {
+            qCritical() << "[WeaponController] ServoActuator not available";
+        }
+
+        // ====================================================================
+        // STEP 3: ABORT AMMO FEED CYCLE - Stop timers and transition to safe state
+        // ====================================================================
+        if (m_feedState != AmmoFeedState::Idle && m_feedState != AmmoFeedState::Fault) {
+            qWarning() << "[WeaponController] Aborting ammo feed cycle in state:"
+                       << feedStateName(m_feedState);
+
+            // Stop feed timer
+            if (m_feedTimer) {
+                m_feedTimer->stop();
+            }
+
+            // Transition to fault state - requires operator acknowledgment
+            transitionFeedState(AmmoFeedState::Fault);
+
+            // Notify GUI
+            if (m_stateModel) {
+                m_stateModel->setAmmoFeedCycleInProgress(false);
+            }
+            emit ammoFeedCycleFaulted();
+        }
+
+        // ====================================================================
+        // STEP 4: STOP CHARGE LOCKOUT TIMER
+        // ====================================================================
+        if (m_lockoutTimer && m_lockoutTimer->isActive()) {
+            m_lockoutTimer->stop();
+            qDebug() << "[WeaponController] Charge lockout timer stopped";
+        }
+
+        qCritical() << "[WeaponController] All weapon systems halted - awaiting E-STOP release";
+
+        m_wasInEmergencyStop = true;
+    }
+    // Detect falling edge (emergency stop release)
+    else if (!emergencyActive && m_wasInEmergencyStop) {
+        qInfo() << "";
+        qInfo() << "========================================";
+        qInfo() << "  [WeaponController] Emergency stop CLEARED";
+        qInfo() << "========================================";
+        qInfo() << "";
+
+        qInfo() << "[WeaponController] Weapon systems ready for operator control";
+        qInfo() << "[WeaponController] ServoactuatorDevice: Stopped (manual reset required)";
+        qInfo() << "[WeaponController] Solenoid: Safe (no fire)";
+
+        if (m_feedState == AmmoFeedState::Fault) {
+            qInfo() << "[WeaponController] Ammo feed: FAULT state - operator must reset";
+        }
+
+        m_wasInEmergencyStop = false;
+    }
 }

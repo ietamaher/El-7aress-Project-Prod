@@ -188,6 +188,11 @@ private:
     bool isChargingAllowed() const;
 
     // ========================================================================
+    // Emergency Stop Handler
+    // ========================================================================
+    void processEmergencyStop(const SystemStateData& data);
+
+    // ========================================================================
     // Ammo Feed Configuration (in millimeters - matches ServoActuatorData units)
     // ========================================================================
     // CONVERSION NOTE: Hardware uses counts, but API uses mm
@@ -246,6 +251,7 @@ private:
     // ========================================================================
     bool m_systemArmed = false;
     bool m_fireReady = false;
+    bool m_wasInEmergencyStop = false;  ///< Track emergency stop state transitions
 
 
     // ============================================================================
