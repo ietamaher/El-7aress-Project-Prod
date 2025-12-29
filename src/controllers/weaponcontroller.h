@@ -118,6 +118,11 @@ private slots:
     void onFeedTimeout();
     void onActuatorFeedback(const ServoActuatorData& data);
 
+    // ========================================================================
+    // CROWS M153 Lockout Handler
+    // ========================================================================
+    void onChargeLockoutExpired();
+
 private:
     // ========================================================================
     // Ballistics Calculations
@@ -175,6 +180,14 @@ private:
     QString feedStateName(AmmoFeedState s) const;
 
     // ========================================================================
+    // CROWS M153 Charging Helpers
+    // ========================================================================
+    int getRequiredCyclesForWeapon(WeaponType type) const;
+    void startChargeLockout();
+    void performStartupRetraction();
+    bool isChargingAllowed() const;
+
+    // ========================================================================
     // Ammo Feed Configuration (in millimeters - matches ServoActuatorData units)
     // ========================================================================
     // CONVERSION NOTE: Hardware uses counts, but API uses mm
@@ -186,10 +199,30 @@ private:
     static constexpr int FEED_TIMEOUT_MS = 6000;            ///< Watchdog timeout (ms)
 
     // ========================================================================
+    // CROWS M153 Charging Configuration
+    // ========================================================================
+    // Reference: TM 9-1090-225-10-2 (CROWS Technical Manual)
+    // - CHG button activates Cocking Actuator (CA)
+    // - During charging, Fire Circuit is disabled
+    // - After charging completes, additional charging prevented for 4 seconds
+    // - M2HB requires 2 cycles (closed bolt), M240B/M249 require 1 cycle (open bolt)
+    static constexpr int CHARGE_LOCKOUT_MS = 4000;          ///< Post-charge lockout duration (ms)
+    static constexpr double ACTUATOR_RETRACTED_THRESHOLD = 5.0; ///< Threshold for "retracted" on startup (mm)
+
+    // ========================================================================
     // Ammo Feed State
     // ========================================================================
     AmmoFeedState m_feedState = AmmoFeedState::Idle;
     QTimer* m_feedTimer = nullptr;
+
+    // ========================================================================
+    // CROWS M153 Multi-Cycle Charging State
+    // ========================================================================
+    int m_currentCycleCount = 0;            ///< Current cycle within charge sequence
+    int m_requiredCycles = 2;               ///< Cycles required for current weapon (M2HB=2, others=1)
+    bool m_isShortPressCharge = false;      ///< True if this is an automatic multi-cycle charge
+    QTimer* m_lockoutTimer = nullptr;       ///< 4-second post-charge lockout timer
+    bool m_chargeLockoutActive = false;     ///< Lockout is active, charging prevented
 
     // ========================================================================
     // Dependencies

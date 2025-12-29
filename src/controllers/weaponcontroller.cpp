@@ -63,11 +63,39 @@ WeaponController::WeaponController(SystemStateModel* stateModel,
     m_feedTimer->setSingleShot(true);
     connect(m_feedTimer, &QTimer::timeout, this, &WeaponController::onFeedTimeout);
 
+    // ========================================================================
+    // CROWS M153: 4-SECOND POST-CHARGE LOCKOUT TIMER
+    // ========================================================================
+    // Per CROWS spec: "Once charging completes, CROWS prevents additional
+    // charging for four seconds."
+    m_lockoutTimer = new QTimer(this);
+    m_lockoutTimer->setSingleShot(true);
+    connect(m_lockoutTimer, &QTimer::timeout, this, &WeaponController::onChargeLockoutExpired);
+
     // Connect actuator position feedback for FSM state transitions
     if (m_servoActuator) {
         connect(m_servoActuator, &ServoActuatorDevice::actuatorDataChanged,
                 this, &WeaponController::onActuatorFeedback,
                 Qt::QueuedConnection);
+
+        // ====================================================================
+        // CROWS M153: AUTOMATIC RETRACTION ON STARTUP
+        // ====================================================================
+        // Per CROWS spec: "Upon powering on the CROWS, the system automatically
+        // retracts the Cocking Actuator if it is extended to ensure it does not
+        // interfere with firing."
+        // Use a single-shot timer to perform this after construction completes
+        QTimer::singleShot(500, this, &WeaponController::performStartupRetraction);
+    }
+
+    // ========================================================================
+    // Initialize weapon type and required cycles from state model
+    // ========================================================================
+    if (m_stateModel) {
+        WeaponType weaponType = m_stateModel->data().installedWeaponType;
+        m_requiredCycles = getRequiredCyclesForWeapon(weaponType);
+        qInfo() << "[WeaponController] Installed weapon type:" << static_cast<int>(weaponType)
+                << "| Required charge cycles:" << m_requiredCycles;
     }
 
     // ========================================================================
@@ -91,6 +119,9 @@ WeaponController::~WeaponController()
     // Stop any active timers
     if (m_feedTimer) {
         m_feedTimer->stop();
+    }
+    if (m_lockoutTimer) {
+        m_lockoutTimer->stop();
     }
 
     // Clean up ballistics processor
@@ -117,8 +148,18 @@ void WeaponController::onSystemStateChanged(const SystemStateData& newData)
     // Handle button release
     if (!newData.ammoLoadButtonPressed && m_oldState.ammoLoadButtonPressed) {
         if (m_feedState == AmmoFeedState::Extended) {
-            // Button released while in Extended (hold) state - now retract
-            qDebug() << "[WeaponController] Button RELEASED in Extended state - initiating retraction";
+            // ================================================================
+            // CONTINUOUS HOLD MODE: Button released while in Extended state
+            // ================================================================
+            // This counts as ONE complete cycle (manual control mode)
+            // For M2HB: Operator must press and hold twice for full charge
+            // For M240/M249: One hold-and-release is sufficient
+            m_currentCycleCount++;
+            m_isShortPressCharge = false;  // Mark as continuous hold mode
+
+            qInfo() << "[WeaponController] Button RELEASED in Extended state - initiating retraction"
+                    << "(Cycle" << m_currentCycleCount << "of" << m_requiredCycles << ")";
+
             transitionFeedState(AmmoFeedState::Retracting);
             m_servoActuator->moveToPosition(FEED_RETRACT_POS);
             m_feedTimer->start(FEED_TIMEOUT_MS);  // Start watchdog for retraction
@@ -309,7 +350,18 @@ void WeaponController::onSystemStateChanged(const SystemStateData& newData)
 void WeaponController::onOperatorRequestLoad()
 {
     qDebug() << "[WeaponController] Operator REQUEST LOAD. Current feed state:"
-             << feedStateName(m_feedState);
+             << feedStateName(m_feedState)
+             << "| Lockout active:" << m_chargeLockoutActive;
+
+    // ========================================================================
+    // CROWS M153: CHECK LOCKOUT STATE
+    // ========================================================================
+    // Per CROWS spec: "Once charging completes, CROWS prevents additional
+    // charging for four seconds."
+    if (m_feedState == AmmoFeedState::Lockout || m_chargeLockoutActive) {
+        qDebug() << "[WeaponController] CHARGE BLOCKED - 4-second lockout active";
+        return;
+    }
 
     // Handle FAULT state - operator presses button again to reset
     if (m_feedState == AmmoFeedState::Fault) {
@@ -323,6 +375,21 @@ void WeaponController::onOperatorRequestLoad()
         qDebug() << "[WeaponController] Feed cycle start IGNORED - cycle already running";
         return;
     }
+
+    // ========================================================================
+    // CROWS M153: INITIALIZE MULTI-CYCLE CHARGING
+    // ========================================================================
+    // Reset cycle counter for new charge sequence
+    m_currentCycleCount = 0;
+
+    // Update required cycles from current weapon type
+    if (m_stateModel) {
+        WeaponType weaponType = m_stateModel->data().installedWeaponType;
+        m_requiredCycles = getRequiredCyclesForWeapon(weaponType);
+    }
+
+    qInfo() << "[WeaponController] Starting charge sequence:"
+            << m_requiredCycles << "cycle(s) required for weapon type";
 
     startAmmoFeedCycle();
 }
@@ -338,7 +405,11 @@ void WeaponController::startAmmoFeedCycle()
         return;
     }
 
-    qDebug() << "========== FEED CYCLE STARTED ==========";
+    qInfo() << "╔══════════════════════════════════════════════════════════════╗";
+    qInfo() << "║           CHARGE CYCLE STARTING                              ║";
+    qInfo() << "║   Cycle:" << (m_currentCycleCount + 1) << "of" << m_requiredCycles
+            << "                                        ║";
+    qInfo() << "╚══════════════════════════════════════════════════════════════╝";
 
     // Reset jam detection for new cycle
     resetJamDetection();
@@ -348,6 +419,12 @@ void WeaponController::startAmmoFeedCycle()
     // Notify GUI
     if (m_stateModel) {
         m_stateModel->setAmmoFeedCycleInProgress(true);
+
+        // Update cycle progress in state model
+        SystemStateData data = m_stateModel->data();
+        data.chargeCyclesCompleted = m_currentCycleCount;
+        data.chargeCyclesRequired = m_requiredCycles;
+        m_stateModel->updateData(data);
     }
     emit ammoFeedCycleStarted();
 
@@ -386,16 +463,29 @@ void WeaponController::processActuatorPosition(double posMM)
             m_feedTimer->stop();  // Stop watchdog while we check
 
             if (m_stateModel && m_stateModel->data().ammoLoadButtonPressed) {
+                // ================================================================
+                // CONTINUOUS HOLD MODE (Original behavior preserved)
+                // ================================================================
                 // Button still held - hold extended position until release
+                m_isShortPressCharge = false;  // Mark as continuous hold
                 transitionFeedState(AmmoFeedState::Extended);
                 qDebug() << "[WeaponController] Extension complete - HOLDING (button still pressed)";
                 // No watchdog in Extended state - operator controls timing
             } else {
-                // Button already released (short press) - immediately retract
+                // ================================================================
+                // SHORT PRESS MODE (CROWS M153 multi-cycle)
+                // ================================================================
+                // Button already released - this is a short press charge
+                m_isShortPressCharge = true;
+                m_currentCycleCount++;
+
+                qInfo() << "[WeaponController] Cycle" << m_currentCycleCount << "of"
+                        << m_requiredCycles << "complete - retracting";
+
+                // Retract after extension
                 transitionFeedState(AmmoFeedState::Retracting);
                 m_servoActuator->moveToPosition(FEED_RETRACT_POS);
                 m_feedTimer->start(FEED_TIMEOUT_MS);  // Restart watchdog for retraction
-                qDebug() << "[WeaponController] Extension complete - RETRACTING (short press)";
             }
         }
         break;
@@ -407,19 +497,50 @@ void WeaponController::processActuatorPosition(double posMM)
 
     case AmmoFeedState::Retracting:
         if (posMM <= (FEED_RETRACT_POS + FEED_POSITION_TOLERANCE)) {
-            // Cycle complete
-            transitionFeedState(AmmoFeedState::Idle);
-
-            // Notify GUI - belt is now loaded (inferred from successful cycle)
-            if (m_stateModel) {
-                m_stateModel->setAmmoFeedCycleInProgress(false);
-                m_stateModel->setAmmoLoaded(true);
-            }
-
             m_feedTimer->stop();
-            emit ammoFeedCycleCompleted();
 
-            qDebug() << "========== FEED CYCLE COMPLETED - BELT LOADED ==========";
+            // ====================================================================
+            // CROWS M153: CHECK IF MORE CYCLES NEEDED (SHORT PRESS MODE ONLY)
+            // ====================================================================
+            if (m_isShortPressCharge && m_currentCycleCount < m_requiredCycles) {
+                // More cycles needed - start next extension cycle
+                qInfo() << "[WeaponController] Starting cycle" << (m_currentCycleCount + 1)
+                        << "of" << m_requiredCycles;
+
+                transitionFeedState(AmmoFeedState::Extending);
+                m_servoActuator->moveToPosition(FEED_EXTEND_POS);
+                m_feedTimer->start(FEED_TIMEOUT_MS);
+
+                // Reset jam detection for new cycle
+                resetJamDetection();
+            } else {
+                // ================================================================
+                // ALL CYCLES COMPLETE - WEAPON CHARGED
+                // ================================================================
+                qInfo() << "╔══════════════════════════════════════════════════════════════╗";
+                qInfo() << "║           CHARGING COMPLETE - WEAPON READY                   ║";
+                qInfo() << "║   Cycles completed:" << m_currentCycleCount << "/" << m_requiredCycles
+                        << "                                   ║";
+                qInfo() << "╚══════════════════════════════════════════════════════════════╝";
+
+                // Notify GUI - weapon is now charged
+                if (m_stateModel) {
+                    m_stateModel->setAmmoFeedCycleInProgress(false);
+                    m_stateModel->setAmmoLoaded(true);
+
+                    // Update cycle count in state for OSD
+                    SystemStateData data = m_stateModel->data();
+                    data.chargeCyclesCompleted = m_currentCycleCount;
+                    m_stateModel->updateData(data);
+                }
+
+                emit ammoFeedCycleCompleted();
+
+                // ================================================================
+                // CROWS M153: START 4-SECOND LOCKOUT
+                // ================================================================
+                startChargeLockout();
+            }
         }
         break;
 
@@ -431,7 +552,7 @@ void WeaponController::processActuatorPosition(double posMM)
             // Backoff complete - enter fault state for operator acknowledgment
             m_feedTimer->stop();
             transitionFeedState(AmmoFeedState::Fault);
-            
+
             qCritical() << "╔══════════════════════════════════════════════════════════════╗";
             qCritical() << "║     JAM RECOVERY COMPLETE - OPERATOR MUST CHECK WEAPON       ║";
             qCritical() << "╚══════════════════════════════════════════════════════════════╝";
@@ -439,6 +560,7 @@ void WeaponController::processActuatorPosition(double posMM)
         break;
 
     case AmmoFeedState::Idle:
+    case AmmoFeedState::Lockout:
     case AmmoFeedState::Fault:
     default:
         break;
@@ -616,7 +738,9 @@ QString WeaponController::feedStateName(AmmoFeedState s) const
     case AmmoFeedState::Extending:   return "Extending";
     case AmmoFeedState::Extended:    return "Extended";
     case AmmoFeedState::Retracting:  return "Retracting";
+    case AmmoFeedState::Lockout:     return "Lockout";
     case AmmoFeedState::JamDetected: return "JamDetected";
+    case AmmoFeedState::SafeRetract: return "SafeRetract";
     case AmmoFeedState::Fault:       return "Fault";
     }
     return "Unknown";
@@ -641,6 +765,17 @@ void WeaponController::startFiring()
 {
     if (!m_systemArmed) {
         qDebug() << "[WeaponController] Cannot fire: system is not armed";
+        return;
+    }
+
+    // ========================================================================
+    // CROWS M153: DISABLE FIRE CIRCUIT DURING CHARGING
+    // ========================================================================
+    // Per CROWS spec: "During charging, the Fire Circuit is disabled"
+    // This prevents accidental discharge while the cocking actuator is operating
+    if (m_feedState != AmmoFeedState::Idle && m_feedState != AmmoFeedState::Lockout) {
+        qWarning() << "[WeaponController] FIRE BLOCKED: Charging cycle in progress ("
+                   << feedStateName(m_feedState) << "). Fire circuit disabled.";
         return;
     }
 
@@ -925,6 +1060,115 @@ void WeaponController::updateFireControlSolution()
              << (lead.status == LeadAngleStatus::On ? "(On)" :
                  lead.status == LeadAngleStatus::Lag ? "(Lag)" :
                  lead.status == LeadAngleStatus::ZoomOut ? "(ZoomOut)" : "(Unknown)");
+}
+
+// ============================================================================
+// CROWS M153 HELPER FUNCTIONS
+// ============================================================================
+
+int WeaponController::getRequiredCyclesForWeapon(WeaponType type) const
+{
+    switch (type) {
+    case WeaponType::M2HB:
+        // M2HB .50 cal - closed bolt weapon, requires 2 cycles to charge
+        // Cycle 1: Pulls bolt to rear, picks up first round from belt
+        // Cycle 2: Chambers the round, prepares weapon to fire
+        return 2;
+
+    case WeaponType::M240B:
+    case WeaponType::M249:
+    case WeaponType::MK19:
+    case WeaponType::Unknown:
+    default:
+        // Open bolt weapons and grenade launchers require only 1 cycle
+        return 1;
+    }
+}
+
+void WeaponController::startChargeLockout()
+{
+    qInfo() << "[WeaponController] CROWS M153: Starting 4-second charge lockout";
+
+    m_chargeLockoutActive = true;
+    transitionFeedState(AmmoFeedState::Lockout);
+
+    // Update state model for GUI feedback
+    if (m_stateModel) {
+        SystemStateData data = m_stateModel->data();
+        data.chargeLockoutActive = true;
+        m_stateModel->updateData(data);
+    }
+
+    // Start 4-second lockout timer
+    m_lockoutTimer->start(CHARGE_LOCKOUT_MS);
+}
+
+void WeaponController::onChargeLockoutExpired()
+{
+    qInfo() << "[WeaponController] CROWS M153: 4-second lockout expired - charging now allowed";
+
+    m_chargeLockoutActive = false;
+    transitionFeedState(AmmoFeedState::Idle);
+
+    // Update state model for GUI feedback
+    if (m_stateModel) {
+        SystemStateData data = m_stateModel->data();
+        data.chargeLockoutActive = false;
+        m_stateModel->updateData(data);
+    }
+}
+
+void WeaponController::performStartupRetraction()
+{
+    if (!m_servoActuator) {
+        return;
+    }
+
+    // Check current actuator position
+    // If extended beyond threshold, automatically retract
+    double currentPos = 0.0;
+    if (m_stateModel) {
+        currentPos = m_stateModel->data().actuatorPosition;
+    }
+
+    if (currentPos > ACTUATOR_RETRACTED_THRESHOLD) {
+        qInfo() << "╔══════════════════════════════════════════════════════════════╗";
+        qInfo() << "║  CROWS M153: STARTUP - ACTUATOR EXTENDED, AUTO-RETRACTING    ║";
+        qInfo() << "║  Current position:" << currentPos << "mm                      ║";
+        qInfo() << "╚══════════════════════════════════════════════════════════════╝";
+
+        // Command retraction to home position
+        m_servoActuator->moveToPosition(FEED_RETRACT_POS);
+
+        // Set state to retracting but don't start watchdog timer for startup
+        // (startup retraction is best-effort, not critical)
+        transitionFeedState(AmmoFeedState::Retracting);
+
+        if (m_stateModel) {
+            m_stateModel->setAmmoFeedCycleInProgress(true);
+        }
+
+        // Start a shorter timeout for startup retraction
+        m_feedTimer->start(FEED_TIMEOUT_MS / 2);
+    } else {
+        qDebug() << "[WeaponController] CROWS M153: Actuator already retracted at startup ("
+                 << currentPos << "mm)";
+    }
+}
+
+bool WeaponController::isChargingAllowed() const
+{
+    // Charging not allowed if:
+    // 1. Lockout is active
+    // 2. Cycle already in progress
+    // 3. System is in fault state
+    if (m_chargeLockoutActive) {
+        return false;
+    }
+    if (m_feedState != AmmoFeedState::Idle) {
+        return false;
+    }
+    return true;
 }
 
 // ============================================================================
