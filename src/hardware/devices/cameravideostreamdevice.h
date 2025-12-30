@@ -111,10 +111,10 @@ struct FrameData {
     FireMode fireMode = FireMode::SingleShot;
     bool stationAmmunitionLevel = false;
 
-    // Ammunition Feed Status (for OSD display)
-    AmmoFeedState ammoFeedState = AmmoFeedState::Idle;  // Current FSM state
-    bool ammoFeedCycleInProgress = false;  // FSM is running (for GUI animation)
-    bool ammoLoaded = false;                // Inferred from successful feed cycle
+    // Charging Status (for OSD display)
+    ChargingState chargingState = ChargingState::Idle;  // Current FSM state
+    bool chargeCycleInProgress = false;  // FSM is running (for GUI animation)
+    bool weaponCharged = false;           // Round chambered (inferred from successful charge cycle)
 
     // Ballistics - Zeroing
     bool zeroingModeActive = false;
@@ -363,10 +363,10 @@ private:
     FireMode m_fireMode;
     bool m_ballDropActive;
 
-    // Ammunition Feed Status (for OSD display)
-    AmmoFeedState m_ammoFeedState = AmmoFeedState::Idle;
-    bool m_ammoFeedCycleInProgress = false;
-    bool m_ammoLoaded = false;
+    // Charging Status (for OSD display)
+    ChargingState m_chargingState = ChargingState::Idle;
+    bool m_chargeCycleInProgress = false;
+    bool m_weaponCharged = false;
 
     // Ballistics - Zeroing
     bool m_currentZeroingModeActive;

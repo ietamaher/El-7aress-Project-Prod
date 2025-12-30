@@ -906,10 +906,10 @@ void OsdViewModel::updateAmmunitionLevel(bool level)
 }
 
 // ============================================================================
-// AMMUNITION FEED STATUS
+// CHARGING STATUS (QML property names kept for backward compatibility)
 // ============================================================================
 
-void OsdViewModel::updateAmmoFeedStatus(int state, bool cycleInProgress, bool loaded)
+void OsdViewModel::updateAmmoFeedStatus(int state, bool cycleInProgress, bool charged)
 {
     bool changed = false;
 
@@ -925,14 +925,14 @@ void OsdViewModel::updateAmmoFeedStatus(int state, bool cycleInProgress, bool lo
         changed = true;
     }
 
-    if (m_ammoLoaded != loaded) {
-        m_ammoLoaded = loaded;
+    if (m_ammoLoaded != charged) {
+        m_ammoLoaded = charged;
         emit ammoLoadedChanged();
         changed = true;
     }
 
     if (changed) {
-        // State names for logging - must match AmmoFeedState enum order
+        // State names for logging - must match ChargingState enum order
         QString stateName;
         switch (state) {
             case 0: stateName = "IDLE"; break;
@@ -945,10 +945,10 @@ void OsdViewModel::updateAmmoFeedStatus(int state, bool cycleInProgress, bool lo
             case 7: stateName = "FAULT"; break;
             default: stateName = "UNKNOWN"; break;
         }
-        qDebug() << "[OsdViewModel] Ammo Feed Status:"
+        qDebug() << "[OsdViewModel] Charging Status:"
                  << "State=" << stateName
                  << "CycleInProgress=" << cycleInProgress
-                 << "Loaded=" << loaded;
+                 << "WeaponCharged=" << charged;
     }
 }
 

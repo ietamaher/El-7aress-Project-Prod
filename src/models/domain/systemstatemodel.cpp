@@ -947,7 +947,7 @@ void SystemStateModel::onPlc21DataChanged(const Plc21PanelData &pData)
     newData.stationEnabled = pData.enableStationSW;
     newData.gunArmed = pData.armGunSW;
     newData.gotoHomePosition = pData.homePositionSW;  // ✓ Home button
-    newData.ammoLoadButtonPressed = pData.loadAmmunitionSW;
+    newData.chargeButtonPressed = pData.loadAmmunitionSW;
 
     newData.authorized = pData.authorizeSw;
     newData.enableStabilization = pData.enableStabilizationSW;
@@ -2953,56 +2953,57 @@ void SystemStateModel::commandSlewToSelectedRadarTrack() {
 }
 
 /*
-Ammo Feed Cycle State Management
+Charging Cycle State Management (Cocking Actuator)
 */
-void SystemStateModel::setAmmoFeedState(AmmoFeedState state)
+void SystemStateModel::setChargingState(ChargingState state)
 {
-    if (m_ammoFeedState == state) {
+    if (m_chargingState == state) {
         return;
     }
-    m_ammoFeedState = state;
+    m_chargingState = state;
 
     // Update the central data store
     SystemStateData data = m_currentStateData;
-    data.ammoFeedState = state;
-    // Also update backward compat flag
-    data.ammoFeedCycleInProgress = (state == AmmoFeedState::Extending ||
-                                     state == AmmoFeedState::Retracting);
+    data.chargingState = state;
+    // Also update cycle in progress flag
+    data.chargeCycleInProgress = (state == ChargingState::Extending ||
+                                   state == ChargingState::Retracting);
     m_currentStateData = data;
 
-    emit ammoFeedStateChanged(state);
+    emit chargingStateChanged(state);
     emit dataChanged(data);
 
     // Log state name for debugging
     QString stateName;
     switch (state) {
-        case AmmoFeedState::Idle: stateName = "IDLE"; break;
-        case AmmoFeedState::Extending: stateName = "EXTENDING"; break;
-        case AmmoFeedState::Retracting: stateName = "RETRACTING"; break;
-        case AmmoFeedState::Fault: stateName = "FAULT"; break;
+        case ChargingState::Idle: stateName = "IDLE"; break;
+        case ChargingState::Extending: stateName = "EXTENDING"; break;
+        case ChargingState::Retracting: stateName = "RETRACTING"; break;
+        case ChargingState::Fault: stateName = "FAULT"; break;
+        default: stateName = "UNKNOWN"; break;
     }
-    qDebug() << "[SystemStateModel] Ammo feed state:" << stateName;
+    qDebug() << "[SystemStateModel] Charging state:" << stateName;
 }
 
-void SystemStateModel::setAmmoFeedCycleInProgress(bool inProgress)
+void SystemStateModel::setChargeCycleInProgress(bool inProgress)
 {
-    if (m_ammoFeedCycleInProgress == inProgress) {
+    if (m_chargeCycleInProgress == inProgress) {
         return;
     }
-    m_ammoFeedCycleInProgress = inProgress;
-    emit ammoFeedCycleInProgressChanged(inProgress);
-    
-    qDebug() << "[SystemStateModel] Ammo feed cycle in progress:" << inProgress;
+    m_chargeCycleInProgress = inProgress;
+    emit chargeCycleInProgressChanged(inProgress);
+
+    qDebug() << "[SystemStateModel] Charge cycle in progress:" << inProgress;
 }
 
-void SystemStateModel::setAmmoLoaded(bool loaded)
+void SystemStateModel::setWeaponCharged(bool charged)
 {
-    if (m_ammoLoaded == loaded) {
+    if (m_weaponCharged == charged) {
         return;
     }
-    m_ammoLoaded = loaded;
-    emit ammoLoadedChanged(loaded);
-    
-    qDebug() << "[SystemStateModel] Ammo loaded:" << loaded;
+    m_weaponCharged = charged;
+    emit weaponChargedChanged(charged);
+
+    qDebug() << "[SystemStateModel] Weapon charged:" << charged;
 }
 

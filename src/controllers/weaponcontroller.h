@@ -25,7 +25,7 @@ struct ServoActuatorData;
  *
  * This class manages weapon operations including:
  * - Fire control (arm/fire/stop)
- * - Ammunition feed cycle FSM (MIL-STD compliant, non-interruptible)
+ * - Charging cycle FSM (MIL-STD compliant, non-interruptible)
  * - Ballistic calculations (drop compensation, motion lead)
  * - Crosswind calculations from windage parameters
  *
@@ -33,7 +33,7 @@ struct ServoActuatorData;
  * - Ballistic drop: Auto-applied when LRF range valid
  * - Motion lead: Only when LAC toggle active
  *
- * Ammo Feed Cycle (CROWS M153 style):
+ * Charging Cycle (CROWS M153 style - Cocking Actuator):
  * - Once started, cycle runs to completion (Extend -> Retract -> Idle)
  * - Operator button release during cycle is IGNORED
  * - Timeout supervision with Fault state and operator reset
@@ -61,9 +61,9 @@ public:
     virtual void stopFiring();
 
     // ========================================================================
-    // Ammunition Control (legacy API - still supported)
+    // Charging Control (legacy API - still supported)
     // ========================================================================
-    virtual void unloadAmmo();
+    virtual void unloadWeapon();
 
     // ========================================================================
     // Fire Control Solution
@@ -72,17 +72,17 @@ public:
 
 public slots:
     // ========================================================================
-    // Ammo Feed Cycle Control (new FSM-based API)
+    // Charging Cycle Control (Cocking Actuator FSM-based API)
     // ========================================================================
 
     /**
-     * @brief Start ammo feed cycle (operator button press)
+     * @brief Start charging cycle (operator CHG button press)
      *
-     * This is the preferred entry point for initiating ammo loading.
+     * This is the preferred entry point for initiating weapon charging.
      * Decoupled from UI toggle - only starts cycle, does not track button state.
      * If cycle already running, request is ignored.
      */
-    void onOperatorRequestLoad();
+    void onOperatorRequestCharge();
 
     /**
      * @brief Reset from fault state (operator reset command)
@@ -90,7 +90,7 @@ public slots:
      * Attempts safe retraction after a fault (timeout/jam).
      * Only works when in Fault state.
      */
-    void resetFeedFault();
+    void resetChargingFault();
 
 signals:
     // ========================================================================
@@ -100,11 +100,11 @@ signals:
     void weaponFired();
 
     // ========================================================================
-    // Ammo Feed Cycle Notifications
+    // Charging Cycle Notifications
     // ========================================================================
-    void ammoFeedCycleStarted();
-    void ammoFeedCycleCompleted();
-    void ammoFeedCycleFaulted();
+    void chargeCycleStarted();
+    void chargeCycleCompleted();
+    void chargeCycleFaulted();
 
 private slots:
     // ========================================================================
@@ -113,9 +113,9 @@ private slots:
     void onSystemStateChanged(const SystemStateData& newData);
 
     // ========================================================================
-    // Ammo Feed FSM Handlers
+    // Charging FSM Handlers
     // ========================================================================
-    void onFeedTimeout();
+    void onChargingTimeout();
     void onActuatorFeedback(const ServoActuatorData& data);
 
     // ========================================================================
@@ -152,11 +152,11 @@ private:
                                       float gimbalAzimuthDeg);
 
     // ========================================================================
-    // Ammo Feed Cycle FSM
+    // Charging Cycle FSM (Cocking Actuator)
     // ========================================================================
 
     /**
-     * @brief Ammo Feed State Machine States
+     * @brief Charging State Machine States
      *
      * State diagram:
      *   Idle --> Extending --> Retracting --> Idle
@@ -172,12 +172,12 @@ private:
      *                      v
      *                 Retracting
      */
-    // Uses global AmmoFeedState enum from systemstatedata.h
+    // Uses global ChargingState enum from systemstatedata.h
 
-    void startAmmoFeedCycle();
+    void startChargeCycle();
     void processActuatorPosition(double posMM);
-    void transitionFeedState(AmmoFeedState newState);
-    QString feedStateName(AmmoFeedState s) const;
+    void transitionChargingState(ChargingState newState);
+    QString chargingStateName(ChargingState s) const;
 
     // ========================================================================
     // CROWS M153 Charging Helpers
@@ -188,15 +188,15 @@ private:
     bool isChargingAllowed() const;
 
     // ========================================================================
-    // Ammo Feed Configuration (in millimeters - matches ServoActuatorData units)
+    // Cocking Actuator Configuration (in millimeters - matches ServoActuatorData units)
     // ========================================================================
     // CONVERSION NOTE: Hardware uses counts, but API uses mm
     // Original counts: EXTEND=63000, RETRACT=2048, TOLERANCE=200
     // Conversion: (counts - 1024) * 3.175mm / 1024counts
-    static constexpr double FEED_EXTEND_POS = 190.6; //192.11;       ///< Full extension (mm) [was 63000 counts]
-    static constexpr double FEED_RETRACT_POS = 3.175;       ///< Home position (mm) [was 2048 counts]
-    static constexpr double FEED_POSITION_TOLERANCE = 0.62; ///< Position match tolerance (mm) [was 200 counts]
-    static constexpr int FEED_TIMEOUT_MS = 6000;            ///< Watchdog timeout (ms)
+    static constexpr double COCKING_EXTEND_POS = 190.6;         ///< Full extension (mm) [was 63000 counts]
+    static constexpr double COCKING_RETRACT_POS = 3.175;        ///< Home position (mm) [was 2048 counts]
+    static constexpr double COCKING_POSITION_TOLERANCE = 0.62;  ///< Position match tolerance (mm) [was 200 counts]
+    static constexpr int COCKING_TIMEOUT_MS = 6000;             ///< Watchdog timeout (ms)
 
     // ========================================================================
     // CROWS M153 Charging Configuration
@@ -210,10 +210,10 @@ private:
     static constexpr double ACTUATOR_RETRACTED_THRESHOLD = 5.0; ///< Threshold for "retracted" on startup (mm)
 
     // ========================================================================
-    // Ammo Feed State
+    // Charging State (Cocking Actuator FSM)
     // ========================================================================
-    AmmoFeedState m_feedState = AmmoFeedState::Idle;
-    QTimer* m_feedTimer = nullptr;
+    ChargingState m_chargingState = ChargingState::Idle;
+    QTimer* m_chargingTimer = nullptr;
 
     // ========================================================================
     // CROWS M153 Multi-Cycle Charging State
@@ -246,6 +246,11 @@ private:
     // ========================================================================
     bool m_systemArmed = false;
     bool m_fireReady = false;
+
+    // ========================================================================
+    // EMERGENCY STOP STATE (Military-Grade Safety)
+    // ========================================================================
+    bool m_wasInEmergencyStop = false;  ///< Edge detection for emergency stop
 
 
     // ============================================================================

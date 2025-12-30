@@ -821,9 +821,9 @@ signals:
      */
     void leadAngleStateChanged(bool active, LeadAngleStatus status, float offsetAz, float offsetEl);
 
-    void ammoFeedStateChanged(AmmoFeedState state);
-    void ammoFeedCycleInProgressChanged(bool inProgress);
-    void ammoLoadedChanged(bool loaded);
+    void chargingStateChanged(ChargingState state);
+    void chargeCycleInProgressChanged(bool inProgress);
+    void weaponChargedChanged(bool charged);
 
 public slots:
     // =================================
@@ -948,22 +948,22 @@ public slots:
     void setTrackingStarted(bool start);
 
     /**
-     * @brief Set ammunition feed FSM state (for OSD display)
+     * @brief Set charging FSM state (for OSD display)
      * @param state Current FSM state (Idle, Extending, Retracting, Fault)
      */
-    void setAmmoFeedState(AmmoFeedState state);
+    void setChargingState(ChargingState state);
 
     /**
-     * @brief Set ammo feed cycle in progress state (for GUI feedback)
-     * @param inProgress True if feed cycle is running
+     * @brief Set charge cycle in progress state (for GUI feedback)
+     * @param inProgress True if charging cycle is running
      */
-    void setAmmoFeedCycleInProgress(bool inProgress);
+    void setChargeCycleInProgress(bool inProgress);
 
     /**
-     * @brief Set ammo loaded sensor state (physical sensor, not button)
-     * @param loaded True if ammo physically loaded (belt seated)
+     * @brief Set weapon charged state (round chambered)
+     * @param charged True if weapon is charged and ready to fire
      */
-    void setAmmoLoaded(bool loaded);
+    void setWeaponCharged(bool charged);
 
 private:
     // =================================
@@ -1054,9 +1054,9 @@ private:
     void processStateTransitions(const SystemStateData& oldData, SystemStateData& newData);
     void processHomingStateMachine(const SystemStateData& oldData,  SystemStateData& newData);
 
-    AmmoFeedState m_ammoFeedState = AmmoFeedState::Idle;
-    bool m_ammoFeedCycleInProgress = false;
-    bool m_ammoLoaded = false;
+    ChargingState m_chargingState = ChargingState::Idle;
+    bool m_chargeCycleInProgress = false;
+    bool m_weaponCharged = false;
 
         QMap<int, NtzState> m_ntzStates;
     
