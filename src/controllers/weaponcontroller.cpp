@@ -468,36 +468,39 @@ void WeaponController::onSystemStateChanged(const SystemStateData& newData)
 
 void WeaponController::onOperatorRequestCharge()
 {
-    // ========================================================================
-    // EMERGENCY STOP CHECK (HIGHEST PRIORITY - FAIL-FAST)
-    // ========================================================================
-    if (m_stateModel && m_stateModel->data().emergencyStopActive) {
-        qCritical() << "[WeaponController] CHARGE BLOCKED: EMERGENCY STOP ACTIVE";
-        return;
-    }
-
     qDebug() << "[WeaponController] Operator REQUEST CHARGE. Current charging state:"
              << chargingStateName(m_chargingState)
              << "| Lockout active:" << m_chargeLockoutActive;
 
     // ========================================================================
-    // CROWS M153: CHECK LOCKOUT STATE
+    // SAFETY INTERLOCK INTEGRATION (Phase 2 - Centralized Charge Authorization)
     // ========================================================================
-    // Per CROWS spec: "Once charging completes, CROWS prevents additional
-    // charging for four seconds."
-    if (m_chargingState == ChargingState::Lockout || m_chargeLockoutActive) {
-        qDebug() << "[WeaponController] CHARGE BLOCKED - 4-second lockout active";
-        return;
-    }
+    // Charge authorization routes through SafetyInterlock.canCharge().
+    // This ensures audit logging and centralized safety checks.
+    //
+    // SafetyInterlock.canCharge() checks:
+    // - Emergency stop not active
+    // - Station enabled
+    // - Not already charging
+    // - No lockout active
+    // - No fault state
+    // ========================================================================
 
-    // Handle FAULT state - operator presses button again to reset
-    if (m_chargingState == ChargingState::Fault) {
+    // Handle FAULT state specially - operator presses button to reset
+    if (m_chargingState == ChargingState::Fault ||
+        m_chargingState == ChargingState::JamDetected) {
         qDebug() << "[WeaponController] Button pressed in FAULT state - resetting fault";
         resetChargingFault();
         return;
     }
 
-    // Only allow start when idle
+    // Use SafetyInterlock for all other charge authorization checks
+    if (!isChargingAllowed()) {
+        // Denial is already logged by SafetyInterlock with timestamp
+        return;
+    }
+
+    // Only allow start when idle (double-check after canCharge)
     if (m_chargingState != ChargingState::Idle) {
         qDebug() << "[WeaponController] Charge cycle start IGNORED - cycle already running";
         return;
@@ -928,67 +931,97 @@ void WeaponController::fireSingleShot()
 void WeaponController::startFiring()
 {
     // ========================================================================
-    // EMERGENCY STOP CHECK (HIGHEST PRIORITY - FAIL-FAST)
+    // SAFETY INTERLOCK INTEGRATION (Phase 2 - Centralized Fire Authorization)
     // ========================================================================
-    if (m_stateModel && m_stateModel->data().emergencyStopActive) {
-        qCritical() << "[WeaponController] FIRE BLOCKED: EMERGENCY STOP ACTIVE";
-        return;
-    }
-
-    if (!m_systemArmed) {
-        qDebug() << "[WeaponController] Cannot fire: system is not armed";
-        return;
-    }
-
+    // ALL fire authorization now routes through SafetyInterlock.canFire().
+    // This ensures:
+    // 1. Single authority for fire decisions (auditable)
+    // 2. All safety checks in one place (certification-ready)
+    // 3. Comprehensive audit logging with timestamps
+    //
+    // SafetyInterlock.canFire() checks:
+    // - Emergency stop not active
+    // - Station enabled
+    // - Dead man switch held
+    // - Gun armed
+    // - Operational mode is Engagement
+    // - System authorized
+    // - Not in no-fire zone
+    // - Not actively charging
+    // - No charge fault/jam
     // ========================================================================
-    // CROWS M153: DISABLE FIRE CIRCUIT DURING CHARGING
-    // ========================================================================
-    // Per CROWS spec: "During charging, the Fire Circuit is disabled"
-    // This prevents accidental discharge while the cocking actuator is operating
-    if (m_chargingState != ChargingState::Idle && m_chargingState != ChargingState::Lockout) {
-        qWarning() << "[WeaponController] FIRE BLOCKED: Charging cycle in progress ("
-                   << chargingStateName(m_chargingState) << "). Fire circuit disabled.";
-        return;
-    }
+    if (m_safetyInterlock) {
+        SafetyDenialReason reason;
+        if (!m_safetyInterlock->canFire(&reason)) {
+            // Denial is already logged by SafetyInterlock with timestamp
+            // Only log critical events at WeaponController level
+            if (reason == SafetyDenialReason::EmergencyStopActive) {
+                qCritical() << "[WeaponController] FIRE BLOCKED: EMERGENCY STOP ACTIVE";
+            }
+            return;
+        }
+    } else {
+        // ====================================================================
+        // LEGACY FALLBACK (if SafetyInterlock not available)
+        // ====================================================================
+        qWarning() << "[WeaponController] WARNING: SafetyInterlock unavailable - using legacy checks";
 
-    // Safety: Prevent firing if current aim point is inside a No-Fire zone
-    if (m_stateModel) {
-        SystemStateData s = m_stateModel->data();
-        if (m_stateModel->isPointInNoFireZone(s.gimbalAz, s.gimbalEl)) {
-            qWarning() << "[WeaponController] FIRE BLOCKED: Aim point is inside a No-Fire zone. Solenoid NOT armed.";
+        if (m_stateModel && m_stateModel->data().emergencyStopActive) {
+            qCritical() << "[WeaponController] FIRE BLOCKED: EMERGENCY STOP ACTIVE";
             return;
         }
 
-        // =====================================================================
-        // CROWS/SARP LAC WORKFLOW - ENGAGE LAC ON FIRE TRIGGER
-        // =====================================================================
-        // Per CROWS doctrine: Lead is only applied when fire trigger is pressed.
-        // If LAC is armed, engage it now to apply motion lead to CCIP.
-        // =====================================================================
-        /*if (s.lacArmed && !s.leadAngleCompensationActive) {
+        if (!m_systemArmed) {
+            qDebug() << "[WeaponController] Cannot fire: system is not armed";
+            return;
+        }
+
+        if (m_chargingState != ChargingState::Idle && m_chargingState != ChargingState::Lockout) {
+            qWarning() << "[WeaponController] FIRE BLOCKED: Charging cycle in progress";
+            return;
+        }
+
+        if (m_stateModel) {
+            SystemStateData s = m_stateModel->data();
+            if (m_stateModel->isPointInNoFireZone(s.gimbalAz, s.gimbalEl)) {
+                qWarning() << "[WeaponController] FIRE BLOCKED: In No-Fire zone";
+                return;
+            }
+        }
+    }
+
+    // ========================================================================
+    // FIRE COMMAND AUTHORIZED - ACTIVATE SOLENOID
+    // ========================================================================
+    // All safety checks passed via SafetyInterlock.canFire()
+    // Proceed with fire command
+    // ========================================================================
+
+    // Future: CROWS/SARP LAC WORKFLOW (commented out for Phase 2)
+    // Per CROWS doctrine: Lead is only applied when fire trigger is pressed.
+    /*if (m_stateModel) {
+        SystemStateData s = m_stateModel->data();
+        if (s.lacArmed && !s.leadAngleCompensationActive) {
             qInfo() << "[CROWS] FIRE TRIGGER - Engaging LAC (lead now applied)";
             m_stateModel->engageLAC();
-        }*/
+        }
+    }*/
 
-        // =====================================================================
-        // CROWS DEAD RECKONING (TM 9-1090-225-10-2 page 38)
-        // =====================================================================
-        // "When firing is initiated, CROWS aborts Target Tracking. Instead the
-        //  system moves according to the speed and direction of the WS just
-        //  prior to pulling the trigger. CROWS will not automatically compensate
-        //  for changes in speed or direction of the tracked target during firing."
-        // =====================================================================
-        /*if (s.currentTrackingPhase == TrackingPhase::Tracking_ActiveLock ||
+    // Future: CROWS DEAD RECKONING (commented out for Phase 2)
+    // Per TM 9-1090-225-10-2 page 38
+    /*if (m_stateModel) {
+        SystemStateData s = m_stateModel->data();
+        if (s.currentTrackingPhase == TrackingPhase::Tracking_ActiveLock ||
             s.currentTrackingPhase == TrackingPhase::Tracking_Coast) {
             qInfo() << "[CROWS] FIRING DURING TRACKING - Entering dead reckoning mode";
             m_stateModel->enterDeadReckoning(
                 s.currentTargetAngularRateAz,
                 s.currentTargetAngularRateEl
             );
-        }*/
-    }
+        }
+    }*/
 
-    // All OK — send solenoid command
+    // Send solenoid command - fire authorized
     m_plc42->setSolenoidState(1);
 }
 

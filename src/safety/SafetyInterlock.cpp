@@ -6,6 +6,14 @@
 #include "SafetyInterlock.h"
 #include "models/domain/systemstatemodel.h"
 #include <QDebug>
+#include <QDateTime>
+
+// ============================================================================
+// AUDIT LOGGING CONFIGURATION
+// ============================================================================
+// Rate-limited logging to prevent log spam while maintaining audit trail
+// At 20Hz control loop, this allows 1 log per 5 seconds per query type
+static constexpr int AUDIT_LOG_INTERVAL_MS = 5000;
 
 // ============================================================================
 // CONSTRUCTOR / DESTRUCTOR
@@ -36,13 +44,14 @@ bool SafetyInterlock::canFire(SafetyDenialReason* outReason) const
 {
     QMutexLocker locker(&m_mutex);
 
-    if (outReason) {
-        *outReason = SafetyDenialReason::None;
-    }
+    SafetyDenialReason reason = SafetyDenialReason::None;
+    bool permitted = false;
 
     // Fail-safe: deny if no state model
     if (!m_stateModel) {
-        if (outReason) *outReason = SafetyDenialReason::PlcCommunicationLost;
+        reason = SafetyDenialReason::PlcCommunicationLost;
+        if (outReason) *outReason = reason;
+        logAuditEvent("FIRE", false, reason);
         return false;
     }
 
@@ -52,61 +61,84 @@ bool SafetyInterlock::canFire(SafetyDenialReason* outReason) const
 
     // 1. Emergency stop - highest priority
     if (data.emergencyStopActive) {
-        if (outReason) *outReason = SafetyDenialReason::EmergencyStopActive;
+        reason = SafetyDenialReason::EmergencyStopActive;
+        if (outReason) *outReason = reason;
+        logAuditEvent("FIRE", false, reason);
         return false;
     }
 
     // 2. Station must be enabled
     if (!data.stationEnabled) {
-        if (outReason) *outReason = SafetyDenialReason::StationDisabled;
+        reason = SafetyDenialReason::StationDisabled;
+        if (outReason) *outReason = reason;
+        logAuditEvent("FIRE", false, reason);
         return false;
     }
 
     // 3. Dead man switch must be held
     if (!data.deadManSwitchActive) {
-        if (outReason) *outReason = SafetyDenialReason::DeadManSwitchNotHeld;
+        reason = SafetyDenialReason::DeadManSwitchNotHeld;
+        if (outReason) *outReason = reason;
+        logAuditEvent("FIRE", false, reason);
         return false;
     }
 
     // 4. Gun must be armed
     if (!data.gunArmed) {
-        if (outReason) *outReason = SafetyDenialReason::GunNotArmed;
+        reason = SafetyDenialReason::GunNotArmed;
+        if (outReason) *outReason = reason;
+        logAuditEvent("FIRE", false, reason);
         return false;
     }
 
-    // 5. System must be authorized
+    // 5. System must be in Engagement mode (CROWS fire control requirement)
+    if (data.opMode != OperationalMode::Engagement) {
+        reason = SafetyDenialReason::OperationalModeInvalid;
+        if (outReason) *outReason = reason;
+        logAuditEvent("FIRE", false, reason);
+        return false;
+    }
+
+    // 6. System must be authorized
     if (!data.authorized) {
-        if (outReason) *outReason = SafetyDenialReason::NotAuthorized;
+        reason = SafetyDenialReason::NotAuthorized;
+        if (outReason) *outReason = reason;
+        logAuditEvent("FIRE", false, reason);
         return false;
     }
 
-    // 6. Must not be in no-fire zone
+    // 7. Must not be in no-fire zone
     if (data.isReticleInNoFireZone) {
-        if (outReason) *outReason = SafetyDenialReason::InNoFireZone;
+        reason = SafetyDenialReason::InNoFireZone;
+        if (outReason) *outReason = reason;
+        logAuditEvent("FIRE", false, reason);
         return false;
     }
 
-    // 7. Must not be actively charging
+    // 8. Must not be actively charging
     if (data.chargingState == ChargingState::Extending ||
-        data.chargingState == ChargingState::Retracting) {
-        if (outReason) *outReason = SafetyDenialReason::ChargingInProgress;
-        return false;
-    }
-
-    // 8. Must not be in lockout period (4-second CROWS spec)
-    if (data.chargingState == ChargingState::Lockout) {
-        if (outReason) *outReason = SafetyDenialReason::ChargeLockoutActive;
+        data.chargingState == ChargingState::Retracting ||
+        data.chargingState == ChargingState::SafeRetract ||
+        data.chargingState == ChargingState::Extended) {
+        reason = SafetyDenialReason::ChargingInProgress;
+        if (outReason) *outReason = reason;
+        logAuditEvent("FIRE", false, reason);
         return false;
     }
 
     // 9. Must not be in fault state
     if (data.chargingState == ChargingState::Fault ||
         data.chargingState == ChargingState::JamDetected) {
-        if (outReason) *outReason = SafetyDenialReason::ChargeFaultActive;
+        reason = SafetyDenialReason::ChargeFaultActive;
+        if (outReason) *outReason = reason;
+        logAuditEvent("FIRE", false, reason);
         return false;
     }
 
     // All checks passed
+    if (outReason) *outReason = SafetyDenialReason::None;
+    permitted = true;
+    logAuditEvent("FIRE", true, SafetyDenialReason::None);
     return true;
 }
 
@@ -114,13 +146,13 @@ bool SafetyInterlock::canCharge(SafetyDenialReason* outReason) const
 {
     QMutexLocker locker(&m_mutex);
 
-    if (outReason) {
-        *outReason = SafetyDenialReason::None;
-    }
+    SafetyDenialReason reason = SafetyDenialReason::None;
 
     // Fail-safe: deny if no state model
     if (!m_stateModel) {
-        if (outReason) *outReason = SafetyDenialReason::PlcCommunicationLost;
+        reason = SafetyDenialReason::PlcCommunicationLost;
+        if (outReason) *outReason = reason;
+        logAuditEvent("CHARGE", false, reason);
         return false;
     }
 
@@ -128,34 +160,45 @@ bool SafetyInterlock::canCharge(SafetyDenialReason* outReason) const
 
     // 1. Emergency stop - highest priority
     if (data.emergencyStopActive) {
-        if (outReason) *outReason = SafetyDenialReason::EmergencyStopActive;
+        reason = SafetyDenialReason::EmergencyStopActive;
+        if (outReason) *outReason = reason;
+        logAuditEvent("CHARGE", false, reason);
         return false;
     }
 
     // 2. Station must be enabled
     if (!data.stationEnabled) {
-        if (outReason) *outReason = SafetyDenialReason::StationDisabled;
+        reason = SafetyDenialReason::StationDisabled;
+        if (outReason) *outReason = reason;
+        logAuditEvent("CHARGE", false, reason);
         return false;
     }
 
     // 3. Must not already be in a charging cycle
     if (data.chargingState == ChargingState::Extending ||
         data.chargingState == ChargingState::Retracting ||
-        data.chargingState == ChargingState::SafeRetract) {
-        if (outReason) *outReason = SafetyDenialReason::ChargingInProgress;
+        data.chargingState == ChargingState::SafeRetract ||
+        data.chargingState == ChargingState::Extended) {
+        reason = SafetyDenialReason::ChargingInProgress;
+        if (outReason) *outReason = reason;
+        logAuditEvent("CHARGE", false, reason);
         return false;
     }
 
     // 4. Must not be in lockout period (4-second CROWS spec after charge)
     if (data.chargingState == ChargingState::Lockout) {
-        if (outReason) *outReason = SafetyDenialReason::ChargeLockoutActive;
+        reason = SafetyDenialReason::ChargeLockoutActive;
+        if (outReason) *outReason = reason;
+        logAuditEvent("CHARGE", false, reason);
         return false;
     }
 
     // 5. Must not be in fault state (requires explicit reset)
     if (data.chargingState == ChargingState::Fault ||
         data.chargingState == ChargingState::JamDetected) {
-        if (outReason) *outReason = SafetyDenialReason::ChargeFaultActive;
+        reason = SafetyDenialReason::ChargeFaultActive;
+        if (outReason) *outReason = reason;
+        logAuditEvent("CHARGE", false, reason);
         return false;
     }
 
@@ -165,6 +208,8 @@ bool SafetyInterlock::canCharge(SafetyDenialReason* outReason) const
     // - authorized (charging is a preparation step)
 
     // All checks passed
+    if (outReason) *outReason = SafetyDenialReason::None;
+    logAuditEvent("CHARGE", true, SafetyDenialReason::None);
     return true;
 }
 
@@ -172,13 +217,13 @@ bool SafetyInterlock::canMove(int motionMode, SafetyDenialReason* outReason) con
 {
     QMutexLocker locker(&m_mutex);
 
-    if (outReason) {
-        *outReason = SafetyDenialReason::None;
-    }
+    SafetyDenialReason reason = SafetyDenialReason::None;
 
     // Fail-safe: deny if no state model
     if (!m_stateModel) {
-        if (outReason) *outReason = SafetyDenialReason::PlcCommunicationLost;
+        reason = SafetyDenialReason::PlcCommunicationLost;
+        if (outReason) *outReason = reason;
+        logAuditEvent("MOVE", false, reason);
         return false;
     }
 
@@ -186,13 +231,17 @@ bool SafetyInterlock::canMove(int motionMode, SafetyDenialReason* outReason) con
 
     // 1. Emergency stop - highest priority
     if (data.emergencyStopActive) {
-        if (outReason) *outReason = SafetyDenialReason::EmergencyStopActive;
+        reason = SafetyDenialReason::EmergencyStopActive;
+        if (outReason) *outReason = reason;
+        logAuditEvent("MOVE", false, reason);
         return false;
     }
 
     // 2. Station must be enabled
     if (!data.stationEnabled) {
-        if (outReason) *outReason = SafetyDenialReason::StationDisabled;
+        reason = SafetyDenialReason::StationDisabled;
+        if (outReason) *outReason = reason;
+        logAuditEvent("MOVE", false, reason);
         return false;
     }
 
@@ -200,12 +249,16 @@ bool SafetyInterlock::canMove(int motionMode, SafetyDenialReason* outReason) con
     // MotionMode::Manual = 1, MotionMode::AutoTrack = 2
     if (motionMode == 1 || motionMode == 2) {
         if (!data.deadManSwitchActive) {
-            if (outReason) *outReason = SafetyDenialReason::DeadManSwitchNotHeld;
+            reason = SafetyDenialReason::DeadManSwitchNotHeld;
+            if (outReason) *outReason = reason;
+            logAuditEvent("MOVE", false, reason);
             return false;
         }
     }
 
     // All checks passed
+    if (outReason) *outReason = SafetyDenialReason::None;
+    logAuditEvent("MOVE", true, SafetyDenialReason::None);
     return true;
 }
 
@@ -387,4 +440,88 @@ QString SafetyInterlock::denialReasonToString(SafetyDenialReason reason)
     default:
         return QString("Unknown reason (%1)").arg(static_cast<int>(reason));
     }
+}
+
+// ============================================================================
+// AUDIT LOGGING
+// ============================================================================
+
+void SafetyInterlock::logAuditEvent(const QString& operation, bool permitted,
+                                     SafetyDenialReason reason) const
+{
+    // ========================================================================
+    // RATE-LIMITED AUDIT LOGGING FOR CERTIFICATION TRACEABILITY
+    // ========================================================================
+    // This function logs safety decisions with timestamps for audit trail.
+    // Rate limiting prevents log spam while ensuring state changes are captured.
+    //
+    // Logging strategy:
+    // 1. Always log permission changes (GRANTED <-> DENIED)
+    // 2. Always log denial reason changes (different failure mode)
+    // 3. Rate-limit repeated denials with same reason to 1 per 5 seconds
+    // ========================================================================
+
+    qint64 currentTime = QDateTime::currentMSecsSinceEpoch();
+    qint64* lastLogTime = nullptr;
+    SafetyDenialReason* lastReason = nullptr;
+
+    // Select the appropriate state variables based on operation type
+    if (operation == "FIRE") {
+        lastLogTime = &m_lastFireLogTime;
+        lastReason = &m_lastFireDenialReason;
+    } else if (operation == "CHARGE") {
+        lastLogTime = &m_lastChargeLogTime;
+        lastReason = &m_lastChargeDenialReason;
+    } else if (operation == "MOVE") {
+        lastLogTime = &m_lastMoveLogTime;
+        lastReason = &m_lastMoveDenialReason;
+    } else {
+        // Unknown operation - always log
+        QString timestamp = QDateTime::currentDateTime().toString(Qt::ISODateWithMs);
+        qInfo() << QString("[SafetyInterlock AUDIT] %1 | %2: %3 | Reason: %4")
+                      .arg(timestamp)
+                      .arg(operation)
+                      .arg(permitted ? "PERMITTED" : "DENIED")
+                      .arg(denialReasonToString(reason));
+        return;
+    }
+
+    // Determine if we should log this event
+    bool shouldLog = false;
+
+    if (permitted) {
+        // Permission granted - only log if previously denied
+        if (*lastReason != SafetyDenialReason::None) {
+            shouldLog = true;
+        }
+    } else {
+        // Permission denied
+        if (*lastReason != reason) {
+            // Denial reason changed - always log (different failure mode)
+            shouldLog = true;
+        } else if ((currentTime - *lastLogTime) >= AUDIT_LOG_INTERVAL_MS) {
+            // Same reason but rate limit expired - log periodic reminder
+            shouldLog = true;
+        }
+    }
+
+    if (shouldLog) {
+        QString timestamp = QDateTime::currentDateTime().toString(Qt::ISODateWithMs);
+
+        if (permitted) {
+            qInfo() << QString("[SafetyInterlock AUDIT] %1 | %2: PERMITTED")
+                          .arg(timestamp)
+                          .arg(operation);
+        } else {
+            qWarning() << QString("[SafetyInterlock AUDIT] %1 | %2: DENIED | Reason: %3")
+                             .arg(timestamp)
+                             .arg(operation)
+                             .arg(denialReasonToString(reason));
+        }
+
+        *lastLogTime = currentTime;
+    }
+
+    // Always update the last reason for change detection
+    *lastReason = reason;
 }
