@@ -319,8 +319,8 @@ struct Plc21PanelData {
  *   DI3 (I0_3) → freeGimbalState (FREE toggle switch - LOCAL CONTROL)
  *   DI4 (I0_4) → ammunitionLevel (Ammo sensor)
  *   DI5 (I0_5) → Reserved (future E-STOP button)
- *   DI6 (I0_6) → azimuthHomeComplete ⭐ NEW (Az HOME-END from Oriental Motor)
- *   DI7 (I0_7) → elevationHomeComplete ⭐ NEW (El HOME-END from Oriental Motor)
+ *   DI6 (I0_6) → azimuthHomeComplete  (Az HOME-END from Oriental Motor)
+ *   DI7 (I0_7) → elevationHomeComplete   (El HOME-END from Oriental Motor)
  * 
  * Holding Registers (10 total):
  *   HR0: solenoidMode (1=Single, 2=Burst, 3=Continuous)
@@ -331,6 +331,7 @@ struct Plc21PanelData {
  *   HR7: elevationDirection
  *   HR8: solenoidState (0=OFF, 1=ON)
  *   HR9: resetAlarm (0=Normal, 1=Reset)
+ *   HR10: azimuthReset (0=Normal, 1=Set Preset Home)
  */
 struct Plc42Data {
     bool isConnected = false;
@@ -371,8 +372,8 @@ struct Plc42Data {
                 hatchState != other.hatchState ||
                 freeGimbalState != other.freeGimbalState ||
                 ammunitionLevel != other.ammunitionLevel ||
-                azimuthHomeComplete != other.azimuthHomeComplete ||      // ⭐ NEW
-                elevationHomeComplete != other.elevationHomeComplete ||  // ⭐ NEW
+                azimuthHomeComplete != other.azimuthHomeComplete ||     
+                elevationHomeComplete != other.elevationHomeComplete || 
                 emergencyStopActive != other.emergencyStopActive ||
                 solenoidActive != other.solenoidActive ||
                 solenoidMode != other.solenoidMode ||

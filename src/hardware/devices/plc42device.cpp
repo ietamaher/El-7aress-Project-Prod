@@ -190,8 +190,8 @@ void Plc42Device::mergePartialData(const Plc42Data& partialData) {
         partialData.ammunitionLevel != currentData->ammunitionLevel ||
         partialData.hatchState != currentData->hatchState ||
         partialData.freeGimbalState != currentData->freeGimbalState ||
-        partialData.azimuthHomeComplete != currentData->azimuthHomeComplete ||    // ⭐ NEW
-        partialData.elevationHomeComplete != currentData->elevationHomeComplete || // ⭐ NEW
+        partialData.azimuthHomeComplete != currentData->azimuthHomeComplete ||   
+        partialData.elevationHomeComplete != currentData->elevationHomeComplete ||
         partialData.solenoidActive != currentData->solenoidActive) {
 
         newData->stationUpperSensor = partialData.stationUpperSensor;
@@ -200,8 +200,8 @@ void Plc42Device::mergePartialData(const Plc42Data& partialData) {
         newData->ammunitionLevel = partialData.ammunitionLevel;
         newData->hatchState = partialData.hatchState;
         newData->freeGimbalState = partialData.freeGimbalState;
-        newData->azimuthHomeComplete = partialData.azimuthHomeComplete;      // ⭐ NEW
-        newData->elevationHomeComplete = partialData.elevationHomeComplete;  // ⭐ NEW
+        newData->azimuthHomeComplete = partialData.azimuthHomeComplete;     
+        newData->elevationHomeComplete = partialData.elevationHomeComplete; 
         newData->solenoidActive = partialData.solenoidActive;
         dataChanged = true;
     }
