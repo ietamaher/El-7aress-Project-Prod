@@ -2488,7 +2488,10 @@ void SystemStateModel::processHomingStateMachine(const SystemStateData& oldData,
         // Home button just pressed
         if (newData.homingState == HomingState::Idle) {
             qInfo() << "[SystemStateModel] Home button pressed - initiating homing";
+            qInfo() << "[SystemStateModel] Saving current motion mode:"
+                    << static_cast<int>(newData.motionMode) << "for restoration after homing";
             newData.homingState = HomingState::Requested;
+            newData.previousMotionMode = newData.motionMode;  // Save mode for restoration
             newData.motionMode = MotionMode::Idle;  // Suspend motion during homing
             // GimbalController will send HOME command in next cycle
         }
@@ -2539,11 +2542,16 @@ void SystemStateModel::processHomingStateMachine(const SystemStateData& oldData,
     }
 
     // ========================================================================
-    // HOMING COMPLETED → AUTO-CLEAR FLAGS
+    // HOMING COMPLETED → RESTORE MOTION MODE AND CLEAR FLAGS
     // ========================================================================
     if (newData.homingState == HomingState::Completed &&
         oldData.homingState == HomingState::InProgress) {
-        // Homing just completed - clear flags after one cycle
+        // Homing just completed - restore previous motion mode
+        qInfo() << "[SystemStateModel] Homing complete - restoring motion mode:"
+                << static_cast<int>(newData.previousMotionMode);
+        newData.motionMode = newData.previousMotionMode;
+
+        // Clear homing flags
         qDebug() << "[SystemStateModel] Clearing homing flags";
         newData.gotoHomePosition = false;
         newData.azimuthHomeComplete = false;
@@ -2552,13 +2560,29 @@ void SystemStateModel::processHomingStateMachine(const SystemStateData& oldData,
     }
 
     // ========================================================================
-    // AUTO-TRANSITION COMPLETED/FAILED/ABORTED → IDLE
+    // HOMING FAILED/ABORTED → RESTORE MOTION MODE
+    // ========================================================================
+    if ((newData.homingState == HomingState::Failed ||
+         newData.homingState == HomingState::Aborted) &&
+        (oldData.homingState == HomingState::InProgress ||
+         oldData.homingState == HomingState::Requested)) {
+        // Homing was interrupted - restore previous motion mode
+        qInfo() << "[SystemStateModel] Homing aborted/failed - restoring motion mode:"
+                << static_cast<int>(newData.previousMotionMode);
+        newData.motionMode = newData.previousMotionMode;
+        newData.gotoHomePosition = false;
+        newData.azimuthHomeComplete = false;
+        newData.elevationHomeComplete = false;
+    }
+
+    // ========================================================================
+    // AUTO-TRANSITION COMPLETED/FAILED/ABORTED → IDLE (HomingState)
     // ========================================================================
     if ((newData.homingState == HomingState::Completed ||
          newData.homingState == HomingState::Failed ||
          newData.homingState == HomingState::Aborted) &&
         !newData.gotoHomePosition) {
-        // Flags cleared, transition back to idle
+        // Flags cleared, transition homingState back to idle
         newData.homingState = HomingState::Idle;
     }
 }
