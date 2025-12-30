@@ -115,6 +115,12 @@ private slots:
     // ========================================================================
     void onHomingTimeout();
 
+    // ========================================================================
+    // Homing Display Timeout Handler
+    // After showing Completed/Failed/Aborted, transition to Idle
+    // ========================================================================
+    void onHomingDisplayTimeout();
+
 private:
     // ========================================================================
     // Private Methods
@@ -143,6 +149,7 @@ private:
     // Constants
     // ========================================================================
     static constexpr int HOMING_TIMEOUT_MS = 30000;  // 30 seconds timeout
+    static constexpr int HOMING_DISPLAY_MS = 2000;   // 2 seconds result display
 
     // ========================================================================
     // Hardware Devices
@@ -168,6 +175,7 @@ private:
     // ========================================================================
     QTimer* m_updateTimer = nullptr;
     QTimer* m_homingTimeoutTimer = nullptr;
+    QTimer* m_homingDisplayTimer = nullptr;  // Shows result state before Idle
 
     // Centralized dt measurement timer (Expert Review Fix)
     QElapsedTimer m_velocityTimer;
@@ -180,6 +188,7 @@ private:
     // beginHoming(), completeHoming(), and abortHoming() methods.
     // ========================================================================
     HomingState m_currentHomingState = HomingState::Idle;
+    bool m_homingWasSuccessful = false;  // For display timeout: true=complete, false=abort
 
     // ========================================================================
     // State Tracking Flags

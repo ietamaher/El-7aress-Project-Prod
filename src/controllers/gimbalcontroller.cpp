@@ -125,6 +125,12 @@ GimbalController::GimbalController(ServoDriverDevice* azServo,
     connect(m_homingTimeoutTimer, &QTimer::timeout,
             this, &GimbalController::onHomingTimeout);
 
+    // Initialize homing display timer (shows result before transitioning to Idle)
+    m_homingDisplayTimer = new QTimer(this);
+    m_homingDisplayTimer->setSingleShot(true);
+    connect(m_homingDisplayTimer, &QTimer::timeout,
+            this, &GimbalController::onHomingDisplayTimeout);
+
     qDebug() << "[GimbalController] Initialized (homing timeout:" << HOMING_TIMEOUT_MS << "ms)";
 }
 
@@ -661,6 +667,17 @@ void GimbalController::onElAlarmCleared()
 void GimbalController::processHomingSequence(const SystemStateData& data)
 {
     // ========================================================================
+    // STATE: RESULT DISPLAY (Completed, Failed, Aborted)
+    // Ignore state changes during result display period
+    // The display timer will transition to Idle when ready
+    // ========================================================================
+    if (m_currentHomingState == HomingState::Completed ||
+        m_currentHomingState == HomingState::Failed ||
+        m_currentHomingState == HomingState::Aborted) {
+        return;  // Wait for display timer to complete
+    }
+
+    // ========================================================================
     // STATE: IDLE - Check for home button press
     // ========================================================================
     if (m_currentHomingState == HomingState::Idle) {
@@ -754,13 +771,16 @@ void GimbalController::completeHomingSequence()
         qDebug() << "[GimbalController] PLC42 returned to MANUAL mode";
     }
 
-    // Mark as completed locally
-    m_currentHomingState = HomingState::Idle;
+    // Set to Completed state (displayed on OSD for 2 seconds)
+    m_currentHomingState = HomingState::Completed;
+    m_homingWasSuccessful = true;
 
-    // Tell SystemStateModel to restore mode and clear flags
     if (m_stateModel) {
-        m_stateModel->completeHoming();  // Restores mode, clears flags, sets Idle
+        m_stateModel->setHomingState(HomingState::Completed);
     }
+
+    // Start display timer to show "[HOMING COMPLETE]" on OSD
+    m_homingDisplayTimer->start(HOMING_DISPLAY_MS);
 
     qInfo() << "[GimbalController] HOME sequence completed successfully";
     qInfo() << "[GimbalController] Gimbal at home position, ready for operation";
@@ -777,13 +797,20 @@ void GimbalController::abortHomingSequence(const QString& reason)
         qDebug() << "[GimbalController] PLC42 returned to MANUAL mode after abort";
     }
 
-    // Mark as idle locally
-    m_currentHomingState = HomingState::Idle;
+    // Determine abort type: Failed (timeout) vs Aborted (emergency/other)
+    HomingState resultState = reason.contains("Timeout") ? HomingState::Failed
+                                                         : HomingState::Aborted;
 
-    // Tell SystemStateModel to restore mode and clear flags
+    // Set to result state (displayed on OSD for 2 seconds)
+    m_currentHomingState = resultState;
+    m_homingWasSuccessful = false;
+
     if (m_stateModel) {
-        m_stateModel->abortHoming();  // Restores mode, clears flags, sets Idle
+        m_stateModel->setHomingState(resultState);
     }
+
+    // Start display timer to show result on OSD
+    m_homingDisplayTimer->start(HOMING_DISPLAY_MS);
 
     qCritical() << "[GimbalController] HOME sequence aborted:" << reason;
     qWarning() << "[GimbalController] Gimbal position may be uncertain";
@@ -802,6 +829,24 @@ void GimbalController::onHomingTimeout()
     // Use abortHomingSequence to properly restore state
     // (Timer is already stopped since this is the timeout callback)
     abortHomingSequence("Timeout - HOME-END not received");
+}
+
+void GimbalController::onHomingDisplayTimeout()
+{
+    // Display timer expired - transition from result state to Idle
+    // and restore the previous motion mode
+
+    qDebug() << "[GimbalController] Homing display timeout - transitioning to Idle";
+
+    m_currentHomingState = HomingState::Idle;
+
+    if (m_stateModel) {
+        if (m_homingWasSuccessful) {
+            m_stateModel->completeHoming();  // Restores mode, clears flags, sets Idle
+        } else {
+            m_stateModel->abortHoming();     // Restores mode, clears flags, sets Idle
+        }
+    }
 }
 
 // ============================================================================
