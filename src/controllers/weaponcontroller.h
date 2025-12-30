@@ -12,6 +12,7 @@
 // ============================================================================
 #include "models/domain/systemstatemodel.h"
 #include "../utils/ballisticsprocessorlut.h"
+#include "../utils/firecontrolcomputation.h"
 
 // ============================================================================
 // Forward Declarations
@@ -133,31 +134,24 @@ private slots:
 
 private:
     // ========================================================================
-    // Ballistics Calculations
+    // Fire Control Computation (extracted for unit-testability)
     // ========================================================================
+    FireControlComputation m_fireControlComputation;  ///< Fire control calculator
+    FireControlResult m_previousFireControlResult;    ///< Previous result for change detection
 
     /**
-     * @brief Calculate crosswind component from wind direction and gimbal azimuth
-     *
-     * This function converts absolute wind (direction + speed) into the crosswind
-     * component perpendicular to the firing direction. The crosswind varies with
-     * gimbal azimuth - same wind conditions produce different crosswind based on
-     * where the weapon is pointing.
-     *
-     * @param windSpeedMS Wind speed in meters per second
-     * @param windDirectionDeg Wind direction in degrees (where wind is FROM)
-     * @param gimbalAzimuthDeg Current gimbal azimuth (where weapon is pointing TO)
-     * @return Crosswind component in m/s (positive = right deflection, negative = left)
-     * 
-     * Example:
-     *   Wind from North (0°), firing North (0°)   -> crosswind = 0 m/s (headwind)
-     *   Wind from North (0°), firing East (90°)   -> crosswind = +wind_speed (full right)
-     *   Wind from North (0°), firing South (180°) -> crosswind = 0 m/s (tailwind)
-     *   Wind from North (0°), firing West (270°)  -> crosswind = -wind_speed (full left)
+     * @brief Build FireControlInput from current SystemStateData
+     * @param data Current system state
+     * @return Input struct for fire control computation
      */
-    float calculateCrosswindComponent(float windSpeedMS,
-                                      float windDirectionDeg,
-                                      float gimbalAzimuthDeg);
+    FireControlInput buildFireControlInput(const SystemStateData& data) const;
+
+    /**
+     * @brief Apply FireControlResult to SystemStateData
+     * @param result Computed fire control result
+     * @param data System state to update
+     */
+    void applyFireControlResult(const FireControlResult& result, SystemStateData& data);
 
     // ========================================================================
     // Charging Cycle FSM (Cocking Actuator)

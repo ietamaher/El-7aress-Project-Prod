@@ -123,6 +123,7 @@ SOURCES += \
     src/utils/ballisticsprocessor.cpp \
     src/utils/ballisticslut.cpp \
     src/utils/ballisticsprocessorlut.cpp \
+    src/utils/firecontrolcomputation.cpp \
     src/utils/colorutils.cpp \
     src/utils/inference.cpp \
     src/utils/reticleaimpointcalculator.cpp \
@@ -239,6 +240,7 @@ HEADERS += \
     src/utils/ballisticsprocessor.h \
     src/utils/ballisticslut.h \
     src/utils/ballisticsprocessorlut.h \
+    src/utils/firecontrolcomputation.h \
     src/utils/colorutils.h \
     src/utils/inference.h \
     src/utils/millenious.h \

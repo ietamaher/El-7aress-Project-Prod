@@ -1087,184 +1087,123 @@ void WeaponController::updateFireControlSolution()
     SystemStateData sData = m_stateModel->data();
 
     // ========================================================================
-    // CALCULATE CROSSWIND FROM WINDAGE (Direction + Speed)
-    // CRITICAL: This calculation runs INDEPENDENTLY of LAC status!
-    // Windage provides absolute wind direction and speed (relative to true North).
-    // Crosswind component varies with absolute gimbal bearing.
-    // Absolute gimbal bearing = Vehicle heading (IMU yaw) + Station azimuth
+    // BUILD INPUT FOR FIRE CONTROL COMPUTATION
     // ========================================================================
-    float currentCrosswind = 0.0f;
-
-    if (sData.windageAppliedToBallistics && sData.windageSpeedKnots > 0.001f) {
-        // Convert wind speed from knots to m/s
-        float windSpeedMS = sData.windageSpeedKnots * 0.514444f;  // 1 knot = 0.514444 m/s
-
-        // Calculate absolute gimbal bearing (true bearing where weapon is pointing)
-        float absoluteGimbalBearing = static_cast<float>(sData.imuYawDeg) + sData.azimuthDirection;
-
-        // Normalize to 0-360 range
-        while (absoluteGimbalBearing >= 360.0f) absoluteGimbalBearing -= 360.0f;
-        while (absoluteGimbalBearing < 0.0f) absoluteGimbalBearing += 360.0f;
-
-        // Calculate crosswind component
-        currentCrosswind = calculateCrosswindComponent(
-            windSpeedMS,
-            sData.windageDirectionDegrees,
-            absoluteGimbalBearing
-        );
-
-        // Store calculated crosswind in state data for OSD display
-        if (std::abs(sData.calculatedCrosswindMS - currentCrosswind) > 0.01f) {
-            SystemStateData updatedData = sData;
-            updatedData.calculatedCrosswindMS = currentCrosswind;
-            m_stateModel->updateData(updatedData);
-            sData = updatedData;
-        }
-    } else {
-        // Clear crosswind when windage is not applied
-        if (std::abs(sData.calculatedCrosswindMS) > 0.01f) {
-            SystemStateData updatedData = sData;
-            updatedData.calculatedCrosswindMS = 0.0f;
-            m_stateModel->updateData(updatedData);
-            sData = updatedData;
-        }
-    }
+    FireControlInput input = buildFireControlInput(sData);
 
     // ========================================================================
-    // PROFESSIONAL FCS: SPLIT BALLISTIC DROP AND MOTION LEAD
-    // Drop compensation: Auto-applied when LRF range valid (Kongsberg/Rafael)
-    // Motion lead: Only when LAC toggle active
+    // COMPUTE FIRE CONTROL SOLUTION (delegated to FireControlComputation)
     // ========================================================================
-    if (!m_ballisticsProcessor) {
-        qCritical() << "[WeaponController] BallisticsProcessor pointer is NULL!";
-        return;
-    }
-
-    float targetRange = sData.currentTargetRange;
-    float currentHFOV = sData.activeCameraIsDay ? sData.dayCurrentHFOV : sData.nightCurrentHFOV;
-    float currentVFOV = sData.activeCameraIsDay ? sData.dayCurrentVFOV : sData.nightCurrentVFOV;
-
-  // ========================================================================
-    // STEP 1: UPDATE ENVIRONMENTAL CONDITIONS (affects both drop and lead)
+    // This is now a pure computation with no side effects.
+    // All state updates happen in applyFireControlResult().
     // ========================================================================
-    if (sData.environmentalAppliedToBallistics) {
-        m_ballisticsProcessor->setEnvironmentalConditions(
-            sData.environmentalTemperatureCelsius,
-            sData.environmentalAltitudeMeters,
-            currentCrosswind
-        );
-    } else {
-        m_ballisticsProcessor->setEnvironmentalConditions(
-            15.0f, 0.0f, currentCrosswind  // Standard conditions + wind
-        );
-    }
-
-    // ========================================================================
-    // STEP 2: BALLISTIC DROP - AUTO-APPLIED WHEN RANGE VALID (Professional FCS)
-    // ========================================================================
-    // DEFAULT_LAC_RANGE: Used for motion lead calculation when LRF is cleared
-    // but LAC is active. Professional FCS typically uses 500-1000m default.
-    // This allows CCIP to function for moving targets even without LRF lock.
-    // ========================================================================
-    constexpr float DEFAULT_LAC_RANGE = 500.0f;  // meters
-
-    bool applyDrop = (targetRange > 0.1f);  // Valid range threshold
-
-    if (applyDrop) {
-        LeadCalculationResult drop = m_ballisticsProcessor->calculateBallisticDrop(targetRange);
-
-        SystemStateData updatedData = sData;
-        updatedData.ballisticDropOffsetAz = drop.leadAzimuthDegrees;
-        updatedData.ballisticDropOffsetEl = drop.leadElevationDegrees;
-        updatedData.ballisticDropActive = true;
-        m_stateModel->updateData(updatedData);
-        sData = updatedData;
-
-        /*qDebug() << "[WeaponController] AUTO DROP APPLIED:"
-                 << "Range:" << targetRange << "m"
-                 << "| Drop Az:" << drop.leadAzimuthDegrees << "deg (wind)"
-                 << "| Drop El:" << drop.leadElevationDegrees << "deg (gravity)";*/
-    } else {
-        // Clear drop when no valid range
-        if (sData.ballisticDropActive) {
-            SystemStateData updatedData = sData;
-            updatedData.ballisticDropOffsetAz = 0.0f;
-            updatedData.ballisticDropOffsetEl = 0.0f;
-            updatedData.ballisticDropActive = false;
-            m_stateModel->updateData(updatedData);
-            sData = updatedData;
-
-            qDebug() << "[WeaponController] DROP CLEARED (no valid range)";
-        }
-    }
-
-    // ========================================================================
-    // STEP 3: MOTION LEAD - ONLY WHEN LAC TOGGLE ACTIVE (Professional FCS)
-    // ========================================================================
-    if (!sData.leadAngleCompensationActive) {
-        // LAC toggle is OFF - clear motion lead
-        if (sData.motionLeadOffsetAz != 0.0f || sData.motionLeadOffsetEl != 0.0f ||
-            sData.currentLeadAngleStatus != LeadAngleStatus::Off) {
-
-            SystemStateData updatedData = sData;
-            updatedData.motionLeadOffsetAz = 0.0f;
-            updatedData.motionLeadOffsetEl = 0.0f;
-            updatedData.currentLeadAngleStatus = LeadAngleStatus::Off;
-            // Backward compatibility
-            updatedData.leadAngleOffsetAz = 0.0f;
-            updatedData.leadAngleOffsetEl = 0.0f;
-            m_stateModel->updateData(updatedData);
-
-            qDebug() << "[WeaponController] MOTION LEAD CLEARED (LAC off)";
-        }
-        return;  // Exit - drop already applied above if range valid
-    }
-
-    // LAC is ACTIVE - calculate motion lead for moving target
-    float targetAngRateAz = sData.currentTargetAngularRateAz;
-    float targetAngRateEl = sData.currentTargetAngularRateEl;
-
-    // ========================================================================
-    // BUG FIX: USE DEFAULT RANGE FOR MOTION LEAD WHEN LRF IS CLEARED
-    // ========================================================================
-    // Motion lead requires TOF which depends on range. When LRF is cleared:
-    // - Use DEFAULT_LAC_RANGE (500m) for TOF calculation
-    // - This allows CCIP to work for close-range moving targets
-    // - Status will show "Lag" to indicate estimated range is used
-    // ========================================================================
-    float leadCalculationRange = (targetRange > 0.1f) ? targetRange : DEFAULT_LAC_RANGE;
-
-    LeadCalculationResult lead = m_ballisticsProcessor->calculateMotionLead(
-        leadCalculationRange,
-        targetAngRateAz,
-        targetAngRateEl,
-        currentHFOV,
-        currentVFOV
+    FireControlResult result = m_fireControlComputation.compute(
+        input,
+        m_ballisticsProcessor,
+        m_previousFireControlResult
     );
 
-    // If using default range (no LRF), force Lag status to indicate estimation
-    if (targetRange <= 0.1f && lead.status == LeadAngleStatus::On) {
-        lead.status = LeadAngleStatus::Lag;
+    // ========================================================================
+    // APPLY RESULT TO STATE MODEL
+    // ========================================================================
+    applyFireControlResult(result, sData);
+
+    // Store result for next iteration's change detection
+    m_previousFireControlResult = result;
+}
+
+// ============================================================================
+// FIRE CONTROL HELPER METHODS
+// ============================================================================
+
+FireControlInput WeaponController::buildFireControlInput(const SystemStateData& data) const
+{
+    FireControlInput input;
+
+    // Range data
+    input.currentTargetRange = data.currentTargetRange;
+
+    // Angular rate data
+    input.currentTargetAngularRateAz = data.currentTargetAngularRateAz;
+    input.currentTargetAngularRateEl = data.currentTargetAngularRateEl;
+
+    // Camera data
+    input.activeCameraIsDay = data.activeCameraIsDay;
+    input.dayCurrentHFOV = data.dayCurrentHFOV;
+    input.dayCurrentVFOV = data.dayCurrentVFOV;
+    input.nightCurrentHFOV = data.nightCurrentHFOV;
+    input.nightCurrentVFOV = data.nightCurrentVFOV;
+
+    // Windage data
+    input.windageAppliedToBallistics = data.windageAppliedToBallistics;
+    input.windageSpeedKnots = data.windageSpeedKnots;
+    input.windageDirectionDegrees = data.windageDirectionDegrees;
+
+    // Gimbal / vehicle data
+    input.imuYawDeg = static_cast<float>(data.imuYawDeg);
+    input.azimuthDirection = data.azimuthDirection;
+
+    // Environmental data
+    input.environmentalAppliedToBallistics = data.environmentalAppliedToBallistics;
+    input.environmentalTemperatureCelsius = data.environmentalTemperatureCelsius;
+    input.environmentalAltitudeMeters = data.environmentalAltitudeMeters;
+
+    // LAC state
+    input.leadAngleCompensationActive = data.leadAngleCompensationActive;
+
+    return input;
+}
+
+void WeaponController::applyFireControlResult(const FireControlResult& result, SystemStateData& data)
+{
+    bool needsUpdate = false;
+
+    // ========================================================================
+    // APPLY CROSSWIND
+    // ========================================================================
+    if (result.crosswindChanged) {
+        data.calculatedCrosswindMS = result.calculatedCrosswindMS;
+        needsUpdate = true;
     }
 
-    SystemStateData updatedData = sData;
-    updatedData.motionLeadOffsetAz = lead.leadAzimuthDegrees;
-    updatedData.motionLeadOffsetEl = lead.leadElevationDegrees;
-    updatedData.currentLeadAngleStatus = lead.status;
-    // Backward compatibility
-    updatedData.leadAngleOffsetAz = lead.leadAzimuthDegrees;
-    updatedData.leadAngleOffsetEl = lead.leadElevationDegrees;
-    m_stateModel->updateData(updatedData);
+    // ========================================================================
+    // APPLY BALLISTIC DROP
+    // ========================================================================
+    if (result.dropChanged ||
+        data.ballisticDropOffsetAz != result.ballisticDropOffsetAz ||
+        data.ballisticDropOffsetEl != result.ballisticDropOffsetEl ||
+        data.ballisticDropActive != result.ballisticDropActive) {
 
-    qDebug() << "[WeaponController] MOTION LEAD:"
-             << "Az:" << lead.leadAzimuthDegrees << "deg"
-             << "| El:" << lead.leadElevationDegrees << "deg"
-             << "| Range:" << leadCalculationRange << "m"
-             << (targetRange <= 0.1f ? "(DEFAULT)" : "(LRF)")
-             << "| Status:" << static_cast<int>(lead.status)
-             << (lead.status == LeadAngleStatus::On ? "(On)" :
-                 lead.status == LeadAngleStatus::Lag ? "(Lag)" :
-                 lead.status == LeadAngleStatus::ZoomOut ? "(ZoomOut)" : "(Unknown)");
+        data.ballisticDropOffsetAz = result.ballisticDropOffsetAz;
+        data.ballisticDropOffsetEl = result.ballisticDropOffsetEl;
+        data.ballisticDropActive = result.ballisticDropActive;
+        needsUpdate = true;
+    }
+
+    // ========================================================================
+    // APPLY MOTION LEAD
+    // ========================================================================
+    if (result.leadChanged ||
+        data.motionLeadOffsetAz != result.motionLeadOffsetAz ||
+        data.motionLeadOffsetEl != result.motionLeadOffsetEl ||
+        data.currentLeadAngleStatus != result.currentLeadAngleStatus) {
+
+        data.motionLeadOffsetAz = result.motionLeadOffsetAz;
+        data.motionLeadOffsetEl = result.motionLeadOffsetEl;
+        data.currentLeadAngleStatus = result.currentLeadAngleStatus;
+
+        // Backward compatibility
+        data.leadAngleOffsetAz = result.leadAngleOffsetAz;
+        data.leadAngleOffsetEl = result.leadAngleOffsetEl;
+        needsUpdate = true;
+    }
+
+    // ========================================================================
+    // UPDATE STATE MODEL IF ANY VALUES CHANGED
+    // ========================================================================
+    if (needsUpdate) {
+        m_stateModel->updateData(data);
+    }
 }
 
 // ============================================================================
@@ -1398,44 +1337,6 @@ bool WeaponController::isChargingAllowed() const
 // ============================================================================
 // CROSSWIND CALCULATION
 // ============================================================================
-
-float WeaponController::calculateCrosswindComponent(float windSpeedMS,
-                                                    float windDirectionDeg,
-                                                    float gimbalAzimuthDeg)
-{
-    // ========================================================================
-    // BALLISTICS PHYSICS: Crosswind Component Calculation
-    // Wind direction: Direction wind is coming FROM (meteorological convention)
-    // Gimbal azimuth: Direction weapon is pointing TO
-    //
-    // Relative angle = wind_direction - firing_direction
-    // Crosswind = wind_speed x sin(relative_angle)
-    //
-    // Examples:
-    //   Wind from 0deg (North), firing at 0deg (North):
-    //     relative = 0deg -> sin(0deg) = 0 -> no crosswind (headwind)
-    //   Wind from 0deg (North), firing at 90deg (East):
-    //     relative = -90deg -> sin(-90deg) = -1 -> full crosswind (left)
-    //   Wind from 0deg (North), firing at 180deg (South):
-    //     relative = -180deg -> sin(-180deg) = 0 -> no crosswind (tailwind)
-    //   Wind from 0deg (North), firing at 270deg (West):
-    //     relative = -270deg = +90deg -> sin(90deg) = +1 -> full crosswind (right)
-    // ========================================================================
-
-    float relativeAngle = windDirectionDeg - gimbalAzimuthDeg;
-
-    // Normalize to [-180, +180] for correct trigonometry
-    while (relativeAngle > 180.0f) {
-        relativeAngle -= 360.0f;
-    }
-    while (relativeAngle < -180.0f) {
-        relativeAngle += 360.0f;
-    }
-
-    // Calculate crosswind component
-    // sin(90deg) = 1.0 -> full crosswind (wind perpendicular to fire direction)
-    // sin(0deg) = 0.0 -> no crosswind (headwind or tailwind)
-    float crosswindMS = windSpeedMS * std::sin(relativeAngle * static_cast<float>(M_PI) / 180.0f);
-
-    return crosswindMS;
-}
+// NOTE: Crosswind calculation has been extracted to FireControlComputation class
+// for unit-testability. See: FireControlComputation::calculateCrosswindComponent()
+// ============================================================================
