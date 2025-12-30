@@ -287,7 +287,7 @@ struct Plc21PanelData {
 
     // Analog inputs
     int speedSW = 50;
-    int fireMode = 0;
+    int fireMode = 99; // To force update on first read
     int panelTemperature = 0;
 
     bool operator!=(const Plc21PanelData &other) const {
