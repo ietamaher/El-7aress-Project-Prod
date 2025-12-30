@@ -180,13 +180,41 @@ void WeaponController::onSystemStateChanged(const SystemStateData& newData)
             qCritical() << "";
 
         } else if (!newData.emergencyStopActive && m_wasInEmergencyStop) {
-            // EMERGENCY STOP CLEARED
+            // EMERGENCY STOP CLEARED - INITIATE SAFE RECOVERY
             qInfo() << "";
             qInfo() << "╔══════════════════════════════════════════════════════════════╗";
             qInfo() << "║     WEAPON CONTROLLER: EMERGENCY STOP CLEARED                ║";
             qInfo() << "╚══════════════════════════════════════════════════════════════╝";
+
+            // ================================================================
+            // SAFE RECOVERY: AUTO-RETRACT ACTUATOR TO HOME POSITION
+            // ================================================================
+            // Per CROWS spec: Actuator must be retracted before firing allowed
+            // If actuator was stopped mid-cycle, it could be extended and
+            // interfere with firing. We automatically retract to safe position.
+            // ================================================================
+            if (m_servoActuator && m_feedState == AmmoFeedState::Fault) {
+                qInfo() << "[WeaponController] SAFE RECOVERY: Retracting actuator to home position";
+
+                // Command retraction to home
+                m_servoActuator->moveToPosition(FEED_RETRACT_POS);
+
+                // Transition to retracting state
+                transitionFeedState(AmmoFeedState::Retracting);
+
+                if (m_stateModel) {
+                    m_stateModel->setAmmoFeedCycleInProgress(true);
+                }
+
+                // Start watchdog for safe retraction
+                m_feedTimer->start(FEED_TIMEOUT_MS);
+
+                qInfo() << "[WeaponController] Actuator retracting to home ("
+                        << FEED_RETRACT_POS << "mm)";
+            }
+
             qInfo() << "[WeaponController] Weapon operations now permitted";
-            qInfo() << "[WeaponController] Operator must re-arm and re-charge if needed";
+            qInfo() << "[WeaponController] Operator must re-arm and re-charge weapon";
             qInfo() << "";
 
             m_wasInEmergencyStop = false;
