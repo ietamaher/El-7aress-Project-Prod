@@ -18,6 +18,7 @@
 // ============================================================================
 class Plc42Device;
 class ServoActuatorDevice;
+class SafetyInterlock;
 struct ServoActuatorData;
 
 /**
@@ -49,8 +50,15 @@ public:
     explicit WeaponController(SystemStateModel* stateModel,
                               ServoActuatorDevice* servoActuator,
                               Plc42Device* plc42,
+                              SafetyInterlock* safetyInterlock,
                               QObject* parent = nullptr);
     ~WeaponController();
+
+    /**
+     * @brief Get the safety interlock instance
+     * @return Pointer to the SafetyInterlock
+     */
+    SafetyInterlock* safetyInterlock() const { return m_safetyInterlock; }
 
     // ========================================================================
     // Weapon Control
@@ -230,6 +238,7 @@ private:
     SystemStateModel* m_stateModel = nullptr;
     ServoActuatorDevice* m_servoActuator = nullptr;
     Plc42Device* m_plc42 = nullptr;
+    SafetyInterlock* m_safetyInterlock = nullptr;
 
     // ========================================================================
     // Ballistics

@@ -24,6 +24,7 @@
 // ============================================================================
 class ServoDriverDevice;
 class Plc42Device;
+class SafetyInterlock;
 
 /**
  * @brief Gimbal motion mode coordinator and servo controller
@@ -54,8 +55,15 @@ public:
                               ServoDriverDevice* elServo,
                               Plc42Device* plc42,
                               SystemStateModel* stateModel,
+                              SafetyInterlock* safetyInterlock,
                               QObject* parent = nullptr);
     ~GimbalController();
+
+    /**
+     * @brief Get the safety interlock instance
+     * @return Pointer to the SafetyInterlock
+     */
+    SafetyInterlock* safetyInterlock() const { return m_safetyInterlock; }
 
     // ========================================================================
     // Motion Control
@@ -155,6 +163,7 @@ private:
     // System State
     // ========================================================================
     SystemStateModel* m_stateModel = nullptr;
+    SafetyInterlock* m_safetyInterlock = nullptr;
     SystemStateData m_oldState;
 
     // ========================================================================

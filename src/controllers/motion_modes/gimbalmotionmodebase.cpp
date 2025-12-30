@@ -2,6 +2,7 @@
 #include "../gimbalcontroller.h"
 #include "hardware/devices/servodriverdevice.h"
 #include "models/domain/systemstatemodel.h"
+#include "safety/SafetyInterlock.h"
 #include <QDebug>
 #include <algorithm>
 
@@ -374,20 +375,51 @@ void GimbalMotionModeBase::setAcceleration(ServoDriverDevice* driverInterface, q
 
 bool GimbalMotionModeBase::checkSafetyConditions(GimbalController* controller)
 {
-    if (!controller || !controller->systemStateModel()) {
+    if (!controller) {
         return false;
     }
-    
+
+    // ========================================================================
+    // SAFETY INTERLOCK INTEGRATION (Template Method Pattern)
+    // ========================================================================
+    // Delegate safety decision to centralized SafetyInterlock authority.
+    // This ensures all safety checks are in one place and auditable.
+    // The SafetyInterlock.canMove() checks:
+    //   - E-Stop status
+    //   - Station enabled
+    //   - Dead man switch (for Manual/AutoTrack modes)
+    // ========================================================================
+    if (controller->safetyInterlock()) {
+        SafetyDenialReason reason;
+        int motionMode = static_cast<int>(controller->currentMotionModeType());
+        bool allowed = controller->safetyInterlock()->canMove(motionMode, &reason);
+        if (!allowed) {
+            static int logCounter = 0;
+            if (++logCounter % 100 == 1) {  // Throttle logging (every 5 seconds at 20Hz)
+                qDebug() << "[GimbalMotionModeBase] Motion denied by SafetyInterlock:"
+                         << SafetyInterlock::denialReasonToString(reason);
+            }
+        }
+        return allowed;
+    }
+
+    // ========================================================================
+    // LEGACY FALLBACK (if SafetyInterlock not available)
+    // ========================================================================
+    if (!controller->systemStateModel()) {
+        return false;
+    }
+
     SystemStateData data = controller->systemStateModel()->data();
 
-        bool deadManSwitchOk = true;
+    bool deadManSwitchOk = true;
     if (controller->currentMotionModeType() == MotionMode::Manual ||
         controller->currentMotionModeType() == MotionMode::AutoTrack) {
         deadManSwitchOk = data.deadManSwitchActive;
     }
 
-    return data.stationEnabled && // data.hatchState &&
-           !data.emergencyStopActive &&   deadManSwitchOk;
+    return data.stationEnabled &&
+           !data.emergencyStopActive && deadManSwitchOk;
 }
 
 bool GimbalMotionModeBase::checkElevationLimits(double currentEl, double targetVelocity,
