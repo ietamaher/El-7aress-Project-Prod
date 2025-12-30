@@ -6,6 +6,7 @@
 #include "models/domain/systemstatemodel.h"
 #include "hardware/devices/servoactuatordevice.h"
 #include "hardware/devices/plc42device.h"
+#include "safety/SafetyInterlock.h"
 
 // ============================================================================
 // Qt Framework
@@ -24,12 +25,20 @@
 WeaponController::WeaponController(SystemStateModel* stateModel,
                                    ServoActuatorDevice* servoActuator,
                                    Plc42Device* plc42,
+                                   SafetyInterlock* safetyInterlock,
                                    QObject* parent)
     : QObject(parent)
     , m_stateModel(stateModel)
     , m_servoActuator(servoActuator)
     , m_plc42(plc42)
+    , m_safetyInterlock(safetyInterlock)
 {
+    // Log SafetyInterlock status
+    if (m_safetyInterlock) {
+        qInfo() << "[WeaponController] SafetyInterlock connected - centralized safety active";
+    } else {
+        qWarning() << "[WeaponController] WARNING: SafetyInterlock is null - using legacy safety checks";
+    }
     // ========================================================================
     // SYSTEM STATE MONITORING
     // ========================================================================
@@ -1321,6 +1330,25 @@ void WeaponController::performStartupRetraction()
 
 bool WeaponController::isChargingAllowed() const
 {
+    // ========================================================================
+    // SAFETY INTERLOCK INTEGRATION
+    // ========================================================================
+    // Delegate safety decision to centralized SafetyInterlock authority.
+    // This ensures all safety checks are in one place and auditable.
+    // ========================================================================
+    if (m_safetyInterlock) {
+        SafetyDenialReason reason;
+        bool allowed = m_safetyInterlock->canCharge(&reason);
+        if (!allowed) {
+            qDebug() << "[WeaponController] Charging denied by SafetyInterlock:"
+                     << SafetyInterlock::denialReasonToString(reason);
+        }
+        return allowed;
+    }
+
+    // ========================================================================
+    // LEGACY FALLBACK (if SafetyInterlock not available)
+    // ========================================================================
     // Charging not allowed if:
     // 1. Lockout is active
     // 2. Cycle already in progress

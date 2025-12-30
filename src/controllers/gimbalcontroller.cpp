@@ -15,6 +15,9 @@
 #include "hardware/devices/servodriverdevice.h"
 #include "hardware/devices/plc42device.h"
 
+// Safety
+#include "safety/SafetyInterlock.h"
+
 // Qt
 #include <QDebug>
 
@@ -83,13 +86,21 @@ GimbalController::GimbalController(ServoDriverDevice* azServo,
                                    ServoDriverDevice* elServo,
                                    Plc42Device* plc42,
                                    SystemStateModel* stateModel,
+                                   SafetyInterlock* safetyInterlock,
                                    QObject* parent)
     : QObject(parent)
     , m_azServo(azServo)
     , m_elServo(elServo)
     , m_plc42(plc42)
     , m_stateModel(stateModel)
+    , m_safetyInterlock(safetyInterlock)
 {
+    // Log SafetyInterlock status
+    if (m_safetyInterlock) {
+        qInfo() << "[GimbalController] SafetyInterlock connected - motion safety via central authority";
+    } else {
+        qWarning() << "[GimbalController] WARNING: SafetyInterlock is null - using legacy safety checks";
+    }
     // Initialize default motion mode
     setMotionMode(MotionMode::Idle);
 

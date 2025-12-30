@@ -2,6 +2,9 @@
 #include "HardwareManager.h"
 #include "ViewModelRegistry.h"
 
+// Safety
+#include "safety/SafetyInterlock.h"
+
 // Hardware Controllers
 #include "controllers/gimbalcontroller.h"
 #include "controllers/weaponcontroller.h"
@@ -86,20 +89,26 @@ bool ControllerRegistry::createHardwareControllers()
     qInfo() << "=== ControllerRegistry: Creating Hardware Controllers ===";
 
     try {
-        // Gimbal Controller
+        // Safety Interlock - MUST be created first (safety authority)
+        m_safetyInterlock = new SafetyInterlock(m_systemStateModel, this);
+        qInfo() << "  ✓ SafetyInterlock created (central safety authority)";
+
+        // Gimbal Controller (with SafetyInterlock for motion safety)
         m_gimbalController = new GimbalController(
             m_hardwareManager->servoAzDevice(),
             m_hardwareManager->servoElDevice(),
             m_hardwareManager->plc42Device(),
             m_systemStateModel,
+            m_safetyInterlock,
             this
         );
 
-        // Weapon Controller
+        // Weapon Controller (with SafetyInterlock for centralized safety decisions)
         m_weaponController = new WeaponController(
             m_systemStateModel,
             m_hardwareManager->servoActuatorDevice(),
             m_hardwareManager->plc42Device(),
+            m_safetyInterlock,
             this
         );
 

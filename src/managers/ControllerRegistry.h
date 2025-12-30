@@ -3,6 +3,9 @@
 
 #include <QObject>
 
+// Forward declarations - Safety
+class SafetyInterlock;
+
 // Forward declarations - Hardware Controllers
 class GimbalController;
 class WeaponController;
@@ -95,6 +98,9 @@ public:
     // CONTROLLER ACCESSORS
     // ========================================================================
 
+    // Safety Authority
+    SafetyInterlock* safetyInterlock() const { return m_safetyInterlock; }
+
     // Hardware Controllers
     GimbalController* gimbalController() const { return m_gimbalController; }
     WeaponController* weaponController() const { return m_weaponController; }
@@ -123,6 +129,11 @@ signals:
     void controllersInitialized();
 
 private:
+    // ========================================================================
+    // SAFETY AUTHORITY (created first, destroyed last)
+    // ========================================================================
+    SafetyInterlock* m_safetyInterlock = nullptr;
+
     // ========================================================================
     // HARDWARE CONTROLLERS
     // ========================================================================
