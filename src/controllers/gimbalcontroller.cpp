@@ -657,6 +657,32 @@ void GimbalController::onElAlarmCleared()
 
 void GimbalController::processHomingSequence(const SystemStateData& data)
 {
+    // ========================================================================
+    // CRITICAL FIX: Detect when homing ends (regardless of which state we see)
+    // ========================================================================
+    // SystemStateModel may complete homing and transition to Idle so fast that
+    // we never see HomingState::Completed. We need to detect any transition OUT
+    // of InProgress and stop our timeout timer.
+    // ========================================================================
+    if (m_currentHomingState == HomingState::InProgress &&
+        data.homingState != HomingState::InProgress &&
+        data.homingState != HomingState::Requested) {
+        // Homing ended (either Completed, Idle, Failed, or Aborted)
+        qDebug() << "[GimbalController] Detected homing end transition:"
+                 << static_cast<int>(m_currentHomingState) << "->"
+                 << static_cast<int>(data.homingState);
+        m_homingTimeoutTimer->stop();
+
+        // Return to manual mode
+        if (m_plc42 && m_plc42->data()->isConnected) {
+            m_plc42->setManualMode();
+            qDebug() << "[GimbalController] PLC42 returned to MANUAL mode";
+        }
+
+        m_currentHomingState = HomingState::Idle;
+        qInfo() << "[GimbalController] Homing sequence ended, timer stopped";
+    }
+
     switch (data.homingState) {
     case HomingState::Idle:
         // Check if home button pressed (rising edge detection)
@@ -668,8 +694,9 @@ void GimbalController::processHomingSequence(const SystemStateData& data)
 
     case HomingState::Requested:
     {
-        // Send HOME command to PLC42
-        if (m_plc42 && m_plc42->data()->isConnected) {
+        // Send HOME command to PLC42 (only once when we first see Requested)
+        if (m_currentHomingState != HomingState::InProgress &&
+            m_plc42 && m_plc42->data()->isConnected) {
             qInfo() << "[GimbalController] Starting HOME sequence";
 
             // Store current mode to restore after homing completes
@@ -687,7 +714,7 @@ void GimbalController::processHomingSequence(const SystemStateData& data)
             m_homingTimeoutTimer->start(HOMING_TIMEOUT_MS);
 
             qInfo() << "[GimbalController] HOME command sent, waiting for HOME-END signals...";
-        } else {
+        } else if (!m_plc42 || !m_plc42->data()->isConnected) {
             qCritical() << "[GimbalController] Cannot start homing - PLC42 not connected";
             abortHomingSequence("PLC42 not connected");
         }
@@ -724,20 +751,28 @@ void GimbalController::processHomingSequence(const SystemStateData& data)
     }
 
     case HomingState::Completed:
-        // Auto-clear completed state after one cycle
-        if (m_currentHomingState == HomingState::Completed) {
-            qDebug() << "[GimbalController] Clearing completed homing state";
-            m_currentHomingState = HomingState::Idle;
+        // Stop timer and clear state (in case we do see this state)
+        if (m_currentHomingState == HomingState::InProgress) {
+            qInfo() << "[GimbalController] Homing completed (via Completed state)";
+            m_homingTimeoutTimer->stop();
+            if (m_plc42 && m_plc42->data()->isConnected) {
+                m_plc42->setManualMode();
+            }
         }
+        m_currentHomingState = HomingState::Idle;
         break;
 
     case HomingState::Failed:
     case HomingState::Aborted:
-        // Auto-clear failed/aborted state after one cycle
-        if (m_currentHomingState != HomingState::Idle) {
-            qDebug() << "[GimbalController] Clearing failed/aborted homing state";
-            m_currentHomingState = HomingState::Idle;
+        // Stop timer and clear state
+        if (m_currentHomingState == HomingState::InProgress) {
+            qWarning() << "[GimbalController] Homing failed/aborted externally";
+            m_homingTimeoutTimer->stop();
+            if (m_plc42 && m_plc42->data()->isConnected) {
+                m_plc42->setManualMode();
+            }
         }
+        m_currentHomingState = HomingState::Idle;
         break;
     }
 }
