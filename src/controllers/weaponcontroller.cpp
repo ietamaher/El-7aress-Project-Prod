@@ -196,11 +196,28 @@ void WeaponController::onSystemStateChanged(const SystemStateData& newData)
             if (m_servoActuator && m_chargingState == ChargingState::Fault) {
                 qInfo() << "[WeaponController] SAFE RECOVERY: Retracting actuator to home position";
 
+                // ================================================================
+                // CRITICAL FIX: Reset multi-cycle state to prevent auto-restart
+                // ================================================================
+                // When emergency interrupted a charging cycle, these variables
+                // may still hold stale values. If not reset, processActuatorPosition()
+                // will see m_isShortPressCharge=true and m_currentCycleCount < m_requiredCycles
+                // and automatically start a NEW charging cycle after safe retraction!
+                // ================================================================
+                m_isShortPressCharge = false;
+                m_currentCycleCount = 0;
+
                 // Command retraction to home
                 m_servoActuator->moveToPosition(COCKING_RETRACT_POS);
 
-                // Transition to retracting state
-                transitionChargingState(ChargingState::Retracting);
+                // ================================================================
+                // Use SafeRetract state (NOT Retracting) to avoid multi-cycle logic
+                // ================================================================
+                // SafeRetract is specifically for recovery operations where we
+                // want to go directly to Idle after reaching home, without
+                // checking if more charging cycles are needed.
+                // ================================================================
+                transitionChargingState(ChargingState::SafeRetract);
 
                 if (m_stateModel) {
                     m_stateModel->setChargeCycleInProgress(true);
@@ -210,7 +227,7 @@ void WeaponController::onSystemStateChanged(const SystemStateData& newData)
                 m_chargingTimer->start(COCKING_TIMEOUT_MS);
 
                 qInfo() << "[WeaponController] Actuator retracting to home ("
-                        << COCKING_RETRACT_POS << "mm)";
+                        << COCKING_RETRACT_POS << "mm) via SafeRetract state";
             }
 
             qInfo() << "[WeaponController] Weapon operations now permitted";
@@ -554,11 +571,12 @@ void WeaponController::onActuatorFeedback(const ServoActuatorData& data)
     // JAM DETECTION - CRITICAL SAFETY CHECK (runs BEFORE position processing)
     // Only active during motion states where jam can occur
     // ========================================================================
-    if (m_chargingState == ChargingState::Extending || 
-        m_chargingState == ChargingState::Retracting) {
+    if (m_chargingState == ChargingState::Extending ||
+        m_chargingState == ChargingState::Retracting ||
+        m_chargingState == ChargingState::SafeRetract) {
         checkForJamCondition(data);
     }
-    
+
     // Process position for FSM state transitions
     processActuatorPosition(data.position_mm);
 }
@@ -665,6 +683,34 @@ void WeaponController::processActuatorPosition(double posMM)
             qCritical() << "╔══════════════════════════════════════════════════════════════╗";
             qCritical() << "║     JAM RECOVERY COMPLETE - OPERATOR MUST CHECK WEAPON       ║";
             qCritical() << "╚══════════════════════════════════════════════════════════════╝";
+        }
+        break;
+
+    // ========================================================================
+    // SAFE RETRACT STATE - Emergency recovery retraction
+    // ========================================================================
+    // This state is used specifically for post-emergency-stop recovery.
+    // Unlike normal Retracting state, it does NOT check multi-cycle logic.
+    // When actuator reaches home, we go directly to Idle - weapon is NOT charged.
+    // Operator must manually initiate a new charging sequence.
+    // ========================================================================
+    case ChargingState::SafeRetract:
+        if (posMM <= (COCKING_RETRACT_POS + COCKING_POSITION_TOLERANCE)) {
+            m_chargingTimer->stop();
+
+            qInfo() << "╔══════════════════════════════════════════════════════════════╗";
+            qInfo() << "║     SAFE RETRACTION COMPLETE - ACTUATOR AT HOME              ║";
+            qInfo() << "╚══════════════════════════════════════════════════════════════╝";
+
+            // Go directly to Idle - NO automatic charging cycle
+            transitionChargingState(ChargingState::Idle);
+
+            if (m_stateModel) {
+                m_stateModel->setChargeCycleInProgress(false);
+                m_stateModel->setWeaponCharged(false);  // Weapon is NOT charged
+            }
+
+            qInfo() << "[WeaponController] System ready - operator must manually charge weapon";
         }
         break;
 
