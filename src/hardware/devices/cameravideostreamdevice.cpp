@@ -347,7 +347,7 @@ void CameraVideoStreamDevice::onSystemStateChanged(const SystemStateData &newSta
     m_accelY = newState.AccelY;
     m_accelZ = newState.AccelZ;
     m_lrfDistance = newState.currentTargetRange;
-    m_sysCharged = newState.ammoLoaded; // Map SystemStateData fields to your OSD needs
+    m_sysCharged = newState.weaponCharged; // Map SystemStateData fields to your OSD needs
     m_sysArmed = newState.gunArmed;
     m_sysReady = newState.isReady();      // Use the helper function? Or specific flags
     m_cameraFOV = newState.activeCameraIsDay ? newState.dayCurrentHFOV : newState.nightCurrentHFOV; // Example: Get FOV based on active cam
@@ -394,10 +394,10 @@ void CameraVideoStreamDevice::onSystemStateChanged(const SystemStateData &newSta
     m_currentLeadAngleOffsetEl = newState.leadAngleOffsetEl;
     m_currentAmmunitionLevel = newState.stationAmmunitionLevel;
 
-    // Ammunition Feed Status (for OSD display)
-    m_ammoFeedState = newState.ammoFeedState;
-    m_ammoFeedCycleInProgress = newState.ammoFeedCycleInProgress;
-    m_ammoLoaded = newState.ammoLoaded;
+    // Charging Status (for OSD display)
+    m_chargingState = newState.chargingState;
+    m_chargeCycleInProgress = newState.chargeCycleInProgress;
+    m_weaponCharged = newState.weaponCharged;
 
     m_detectionEnabled.store(newState.detectionEnabled);
 }
@@ -1072,10 +1072,10 @@ bool CameraVideoStreamDevice::processFrame(GstBuffer *buffer)
         data.stationAmmunitionLevel = m_currentAmmunitionLevel;
         data.ballDropActive = m_ballDropActive;
 
-        // Ammunition Feed Status (for OSD display)
-        data.ammoFeedState = m_ammoFeedState;
-        data.ammoFeedCycleInProgress = m_ammoFeedCycleInProgress;
-        data.ammoLoaded = m_ammoLoaded;
+        // Charging Status (for OSD display)
+        data.chargingState = m_chargingState;
+        data.chargeCycleInProgress = m_chargeCycleInProgress;
+        data.weaponCharged = m_weaponCharged;
 
         // ====================================================================
         // LATENCY MEASUREMENT: Calculate glass-to-glass latency

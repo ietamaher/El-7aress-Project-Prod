@@ -182,8 +182,8 @@ enum class WeaponType {
 };
 
 /**
- * @brief Ammunition feed cycle FSM states
- * Tracks the state of the ammunition feeding mechanism
+ * @brief Weapon charging cycle FSM states (Cocking Actuator)
+ * Tracks the state of the remote charging mechanism
  *
  * CROWS M153 Charging Sequence:
  * - Short press: Runs complete charge cycle(s) automatically
@@ -193,11 +193,11 @@ enum class WeaponType {
  * - After completion: 4-second lockout prevents additional charging
  * - During charging: Fire circuit is disabled
  */
-enum class AmmoFeedState {
+enum class ChargingState {
     Idle,           // Ready for new cycle
-    Extending,      // Moving to extend position
+    Extending,      // Cocking actuator extending (pulling bolt back)
     Extended,       // Holding at extended position (button held)
-    Retracting,     // Moving to retract position
+    Retracting,     // Cocking actuator retracting (releasing bolt)
     Lockout,        // 4-second lockout after charge completion (CROWS spec)
 
     // === JAM HANDLING ===
@@ -574,7 +574,7 @@ struct SystemStateData {
     bool stationEnabled = true;         ///< Weapon station enable status
     bool gotoHomePosition = false;                ///< Home position switch status
     bool gunArmed = false;              ///< Weapon arming status
-    bool ammoLoadButtonPressed = false;            ///< Ammunition loaded status
+    bool chargeButtonPressed = false;              ///< CHG button status (cocking actuator)
     bool authorized = false;            ///< System authorization status
     bool detectionEnabled = false;      ///< Target detection enable status
     FireMode fireMode = FireMode::Unknown; ///< Current weapon fire mode
@@ -719,11 +719,11 @@ struct SystemStateData {
     float currentTargetAngularRateEl = 0.0f;            ///< Target angular rate in elevation (degrees/second)
     float muzzleVelocityMPS = 900.0f;                   ///< Projectile muzzle velocity in meters per second
     
-    // Ammunition Feed Parameters (CROWS M153 Compliant)
+    // Charging Parameters (CROWS M153 Compliant - Cocking Actuator)
     WeaponType installedWeaponType = WeaponType::M2HB;  ///< Currently installed weapon type
-    AmmoFeedState ammoFeedState = AmmoFeedState::Idle;  ///< Current FSM state (for OSD display)
-    bool ammoFeedCycleInProgress = false;   ///< FSM is running (for backward compat)
-    bool ammoLoaded = false;                ///< Inferred from successful feed cycle completion
+    ChargingState chargingState = ChargingState::Idle;  ///< Current charging FSM state (for OSD display)
+    bool chargeCycleInProgress = false;     ///< Charging FSM is running
+    bool weaponCharged = false;             ///< Round chambered (inferred from successful charge cycle)
     int chargeCyclesCompleted = 0;          ///< Number of charge cycles completed (for multi-cycle weapons)
     int chargeCyclesRequired = 2;           ///< Total cycles required for current weapon (M2HB=2, others=1)
     bool chargeLockoutActive = false;       ///< 4-second lockout active after charge completion
@@ -747,7 +747,7 @@ struct SystemStateData {
      * @return True if all safety and authorization conditions are met
      */
     bool isReady() const {
-        return gunArmed && ammoLoaded && deadManSwitchActive && authorized;
+        return gunArmed && weaponCharged && deadManSwitchActive && authorized;
     }
     
     /**
@@ -925,7 +925,7 @@ struct SystemStateData {
                stationEnabled == other.stationEnabled &&
                gotoHomePosition == other.gotoHomePosition &&
                gunArmed == other.gunArmed &&
-               ammoLoadButtonPressed == other.ammoLoadButtonPressed &&
+               chargeButtonPressed == other.chargeButtonPressed &&
                authorized == other.authorized &&
                detectionEnabled == other.detectionEnabled &&
                fireMode == other.fireMode &&
@@ -1018,9 +1018,9 @@ struct SystemStateData {
                qFuzzyCompare(currentTargetAngularRateEl, other.currentTargetAngularRateEl) &&
                qFuzzyCompare(muzzleVelocityMPS, other.muzzleVelocityMPS) &&
                installedWeaponType == other.installedWeaponType &&
-               ammoFeedState == other.ammoFeedState &&
-               ammoFeedCycleInProgress == other.ammoFeedCycleInProgress &&
-               ammoLoaded == other.ammoLoaded &&
+               chargingState == other.chargingState &&
+               chargeCycleInProgress == other.chargeCycleInProgress &&
+               weaponCharged == other.weaponCharged &&
                chargeCyclesCompleted == other.chargeCyclesCompleted &&
                chargeCyclesRequired == other.chargeCyclesRequired &&
                chargeLockoutActive == other.chargeLockoutActive &&

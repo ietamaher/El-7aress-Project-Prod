@@ -133,11 +133,11 @@ void OsdController::onSystemStateChanged(const SystemStateData& data)
             data.environmentalAltitudeMeters
         );
 
-        // Update ammunition feed status (also updated via FrameData path for synchronization)
+        // Update charging status (also updated via FrameData path for synchronization)
         m_viewModel->updateAmmoFeedStatus(
-            static_cast<int>(data.ammoFeedState),
-            data.ammoFeedCycleInProgress,
-            data.ammoLoaded
+            static_cast<int>(data.chargingState),
+            data.chargeCycleInProgress,
+            data.weaponCharged
         );
 
         // Update gyrostabilization debug data for OSD diagnostics
@@ -469,11 +469,11 @@ void OsdController::onFrameDataReady(const FrameData& frmdata)
     m_viewModel->updateCurrentScanName(frmdata.currentScanName);
     m_viewModel->updateAmmunitionLevel(frmdata.stationAmmunitionLevel);
 
-    // === AMMUNITION FEED STATUS ===
+    // === CHARGING STATUS ===
     m_viewModel->updateAmmoFeedStatus(
-        static_cast<int>(frmdata.ammoFeedState),
-        frmdata.ammoFeedCycleInProgress,
-        frmdata.ammoLoaded
+        static_cast<int>(frmdata.chargingState),
+        frmdata.chargeCycleInProgress,
+        frmdata.weaponCharged
     );
 }
 // ============================================================================
@@ -496,7 +496,7 @@ void OsdController::onFrameDataReady(const FrameData& frmdata)
     m_viewModel->updateFov(fov);
 
     // System status
-    m_viewModel->updateSystemStatus(data.ammoLoaded, data.gunArmed, data.isReady());
+    m_viewModel->updateSystemStatus(data.weaponCharged, data.gunArmed, data.isReady());
     m_viewModel->updateFiringMode(data.fireMode);
     m_viewModel->updateLrfDistance(data.lrfDistance);
 
