@@ -934,7 +934,35 @@ public slots:
      * @param newOpMode The new operational mode to apply.
      */
     virtual void setOpMode(OperationalMode newOpMode);
-    
+
+    // =========================================================================
+    // HOMING STATE CONTROL (GimbalController is sole owner of homing FSM)
+    // =========================================================================
+
+    /**
+     * @brief Sets the homing state directly.
+     * @param state The new homing state.
+     */
+    void setHomingState(HomingState state);
+
+    /**
+     * @brief Begins a homing sequence - saves motion mode and sets state to Requested.
+     * Called by GimbalController when home button is pressed.
+     */
+    void beginHoming();
+
+    /**
+     * @brief Completes homing - restores motion mode and clears flags.
+     * Called by GimbalController when both axes report HOME-END.
+     */
+    void completeHoming();
+
+    /**
+     * @brief Aborts homing - restores motion mode and clears flags.
+     * Called by GimbalController on timeout or emergency stop.
+     */
+    void abortHoming();
+
     /**
      * @brief Sets whether tracking restart is requested.
      * @param restart True if tracking restart is requested, false otherwise.
@@ -1052,7 +1080,6 @@ private:
      * @param newData New system state data (may be modified).
      */
     void processStateTransitions(const SystemStateData& oldData, SystemStateData& newData);
-    void processHomingStateMachine(const SystemStateData& oldData,  SystemStateData& newData);
 
     ChargingState m_chargingState = ChargingState::Idle;
     bool m_chargeCycleInProgress = false;

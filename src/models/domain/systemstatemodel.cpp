@@ -2397,7 +2397,9 @@ void SystemStateModel::processStateTransitions(const SystemStateData& oldData,
     // ========================================================================
     // PRIORITY 2: HOMING SEQUENCE MANAGEMENT
     // ========================================================================
-    processHomingStateMachine(oldData, newData);
+    // NOTE: Homing state machine is now owned by GimbalController.
+    // GimbalController updates homingState via setHomingState().
+    // This eliminates race conditions between parallel state machines.
 
     // ========================================================================
     // PRIORITY 3: Station Power Check
@@ -2478,117 +2480,66 @@ void SystemStateModel::commandEngagement(bool start) {
     emit dataChanged(m_currentStateData);
 }
 
-void SystemStateModel::processHomingStateMachine(const SystemStateData& oldData,
-                                                  SystemStateData& newData)
+// ============================================================================
+// HOMING STATE SETTERS (for GimbalController - sole owner of homing FSM)
+// ============================================================================
+
+void SystemStateModel::setHomingState(HomingState state)
 {
-    // ========================================================================
-    // HOMING BUTTON PRESSED (rising edge)
-    // ========================================================================
-    if (newData.gotoHomePosition && !oldData.gotoHomePosition) {
-        // Home button just pressed
-        if (newData.homingState == HomingState::Idle) {
-            qInfo() << "[SystemStateModel] Home button pressed - initiating homing";
-            qInfo() << "[SystemStateModel] Saving current motion mode:"
-                    << static_cast<int>(newData.motionMode) << "for restoration after homing";
-            newData.homingState = HomingState::Requested;
-            newData.previousMotionMode = newData.motionMode;  // Save mode for restoration
-            newData.motionMode = MotionMode::Idle;  // Suspend motion during homing
-            // GimbalController will send HOME command in next cycle
-        }
-    }
-
-    // ========================================================================
-    // HOMING REQUESTED → TRANSITION TO IN PROGRESS
-    // ========================================================================
-    // ⭐ BUG FIX: Auto-transition from Requested to InProgress
-    // GimbalController sets its own m_currentHomingState but doesn't propagate
-    // back to SystemStateModel. We auto-transition after one cycle to sync states.
-    if (newData.homingState == HomingState::Requested &&
-        oldData.homingState == HomingState::Requested) {
-        // We've been in Requested for at least one cycle - GimbalController should
-        // have sent the HOME command by now. Transition to InProgress.
-        qInfo() << "[SystemStateModel] Auto-transitioning from Requested → InProgress";
-        newData.homingState = HomingState::InProgress;
-    }
-
-    // ========================================================================
-    // HOMING IN PROGRESS → CHECK FOR COMPLETION (REQUIRE BOTH AXES)
-    // ========================================================================
-    if (newData.homingState == HomingState::InProgress) {
-        // Check if BOTH HOME-END signals received
-        // We need both azimuth AND elevation to complete homing
-        bool azHomeDone = newData.azimuthHomeComplete;
-        bool elHomeDone = newData.elevationHomeComplete;
-
-        // Log individual axis completion (rising edge detection for logging only)
-        if (azHomeDone && !oldData.azimuthHomeComplete) {
-            qInfo() << "[SystemStateModel] ✓ Azimuth HOME-END received";
-        }
-        if (elHomeDone && !oldData.elevationHomeComplete) {
-            qInfo() << "[SystemStateModel] ✓ Elevation HOME-END received";
-        }
-
-        // ⭐ BUG FIX: Complete homing when BOTH axes report HOME-END
-        // Original code: Required rising edge detection, preventing completion if flags were already set
-        // New code: Complete homing whenever both flags are true, regardless of previous state
-        if (azHomeDone && elHomeDone) {
-            // Only log and transition if we weren't already Completed
-            if (newData.homingState == HomingState::InProgress) {
-                qInfo() << "[SystemStateModel] ✓✓ BOTH axes homed - homing complete";
-                newData.homingState = HomingState::Completed;
-                // GimbalController will restore motion mode
-            }
-        }
-    }
-
-    // ========================================================================
-    // HOMING COMPLETED → RESTORE MOTION MODE AND CLEAR FLAGS
-    // ========================================================================
-    if (newData.homingState == HomingState::Completed &&
-        oldData.homingState == HomingState::InProgress) {
-        // Homing just completed - restore previous motion mode
-        qInfo() << "[SystemStateModel] Homing complete - restoring motion mode:"
-                << static_cast<int>(newData.previousMotionMode);
-        newData.motionMode = newData.previousMotionMode;
-
-        // Clear homing flags
-        qDebug() << "[SystemStateModel] Clearing homing flags";
-        newData.gotoHomePosition = false;
-        newData.azimuthHomeComplete = false;
-        newData.elevationHomeComplete = false;
-        // Will transition to Idle on next cycle
-    }
-
-    // ========================================================================
-    // HOMING FAILED/ABORTED → RESTORE MOTION MODE
-    // ========================================================================
-    if ((newData.homingState == HomingState::Failed ||
-         newData.homingState == HomingState::Aborted) &&
-        (oldData.homingState == HomingState::InProgress ||
-         oldData.homingState == HomingState::Requested)) {
-        // Homing was interrupted - restore previous motion mode
-        qInfo() << "[SystemStateModel] Homing aborted/failed - restoring motion mode:"
-                << static_cast<int>(newData.previousMotionMode);
-        newData.motionMode = newData.previousMotionMode;
-        newData.gotoHomePosition = false;
-        newData.azimuthHomeComplete = false;
-        newData.elevationHomeComplete = false;
-    }
-
-    // ========================================================================
-    // AUTO-TRANSITION COMPLETED/FAILED/ABORTED → IDLE (HomingState)
-    // ========================================================================
-    if ((newData.homingState == HomingState::Completed ||
-         newData.homingState == HomingState::Failed ||
-         newData.homingState == HomingState::Aborted) &&
-        !newData.gotoHomePosition) {
-        // Flags cleared, transition homingState back to idle
-        newData.homingState = HomingState::Idle;
+    if (m_currentStateData.homingState != state) {
+        qDebug() << "[SystemStateModel] Homing state changed:"
+                 << static_cast<int>(m_currentStateData.homingState) << "->"
+                 << static_cast<int>(state);
+        m_currentStateData.homingState = state;
+        emit dataChanged(m_currentStateData);
     }
 }
 
+void SystemStateModel::beginHoming()
+{
+    // Save current motion mode for restoration after homing
+    m_currentStateData.previousMotionMode = m_currentStateData.motionMode;
+    m_currentStateData.motionMode = MotionMode::Idle;
+    m_currentStateData.homingState = HomingState::Requested;
+
+    qInfo() << "[SystemStateModel] Homing initiated - saved mode:"
+            << static_cast<int>(m_currentStateData.previousMotionMode);
+
+    emit dataChanged(m_currentStateData);
+}
+
+void SystemStateModel::completeHoming()
+{
+    // Restore previous motion mode
+    m_currentStateData.motionMode = m_currentStateData.previousMotionMode;
+    m_currentStateData.homingState = HomingState::Idle;
+    m_currentStateData.gotoHomePosition = false;
+    m_currentStateData.azimuthHomeComplete = false;
+    m_currentStateData.elevationHomeComplete = false;
+
+    qInfo() << "[SystemStateModel] Homing complete - restored mode:"
+            << static_cast<int>(m_currentStateData.motionMode);
+
+    emit dataChanged(m_currentStateData);
+}
+
+void SystemStateModel::abortHoming()
+{
+    // Restore previous motion mode
+    m_currentStateData.motionMode = m_currentStateData.previousMotionMode;
+    m_currentStateData.homingState = HomingState::Idle;
+    m_currentStateData.gotoHomePosition = false;
+    m_currentStateData.azimuthHomeComplete = false;
+    m_currentStateData.elevationHomeComplete = false;
+
+    qWarning() << "[SystemStateModel] Homing aborted - restored mode:"
+               << static_cast<int>(m_currentStateData.motionMode);
+
+    emit dataChanged(m_currentStateData);
+}
+
 // ============================================================================
-// UPDATE enterEmergencyStopMode() - ADD HOMING ABORT
+// EMERGENCY STOP MODE
 // ============================================================================
 
 void SystemStateModel::enterEmergencyStopMode() {
@@ -2597,13 +2548,9 @@ void SystemStateModel::enterEmergencyStopMode() {
 
     qCritical() << "[MODEL] ENTERING EMERGENCY STOP MODE!";
 
-    // Abort homing if in progress
-    if (data.homingState == HomingState::InProgress ||
-        data.homingState == HomingState::Requested) {
-        qWarning() << "[MODEL] Aborting in-progress homing sequence";
-        data.homingState = HomingState::Aborted;
-        data.gotoHomePosition = false;
-    }
+    // NOTE: Homing abort is now handled by GimbalController which owns the
+    // homing FSM. GimbalController will detect emergencyStopActive and call
+    // abortHomingSequence() which properly restores state.
 
     data.opMode = OperationalMode::EmergencyStop;
     data.motionMode = MotionMode::Idle;

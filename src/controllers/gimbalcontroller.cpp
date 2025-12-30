@@ -652,138 +652,92 @@ void GimbalController::onElAlarmCleared()
 }
 
 // ============================================================================
-// HOMING STATE MACHINE
+// HOMING STATE MACHINE (GimbalController is sole owner)
+// ============================================================================
+// Architecture: GimbalController owns the homing FSM and updates SystemStateModel
+// via setter methods. This eliminates race conditions from parallel state machines.
 // ============================================================================
 
 void GimbalController::processHomingSequence(const SystemStateData& data)
 {
     // ========================================================================
-    // CRITICAL FIX: Detect when homing ends (regardless of which state we see)
+    // STATE: IDLE - Check for home button press
     // ========================================================================
-    // SystemStateModel may complete homing and transition to Idle so fast that
-    // we never see HomingState::Completed. We need to detect any transition OUT
-    // of InProgress and stop our timeout timer.
-    // ========================================================================
-    if (m_currentHomingState == HomingState::InProgress &&
-        data.homingState != HomingState::InProgress &&
-        data.homingState != HomingState::Requested) {
-        // Homing ended (either Completed, Idle, Failed, or Aborted)
-        qDebug() << "[GimbalController] Detected homing end transition:"
-                 << static_cast<int>(m_currentHomingState) << "->"
-                 << static_cast<int>(data.homingState);
-        m_homingTimeoutTimer->stop();
-
-        // Return to manual mode
-        if (m_plc42 && m_plc42->data()->isConnected) {
-            m_plc42->setManualMode();
-            qDebug() << "[GimbalController] PLC42 returned to MANUAL mode";
-        }
-
-        m_currentHomingState = HomingState::Idle;
-        qInfo() << "[GimbalController] Homing sequence ended, timer stopped";
-    }
-
-    switch (data.homingState) {
-    case HomingState::Idle:
+    if (m_currentHomingState == HomingState::Idle) {
         // Check if home button pressed (rising edge detection)
         if (data.gotoHomePosition && !m_oldState.gotoHomePosition) {
-            qInfo() << "[GimbalController] Home button pressed";
+            qInfo() << "[GimbalController] Home button pressed - initiating homing";
             startHomingSequence();
         }
-        break;
+        return;
+    }
 
-    case HomingState::Requested:
-    {
-        // Send HOME command to PLC42 (only once when we first see Requested)
-        if (m_currentHomingState != HomingState::InProgress &&
-            m_plc42 && m_plc42->data()->isConnected) {
+    // ========================================================================
+    // STATE: REQUESTED - Send HOME command to PLC42
+    // ========================================================================
+    if (m_currentHomingState == HomingState::Requested) {
+        if (m_plc42 && m_plc42->data()->isConnected) {
             qInfo() << "[GimbalController] Starting HOME sequence";
-
-            // Store current mode to restore after homing completes
-            m_modeBeforeHoming = data.motionMode;
-            qDebug() << "[GimbalController] Stored current mode:"
-                     << static_cast<int>(m_modeBeforeHoming);
 
             // Send HOME command to Oriental Motor via PLC42
             m_plc42->setHomePosition();  // Sets gimbalOpMode = 3 -> Q1_1 HIGH (ZHOME)
 
-            // Update state to InProgress
+            // Transition to InProgress
             m_currentHomingState = HomingState::InProgress;
+            m_stateModel->setHomingState(HomingState::InProgress);
 
             // Start timeout timer (30 seconds)
             m_homingTimeoutTimer->start(HOMING_TIMEOUT_MS);
 
             qInfo() << "[GimbalController] HOME command sent, waiting for HOME-END signals...";
-        } else if (!m_plc42 || !m_plc42->data()->isConnected) {
+        } else {
             qCritical() << "[GimbalController] Cannot start homing - PLC42 not connected";
             abortHomingSequence("PLC42 not connected");
         }
-        break;
+        return;
     }
 
-    case HomingState::InProgress:
-    {
+    // ========================================================================
+    // STATE: IN PROGRESS - Wait for HOME-END signals
+    // ========================================================================
+    if (m_currentHomingState == HomingState::InProgress) {
+        // Check for emergency stop during homing
+        if (data.emergencyStopActive) {
+            qWarning() << "[GimbalController] Homing aborted by emergency stop";
+            abortHomingSequence("Emergency stop activated");
+            return;
+        }
+
         // Check if BOTH HOME-END signals received
         bool azHomeDone = data.azimuthHomeComplete;
         bool elHomeDone = data.elevationHomeComplete;
 
         // Log individual axis completion (rising edge detection)
         if (azHomeDone && !m_oldState.azimuthHomeComplete) {
-            qInfo() << "[GimbalController] Azimuth axis homed (HOME-END received)";
+            qInfo() << "[GimbalController] ✓ Azimuth axis homed (HOME-END received)";
         }
         if (elHomeDone && !m_oldState.elevationHomeComplete) {
-            qInfo() << "[GimbalController] Elevation axis homed (HOME-END received)";
+            qInfo() << "[GimbalController] ✓ Elevation axis homed (HOME-END received)";
         }
 
-        // Complete homing only when BOTH axes report HOME-END
-        if (azHomeDone && elHomeDone &&
-            (!m_oldState.azimuthHomeComplete || !m_oldState.elevationHomeComplete)) {
-            qInfo() << "[GimbalController] BOTH axes at home position";
+        // Complete homing when BOTH axes report HOME-END
+        if (azHomeDone && elHomeDone) {
+            qInfo() << "[GimbalController] ✓✓ BOTH axes at home position";
             completeHomingSequence();
         }
-
-        // Check for emergency stop during homing
-        if (data.emergencyStopActive) {
-            qWarning() << "[GimbalController] Homing aborted by emergency stop";
-            abortHomingSequence("Emergency stop activated");
-        }
-        break;
-    }
-
-    case HomingState::Completed:
-        // Stop timer and clear state (in case we do see this state)
-        if (m_currentHomingState == HomingState::InProgress) {
-            qInfo() << "[GimbalController] Homing completed (via Completed state)";
-            m_homingTimeoutTimer->stop();
-            if (m_plc42 && m_plc42->data()->isConnected) {
-                m_plc42->setManualMode();
-            }
-        }
-        m_currentHomingState = HomingState::Idle;
-        break;
-
-    case HomingState::Failed:
-    case HomingState::Aborted:
-        // Stop timer and clear state
-        if (m_currentHomingState == HomingState::InProgress) {
-            qWarning() << "[GimbalController] Homing failed/aborted externally";
-            m_homingTimeoutTimer->stop();
-            if (m_plc42 && m_plc42->data()->isConnected) {
-                m_plc42->setManualMode();
-            }
-        }
-        m_currentHomingState = HomingState::Idle;
-        break;
     }
 }
 
 void GimbalController::startHomingSequence()
 {
-    // This method is called when home button first pressed
-    // It signals SystemStateModel to transition to HomingState::Requested
-    // SystemStateModel will update the state, which triggers processHomingSequence
+    // GimbalController is now the sole owner of homing FSM
+    // Tell SystemStateModel to save mode and set state to Requested
 
     m_currentHomingState = HomingState::Requested;
+
+    if (m_stateModel) {
+        m_stateModel->beginHoming();  // Saves mode, sets Requested, motionMode=Idle
+    }
 
     qInfo() << "[GimbalController] Homing sequence initiated";
     qInfo() << "[GimbalController] -> Will send HOME command to Oriental Motor";
@@ -800,18 +754,16 @@ void GimbalController::completeHomingSequence()
         qDebug() << "[GimbalController] PLC42 returned to MANUAL mode";
     }
 
-    // Mark as completed
-    m_currentHomingState = HomingState::Completed;
+    // Mark as completed locally
+    m_currentHomingState = HomingState::Idle;
+
+    // Tell SystemStateModel to restore mode and clear flags
+    if (m_stateModel) {
+        m_stateModel->completeHoming();  // Restores mode, clears flags, sets Idle
+    }
 
     qInfo() << "[GimbalController] HOME sequence completed successfully";
     qInfo() << "[GimbalController] Gimbal at home position, ready for operation";
-    qInfo() << "[GimbalController] Will restore motion mode:"
-            << static_cast<int>(m_modeBeforeHoming);
-
-    // SystemStateModel will handle:
-    // 1. Setting homingState = Completed
-    // 2. Restoring motionMode = m_modeBeforeHoming
-    // 3. Clearing gotoHomePosition and homePositionReached flags
 }
 
 void GimbalController::abortHomingSequence(const QString& reason)
@@ -825,15 +777,16 @@ void GimbalController::abortHomingSequence(const QString& reason)
         qDebug() << "[GimbalController] PLC42 returned to MANUAL mode after abort";
     }
 
-    // Mark as aborted
-    m_currentHomingState = HomingState::Aborted;
+    // Mark as idle locally
+    m_currentHomingState = HomingState::Idle;
+
+    // Tell SystemStateModel to restore mode and clear flags
+    if (m_stateModel) {
+        m_stateModel->abortHoming();  // Restores mode, clears flags, sets Idle
+    }
 
     qCritical() << "[GimbalController] HOME sequence aborted:" << reason;
     qWarning() << "[GimbalController] Gimbal position may be uncertain";
-    qWarning() << "[GimbalController] Will restore motion mode:"
-               << static_cast<int>(m_modeBeforeHoming);
-
-    // SystemStateModel will handle flag clearing and mode restoration
 }
 
 void GimbalController::onHomingTimeout()
@@ -846,15 +799,9 @@ void GimbalController::onHomingTimeout()
     qCritical() << "[GimbalController]   - Oriental Motor fault";
     qCritical() << "[GimbalController]   - Mechanical obstruction";
 
-    // Mark as failed
-    m_currentHomingState = HomingState::Failed;
-
-    // Return PLC42 to manual mode
-    if (m_plc42) {
-        m_plc42->setManualMode();
-    }
-
-    // SystemStateModel will be notified of failure state
+    // Use abortHomingSequence to properly restore state
+    // (Timer is already stopped since this is the timeout callback)
+    abortHomingSequence("Timeout - HOME-END not received");
 }
 
 // ============================================================================

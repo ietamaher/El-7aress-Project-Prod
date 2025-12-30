@@ -175,8 +175,11 @@ private:
     // ========================================================================
     // Homing State Machine
     // ========================================================================
+    // NOTE: GimbalController is the sole owner of the homing FSM.
+    // Motion mode save/restore is handled by SystemStateModel via
+    // beginHoming(), completeHoming(), and abortHoming() methods.
+    // ========================================================================
     HomingState m_currentHomingState = HomingState::Idle;
-    MotionMode m_modeBeforeHoming = MotionMode::Idle;
 
     // ========================================================================
     // State Tracking Flags
