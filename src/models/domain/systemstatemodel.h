@@ -53,6 +53,7 @@
 #include <limits>
 
 #include "systemstatedata.h"
+#include "statepartitions.h"
 #include "daycameradatamodel.h"
 #include "gyrodatamodel.h"
 #include "joystickdatamodel.h"
@@ -87,15 +88,41 @@ struct NtzState {
 // MAIN CLASS DEFINITION
 // =================================
 
+// Forward declarations for friend access
+class SafetyInterlock;
+class EmergencyStopMonitor;
+
 /**
  * @brief Central state management class for the RCWS system
- * 
+ *
  * This QObject-based class serves as the single source of truth for all system state,
  * coordinating between hardware interfaces, user controls, and application logic.
+ *
+ * STATE PARTITION OWNERSHIP RULES:
+ * ================================
+ * SafetyState:       WRITE-RESTRICTED - Only SafetyInterlock/EmergencyStopMonitor may modify
+ * WeaponState:       WeaponController is primary owner
+ * GimbalState:       GimbalController is primary owner
+ * TrackingState:     TrackingController is primary owner
+ * ZoneState:         ZoneEnforcementService/SystemStateModel are owners
+ * EnvironmentalState: WeaponController is primary owner
+ *
+ * WRITE PROTECTION:
+ * Safety-critical fields (emergencyStopActive, gunArmed, stationEnabled, etc.)
+ * should ONLY be modified through SafetyInterlock::checkFirePermission() or
+ * EmergencyStopMonitor::updateState(). Direct modification bypasses safety checks.
  */
 class SystemStateModel : public QObject
 {
     Q_OBJECT
+
+    // =========================================================================
+    // FRIEND DECLARATIONS FOR WRITE-PROTECTED STATE ACCESS
+    // =========================================================================
+    // Only these classes may modify safety-critical state directly.
+    // Other controllers must go through SafetyInterlock for safety checks.
+    friend class SafetyInterlock;
+    friend class EmergencyStopMonitor;
 
 public:
     explicit SystemStateModel(QObject *parent = nullptr);
@@ -110,12 +137,82 @@ public:
      * @return The current SystemStateData structure.
      */
     virtual SystemStateData data() const { return m_currentStateData; }
-    
+
     /**
      * @brief Updates the entire system state with new data.
      * @param newState The new system state data to apply.
      */
     void updateData(const SystemStateData &newState);
+
+    // =================================
+    // TYPED STATE PARTITION ACCESSORS
+    // =================================
+    // These accessors provide domain-specific views over the SystemStateData.
+    // They enable type-safe access and clear ownership boundaries.
+    // See statepartitions.h for ownership rules and documentation.
+
+    /**
+     * @brief Gets the current safety state partition (READ-ONLY)
+     *
+     * Contains all safety-critical fields including E-stop, arming,
+     * authorization, and zone restrictions.
+     *
+     * @warning SafetyState is WRITE-RESTRICTED. Modifications should only
+     *          be made through SafetyInterlock or EmergencyStopMonitor.
+     *
+     * @return SafetyState snapshot of current safety state
+     */
+    SafetyState safetyState() const { return extractSafetyState(m_currentStateData); }
+
+    /**
+     * @brief Gets the current weapon state partition
+     *
+     * Contains all weapon-related fields including charging state,
+     * fire mode, and weapon type configuration.
+     *
+     * @return WeaponState snapshot of current weapon state
+     */
+    WeaponState weaponState() const { return extractWeaponState(m_currentStateData); }
+
+    /**
+     * @brief Gets the current gimbal state partition
+     *
+     * Contains all gimbal positioning and servo fields including
+     * position, motion mode, homing state, and servo health.
+     *
+     * @return GimbalState snapshot of current gimbal state
+     */
+    GimbalState gimbalState() const { return extractGimbalState(m_currentStateData); }
+
+    /**
+     * @brief Gets the current tracking state partition
+     *
+     * Contains all tracking-related fields including tracking phase,
+     * confidence, target data, and acquisition gate.
+     *
+     * @return TrackingState snapshot of current tracking state
+     */
+    TrackingState trackingState() const { return extractTrackingState(m_currentStateData); }
+
+    /**
+     * @brief Gets the current zone state partition
+     *
+     * Contains zone management fields including NFZ/NTZ status,
+     * zone counts, and active selections.
+     *
+     * @return ZoneState snapshot of current zone state
+     */
+    ZoneState zoneState() const { return extractZoneState(m_currentStateData); }
+
+    /**
+     * @brief Gets the current environmental/ballistic state partition
+     *
+     * Contains all ballistic compensation fields including zeroing,
+     * windage, environmental conditions, and lead angle compensation.
+     *
+     * @return EnvironmentalState snapshot of current environmental state
+     */
+    EnvironmentalState environmentalState() const { return extractEnvironmentalState(m_currentStateData); }
 
     // =================================
     // USER INTERFACE CONTROLS
@@ -964,6 +1061,44 @@ public slots:
      * @param charged True if weapon is charged and ready to fire
      */
     void setWeaponCharged(bool charged);
+
+protected:
+    // =========================================================================
+    // WRITE-PROTECTED SAFETY STATE MODIFICATION
+    // =========================================================================
+    // These methods provide controlled access to safety-critical state.
+    // They are protected and only accessible via friend classes.
+
+    /**
+     * @brief Update emergency stop state (WRITE-PROTECTED)
+     *
+     * Only SafetyInterlock and EmergencyStopMonitor should call this.
+     * Other classes should use EmergencyStopMonitor::updateState().
+     *
+     * @param active New emergency stop state
+     * @param source Source of the state change (for audit)
+     */
+    void setSafetyEmergencyStop(bool active, const QString& source = "DIRECT");
+
+    /**
+     * @brief Update gun armed state (WRITE-PROTECTED)
+     *
+     * Only SafetyInterlock should call this directly.
+     * Normally set via PLC21 hardware input.
+     *
+     * @param armed New armed state
+     */
+    void setSafetyGunArmed(bool armed);
+
+    /**
+     * @brief Update station enabled state (WRITE-PROTECTED)
+     *
+     * Only SafetyInterlock should call this directly.
+     * Normally set via PLC21 hardware input.
+     *
+     * @param enabled New enabled state
+     */
+    void setSafetyStationEnabled(bool enabled);
 
 private:
     // =================================

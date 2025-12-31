@@ -230,6 +230,7 @@ HEADERS += \
     src/models/domain/servoactuatordatamodel.h \
     src/models/domain/servodriverdatamodel.h \
     src/models/domain/systemstatedata.h \
+    src/models/domain/statepartitions.h \
     src/models/domain/systemstatemodel.h \
     src/models/environmentalviewmodel.h \
     src/models/brightnessviewmodel.h \
