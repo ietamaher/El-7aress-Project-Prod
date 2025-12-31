@@ -25,10 +25,10 @@ void ManualMotionMode::enterMode(GimbalController* controller)
 
     // Set initial acceleration for both servos
     if (auto azServo = controller->azimuthServo()) {
-        setAcceleration(azServo, 1000000);
+        setAcceleration(azServo, 100000);
     }
     if (auto elServo = controller->elevationServo()) {
-        setAcceleration(elServo, 1000000);
+        setAcceleration(elServo, 100000);
     }
     // Add acceleration !!!!!
     
@@ -40,12 +40,10 @@ void ManualMotionMode::exitMode(GimbalController* controller)
     stopServos(controller);
 }
 
-void ManualMotionMode::update(GimbalController* controller, double dt)
+void ManualMotionMode::updateImpl(GimbalController* controller, double dt)
 {
-    if (!checkSafetyConditions(controller)) {
-        stopServos(controller);
-        return;
-    }
+    // NOTE: Safety checks are handled by base class updateWithSafety()
+    // This method is only called after SafetyInterlock.canMove() returns true
 
     SystemStateData data = controller->systemStateModel()->data();
 

@@ -24,6 +24,7 @@ TrackingMotionMode::TrackingMotionMode(QObject* parent)
     , m_previousDesiredAzVel(0.0), m_previousDesiredElVel(0.0)
     , m_lastGimbalAz(0.0), m_lastGimbalEl(0.0)
     , m_gimbalVelAz(0.0), m_gimbalVelEl(0.0)
+    , m_lastSentAzCmd(0.0), m_lastSentElCmd(0.0)
 {
     // -------------------------------------------------------------------------
     // TUNED PID GAINS FOR 50ms UPDATE CYCLE + FILTERED dErr
@@ -75,7 +76,7 @@ void TrackingMotionMode::enterMode(GimbalController* controller)
     m_filteredTargetVelEl = 0.0;
 
     // Initialize LAC state machine
-    m_state = TrackingState::TRACK;
+    m_state = LACTrackingState::TRACK;
     m_lacBlendFactor = 0.0;
     m_manualAzOffset_deg = 0.0;
     m_manualElOffset_deg = 0.0;
@@ -140,16 +141,20 @@ void TrackingMotionMode::onTargetPositionUpdated(
     m_smoothedElVel_dps = targetVelEl_dps;
 }
 
-void TrackingMotionMode::update(GimbalController* controller, double dt)
+void TrackingMotionMode::updateImpl(GimbalController* controller, double dt)
 {
+    // NOTE: Base class updateWithSafety() has already verified SafetyInterlock.canMove()
+    // This method is only called after general safety checks pass.
+
     // =========================================================================
-    // 0. SAFETY & VALIDATION
+    // 0. MODE-SPECIFIC VALIDATION
     // =========================================================================
     if (!controller || !m_targetValid || dt <= 0.0001)
         return;
 
     SystemStateData data = controller->systemStateModel()->data();
 
+    // Mode-specific safety: tracking requires dead man switch
     if (!data.deadManSwitchActive) {
         sendStabilizedServoCommands(controller, 0.0, 0.0, false, dt);
         return;
@@ -166,21 +171,21 @@ void TrackingMotionMode::update(GimbalController* controller, double dt)
     //   FIRE_LEAD -> RECENTER : when LAC deactivated
     //   RECENTER -> TRACK   : when blend factor reaches 0
     // =========================================================================
-    TrackingState prevState = m_state;
+    LACTrackingState prevState = m_state;
 
     if (data.lacArmed && data.deadReckoningActive) {
-        m_state = TrackingState::FIRE_LEAD;
+        m_state = LACTrackingState::FIRE_LEAD;
     } else {
-        if (prevState == TrackingState::FIRE_LEAD) {
-            m_state = TrackingState::RECENTER;
+        if (prevState == LACTrackingState::FIRE_LEAD) {
+            m_state = LACTrackingState::RECENTER;
         } else if (m_lacBlendFactor <= 0.001) {
-            m_state = TrackingState::TRACK;
+            m_state = LACTrackingState::TRACK;
         }
         // else: stay in RECENTER while ramping down
     }
 
     // Update blend factor based on state
-    if (m_state == TrackingState::FIRE_LEAD) {
+    if (m_state == LACTrackingState::FIRE_LEAD) {
         // Ramp IN lead (~200ms to reach 1.0)
         m_lacBlendFactor = qMin(1.0, m_lacBlendFactor + dt * LAC_BLEND_RAMP_IN);
 
@@ -256,7 +261,7 @@ void TrackingMotionMode::update(GimbalController* controller, double dt)
 
         m_manualAzOffset_deg = qBound(-MAX_MANUAL, m_manualAzOffset_deg, MAX_MANUAL);
         m_manualElOffset_deg = qBound(-MAX_MANUAL, m_manualElOffset_deg, MAX_MANUAL);
-    } else if (m_state != TrackingState::FIRE_LEAD) {
+    } else if (m_state != LACTrackingState::FIRE_LEAD) {
         // Smooth decay (not during FIRE_LEAD - already zeroed above)
         m_manualAzOffset_deg -= m_manualAzOffset_deg * DECAY * dt;
         m_manualElOffset_deg -= m_manualElOffset_deg * DECAY * dt;
@@ -392,5 +397,14 @@ void TrackingMotionMode::update(GimbalController* controller, double dt)
     // =========================================================================
     // 9. SEND SERVO COMMANDS (sign convention per system requirement)
     // =========================================================================
+
+    constexpr double CMD_CHANGE_THRESHOLD = 0.05;  // deg/s
+    if (std::abs(finalAzCmd - m_lastSentAzCmd) < CMD_CHANGE_THRESHOLD &&
+        std::abs(finalElCmd - m_lastSentElCmd) < CMD_CHANGE_THRESHOLD) {
+        return;  // Don't flood Modbus with identical commands
+    }
+    m_lastSentAzCmd = finalAzCmd;
+    m_lastSentElCmd = finalElCmd;
+
     sendStabilizedServoCommands(controller, -finalAzCmd, -finalElCmd, false, dt);
 }

@@ -198,7 +198,7 @@ struct ImuData {
  */
 struct ServoDriverData {
     bool isConnected = false;
-    float position = 0.0f;
+    float position = 999.0f;
     float rpm = 0.0f;
     float torque = 0.0f;
     float motorTemp = 0.0f;

@@ -244,6 +244,12 @@ signals:
     void motionPermissionChanged(bool permitted, SafetyDenialReason reason);
 
 private:
+    // ========================================================================
+    // AUDIT LOGGING HELPERS
+    // ========================================================================
+    void logAuditEvent(const QString& operation, bool permitted,
+                       SafetyDenialReason reason) const;
+
     SystemStateModel* m_stateModel = nullptr;
     mutable QMutex m_mutex;
 
@@ -252,6 +258,16 @@ private:
     bool m_lastCanFire = false;
     bool m_lastCanCharge = false;
     bool m_lastCanMove = false;
+
+    // ========================================================================
+    // AUDIT LOGGING STATE (Rate-limited to prevent log spam)
+    // ========================================================================
+    mutable qint64 m_lastFireLogTime = 0;
+    mutable qint64 m_lastChargeLogTime = 0;
+    mutable qint64 m_lastMoveLogTime = 0;
+    mutable SafetyDenialReason m_lastFireDenialReason = SafetyDenialReason::None;
+    mutable SafetyDenialReason m_lastChargeDenialReason = SafetyDenialReason::None;
+    mutable SafetyDenialReason m_lastMoveDenialReason = SafetyDenialReason::None;
 };
 
 #endif // SAFETYINTERLOCK_H

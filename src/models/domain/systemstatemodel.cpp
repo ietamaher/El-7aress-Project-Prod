@@ -2577,13 +2577,29 @@ void SystemStateModel::processHomingStateMachine(const SystemStateData& oldData,
 
     // ========================================================================
     // AUTO-TRANSITION COMPLETED/FAILED/ABORTED → IDLE (HomingState)
+    // ⭐ BUG FIX: Hold completion state for 2 seconds for OSD display
     // ========================================================================
     if ((newData.homingState == HomingState::Completed ||
          newData.homingState == HomingState::Failed ||
          newData.homingState == HomingState::Aborted) &&
         !newData.gotoHomePosition) {
-        // Flags cleared, transition homingState back to idle
-        newData.homingState = HomingState::Idle;
+
+        // Start display timer if not already running
+        if (!m_homingDisplayTimerActive) {
+            m_homingDisplayTimer.start();
+            m_homingDisplayTimerActive = true;
+            qDebug() << "[SystemStateModel] Homing display timer started - showing result for"
+                     << HOMING_DISPLAY_DURATION_MS << "ms";
+        }
+
+        // Check if display duration has elapsed
+        if (m_homingDisplayTimer.elapsed() >= HOMING_DISPLAY_DURATION_MS) {
+            // Timer expired - transition to Idle
+            qDebug() << "[SystemStateModel] Homing display timer expired - transitioning to Idle";
+            newData.homingState = HomingState::Idle;
+            m_homingDisplayTimerActive = false;
+        }
+        // Otherwise keep the current state (Completed/Failed/Aborted) for OSD display
     }
 }
 
@@ -3031,3 +3047,60 @@ void SystemStateModel::setWeaponCharged(bool charged)
     qDebug() << "[SystemStateModel] Weapon charged:" << charged;
 }
 
+// =============================================================================
+// WRITE-PROTECTED SAFETY STATE MODIFICATION (Protected Methods)
+// =============================================================================
+// These methods are only accessible to friend classes (SafetyInterlock,
+// EmergencyStopMonitor). They provide controlled access to safety-critical
+// state with audit logging.
+
+void SystemStateModel::setSafetyEmergencyStop(bool active, const QString& source)
+{
+    if (m_currentStateData.emergencyStopActive == active) {
+        return;
+    }
+
+    // Audit log for safety-critical change
+    if (active) {
+        qCritical() << "[SAFETY AUDIT] EMERGENCY STOP ACTIVATED"
+                    << "| Source:" << source
+                    << "| Time:" << QDateTime::currentDateTime().toString(Qt::ISODate);
+    } else {
+        qInfo() << "[SAFETY AUDIT] EMERGENCY STOP CLEARED"
+                << "| Source:" << source
+                << "| Time:" << QDateTime::currentDateTime().toString(Qt::ISODate);
+    }
+
+    m_currentStateData.emergencyStopActive = active;
+    emit dataChanged(m_currentStateData);
+}
+
+void SystemStateModel::setSafetyGunArmed(bool armed)
+{
+    if (m_currentStateData.gunArmed == armed) {
+        return;
+    }
+
+    // Audit log for safety-critical change
+    qInfo() << "[SAFETY AUDIT] GUN ARMED state changed:"
+            << (armed ? "ARMED" : "SAFE")
+            << "| Time:" << QDateTime::currentDateTime().toString(Qt::ISODate);
+
+    m_currentStateData.gunArmed = armed;
+    emit dataChanged(m_currentStateData);
+}
+
+void SystemStateModel::setSafetyStationEnabled(bool enabled)
+{
+    if (m_currentStateData.stationEnabled == enabled) {
+        return;
+    }
+
+    // Audit log for safety-critical change
+    qInfo() << "[SAFETY AUDIT] STATION ENABLED state changed:"
+            << (enabled ? "ENABLED" : "DISABLED")
+            << "| Time:" << QDateTime::currentDateTime().toString(Qt::ISODate);
+
+    m_currentStateData.stationEnabled = enabled;
+    emit dataChanged(m_currentStateData);
+}

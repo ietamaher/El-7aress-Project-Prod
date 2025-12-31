@@ -117,9 +117,10 @@ void AutoSectorScanMotionMode::setActiveScanZone(const AutoSectorScanZone& scanZ
 }
 
 // =========================================================
-// UPDATE (Main State Machine)
+// UPDATE IMPLEMENTATION (Main State Machine)
 // =========================================================
-void AutoSectorScanMotionMode::update(GimbalController* controller, double dt)
+// NOTE: Safety checks are handled by base class updateWithSafety()
+void AutoSectorScanMotionMode::updateImpl(GimbalController* controller, double dt)
 {
     if (!controller || !m_scanZoneSet || !m_activeScanZone.isEnabled)
         return;

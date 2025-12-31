@@ -17,7 +17,7 @@
 //   FIRE_LEAD  - Lead injection active, target drifts (lacBlendFactor → 1.0)
 //   RECENTER   - Fire stopped, transitioning back to tracking (lacBlendFactor → 0.0)
 // =============================================================================
-enum class TrackingState {
+enum class LACTrackingState {
     TRACK,       ///< Normal tracking - P+D loop keeps target centered
     FIRE_LEAD,   ///< LAC active - open-loop lead injection, target drifts off-center
     RECENTER     ///< Transitioning back to tracking after fire
@@ -32,7 +32,18 @@ public:
 
     void enterMode(GimbalController* controller) override;
     void exitMode(GimbalController* controller) override;
-    void update(GimbalController* controller, double dt) override;
+
+protected:
+    /**
+     * @brief Tracking motion mode implementation.
+     *
+     * Implements PID-based target tracking with LAC state machine.
+     * Safety checks are handled by base class updateWithSafety().
+     *
+     * @param controller Pointer to the GimbalController
+     * @param dt Time delta in seconds since last update
+     */
+    void updateImpl(GimbalController* controller, double dt) override;
 
 public slots:
     void onTargetPositionUpdated(double az, double el,
@@ -74,8 +85,8 @@ private:
     // - Blend factor provides smooth 200ms transition to avoid servo jerk
     // ==========================================================================
 
-    /// Current tracking state machine state
-    TrackingState m_state = TrackingState::TRACK;
+    /// Current LAC tracking state machine state
+    LACTrackingState m_state = LACTrackingState::TRACK;
 
     /// Blend factor: 0.0 = pure tracking, 1.0 = pure lead injection
     /// Ramps IN at 5.0/sec (200ms) and OUT at 3.0/sec (333ms)
@@ -125,6 +136,8 @@ private:
     int m_logCycleCounter = 0;
     double m_lastValidAzRate = 0.0;
     double m_lastValidElRate = 0.0;
+    double m_lastSentAzCmd = 0.0;
+    double m_lastSentElCmd = 0.0;
 
 };
 

@@ -13,7 +13,18 @@ public:
 
     void enterMode(GimbalController* controller) override;
     void exitMode(GimbalController* controller) override;
-    void update(GimbalController* controller, double dt) override;
+
+protected:
+    /**
+     * @brief Radar slew motion mode implementation.
+     *
+     * Implements slewing to radar-designated targets.
+     * Safety checks are handled by base class updateWithSafety().
+     *
+     * @param controller Pointer to the GimbalController
+     * @param dt Time delta in seconds since last update
+     */
+    void updateImpl(GimbalController* controller, double dt) override;
 
 private:
     // Use the PIDController struct defined in the base class

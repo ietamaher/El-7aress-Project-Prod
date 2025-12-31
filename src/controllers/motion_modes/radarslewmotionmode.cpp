@@ -51,18 +51,13 @@ void RadarSlewMotionMode::exitMode(GimbalController* controller)
     stopServos(controller);
 }
 
-void RadarSlewMotionMode::update(GimbalController* controller, double dt)
+void RadarSlewMotionMode::updateImpl(GimbalController* controller, double dt)
 {
-    // --- 1. Safety and Pre-condition Checks ---
+    // NOTE: Safety checks are handled by base class updateWithSafety()
+    // This method is only called after SafetyInterlock.canMove() returns true
+
+    // --- 1. Pre-condition Checks ---
     if (!controller || !controller->systemStateModel()) { return; }
-    if (!checkSafetyConditions(controller)) {
-        if (m_isSlewInProgress) {
-            qWarning() << "[RadarSlewMotionMode] Safety condition failed during slew. Stopping.";
-            stopServos(controller);
-            m_isSlewInProgress = false;
-        }
-        return;
-    }
 
     SystemStateData data = controller->systemStateModel()->data();
 

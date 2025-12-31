@@ -18,6 +18,7 @@
 // ============================================================================
 #include "motion_modes/gimbalmotionmodebase.h"
 #include "models/domain/systemstatemodel.h"
+#include "homingcontroller.h"
 
 // ============================================================================
 // Forward Declarations
@@ -119,9 +120,11 @@ private slots:
     void onElAlarmCleared();
 
     // ========================================================================
-    // Homing Timeout Handler
+    // HomingController Handlers
     // ========================================================================
-    void onHomingTimeout();
+    void onHomingCompleted();
+    void onHomingFailed(const QString& reason);
+    void onHomingAborted(const QString& reason);
 
 private:
     // ========================================================================
@@ -130,12 +133,11 @@ private:
     void shutdown();
 
     // ========================================================================
-    // Homing State Machine
+    // HomingController Delegation
     // ========================================================================
-    void processHomingSequence(const SystemStateData& data);
-    void startHomingSequence();
-    void completeHomingSequence();
-    void abortHomingSequence(const QString& reason);
+    // NOTE: Homing FSM extracted to HomingController class for testability
+    // GimbalController delegates homing to m_homingController
+    // ========================================================================
 
     // ========================================================================
     // Emergency Stop Handler
@@ -146,11 +148,6 @@ private:
     // Free Mode Handler
     // ========================================================================
     void processFreeMode(const SystemStateData& data);
-
-    // ========================================================================
-    // Constants
-    // ========================================================================
-    static constexpr int HOMING_TIMEOUT_MS = 30000;  // 30 seconds timeout
 
     // ========================================================================
     // Hardware Devices
@@ -176,16 +173,14 @@ private:
     // Timers
     // ========================================================================
     QTimer* m_updateTimer = nullptr;
-    QTimer* m_homingTimeoutTimer = nullptr;
 
     // Centralized dt measurement timer (Expert Review Fix)
     QElapsedTimer m_velocityTimer;
 
     // ========================================================================
-    // Homing State Machine
+    // HomingController (extracted FSM)
     // ========================================================================
-    HomingState m_currentHomingState = HomingState::Idle;
-    MotionMode m_modeBeforeHoming = MotionMode::Idle;
+    HomingController* m_homingController = nullptr;
 
     // ========================================================================
     // State Tracking Flags

@@ -59,6 +59,8 @@ LIBS += -L/usr/local/cuda/lib64 -lcudart
 
 SOURCES += \
     src/safety/SafetyInterlock.cpp \
+    src/safety/ZoneEnforcementService.cpp \
+    src/safety/EmergencyStopMonitor.cpp \
     src/config/MotionTuningConfig.cpp \
     src/controllers/aboutcontroller.cpp \
     src/controllers/applicationcontroller.cpp \
@@ -69,6 +71,7 @@ SOURCES += \
     src/controllers/brightnesscontroller.cpp \
     src/controllers/presethomepositioncontroller.cpp \
     src/controllers/gimbalcontroller.cpp \
+    src/controllers/homingcontroller.cpp \
     src/controllers/joystickcontroller.cpp \
     src/controllers/ledcontroller.cpp \
     src/controllers/mainmenucontroller.cpp \
@@ -84,6 +87,7 @@ SOURCES += \
     src/controllers/systemcontroller.cpp \
     src/controllers/systemstatuscontroller.cpp \
     src/controllers/weaponcontroller.cpp \
+    src/controllers/chargingstatemachine.cpp \
     src/controllers/windagecontroller.cpp \
     src/controllers/zeroingcontroller.cpp \
     src/controllers/zonedefinitioncontroller.cpp \
@@ -123,6 +127,7 @@ SOURCES += \
     src/utils/ballisticsprocessor.cpp \
     src/utils/ballisticslut.cpp \
     src/utils/ballisticsprocessorlut.cpp \
+    src/utils/firecontrolcomputation.cpp \
     src/utils/colorutils.cpp \
     src/utils/inference.cpp \
     src/utils/reticleaimpointcalculator.cpp \
@@ -162,6 +167,8 @@ else: unix:!android: target.path = /opt/$${TARGET}/bin
 
 HEADERS += \
     src/safety/SafetyInterlock.h \
+    src/safety/ZoneEnforcementService.h \
+    src/safety/EmergencyStopMonitor.h \
     src/config/MotionTuningConfig.h \
     src/controllers/aboutcontroller.h \
     src/controllers/applicationcontroller.h \
@@ -172,6 +179,7 @@ HEADERS += \
     src/controllers/brightnesscontroller.h \
     src/controllers/presethomepositioncontroller.h \
     src/controllers/gimbalcontroller.h \
+    src/controllers/homingcontroller.h \
     src/controllers/joystickcontroller.h \
     src/controllers/ledcontroller.h \
     src/controllers/mainmenucontroller.h \
@@ -188,6 +196,7 @@ HEADERS += \
     src/controllers/systemcontroller.h \
     src/controllers/systemstatuscontroller.h \
     src/controllers/weaponcontroller.h \
+    src/controllers/chargingstatemachine.h \
     src/controllers/windagecontroller.h \
     src/controllers/zeroingcontroller.h \
     src/controllers/zonedefinitioncontroller.h \
@@ -221,6 +230,7 @@ HEADERS += \
     src/models/domain/servoactuatordatamodel.h \
     src/models/domain/servodriverdatamodel.h \
     src/models/domain/systemstatedata.h \
+    src/models/domain/statepartitions.h \
     src/models/domain/systemstatemodel.h \
     src/models/environmentalviewmodel.h \
     src/models/brightnessviewmodel.h \
@@ -239,6 +249,7 @@ HEADERS += \
     src/utils/ballisticsprocessor.h \
     src/utils/ballisticslut.h \
     src/utils/ballisticsprocessorlut.h \
+    src/utils/firecontrolcomputation.h \
     src/utils/colorutils.h \
     src/utils/inference.h \
     src/utils/millenious.h \
