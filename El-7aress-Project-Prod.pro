@@ -69,6 +69,7 @@ SOURCES += \
     src/controllers/brightnesscontroller.cpp \
     src/controllers/presethomepositioncontroller.cpp \
     src/controllers/gimbalcontroller.cpp \
+    src/controllers/homingcontroller.cpp \
     src/controllers/joystickcontroller.cpp \
     src/controllers/ledcontroller.cpp \
     src/controllers/mainmenucontroller.cpp \
@@ -173,6 +174,7 @@ HEADERS += \
     src/controllers/brightnesscontroller.h \
     src/controllers/presethomepositioncontroller.h \
     src/controllers/gimbalcontroller.h \
+    src/controllers/homingcontroller.h \
     src/controllers/joystickcontroller.h \
     src/controllers/ledcontroller.h \
     src/controllers/mainmenucontroller.h \
