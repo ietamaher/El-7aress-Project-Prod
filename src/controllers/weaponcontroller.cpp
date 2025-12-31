@@ -511,6 +511,19 @@ void WeaponController::onActuatorStopRequested()
 }
 
 // ============================================================================
+// CHARGING FAULT RESET
+// ============================================================================
+
+void WeaponController::resetChargingFault()
+{
+    // Delegate to ChargingStateMachine for fault reset
+    // This will attempt safe retraction if currently in Fault state
+    if (m_chargingStateMachine) {
+        m_chargingStateMachine->resetFault();
+    }
+}
+
+// ============================================================================
 // WEAPON CONTROL
 // ============================================================================
 
