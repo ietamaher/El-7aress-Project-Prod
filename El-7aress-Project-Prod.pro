@@ -59,6 +59,7 @@ LIBS += -L/usr/local/cuda/lib64 -lcudart
 
 SOURCES += \
     src/safety/SafetyInterlock.cpp \
+    src/safety/ZoneEnforcementService.cpp \
     src/config/MotionTuningConfig.cpp \
     src/controllers/aboutcontroller.cpp \
     src/controllers/applicationcontroller.cpp \
@@ -165,6 +166,7 @@ else: unix:!android: target.path = /opt/$${TARGET}/bin
 
 HEADERS += \
     src/safety/SafetyInterlock.h \
+    src/safety/ZoneEnforcementService.h \
     src/config/MotionTuningConfig.h \
     src/controllers/aboutcontroller.h \
     src/controllers/applicationcontroller.h \
