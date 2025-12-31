@@ -24,6 +24,7 @@ TrackingMotionMode::TrackingMotionMode(QObject* parent)
     , m_previousDesiredAzVel(0.0), m_previousDesiredElVel(0.0)
     , m_lastGimbalAz(0.0), m_lastGimbalEl(0.0)
     , m_gimbalVelAz(0.0), m_gimbalVelEl(0.0)
+    , m_lastSentAzCmd(0.0), m_lastSentElCmd(0.0)
 {
     // -------------------------------------------------------------------------
     // TUNED PID GAINS FOR 50ms UPDATE CYCLE + FILTERED dErr
@@ -396,5 +397,14 @@ void TrackingMotionMode::updateImpl(GimbalController* controller, double dt)
     // =========================================================================
     // 9. SEND SERVO COMMANDS (sign convention per system requirement)
     // =========================================================================
+
+    constexpr double CMD_CHANGE_THRESHOLD = 0.05;  // deg/s
+    if (std::abs(finalAzCmd - m_lastSentAzCmd) < CMD_CHANGE_THRESHOLD &&
+        std::abs(finalElCmd - m_lastSentElCmd) < CMD_CHANGE_THRESHOLD) {
+        return;  // Don't flood Modbus with identical commands
+    }
+    m_lastSentAzCmd = finalAzCmd;
+    m_lastSentElCmd = finalElCmd;
+
     sendStabilizedServoCommands(controller, -finalAzCmd, -finalElCmd, false, dt);
 }

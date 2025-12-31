@@ -136,6 +136,8 @@ private:
     int m_logCycleCounter = 0;
     double m_lastValidAzRate = 0.0;
     double m_lastValidElRate = 0.0;
+    double m_lastSentAzCmd = 0.0;
+    double m_lastSentElCmd = 0.0;
 
 };
 
