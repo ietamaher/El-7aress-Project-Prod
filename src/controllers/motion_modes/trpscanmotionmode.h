@@ -27,6 +27,8 @@ public:
     void exitMode(GimbalController* controller) override;
 
     void setTrpList(const QVector<TargetReferencePoint>& trps);
+    void setTrpList(const std::vector<TargetReferencePoint>& trps);
+    bool selectPage(int locationPage);
 
 protected:
     /**
@@ -39,8 +41,6 @@ protected:
      * @param dt Time delta in seconds since last update
      */
     void updateImpl(GimbalController* controller, double dt) override;
-    void setTrpList(const std::vector<TargetReferencePoint>& trps);
-    bool selectPage(int locationPage);
 
 private:
     enum State {

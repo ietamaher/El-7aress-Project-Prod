@@ -116,7 +116,7 @@ public:
      * @param controller Pointer to the GimbalController
      * @param dt Time delta in seconds since last update
      */
-    void updateWithSafety(GimbalController* controller, double dt) final;
+    virtual void updateWithSafety(GimbalController* controller, double dt) final;
 
     /**
      * @brief Legacy update method - now delegates to updateWithSafety().

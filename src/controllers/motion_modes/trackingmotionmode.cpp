@@ -75,7 +75,7 @@ void TrackingMotionMode::enterMode(GimbalController* controller)
     m_filteredTargetVelEl = 0.0;
 
     // Initialize LAC state machine
-    m_state = TrackingState::TRACK;
+    m_state = LACTrackingState::TRACK;
     m_lacBlendFactor = 0.0;
     m_manualAzOffset_deg = 0.0;
     m_manualElOffset_deg = 0.0;
@@ -170,21 +170,21 @@ void TrackingMotionMode::updateImpl(GimbalController* controller, double dt)
     //   FIRE_LEAD -> RECENTER : when LAC deactivated
     //   RECENTER -> TRACK   : when blend factor reaches 0
     // =========================================================================
-    TrackingState prevState = m_state;
+    LACTrackingState prevState = m_state;
 
     if (data.lacArmed && data.deadReckoningActive) {
-        m_state = TrackingState::FIRE_LEAD;
+        m_state = LACTrackingState::FIRE_LEAD;
     } else {
-        if (prevState == TrackingState::FIRE_LEAD) {
-            m_state = TrackingState::RECENTER;
+        if (prevState == LACTrackingState::FIRE_LEAD) {
+            m_state = LACTrackingState::RECENTER;
         } else if (m_lacBlendFactor <= 0.001) {
-            m_state = TrackingState::TRACK;
+            m_state = LACTrackingState::TRACK;
         }
         // else: stay in RECENTER while ramping down
     }
 
     // Update blend factor based on state
-    if (m_state == TrackingState::FIRE_LEAD) {
+    if (m_state == LACTrackingState::FIRE_LEAD) {
         // Ramp IN lead (~200ms to reach 1.0)
         m_lacBlendFactor = qMin(1.0, m_lacBlendFactor + dt * LAC_BLEND_RAMP_IN);
 
@@ -260,7 +260,7 @@ void TrackingMotionMode::updateImpl(GimbalController* controller, double dt)
 
         m_manualAzOffset_deg = qBound(-MAX_MANUAL, m_manualAzOffset_deg, MAX_MANUAL);
         m_manualElOffset_deg = qBound(-MAX_MANUAL, m_manualElOffset_deg, MAX_MANUAL);
-    } else if (m_state != TrackingState::FIRE_LEAD) {
+    } else if (m_state != LACTrackingState::FIRE_LEAD) {
         // Smooth decay (not during FIRE_LEAD - already zeroed above)
         m_manualAzOffset_deg -= m_manualAzOffset_deg * DECAY * dt;
         m_manualElOffset_deg -= m_manualElOffset_deg * DECAY * dt;
