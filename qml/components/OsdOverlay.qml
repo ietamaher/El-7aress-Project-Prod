@@ -78,8 +78,7 @@ Item {
                 Row {
                     spacing: 15
                     visible: (viewModel && viewModel.zeroingVisible) ||
-                             (viewModel && viewModel.environmentVisible) ||
-                             (viewModel && viewModel.homingVisible)
+                             (viewModel && viewModel.environmentVisible)
 
                     Text {
                         visible: viewModel ? viewModel.zeroingVisible : false
@@ -97,15 +96,7 @@ Item {
                         color: accentColor
                     }
 
-                    // ⭐ Homing status display
-                    Text {
-                        visible: viewModel ? viewModel.homingVisible : false
-                        text: viewModel ? viewModel.homingText : ""
-                        font.pixelSize: 13
-                        font.bold: true
-                        font.family: primaryFont
-                        color: cautionColor  // Orange for visibility
-                    }
+
 
                 }
                 Text {
@@ -158,7 +149,15 @@ Item {
                     color: viewModel && viewModel.leadAngleText.includes("LAG") ? "yellow" :
                            (viewModel && viewModel.leadAngleText.includes("ZOOM") ? warningColor : accentColor)
                 }
-
+                // ⭐ Homing status display
+                Text {
+                    visible: viewModel ? viewModel.homingVisible : false
+                    text: viewModel ? viewModel.homingText : ""
+                    font.pixelSize: 13
+                    font.bold: true
+                    font.family: primaryFont
+                    color: cautionColor  // Orange for visibility
+                }
             }
         }
     }
@@ -763,11 +762,14 @@ Item {
 // ========================================================================
 // DETECTION BOXES (YOLO Object Detection)
 // ========================================================================
+// ========================================================================
+// DETECTION BOXES (YOLO Object Detection)
+// ========================================================================
 Repeater {
-    visible: viewModel ? viewModel.detectionVisible : false  
     model: viewModel ? viewModel.detectionBoxes : []
 
     delegate: Item {
+        visible: viewModel ? viewModel.detectionVisible : false 
         x: modelData.x
         y: modelData.y
         width: modelData.width
