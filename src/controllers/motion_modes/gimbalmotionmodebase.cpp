@@ -412,9 +412,12 @@ bool GimbalMotionModeBase::checkSafetyConditions(GimbalController* controller)
 
     SystemStateData data = controller->systemStateModel()->data();
 
+    // Dead man switch required for Manual, AutoTrack, and ManualTrack modes
     bool deadManSwitchOk = true;
-    if (controller->currentMotionModeType() == MotionMode::Manual ||
-        controller->currentMotionModeType() == MotionMode::AutoTrack) {
+    MotionMode mode = controller->currentMotionModeType();
+    if (mode == MotionMode::Manual ||
+        mode == MotionMode::AutoTrack ||
+        mode == MotionMode::ManualTrack) {
         deadManSwitchOk = data.deadManSwitchActive;
     }
 

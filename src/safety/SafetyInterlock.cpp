@@ -246,8 +246,11 @@ bool SafetyInterlock::canMove(int motionMode, SafetyDenialReason* outReason) con
     }
 
     // 3. Dead man switch required for Manual and AutoTrack modes
-    // MotionMode::Manual = 1, MotionMode::AutoTrack = 2
-    if (motionMode == 1 || motionMode == 2) {
+    // MotionMode enum: Manual=0, Pattern=1, AutoTrack=2, ManualTrack=3
+    // ⭐ BUG FIX: Was checking motionMode==1 (Pattern) instead of motionMode==0 (Manual)
+    if (motionMode == static_cast<int>(MotionMode::Manual) ||
+        motionMode == static_cast<int>(MotionMode::AutoTrack) ||
+        motionMode == static_cast<int>(MotionMode::ManualTrack)) {
         if (!data.deadManSwitchActive) {
             reason = SafetyDenialReason::DeadManSwitchNotHeld;
             if (outReason) *outReason = reason;
