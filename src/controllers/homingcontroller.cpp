@@ -53,6 +53,13 @@ void HomingController::process(const SystemStateData& newData,
         break;
 
     case HomingState::Completed:
+        // ⭐ BUG FIX: SystemStateModel may have transitioned to Completed before
+        // HomingController had a chance to see the HOME-END signals in InProgress.
+        // If we're still in InProgress, complete our own state machine now.
+        if (m_currentHomingState == HomingState::InProgress) {
+            qDebug() << "[HomingController] SystemStateModel completed homing - syncing our state";
+            completeHoming();  // Stop timer, emit homingCompleted signal
+        }
         // Auto-clear completed state after one cycle
         if (m_currentHomingState == HomingState::Completed) {
             qDebug() << "[HomingController] Clearing completed state";

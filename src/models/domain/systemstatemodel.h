@@ -1193,6 +1193,13 @@ private:
     bool m_chargeCycleInProgress = false;
     bool m_weaponCharged = false;
 
+    // ========================================================================
+    // HOMING DISPLAY TIMER (Bug Fix: Show completion state for 2 seconds)
+    // ========================================================================
+    QElapsedTimer m_homingDisplayTimer;  ///< Timer to hold Completed/Failed/Aborted state
+    bool m_homingDisplayTimerActive = false;  ///< True when display timer is running
+    static constexpr int HOMING_DISPLAY_DURATION_MS = 2000;  ///< 2 seconds display
+
         QMap<int, NtzState> m_ntzStates;
     
     static constexpr double NTZ_EPS = 0.05;       // Stop 0.05 deg before wall

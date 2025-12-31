@@ -368,8 +368,12 @@ void GimbalController::onSystemStateChanged(const SystemStateData& newData)
     }
 
     // PRIORITY 2: HOMING SEQUENCE (delegated to HomingController)
+    // ⭐ BUG FIX: Also check HOME-END signal changes (azimuthHomeComplete, elevationHomeComplete)
+    // Without this, HomingController never receives HOME-END and times out
     if (newData.homingState != m_oldState.homingState ||
-        newData.gotoHomePosition != m_oldState.gotoHomePosition) {
+        newData.gotoHomePosition != m_oldState.gotoHomePosition ||
+        newData.azimuthHomeComplete != m_oldState.azimuthHomeComplete ||
+        newData.elevationHomeComplete != m_oldState.elevationHomeComplete) {
         m_homingController->process(newData, m_oldState);
     }
 
