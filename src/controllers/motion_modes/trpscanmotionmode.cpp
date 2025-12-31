@@ -158,7 +158,8 @@ void TRPScanMotionMode::advanceToNextPoint() {
 }
 
 
-void TRPScanMotionMode::update(GimbalController* controller, double dt) {
+void TRPScanMotionMode::updateImpl(GimbalController* controller, double dt) {
+    // NOTE: Safety checks are handled by base class updateWithSafety()
     // If controller missing or no TRPs/page -> do nothing safely
     if (!controller) return;
     if (m_pageOrder.isEmpty() || m_trps.isEmpty()) {

@@ -422,6 +422,38 @@ bool GimbalMotionModeBase::checkSafetyConditions(GimbalController* controller)
            !data.emergencyStopActive && deadManSwitchOk;
 }
 
+// =============================================================================
+// TEMPLATE METHOD PATTERN IMPLEMENTATION
+// =============================================================================
+// These methods enforce safety checks before any motion update.
+// The pattern guarantees that all motion passes through SafetyInterlock.
+
+void GimbalMotionModeBase::updateWithSafety(GimbalController* controller, double dt)
+{
+    // Step 1: Check safety conditions via SafetyInterlock
+    if (!checkSafetyConditions(controller)) {
+        // Safety denied - stop all motion immediately
+        stopServos(controller);
+        return;
+    }
+
+    // Step 2: Safety passed - delegate to implementation
+    updateImpl(controller, dt);
+}
+
+void GimbalMotionModeBase::update(GimbalController* controller, double dt)
+{
+    // Delegate to updateWithSafety() for guaranteed safety enforcement
+    // This preserves backward compatibility while ensuring safety
+    updateWithSafety(controller, dt);
+}
+
+void GimbalMotionModeBase::updateImpl(GimbalController* /*controller*/, double /*dt*/)
+{
+    // Default implementation - no motion
+    // Derived classes override this to provide their specific motion logic
+}
+
 bool GimbalMotionModeBase::checkElevationLimits(double currentEl, double targetVelocity,
                                                bool upperLimit, bool lowerLimit)
 {

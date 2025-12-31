@@ -32,7 +32,18 @@ public:
 
     void enterMode(GimbalController* controller) override;
     void exitMode(GimbalController* controller) override;
-    void update(GimbalController* controller, double dt) override;
+
+protected:
+    /**
+     * @brief Tracking motion mode implementation.
+     *
+     * Implements PID-based target tracking with LAC state machine.
+     * Safety checks are handled by base class updateWithSafety().
+     *
+     * @param controller Pointer to the GimbalController
+     * @param dt Time delta in seconds since last update
+     */
+    void updateImpl(GimbalController* controller, double dt) override;
 
 public slots:
     void onTargetPositionUpdated(double az, double el,

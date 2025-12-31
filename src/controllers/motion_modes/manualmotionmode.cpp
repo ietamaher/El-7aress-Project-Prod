@@ -40,12 +40,10 @@ void ManualMotionMode::exitMode(GimbalController* controller)
     stopServos(controller);
 }
 
-void ManualMotionMode::update(GimbalController* controller, double dt)
+void ManualMotionMode::updateImpl(GimbalController* controller, double dt)
 {
-    if (!checkSafetyConditions(controller)) {
-        stopServos(controller);
-        return;
-    }
+    // NOTE: Safety checks are handled by base class updateWithSafety()
+    // This method is only called after SafetyInterlock.canMove() returns true
 
     SystemStateData data = controller->systemStateModel()->data();
 

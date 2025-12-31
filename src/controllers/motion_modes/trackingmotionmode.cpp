@@ -140,16 +140,20 @@ void TrackingMotionMode::onTargetPositionUpdated(
     m_smoothedElVel_dps = targetVelEl_dps;
 }
 
-void TrackingMotionMode::update(GimbalController* controller, double dt)
+void TrackingMotionMode::updateImpl(GimbalController* controller, double dt)
 {
+    // NOTE: Base class updateWithSafety() has already verified SafetyInterlock.canMove()
+    // This method is only called after general safety checks pass.
+
     // =========================================================================
-    // 0. SAFETY & VALIDATION
+    // 0. MODE-SPECIFIC VALIDATION
     // =========================================================================
     if (!controller || !m_targetValid || dt <= 0.0001)
         return;
 
     SystemStateData data = controller->systemStateModel()->data();
 
+    // Mode-specific safety: tracking requires dead man switch
     if (!data.deadManSwitchActive) {
         sendStabilizedServoCommands(controller, 0.0, 0.0, false, dt);
         return;

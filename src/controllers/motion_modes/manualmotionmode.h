@@ -11,8 +11,19 @@ public:
 
     void enterMode(GimbalController* controller) override;
     void exitMode(GimbalController* controller) override;
-    void update(GimbalController* controller, double dt) override;
     double processJoystickInput(double filteredInput);
+
+protected:
+    /**
+     * @brief Manual motion mode implementation.
+     *
+     * Processes joystick input and applies velocity commands to servos.
+     * Safety checks are handled by base class updateWithSafety().
+     *
+     * @param controller Pointer to the GimbalController
+     * @param dt Time delta in seconds since last update
+     */
+    void updateImpl(GimbalController* controller, double dt) override;
 
 
 private:

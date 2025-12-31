@@ -93,11 +93,62 @@ public:
     // Called when we exit this mode
     virtual void exitMode(GimbalController* /*controller*/) {}
 
-    // Called periodically (e.g. from GimbalController::update())
-    // dt parameter is the measured time delta in seconds since last update (Expert Review Fix)
-    virtual void update(GimbalController* /*controller*/, double /*dt*/) {}
+    // =========================================================================
+    // TEMPLATE METHOD PATTERN FOR SAFETY ENFORCEMENT
+    // =========================================================================
+    // All motion mode updates MUST pass through SafetyInterlock checks.
+    // Use updateWithSafety() which is final and cannot be bypassed.
+    //
+    // USAGE:
+    // - GimbalController calls update() or updateWithSafety()
+    // - Derived classes implement updateImpl() for their motion logic
+    // - Safety checks are automatically enforced before updateImpl() is called
+    // =========================================================================
+
+    /**
+     * @brief Template method that enforces safety checks before motion updates.
+     *
+     * This method is FINAL and cannot be overridden. It guarantees that:
+     * 1. SafetyInterlock.canMove() is checked before any motion
+     * 2. Servos are stopped if safety denies motion
+     * 3. updateImpl() is only called when motion is permitted
+     *
+     * @param controller Pointer to the GimbalController
+     * @param dt Time delta in seconds since last update
+     */
+    void updateWithSafety(GimbalController* controller, double dt) final;
+
+    /**
+     * @brief Legacy update method - now delegates to updateWithSafety().
+     *
+     * For backward compatibility, this method is preserved but now
+     * calls updateWithSafety() to ensure safety checks are enforced.
+     *
+     * @deprecated Use updateWithSafety() directly for clarity.
+     * @param controller Pointer to the GimbalController
+     * @param dt Time delta in seconds since last update
+     */
+    virtual void update(GimbalController* controller, double dt);
+
     void stopServos(GimbalController* controller);
     bool checkSafetyConditions(GimbalController* controller);
+
+protected:
+    /**
+     * @brief Motion mode implementation - override in derived classes.
+     *
+     * This method contains the actual motion logic for each mode.
+     * It is called by updateWithSafety() ONLY after safety checks pass.
+     *
+     * @note Do NOT call checkSafetyConditions() in your implementation -
+     *       it has already been called by updateWithSafety().
+     *
+     * @param controller Pointer to the GimbalController
+     * @param dt Time delta in seconds since last update
+     */
+    virtual void updateImpl(GimbalController* controller, double dt);
+
+public:
     /**
      * @brief Updates the Z-axis gyro bias if the vehicle is stationary.
      * This function should be called periodically from the main controller loop.

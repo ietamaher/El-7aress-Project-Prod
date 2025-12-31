@@ -14,9 +14,20 @@ public:
 
     void enterMode(GimbalController* controller) override;
     void exitMode(GimbalController* controller) override;
-    void update(GimbalController* controller, double dt) override;
 
     void setActiveScanZone(const AutoSectorScanZone& scanZone);
+
+protected:
+    /**
+     * @brief Auto sector scan motion mode implementation.
+     *
+     * Implements automatic sector scanning between defined waypoints.
+     * Safety checks are handled by base class updateWithSafety().
+     *
+     * @param controller Pointer to the GimbalController
+     * @param dt Time delta in seconds since last update
+     */
+    void updateImpl(GimbalController* controller, double dt) override;
 
 private:
 
