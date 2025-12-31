@@ -52,6 +52,10 @@ Motion modes control \textbf{how the gimbal moves} during operations:
 Manual → AutoSectorScan → TRP Scan → Radar Slew → Manual
 \end{lstlisting}
 
+\begin{notebox}
+\textbf{Radar Slew} is only available if radar hardware is installed. On systems without radar, the mode cycle is: \texttt{Manual → Sector Scan → TRP → Manual}
+\end{notebox}
+
 \textbf{Current Mode Display}: OSD bottom center shows: \osd{MODE: Manual}, \osd{MODE: Sector Scan}, \osd{MODE: TRP}, or \osd{MODE: Radar}
 
 \begin{cautionbox}[RESTRICTION]
@@ -159,8 +163,8 @@ Gimbal continuously scans left-to-right, then right-to-left, repeat.
 
 \textbf{If Multiple Sectors Defined}:
 \begin{itemize}
-    \item System scans active sector (last selected via menu)
-    \item To change active sector:
+    \item System scans active sector (last selected via menu or joystick)
+    \item To change active sector via menu:
     \begin{enumerate}
         \item Cycle to Manual mode
         \item Access menu: Zone Definitions → Sector Scans
@@ -168,6 +172,54 @@ Gimbal continuously scans left-to-right, then right-to-left, repeat.
         \item Return to AutoSectorScan mode
     \end{enumerate}
 \end{itemize}
+
+\subsection{Zone Selection via Joystick (Buttons 14/16)}
+
+\textbf{NEW CAPABILITY}: Rapid zone switching during surveillance \textbf{without menu access}.
+
+\begin{procedurebox}[JOYSTICK ZONE SELECTION]
+\textbf{During AutoSectorScan Mode}:
+\begin{itemize}
+    \item \textbf{Button 14}: Select NEXT sector scan zone
+    \item \textbf{Button 16}: Select PREVIOUS sector scan zone
+    \item Zone switches immediately, scanning resumes in new zone
+\end{itemize}
+
+\textbf{During TRP Scan Mode}:
+\begin{itemize}
+    \item \textbf{Button 14}: Select NEXT TRP location page
+    \item \textbf{Button 16}: Select PREVIOUS TRP location page
+    \item TRP scan continues with new page's target points
+\end{itemize}
+\end{procedurebox}
+
+\textbf{Operational Benefit}:
+\begin{itemize}
+    \item Rapid zone switching \textbf{without leaving surveillance mode}
+    \item Hands stay on joystick, eyes stay on video
+    \item Faster reaction to changing threat sectors
+    \item No menu navigation required
+\end{itemize}
+
+\textbf{Example - Sector Scan Zone Cycling}:
+\begin{lstlisting}
+Currently scanning: "Front Gate" (Zone 1)
+Press Button 14 → Switch to "East Perimeter" (Zone 2)
+Press Button 14 → Switch to "Rear Area" (Zone 3)
+Press Button 14 → Wrap to "Front Gate" (Zone 1)
+\end{lstlisting}
+
+\textbf{Example - TRP Page Cycling}:
+\begin{lstlisting}
+Currently on: "Page 1: Checkpoints"
+Press Button 14 → Switch to "Page 2: Hilltops"
+Press Button 14 → Switch to "Page 3: Route Monitoring"
+Press Button 14 → Wrap to "Page 1: Checkpoints"
+\end{lstlisting}
+
+\begin{notebox}
+Zone/TRP selection via joystick only works during \textbf{Surveillance} operational mode while in AutoSectorScan or TRPScan motion modes. During Tracking or Engagement, these buttons perform tracking gate control instead.
+\end{notebox}
 
 \section{TRP Scan Mode}
 

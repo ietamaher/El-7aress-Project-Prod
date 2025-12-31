@@ -453,6 +453,10 @@ Temperate, mild, light breeze & 20\degree C & 300m & 3 m/s & Optional \\
 % ============================================================================
 \section{LEAD ANGLE COMPENSATION (LAC)}
 
+\begin{warningbox}[CRITICAL - JOYSTICK ONLY]
+Lead Angle Compensation (LAC) can \textbf{ONLY} be toggled using joystick \textbf{Button 2} while holding the Dead Man Switch (Button 3). There is \textbf{NO menu access} for LAC activation. The menu only displays LAC status.
+\end{warningbox}
+
 \subsection{THE MOVING TARGET PROBLEM}
 
 \subsubsection{Without Lead Compensation}
@@ -546,24 +550,62 @@ Result: HIT (bullet meets target at predicted position)
 
 \textbf{VERIFICATION:}
 \begin{checklist}
-    \item \osd{LEAD ANGLE ON} indicator appears (GREEN)
-    \item \osd{LAC} bracket appears on CCIP reticle
-    \item Reticle pipper shifts to lead position (ahead of target)
+    \item \osd{LAC: ON} indicator appears (GREEN)
+    \item CCIP reticle shifts to lead position (ahead of target)
     \item Track confidence remains >70\%
 \end{checklist}
 \end{procedurebox}
 
+\subsubsection{CROWS-Compliant LAC Latching Behavior}
+
+Per CROWS TM 9-1090-225-10-2, LAC follows specific latching rules:
+
+\begin{warningbox}[2-SECOND MINIMUM INTERVAL]
+"A minimum of 2 seconds must be waited before reuse of lead angle compensation feature."
+\end{warningbox}
+
+\textbf{LAC Latching Behavior:}
+\begin{itemize}
+    \item When LAC is toggled ON, system \textbf{latches} current target tracking rate
+    \item Lead calculation uses latched rate, not continuously updated rate
+    \item If operator toggles LAC OFF then ON again, must wait \textbf{2 seconds minimum}
+    \item System will \textbf{block} LAC toggle if attempted too soon
+\end{itemize}
+
+\textbf{Warning - Target Switching:}
+\begin{warningbox}
+"If target \#2 is not properly acquired, the WS will fire outside the desired engagement area by continuing to apply the lead angle acquired from target \#1."
+\end{warningbox}
+
+\textbf{Operator Procedure for Target Switch:}
+\begin{enumerate}
+    \item Toggle LAC OFF (Button 2 while holding Button 3)
+    \item Acquire new target (tracking lock on target \#2)
+    \item Wait minimum 2 seconds
+    \item Toggle LAC ON for new target
+    \item Verify \osd{LAC: ON} before firing
+\end{enumerate}
+
 % ----------------------------------------------------------------------------
 \subsection{LAC STATUS INDICATORS}
 
-\subsubsection{STATUS: "LEAD ANGLE ON" (GREEN)}
+The OSD displays LAC status in the following formats:
+
+\begin{lstlisting}
+LAC: OFF       (gray)   - LAC disabled
+LAC: ON        (green)  - LAC active and functioning
+LAC: LAG       (yellow) - Insufficient tracking data, wait 2-5 sec
+LAC: ZOOM OUT  (red)    - FOV too narrow, zoom out required
+\end{lstlisting}
+
+\subsubsection{STATUS: "LAC: ON" (GREEN)}
 
 \textbf{Meaning:} LAC active and functioning correctly
 
 \textbf{Display:}
 \begin{itemize}
+    \item OSD shows: \osd{LAC: ON} in green
     \item CCIP reticle offset ahead of target
-    \item "LAC" bracket visible on reticle
     \item Lead offset calculated and applied
 \end{itemize}
 
@@ -575,7 +617,7 @@ Result: HIT (bullet meets target at predicted position)
 \end{itemize}
 
 % ----------------------------------------------------------------------------
-\subsubsection{STATUS: "LEAD ANGLE LAG" (YELLOW)}
+\subsubsection{STATUS: "LAC: LAG" (YELLOW)}
 
 \textbf{Meaning:} Insufficient tracking data for accurate lead calculation
 
@@ -588,19 +630,19 @@ Result: HIT (bullet meets target at predicted position)
 
 \textbf{Display:}
 \begin{itemize}
-    \item \textcolor{milyellow}{\osd{LEAD ANGLE LAG}} in YELLOW
+    \item OSD shows: \osd{LAC: LAG} in YELLOW
     \item Reticle may show partial lead offset (unreliable)
 \end{itemize}
 
 \textbf{Operator Action:}
 \begin{itemize}
     \item \textbf{WAIT} (2-5 seconds) for tracking to stabilize
-    \item Do NOT fire until status changes to \osd{LEAD ANGLE ON} (GREEN)
+    \item Do NOT fire until status changes to \osd{LAC: ON} (GREEN)
     \item If LAG persists >10 seconds: Check tracking quality, verify target moving
 \end{itemize}
 
 % ----------------------------------------------------------------------------
-\subsubsection{STATUS: "ZOOM OUT" (RED)}
+\subsubsection{STATUS: "LAC: ZOOM OUT" (RED)}
 
 \textbf{Meaning:} Camera FOV too narrow for accurate lead calculation
 
@@ -613,14 +655,14 @@ Result: HIT (bullet meets target at predicted position)
 
 \textbf{Display:}
 \begin{itemize}
-    \item \textcolor{milred}{\osd{ZOOM OUT}} in RED
+    \item OSD shows: \osd{LAC: ZOOM OUT} in RED
     \item LAC non-functional (lead calculation disabled)
 \end{itemize}
 
 \textbf{Operator Action:}
 \begin{enumerate}
     \item \textbf{Zoom out} (\button{Button 8}) gradually
-    \item Wait for status to change to \osd{LEAD ANGLE ON} (GREEN)
+    \item Wait for status to change to \osd{LAC: ON} (GREEN)
     \item If problem persists: Zoom out more
     \item Acceptable FOV: Typically Wide or Mid zoom (not Tele/Max)
 \end{enumerate}
@@ -733,6 +775,80 @@ Extremely fast-moving targets may require wide FOV even at close range.
     \item Assumes constant target velocity (less accurate if target maneuvering)
     \item Not effective for erratic or unpredictable motion
 \end{itemize}
+
+% ============================================================================
+\section{TWO INDEPENDENT BALLISTIC CORRECTION SYSTEMS}
+
+\begin{warningbox}[CRITICAL UNDERSTANDING]
+The El 7arress RCWS employs \textbf{TWO INDEPENDENT} ballistic correction systems. Understanding the difference is essential for accurate fire.
+\end{warningbox}
+
+\subsection{SYSTEM 1: BALLISTIC DROP COMPENSATION (AUTOMATIC)}
+
+\textbf{Activation:} \textbf{AUTOMATIC} when LRF has valid range data
+
+\textbf{What It Corrects:}
+\begin{itemize}
+    \item \textbf{Gravity drop} - Bullet falls due to gravity over distance
+    \item \textbf{Wind deflection} - Crosswind pushes bullet laterally
+    \item \textbf{Environmental factors} - Temperature, altitude affect trajectory
+\end{itemize}
+
+\textbf{System Variables:}
+\begin{itemize}
+    \item \texttt{ballisticDropOffsetAz} - Azimuth correction (wind deflection)
+    \item \texttt{ballisticDropOffsetEl} - Elevation correction (gravity drop)
+    \item \texttt{ballisticDropActive} - True when valid LRF range exists
+\end{itemize}
+
+\textbf{Operator Action:} \textbf{NONE REQUIRED} - System applies corrections automatically when range is valid.
+
+\textbf{OSD Indicator:} \osd{ENV} appears when environmental parameters are active.
+
+% ----------------------------------------------------------------------------
+\subsection{SYSTEM 2: MOTION LEAD COMPENSATION (MANUAL TOGGLE)}
+
+\textbf{Activation:} \textbf{MANUAL} via joystick Button 2 (LAC toggle)
+
+\textbf{What It Corrects:}
+\begin{itemize}
+    \item \textbf{Moving target lead} - Aim ahead of moving target
+    \item Based on target angular velocity from tracker
+    \item Based on range (LRF) and time-of-flight calculation
+\end{itemize}
+
+\textbf{System Variables:}
+\begin{itemize}
+    \item \texttt{motionLeadOffsetAz} - Azimuth lead offset for moving target
+    \item \texttt{motionLeadOffsetEl} - Elevation lead offset for moving target
+    \item \texttt{leadAngleCompensationActive} - True when operator toggles LAC ON
+\end{itemize}
+
+\textbf{Operator Action:} \textbf{REQUIRED} - Must press Button 2 to enable for moving targets.
+
+\textbf{OSD Indicator:} \osd{LAC: ON} / \osd{LAC: LAG} / \osd{LAC: ZOOM OUT}
+
+% ----------------------------------------------------------------------------
+\subsection{COMBINED CCIP CALCULATION}
+
+The CCIP (Continuously Computed Impact Point) pipper shows where the bullet will actually hit:
+
+\begin{center}
+\fbox{
+\parbox{0.9\textwidth}{
+\centering
+\textbf{CCIP (*) = Gun Boresight + Zeroing Offset}\\
+\textbf{+ Ballistic Drop Compensation (auto when range valid)}\\
+\textbf{+ Motion Lead Compensation (only if Button 2 toggled ON)}
+}
+}
+\end{center}
+
+\begin{notebox}[KEY DISTINCTION]
+\textbf{Ballistic Drop} is for \textbf{stationary} targets (compensates for gravity/wind).\\
+\textbf{Motion Lead} is for \textbf{moving} targets (compensates for target velocity).\\
+Both can be active simultaneously for moving targets at range with environmental factors.
+\end{notebox}
 
 % ============================================================================
 \section{COMBINING FIRE CONTROL SYSTEMS}

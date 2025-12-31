@@ -145,7 +145,7 @@ The tracking system operates through discrete phases:
 \hline
 \button{Button 4} (single) & Start Acquisition / Request Lock-On & Off → Acq, Acq → Lock Pending \\
 \hline
-\button{Button 4} (double <500ms) & \textbf{EMERGENCY ABORT} & Any phase → Off \\
+\button{Button 4} (double <1 sec) & \textbf{EMERGENCY ABORT} & Any phase → Off \\
 \hline
 \button{D-Pad ▲} & Decrease gate height (-4 px) & Acquisition only \\
 \hline
@@ -440,7 +440,7 @@ Abort tracking \textbf{IMMEDIATELY} if:
 \subsection{ABORT PROCEDURE}
 
 \begin{procedurebox}[EMERGENCY ABORT]
-\textbf{Action:} \textbf{DOUBLE-CLICK \button{Button 4}} (<500ms between presses)
+\textbf{Action:} \textbf{DOUBLE-CLICK \button{Button 4}} (<1 second between presses)
 
 \textbf{Effect (IMMEDIATE):}
 \begin{enumerate}
@@ -455,8 +455,8 @@ Abort tracking \textbf{IMMEDIATELY} if:
 
 \subsubsection{Timing}
 \begin{itemize}
-    \item Press 1 → Press 2 within \textbf{500 milliseconds} (half-second)
-    \item \textbf{Too slow} (>500ms): System interprets as two single presses (may restart tracking)
+    \item Press 1 → Press 2 within \textbf{1000 milliseconds} (one second)
+    \item \textbf{Too slow} (>1 second): System interprets as two single presses (may restart tracking)
 \end{itemize}
 
 \begin{warningbox}[CRITICAL]
@@ -609,6 +609,29 @@ WEAPON IS NOW HOT
     \item OSD: \osd{MODE: TRACKING (FIRING)}
     \item Gate: Green solid outline
     \item Enhanced stabilization active
+\end{itemize}
+
+\subsubsection{Dead Reckoning During Firing (CROWS Doctrine)}
+
+\begin{warningbox}[IMPORTANT - DEAD RECKONING]
+Per CROWS TM 9-1090-225-10-2: "When firing is initiated, CROWS aborts Target Tracking. Instead the system moves according to the speed and direction of the WS just prior to pulling the trigger. CROWS will not automatically compensate for changes in speed or direction of the tracked target during firing."
+\end{warningbox}
+
+\textbf{Dead Reckoning Behavior}:
+\begin{itemize}
+    \item When trigger is pulled, system captures \textbf{last known target velocity}
+    \item Gimbal continues moving at captured velocity (azimuth and elevation rates)
+    \item Tracker is \textbf{NOT actively following} target during firing
+    \item System \textbf{predicts} target position based on last velocity
+    \item If target maneuvers during firing, rounds may miss
+\end{itemize}
+
+\textbf{Operator Implications}:
+\begin{itemize}
+    \item ✅ Best for targets with \textbf{constant velocity} (vehicles on road)
+    \item ⚠️ Less effective against \textbf{maneuvering targets}
+    \item ⚠️ Fire short bursts, reassess, fire again for erratic targets
+    \item After firing stops, must \textbf{re-acquire} target to resume tracking
 \end{itemize}
 
 \subsubsection{STEP 7: Cease Fire}

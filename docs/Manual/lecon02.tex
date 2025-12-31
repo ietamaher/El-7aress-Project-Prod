@@ -139,6 +139,49 @@ Gimbal will move during this step. Ensure area is clear.
 \end{itemize}
 \end{procedurebox}
 
+\subsubsection{Detailed Homing Sequence (50ms Control Loop)}
+
+The homing process follows a precise timing sequence:
+
+\begin{lstlisting}
+Cycle 0:   Operator presses HOME button
+           → State = Requested
+           → OSD displays: "homing init"
+
+Cycle 1:   (50ms later)
+           → GimbalController sends HOME command to PLC42
+           → State = InProgress
+           → OSD displays: "HOMING..."
+           → 30-second timeout timer starts
+
+Wait:      Oriental Motor servos execute homing sequence
+           → Azimuth motor moves to home position
+           → Elevation motor moves to home position
+           → Motors send HOME-END signals when complete
+           → Azimuth HOME-END (DI6), Elevation HOME-END (DI7)
+
+Complete:  Both HOME-END signals received
+           → State = Completed
+           → OSD displays: "HOME COMPLETE" (5 seconds)
+\end{lstlisting}
+
+\textbf{Homing Timeout Handling}:
+\begin{itemize}
+    \item \textbf{30-second timeout} if HOME-END signals not received
+    \item OSD displays: \osd{HOMING TIMEOUT - FAULT} (red flashing)
+    \item \textbf{Recovery procedure}:
+    \begin{enumerate}
+        \item Press Emergency Stop
+        \item Clear any gimbal obstruction
+        \item Release Emergency Stop
+        \item Retry homing procedure
+    \end{enumerate}
+\end{itemize}
+
+\begin{warningbox}
+If homing fails repeatedly, report to maintenance. Do not operate gimbal without successful homing.
+\end{warningbox}
+
 \begin{procedurebox}[STEP 5: SELECT CAMERA]
 \textbf{Action}:
 \begin{itemize}
@@ -434,31 +477,75 @@ HIGH & Close-range threats, emergencies & ~60\degree/second \\
 
 \subsection{Joystick Button Functions}
 
+The joystick provides 19 programmable buttons (Button 0-18) plus analog axes and a hat switch.
+
+\subsubsection{Complete Joystick Button Reference (19 Buttons)}
+
+\small
+\begin{longtable}{|C{0.08\textwidth}|L{0.30\textwidth}|L{0.52\textwidth}|}
+\hline
+\rowcolor{milblue!20}
+\textbf{Button} & \textbf{Function} & \textbf{Operation} \\
+\hline
+\textbf{0} & Engagement Mode / Master Arm & Press = Enter engagement, Release = Exit engagement \\
+\hline
+\textbf{1} & LRF (Laser Range Finder) & Single press = Single measurement, \textbf{Double-click = Toggle continuous LRF (5Hz)} \\
+\hline
+\textbf{2} & Lead Angle Compensation (LAC) & \textbf{Toggle LAC ON/OFF (joystick ONLY - no menu access!)} \\
+\hline
+\textbf{3} & Dead Man Switch (Palm Switch) & \textbf{MUST HOLD} for weapon operation and LAC toggle \\
+\hline
+\textbf{4} & Tracking Control & Single = Cycle tracking phase, \textbf{Double-click (<1 sec) = ABORT tracking} \\
+\hline
+\textbf{5} & Fire Weapon & Trigger - fires weapon when armed \\
+\hline
+\textbf{6} & Zoom + & Increase camera magnification (hold for continuous) \\
+\hline
+\textbf{7} & Thermal LUT + & Next thermal video look-up table (thermal camera only) \\
+\hline
+\textbf{8} & Zoom - & Decrease camera magnification (hold for continuous) \\
+\hline
+\textbf{9} & Thermal LUT - & Previous thermal look-up table (thermal camera only) \\
+\hline
+\textbf{10} & LRF Clear & Clear range reading, stop continuous LRF mode \\
+\hline
+\textbf{11} & Mode Cycle & Cycle: Manual → Sector Scan → TRP → (Radar) → Manual \\
+\hline
+\textbf{12} & Reserved & Available for future use \\
+\hline
+\textbf{13} & Mode Cycle & Duplicate of Button 11 (ergonomic placement) \\
+\hline
+\textbf{14} & Select Next Zone/TRP & Next TRP page or sector scan zone (during surveillance) \\
+\hline
+\textbf{15} & Reserved & Future use \\
+\hline
+\textbf{16} & Select Previous Zone/TRP & Previous TRP page or sector scan zone (during surveillance) \\
+\hline
+\textbf{17} & Reserved & Future use \\
+\hline
+\textbf{18} & Reserved & Future use \\
+\hline
+\end{longtable}
+
+\subsubsection{Analog Controls}
+
 \small
 \begin{longtable}{|L{0.28\textwidth}|L{0.65\textwidth}|}
 \hline
 \rowcolor{milblue!20}
 \textbf{Control} & \textbf{Function} \\
 \hline
-\textbf{Main Stick} & Gimbal slew (left/right = azimuth, up/down = elevation) \\
+\textbf{Main Stick X-Axis} & Gimbal azimuth slew (left/right) \\
 \hline
-\textbf{Trigger} & Fire weapon (when armed) \\
+\textbf{Main Stick Y-Axis} & Gimbal elevation slew (up/down) \\
 \hline
-\textbf{Dead Man Switch} & Must be held for weapon operation \\
-\hline
-\textbf{CAM Button} & Toggle Day/Thermal camera \\
-\hline
-\textbf{TRK Button} & Initiate/abort tracking \\
-\hline
-\textbf{LRF Button} & Activate laser rangefinder \\
-\hline
-\textbf{FN Button} & Context-sensitive function \\
-\hline
-\textbf{Hat Switch} & Tracking box control / menu navigation \\
-\hline
-\textbf{Zoom Rocker} & Camera zoom in/out \\
+\textbf{Hat Switch (D-Pad)} & Tracking gate resize during Acquisition phase / Menu navigation \\
 \hline
 \end{longtable}
+
+\begin{warningbox}[CRITICAL]
+\textbf{Button 2 (LAC)} is the \textbf{ONLY} method to activate Lead Angle Compensation. There is NO menu access for LAC. Dead Man Switch (Button 3) must be held when toggling LAC.
+\end{warningbox}
 
 \subsubsection{Camera Switch (CAM Button)}
 
@@ -477,19 +564,35 @@ HIGH & Close-range threats, emergencies & ~60\degree/second \\
     \item Identifying recently fired weapons (barrel heat)
 \end{itemize}
 
-\subsubsection{Laser Rangefinder (LRF Button)}
+\subsubsection{Laser Rangefinder (Button 1)}
 
-\textbf{Operation}:
+\textbf{Single Measurement Mode} (default):
 \begin{enumerate}
     \item Aim reticle at target
-    \item Press and hold LRF button
+    \item Press Button 1 (single press)
     \item Laser fires (invisible infrared beam)
     \item OSD displays range: \osd{RNG: XXXm}
-    \item Release button when done
+    \item Range used for ballistic calculations
 \end{enumerate}
 
+\textbf{Continuous LRF Mode} (5Hz automatic ranging):
+\begin{enumerate}
+    \item \textbf{Double-click Button 1} (within 1 second)
+    \item System announces: "CONTINUOUS LRF ENABLED"
+    \item LRF fires automatically at 5Hz (5 times per second)
+    \item Range continuously updates on OSD
+    \item \textbf{Double-click Button 1 again} to disable
+    \item Or press \textbf{Button 10} (LRF Clear) to stop
+\end{enumerate}
+
+\begin{notebox}
+Continuous LRF mode is useful for tracking moving targets where range is constantly changing. Disable when not needed to preserve laser life.
+\end{notebox}
+
+\textbf{Specifications}:\\
 \textbf{Range}: 50m to 4000m\\
-\textbf{Accuracy}: ±5 meters
+\textbf{Accuracy}: ±5 meters\\
+\textbf{Continuous Rate}: 5Hz (when enabled)
 
 \begin{warningbox}
 Class 3B laser. Do not aim at people or reflective surfaces at close range.

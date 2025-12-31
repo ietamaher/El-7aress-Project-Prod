@@ -1,19 +1,22 @@
 # OPERATOR MANUAL UPDATE SUMMARY - QT6 VERSION
 ## El 7arress RCWS System
 
-**Date**: 2025-12-06
+**Date**: 2025-12-31
 **Update Reason**: QT6 QML code updates and corrections to system documentation
-**Reviewed Files**: Lessons 2, 4, and 6 (most significant updates)
+**Reviewed Files**: Lessons 2, 3, 4, 5, and 6
+**Status**: ✅ **ALL UPDATES IMPLEMENTED**
 
 ---
 
 ## EXECUTIVE SUMMARY
 
-This document summarizes all critical updates made to the El 7arress RCWS Operator Manual following QT6 codebase analysis. Three primary lessons have been substantially revised:
+This document summarizes all critical updates made to the El 7arress RCWS Operator Manual following QT6 codebase analysis. The following lessons have been updated:
 
-- **Lesson 2 (Basic Operation)**: Major updates
-- **Lesson 4 (Motion Modes & Surveillance)**: Moderate updates
-- **Lesson 6 (Ballistics & Fire Control)**: Clarifications needed
+- **Lesson 2 (Basic Operation)**: ✅ IMPLEMENTED - Major updates (joystick buttons, homing, LRF)
+- **Lesson 3 (Menu System)**: ✅ IMPLEMENTED - LAC menu correction
+- **Lesson 4 (Motion Modes & Surveillance)**: ✅ IMPLEMENTED - Zone selection buttons, radar note
+- **Lesson 5 (Target Engagement)**: ✅ IMPLEMENTED - Double-click timing, dead reckoning
+- **Lesson 6 (Ballistics & Fire Control)**: ✅ IMPLEMENTED - Two ballistic systems, LAC corrections
 
 ---
 
@@ -282,77 +285,79 @@ Press Button 14 → Wrap to "Page 1"
 
 ---
 
-## FILES UPDATED
+## FILES UPDATED (2025-12-31)
 
-### Generated Updated Files:
-1. **docs/Manual/lecon02_UPDATED.tex** - Lesson 2: Basic Operation
-   - Complete ammunition feed procedure (encoder-based)
-   - Detailed homing sequence with 50ms timing
-   - Full 19-button joystick mapping
-   - LRF continuous mode documentation
-   - LAC Button 2 operation
-   - AHRS stabilization explanation
-   - Updated OSD section with LAC status
+### Updated Lesson Files:
+1. **docs/Manual/lecon02.tex** - Lesson 2: Basic Operation ✅ UPDATED
+   - Complete 19-button joystick mapping (Button 0-18)
+   - Detailed homing sequence with 50ms timing and 30-second timeout
+   - LRF continuous mode documentation (double-click Button 1)
+   - LAC Button 2 operation (joystick ONLY - no menu!)
+   - Critical warning about LAC activation method
 
-2. **docs/Manual/lecon04_UPDATED.tex** - Lesson 4: Motion Modes & Surveillance
-   - Radar mode removed (future capability note added)
-   - Updated mode cycle sequence
-   - TRP/Scan zone selection with Buttons 14/16
-   - Enhanced zone management procedures
-   - TRP page organization explained
+2. **docs/Manual/lecon03.tex** - Lesson 3: Menu System ✅ UPDATED
+   - Corrected LAC menu section to "View Only"
+   - Added warning that LAC cannot be toggled from menu
+   - Clear indication that Button 2 is the ONLY method
 
-3. **docs/Manual/MANUAL_UPDATE_SUMMARY_QT6.md** - This summary document
+3. **docs/Manual/lecon04.tex** - Lesson 4: Motion Modes & Surveillance ✅ UPDATED
+   - Added note that Radar Slew requires radar hardware
+   - NEW SECTION: Zone Selection via Joystick (Buttons 14/16)
+   - TRP page and sector scan zone switching documentation
+
+4. **docs/Manual/lecon05.tex** - Lesson 5: Target Engagement ✅ UPDATED
+   - Fixed double-click abort timing from 500ms to **1000ms (1 second)**
+   - NEW SECTION: Dead Reckoning During Firing (CROWS Doctrine)
+   - Documentation of gimbal behavior during firing phase
+
+5. **docs/Manual/lecon06.tex** - Lesson 6: Ballistics & Fire Control ✅ UPDATED
+   - NEW SECTION: "Two Independent Ballistic Correction Systems"
+     - Ballistic Drop Compensation (AUTOMATIC)
+     - Motion Lead Compensation (MANUAL - Button 2)
+   - Critical warning that LAC is joystick Button 2 ONLY
+   - Updated LAC status indicators to match code (LAC: OFF/ON/LAG/ZOOM OUT)
+   - CROWS-compliant LAC latching behavior (2-second minimum interval)
+   - Target switching procedure for LAC
+
+6. **docs/Manual/MANUAL_UPDATE_SUMMARY_QT6.md** - This summary document ✅ UPDATED
 
 ---
 
-## LESSON 6 UPDATES REQUIRED (Not Yet Generated)
+## LESSON 6 UPDATES - ✅ COMPLETED
 
-**Lesson 6: Ballistics & Fire Control** requires these specific changes:
+**Lesson 6: Ballistics & Fire Control** changes have been implemented:
 
-### Section 6.3 - Lead Angle Compensation
+### Section: Two Independent Ballistic Correction Systems (NEW)
 
-**REMOVE**:
-- All menu-based LAC activation procedures
-- Any reference to "Environmental Parameters → LAC" menu path
-- Menu toggle activation steps
-
-**ADD**:
-- **Joystick Button 2 ONLY** activation procedure
-- Clarification: "LAC can ONLY be toggled via Button 2 on the joystick"
-- Updated OSD status indicators:
-  - `LAC: OFF` (gray)
-  - `LAC: ON` (green)
-  - `LAC: LAG` (yellow)
-  - `LAC: ZOOM OUT` (red)
-
-**CLARIFY** (new section recommended):
-
-**6.X - Two Ballistic Correction Systems**
+Added comprehensive explanation of the two separate ballistic systems:
 
 ```
-The El 7arress RCWS employs two independent ballistic correction systems:
-
-1. BALLISTIC DROP COMPENSATION (Automatic)
-   - Always active when LRF range data valid
-   - Corrects for gravity drop and wind deflection
-   - Uses environmental parameters (temp, altitude, crosswind)
-   - No operator intervention required
+SYSTEM 1: BALLISTIC DROP COMPENSATION (Automatic)
+   - Activation: AUTOMATIC when LRF has valid range data
+   - Corrects: Gravity drop, wind deflection, environmental factors
    - Variables: ballisticDropOffsetAz, ballisticDropOffsetEl
    - OSD indicator: ENV (when environmental params active)
+   - Operator Action: NONE REQUIRED
 
-2. MOTION LEAD ANGLE COMPENSATION (Manual Toggle)
-   - Operator activates via Button 2 (joystick ONLY)
-   - Only functions during active target tracking
-   - Calculates lead for moving targets
-   - Based on target velocity, range, time-of-flight
+SYSTEM 2: MOTION LEAD COMPENSATION (Manual Toggle)
+   - Activation: MANUAL via joystick Button 2 (LAC toggle)
+   - Corrects: Moving target lead based on velocity and TOF
    - Variables: motionLeadOffsetAz, motionLeadOffsetEl
    - OSD indicator: LAC: ON/LAG/ZOOM OUT
+   - Operator Action: REQUIRED - Button 2 to enable
 
-FINAL CCIP AIM POINT:
-CCIP (*) = Zeroing Offset
-           + Ballistic Drop Compensation (auto if range valid)
-           + Motion Lead Compensation (if Button 2 toggled ON)
+COMBINED CCIP CALCULATION:
+CCIP (*) = Gun Boresight + Zeroing Offset
+           + Ballistic Drop Compensation (auto when range valid)
+           + Motion Lead Compensation (only if Button 2 toggled ON)
 ```
+
+### Section: CROWS-Compliant LAC Latching (NEW)
+
+Added per CROWS TM 9-1090-225-10-2:
+- 2-second minimum interval between LAC toggles
+- Latched velocity behavior (not continuously updated)
+- Target switching procedure warning
 
 ---
 
