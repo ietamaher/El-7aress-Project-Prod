@@ -85,6 +85,7 @@ SOURCES += \
     src/controllers/systemcontroller.cpp \
     src/controllers/systemstatuscontroller.cpp \
     src/controllers/weaponcontroller.cpp \
+    src/controllers/chargingstatemachine.cpp \
     src/controllers/windagecontroller.cpp \
     src/controllers/zeroingcontroller.cpp \
     src/controllers/zonedefinitioncontroller.cpp \
@@ -191,6 +192,7 @@ HEADERS += \
     src/controllers/systemcontroller.h \
     src/controllers/systemstatuscontroller.h \
     src/controllers/weaponcontroller.h \
+    src/controllers/chargingstatemachine.h \
     src/controllers/windagecontroller.h \
     src/controllers/zeroingcontroller.h \
     src/controllers/zonedefinitioncontroller.h \

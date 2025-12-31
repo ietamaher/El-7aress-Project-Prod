@@ -66,20 +66,27 @@ WeaponController::WeaponController(SystemStateModel* stateModel,
     }
 
     // ========================================================================
-    // CHARGING FSM SETUP (Cocking Actuator)
+    // CHARGING STATE MACHINE SETUP (Cocking Actuator FSM - Extracted)
     // ========================================================================
-    m_chargingTimer = new QTimer(this);
-    m_chargingTimer->setSingleShot(true);
-    connect(m_chargingTimer, &QTimer::timeout, this, &WeaponController::onChargingTimeout);
+    m_chargingStateMachine = new ChargingStateMachine(m_servoActuator, m_safetyInterlock, this);
 
-    // ========================================================================
-    // CROWS M153: 4-SECOND POST-CHARGE LOCKOUT TIMER
-    // ========================================================================
-    // Per CROWS spec: "Once charging completes, CROWS prevents additional
-    // charging for four seconds."
-    m_lockoutTimer = new QTimer(this);
-    m_lockoutTimer->setSingleShot(true);
-    connect(m_lockoutTimer, &QTimer::timeout, this, &WeaponController::onChargeLockoutExpired);
+    // Connect ChargingStateMachine signals
+    connect(m_chargingStateMachine, &ChargingStateMachine::stateChanged,
+            this, &WeaponController::onChargingStateChanged);
+    connect(m_chargingStateMachine, &ChargingStateMachine::cycleStarted,
+            this, &WeaponController::onChargeCycleStarted);
+    connect(m_chargingStateMachine, &ChargingStateMachine::cycleCompleted,
+            this, &WeaponController::onChargeCycleCompleted);
+    connect(m_chargingStateMachine, &ChargingStateMachine::cycleFaulted,
+            this, &WeaponController::onChargeCycleFaulted);
+    connect(m_chargingStateMachine, &ChargingStateMachine::lockoutExpired,
+            this, &WeaponController::onChargeLockoutExpired);
+
+    // Connect actuator control signals from ChargingStateMachine
+    connect(m_chargingStateMachine, &ChargingStateMachine::requestActuatorMove,
+            this, &WeaponController::onActuatorMoveRequested);
+    connect(m_chargingStateMachine, &ChargingStateMachine::requestActuatorStop,
+            this, &WeaponController::onActuatorStopRequested);
 
     // Connect actuator position feedback for FSM state transitions
     if (m_servoActuator) {
@@ -94,17 +101,19 @@ WeaponController::WeaponController(SystemStateModel* stateModel,
         // retracts the Cocking Actuator if it is extended to ensure it does not
         // interfere with firing."
         // Use a single-shot timer to perform this after construction completes
-        QTimer::singleShot(500, this, &WeaponController::performStartupRetraction);
+        QTimer::singleShot(500, this, [this]() {
+            if (m_stateModel) {
+                m_chargingStateMachine->performStartupRetraction(m_stateModel->data().actuatorPosition);
+            }
+        });
     }
 
     // ========================================================================
-    // Initialize weapon type and required cycles from state model
+    // Log installed weapon type
     // ========================================================================
     if (m_stateModel) {
         WeaponType weaponType = m_stateModel->data().installedWeaponType;
-        m_requiredCycles = getRequiredCyclesForWeapon(weaponType);
-        qInfo() << "[WeaponController] Installed weapon type:" << static_cast<int>(weaponType)
-                << "| Required charge cycles:" << m_requiredCycles;
+        qInfo() << "[WeaponController] Installed weapon type:" << static_cast<int>(weaponType);
     }
 
     // ========================================================================
@@ -125,17 +134,11 @@ WeaponController::WeaponController(SystemStateModel* stateModel,
 
 WeaponController::~WeaponController()
 {
-    // Stop any active timers
-    if (m_chargingTimer) {
-        m_chargingTimer->stop();
-    }
-    if (m_lockoutTimer) {
-        m_lockoutTimer->stop();
-    }
-
     // Clean up ballistics processor
     delete m_ballisticsProcessor;
     m_ballisticsProcessor = nullptr;
+
+    // Note: m_chargingStateMachine is a QObject child, cleaned up automatically
 }
 
 // ============================================================================
@@ -174,13 +177,9 @@ void WeaponController::onSystemStateChanged(const SystemStateData& newData)
                 qCritical() << "[WeaponController] SERVO ACTUATOR STOPPED - Charging halted";
             }
 
-            // STEP 3: ABORT ANY IN-PROGRESS CHARGE CYCLE
-            if (m_chargingState != ChargingState::Idle && m_chargingState != ChargingState::Lockout) {
-                m_chargingTimer->stop();
-                transitionChargingState(ChargingState::Fault);
-                if (m_stateModel) {
-                    m_stateModel->setChargeCycleInProgress(false);
-                }
+            // STEP 3: ABORT ANY IN-PROGRESS CHARGE CYCLE (delegated to ChargingStateMachine)
+            if (m_chargingStateMachine->isChargingInProgress()) {
+                m_chargingStateMachine->abort("Emergency stop activated");
                 qCritical() << "[WeaponController] CHARGE CYCLE ABORTED - State set to FAULT";
             }
 
@@ -201,42 +200,11 @@ void WeaponController::onSystemStateChanged(const SystemStateData& newData)
             // Per CROWS spec: Actuator must be retracted before firing allowed
             // If actuator was stopped mid-cycle, it could be extended and
             // interfere with firing. We automatically retract to safe position.
+            // Delegated to ChargingStateMachine via resetFault().
             // ================================================================
-            if (m_servoActuator && m_chargingState == ChargingState::Fault) {
-                qInfo() << "[WeaponController] SAFE RECOVERY: Retracting actuator to home position";
-
-                // ================================================================
-                // CRITICAL FIX: Reset multi-cycle state to prevent auto-restart
-                // ================================================================
-                // When emergency interrupted a charging cycle, these variables
-                // may still hold stale values. If not reset, processActuatorPosition()
-                // will see m_isShortPressCharge=true and m_currentCycleCount < m_requiredCycles
-                // and automatically start a NEW charging cycle after safe retraction!
-                // ================================================================
-                m_isShortPressCharge = false;
-                m_currentCycleCount = 0;
-
-                // Command retraction to home
-                m_servoActuator->moveToPosition(COCKING_RETRACT_POS);
-
-                // ================================================================
-                // Use SafeRetract state (NOT Retracting) to avoid multi-cycle logic
-                // ================================================================
-                // SafeRetract is specifically for recovery operations where we
-                // want to go directly to Idle after reaching home, without
-                // checking if more charging cycles are needed.
-                // ================================================================
-                transitionChargingState(ChargingState::SafeRetract);
-
-                if (m_stateModel) {
-                    m_stateModel->setChargeCycleInProgress(true);
-                }
-
-                // Start watchdog for safe retraction
-                m_chargingTimer->start(COCKING_TIMEOUT_MS);
-
-                qInfo() << "[WeaponController] Actuator retracting to home ("
-                        << COCKING_RETRACT_POS << "mm) via SafeRetract state";
+            if (m_servoActuator && m_chargingStateMachine->currentState() == ChargingState::Fault) {
+                qInfo() << "[WeaponController] SAFE RECOVERY: Initiating safe retraction via ChargingStateMachine";
+                m_chargingStateMachine->resetFault();
             }
 
             qInfo() << "[WeaponController] Weapon operations now permitted";
@@ -255,37 +223,17 @@ void WeaponController::onSystemStateChanged(const SystemStateData& newData)
     }
 
     // ========================================================================
-    // CHARGING CYCLE - NEW FSM-BASED APPROACH
-    // Detect button PRESS (edge trigger, not level)
-    // Button RELEASE is intentionally ignored - FSM controls the cycle
+    // CHARGING CYCLE (delegated to ChargingStateMachine)
+    // Detect button PRESS/RELEASE and forward to FSM
     // ========================================================================
     if (newData.chargeButtonPressed && !m_oldState.chargeButtonPressed) {
         // Button was just pressed - try to start cycle
         onOperatorRequestCharge();
     }
 
-    // Handle button release
+    // Handle button release (for continuous hold mode)
     if (!newData.chargeButtonPressed && m_oldState.chargeButtonPressed) {
-        if (m_chargingState == ChargingState::Extended) {
-            // ================================================================
-            // CONTINUOUS HOLD MODE: Button released while in Extended state
-            // ================================================================
-            // This counts as ONE complete cycle (manual control mode)
-            // For M2HB: Operator must press and hold twice for full charge
-            // For M240/M249: One hold-and-release is sufficient
-            m_currentCycleCount++;
-            m_isShortPressCharge = false;  // Mark as continuous hold mode
-
-            qInfo() << "[WeaponController] Button RELEASED in Extended state - initiating retraction"
-                    << "(Cycle" << m_currentCycleCount << "of" << m_requiredCycles << ")";
-
-            transitionChargingState(ChargingState::Retracting);
-            m_servoActuator->moveToPosition(COCKING_RETRACT_POS);
-            m_chargingTimer->start(COCKING_TIMEOUT_MS);  // Start watchdog for retraction
-        } else if (m_chargingState == ChargingState::Extending || m_chargingState == ChargingState::Retracting) {
-            // Button released during extend/retract motion - logged but cycle continues
-            qDebug() << "[WeaponController] Button released during" << chargingStateName(m_chargingState) << "- cycle continues";
-        }
+        m_chargingStateMachine->onButtonReleased();
     }
 
     // ========================================================================
@@ -463,454 +411,103 @@ void WeaponController::onSystemStateChanged(const SystemStateData& newData)
 }
 
 // ============================================================================
-// CHARGING CYCLE FSM - OPERATOR ENTRY POINT
+// CHARGING CYCLE - OPERATOR ENTRY POINT (delegated to ChargingStateMachine)
 // ============================================================================
 
 void WeaponController::onOperatorRequestCharge()
 {
-    qDebug() << "[WeaponController] Operator REQUEST CHARGE. Current charging state:"
-             << chargingStateName(m_chargingState)
-             << "| Lockout active:" << m_chargeLockoutActive;
-
-    // ========================================================================
-    // SAFETY INTERLOCK INTEGRATION (Phase 2 - Centralized Charge Authorization)
-    // ========================================================================
-    // Charge authorization routes through SafetyInterlock.canCharge().
-    // This ensures audit logging and centralized safety checks.
-    //
-    // SafetyInterlock.canCharge() checks:
-    // - Emergency stop not active
-    // - Station enabled
-    // - Not already charging
-    // - No lockout active
-    // - No fault state
-    // ========================================================================
-
-    // Handle FAULT state specially - operator presses button to reset
-    if (m_chargingState == ChargingState::Fault ||
-        m_chargingState == ChargingState::JamDetected) {
-        qDebug() << "[WeaponController] Button pressed in FAULT state - resetting fault";
-        resetChargingFault();
-        return;
-    }
-
-    // Use SafetyInterlock for all other charge authorization checks
-    if (!isChargingAllowed()) {
-        // Denial is already logged by SafetyInterlock with timestamp
-        return;
-    }
-
-    // Only allow start when idle (double-check after canCharge)
-    if (m_chargingState != ChargingState::Idle) {
-        qDebug() << "[WeaponController] Charge cycle start IGNORED - cycle already running";
-        return;
-    }
-
-    // ========================================================================
-    // CROWS M153: INITIALIZE MULTI-CYCLE CHARGING
-    // ========================================================================
-    // Reset cycle counter for new charge sequence
-    m_currentCycleCount = 0;
-
-    // Update required cycles from current weapon type
+    // Get current weapon type from state model
+    WeaponType weaponType = WeaponType::Unknown;
     if (m_stateModel) {
-        WeaponType weaponType = m_stateModel->data().installedWeaponType;
-        m_requiredCycles = getRequiredCyclesForWeapon(weaponType);
+        weaponType = m_stateModel->data().installedWeaponType;
     }
 
-    qInfo() << "[WeaponController] Starting charge sequence:"
-            << m_requiredCycles << "cycle(s) required for weapon type";
-
-    startChargeCycle();
+    // Delegate to ChargingStateMachine
+    // It handles: fault reset, safety checks, multi-cycle initialization
+    m_chargingStateMachine->requestCharge(weaponType);
 }
 
 // ============================================================================
-// CHARGING CYCLE FSM - CYCLE START
+// CHARGINGSTATEMACHINE SIGNAL HANDLERS
 // ============================================================================
 
-void WeaponController::startChargeCycle()
+void WeaponController::onChargingStateChanged(ChargingState newState)
 {
-    // ========================================================================
-    // EMERGENCY STOP CHECK (HIGHEST PRIORITY - FAIL-FAST)
-    // ========================================================================
-    if (m_stateModel && m_stateModel->data().emergencyStopActive) {
-        qCritical() << "[WeaponController] CHARGE CYCLE BLOCKED: EMERGENCY STOP ACTIVE";
-        return;
-    }
-
-    if (!m_servoActuator) {
-        qWarning() << "[WeaponController] No servo actuator - cannot start charge cycle";
-        return;
-    }
-
-    qInfo() << "╔══════════════════════════════════════════════════════════════╗";
-    qInfo() << "║           CHARGE CYCLE STARTING                              ║";
-    qInfo() << "║   Cycle:" << (m_currentCycleCount + 1) << "of" << m_requiredCycles
-            << "                                        ║";
-    qInfo() << "╚══════════════════════════════════════════════════════════════╝";
-
-    // Reset jam detection for new cycle
-    resetJamDetection();
-
-    transitionChargingState(ChargingState::Extending);
-
-    // Notify GUI
-    if (m_stateModel) {
-        m_stateModel->setChargeCycleInProgress(true);
-
-        // Update cycle progress in state model
-        SystemStateData data = m_stateModel->data();
-        data.chargeCyclesCompleted = m_currentCycleCount;
-        data.chargeCyclesRequired = m_requiredCycles;
-        m_stateModel->updateData(data);
-    }
-    emit chargeCycleStarted();
-
-    // Command full extension
-    m_servoActuator->moveToPosition(COCKING_EXTEND_POS);
-
-    // Start watchdog
-    m_chargingTimer->start(COCKING_TIMEOUT_MS);
-}
-
-// ============================================================================
-// CHARGING CYCLE FSM - ACTUATOR FEEDBACK HANDLER
-// ============================================================================
-
-void WeaponController::onActuatorFeedback(const ServoActuatorData& data)
-{
-    // ========================================================================
-    // JAM DETECTION - CRITICAL SAFETY CHECK (runs BEFORE position processing)
-    // Only active during motion states where jam can occur
-    // ========================================================================
-    if (m_chargingState == ChargingState::Extending ||
-        m_chargingState == ChargingState::Retracting ||
-        m_chargingState == ChargingState::SafeRetract) {
-        checkForJamCondition(data);
-    }
-
-    // Process position for FSM state transitions
-    processActuatorPosition(data.position_mm);
-}
-
-void WeaponController::processActuatorPosition(double posMM)
-{
-    switch (m_chargingState) {
-    case ChargingState::Extending:
-        if (posMM >= (COCKING_EXTEND_POS - COCKING_POSITION_TOLERANCE)) {
-            // Extension reached - check if button is still held
-            m_chargingTimer->stop();  // Stop watchdog while we check
-
-            if (m_stateModel && m_stateModel->data().chargeButtonPressed) {
-                // ================================================================
-                // CONTINUOUS HOLD MODE (Original behavior preserved)
-                // ================================================================
-                // Button still held - hold extended position until release
-                m_isShortPressCharge = false;  // Mark as continuous hold
-                transitionChargingState(ChargingState::Extended);
-                qDebug() << "[WeaponController] Extension complete - HOLDING (button still pressed)";
-                // No watchdog in Extended state - operator controls timing
-            } else {
-                // ================================================================
-                // SHORT PRESS MODE (CROWS M153 multi-cycle)
-                // ================================================================
-                // Button already released - this is a short press charge
-                m_isShortPressCharge = true;
-                m_currentCycleCount++;
-
-                qInfo() << "[WeaponController] Cycle" << m_currentCycleCount << "of"
-                        << m_requiredCycles << "complete - retracting";
-
-                // Retract after extension
-                transitionChargingState(ChargingState::Retracting);
-                m_servoActuator->moveToPosition(COCKING_RETRACT_POS);
-                m_chargingTimer->start(COCKING_TIMEOUT_MS);  // Restart watchdog for retraction
-            }
-        }
-        break;
-
-    case ChargingState::Extended:
-        // In Extended state, we just hold position
-        // Transition to Retracting happens via button release in onSystemStateChanged()
-        break;
-
-    case ChargingState::Retracting:
-        if (posMM <= (COCKING_RETRACT_POS + COCKING_POSITION_TOLERANCE)) {
-            m_chargingTimer->stop();
-
-            // ====================================================================
-            // CROWS M153: CHECK IF MORE CYCLES NEEDED (SHORT PRESS MODE ONLY)
-            // ====================================================================
-            if (m_isShortPressCharge && m_currentCycleCount < m_requiredCycles) {
-                // More cycles needed - start next extension cycle
-                qInfo() << "[WeaponController] Starting cycle" << (m_currentCycleCount + 1)
-                        << "of" << m_requiredCycles;
-
-                transitionChargingState(ChargingState::Extending);
-                m_servoActuator->moveToPosition(COCKING_EXTEND_POS);
-                m_chargingTimer->start(COCKING_TIMEOUT_MS);
-
-                // Reset jam detection for new cycle
-                resetJamDetection();
-            } else {
-                // ================================================================
-                // ALL CYCLES COMPLETE - WEAPON CHARGED
-                // ================================================================
-                qInfo() << "╔══════════════════════════════════════════════════════════════╗";
-                qInfo() << "║           CHARGING COMPLETE - WEAPON READY                   ║";
-                qInfo() << "║   Cycles completed:" << m_currentCycleCount << "/" << m_requiredCycles
-                        << "                                   ║";
-                qInfo() << "╚══════════════════════════════════════════════════════════════╝";
-
-                // Notify GUI - weapon is now charged
-                if (m_stateModel) {
-                    m_stateModel->setChargeCycleInProgress(false);
-                    m_stateModel->setWeaponCharged(true);
-
-                    // Update cycle count in state for OSD
-                    SystemStateData data = m_stateModel->data();
-                    data.chargeCyclesCompleted = m_currentCycleCount;
-                    m_stateModel->updateData(data);
-                }
-
-                emit chargeCycleCompleted();
-
-                // ================================================================
-                // CROWS M153: START 4-SECOND LOCKOUT
-                // ================================================================
-                startChargeLockout();
-            }
-        }
-        break;
-
-    // ========================================================================
-    // JAM DETECTED STATE - Monitor backoff completion
-    // ========================================================================
-    case ChargingState::JamDetected:
-        if (posMM <= (COCKING_RETRACT_POS + COCKING_POSITION_TOLERANCE)) {
-            // Backoff complete - enter fault state for operator acknowledgment
-            m_chargingTimer->stop();
-            transitionChargingState(ChargingState::Fault);
-
-            qCritical() << "╔══════════════════════════════════════════════════════════════╗";
-            qCritical() << "║     JAM RECOVERY COMPLETE - OPERATOR MUST CHECK WEAPON       ║";
-            qCritical() << "╚══════════════════════════════════════════════════════════════╝";
-        }
-        break;
-
-    // ========================================================================
-    // SAFE RETRACT STATE - Emergency recovery retraction
-    // ========================================================================
-    // This state is used specifically for post-emergency-stop recovery.
-    // Unlike normal Retracting state, it does NOT check multi-cycle logic.
-    // When actuator reaches home, we go directly to Idle - weapon is NOT charged.
-    // Operator must manually initiate a new charging sequence.
-    // ========================================================================
-    case ChargingState::SafeRetract:
-        if (posMM <= (COCKING_RETRACT_POS + COCKING_POSITION_TOLERANCE)) {
-            m_chargingTimer->stop();
-
-            qInfo() << "╔══════════════════════════════════════════════════════════════╗";
-            qInfo() << "║     SAFE RETRACTION COMPLETE - ACTUATOR AT HOME              ║";
-            qInfo() << "╚══════════════════════════════════════════════════════════════╝";
-
-            // Go directly to Idle - NO automatic charging cycle
-            transitionChargingState(ChargingState::Idle);
-
-            if (m_stateModel) {
-                m_stateModel->setChargeCycleInProgress(false);
-                m_stateModel->setWeaponCharged(false);  // Weapon is NOT charged
-            }
-
-            qInfo() << "[WeaponController] System ready - operator must manually charge weapon";
-        }
-        break;
-
-    case ChargingState::Idle:
-    case ChargingState::Lockout:
-    case ChargingState::Fault:
-    default:
-        break;
-    }
-}
-
-// ============================================================================
-// CHARGING CYCLE FSM - TIMEOUT HANDLER
-// ============================================================================
-
-void WeaponController::onChargingTimeout()
-{
-    qWarning() << "[WeaponController] CHARGING TIMEOUT in state:" << chargingStateName(m_chargingState)
-               << "- actuator did not reach expected position within" << COCKING_TIMEOUT_MS << "ms";
-
-    // Enter fault state
-    transitionChargingState(ChargingState::Fault);
-
-    // Notify GUI
-    if (m_stateModel) {
-        m_stateModel->setChargeCycleInProgress(false);
-    }
-    emit chargeCycleFaulted();
-
-    // NOTE: We do NOT automatically retract here - operator must clear jam first
-    // and then use resetChargingFault() to attempt recovery
-}
-
-void WeaponController::checkForJamCondition(const ServoActuatorData& data)
-{
-    // Skip if jam detection not yet initialized (first sample)
-    if (!m_jamDetectionActive) {
-        m_previousFeedbackPosition = data.position_mm;
-        m_jamDetectionActive = true;
-        m_jamDetectionCounter = 0;
-        return;
-    }
-    
-    // Calculate position delta since last sample
-    double positionDelta = std::abs(data.position_mm - m_previousFeedbackPosition);
-    
-    // ========================================================================
-    // JAM CONDITION: High torque + No movement = Mechanical obstruction
-    // ========================================================================
-    bool highTorque = (data.torque_percent > JAM_TORQUE_THRESHOLD_PERCENT);
-    bool stalled = (positionDelta < POSITION_STALL_TOLERANCE_MM);
-    
-    if (highTorque && stalled) {
-        m_jamDetectionCounter++;
-        
-        qWarning() << "[WeaponController] JAM WARNING:" 
-                   << "Torque:" << QString::number(data.torque_percent, 'f', 1) << "%"
-                   << "| Stalled at:" << QString::number(data.position_mm, 'f', 2) << "mm"
-                   << "| Count:" << m_jamDetectionCounter << "/" << JAM_CONFIRM_SAMPLES;
-        
-        if (m_jamDetectionCounter >= JAM_CONFIRM_SAMPLES) {
-            // CONFIRMED JAM - Execute emergency recovery
-            executeJamRecovery();
-        }
-    } else {
-        // Normal operation - reset counter
-        if (m_jamDetectionCounter > 0) {
-            qDebug() << "[WeaponController] Jam warning cleared - normal operation resumed";
-        }
-        m_jamDetectionCounter = 0;
-    }
-    
-    // Update previous position for next comparison
-    m_previousFeedbackPosition = data.position_mm;
-}
-
-void WeaponController::executeJamRecovery()
-{
-    qCritical() << "╔══════════════════════════════════════════════════════════════╗";
-    qCritical() << "║           JAM DETECTED - EMERGENCY STOP INITIATED            ║";
-    qCritical() << "╚══════════════════════════════════════════════════════════════╝";
-    qCritical() << "[WeaponController] Position:" << m_previousFeedbackPosition << "mm"
-                << "| State:" << chargingStateName(m_chargingState);
-    
-    // ========================================================================
-    // STEP 1: IMMEDIATE STOP - Prevent further torque buildup
-    // ========================================================================
-    m_servoActuator->stopMove();
-    m_chargingTimer->stop();
-    
-    // ========================================================================
-    // STEP 2: TRANSITION TO JAM STATE
-    // ========================================================================
-    transitionChargingState(ChargingState::JamDetected);
-    
-    // ========================================================================
-    // STEP 3: NOTIFY SYSTEM
-    // ========================================================================
-    if (m_stateModel) {
-        m_stateModel->setChargeCycleInProgress(false);
-    }
-    emit chargeCycleFaulted();
-    
-    // ========================================================================
-    // STEP 4: DELAYED BACKOFF - Allow motor to stabilize before reverse
-    // ========================================================================
-    QTimer::singleShot(BACKOFF_STABILIZE_MS, this, [this]() {
-        if (m_chargingState != ChargingState::JamDetected) {
-            // State changed (operator reset?) - abort backoff
-            return;
-        }
-        
-        qDebug() << "[WeaponController] JAM RECOVERY: Initiating backoff to home position";
-        m_servoActuator->moveToPosition(COCKING_RETRACT_POS);
-        
-        // Start watchdog for backoff operation
-        m_chargingTimer->start(COCKING_TIMEOUT_MS);
-    });
-    
-    // Reset jam detection for next cycle
-    resetJamDetection();
-}
-
-void WeaponController::resetJamDetection()
-{
-    m_jamDetectionCounter = 0;
-    m_jamDetectionActive = false;
-    m_previousFeedbackPosition = 0.0;
-}
-
-// ============================================================================
-// CHARGING CYCLE FSM - FAULT RESET
-// ============================================================================
-
-void WeaponController::resetChargingFault()
-{
-    if (m_chargingState != ChargingState::Fault) {
-        qDebug() << "[WeaponController] Charging fault reset IGNORED - not in FAULT state";
-        return;
-    }
-
-    if (!m_servoActuator) {
-        qWarning() << "[WeaponController] No actuator available for fault recovery";
-        return;
-    }
-
-    qDebug() << "[WeaponController] Operator reset - attempting safe retraction";
-    transitionChargingState(ChargingState::Retracting);
-
-    // Attempt safe retraction
-    m_servoActuator->moveToPosition(COCKING_RETRACT_POS);
-    m_chargingTimer->start(COCKING_TIMEOUT_MS);
-
-    // Notify GUI
-    if (m_stateModel) {
-        m_stateModel->setChargeCycleInProgress(true);
-    }
-}
-
-// ============================================================================
-// CHARGING CYCLE FSM - STATE TRANSITION HELPER
-// ============================================================================
-
-void WeaponController::transitionChargingState(ChargingState newState)
-{
-    qDebug() << "[WeaponController] Charging state:" << chargingStateName(m_chargingState)
-             << "->" << chargingStateName(newState);
-    m_chargingState = newState;
-
     // Update SystemStateModel for OSD display
     if (m_stateModel) {
         m_stateModel->setChargingState(newState);
     }
 }
 
-QString WeaponController::chargingStateName(ChargingState s) const
+void WeaponController::onChargeCycleStarted()
 {
-    switch (s) {
-    case ChargingState::Idle:        return "Idle";
-    case ChargingState::Extending:   return "Extending";
-    case ChargingState::Extended:    return "Extended";
-    case ChargingState::Retracting:  return "Retracting";
-    case ChargingState::Lockout:     return "Lockout";
-    case ChargingState::JamDetected: return "JamDetected";
-    case ChargingState::SafeRetract: return "SafeRetract";
-    case ChargingState::Fault:       return "Fault";
+    // Notify GUI
+    if (m_stateModel) {
+        m_stateModel->setChargeCycleInProgress(true);
+
+        // Update cycle progress in state model
+        SystemStateData data = m_stateModel->data();
+        data.chargeCyclesCompleted = m_chargingStateMachine->currentCycle();
+        data.chargeCyclesRequired = m_chargingStateMachine->requiredCycles();
+        m_stateModel->updateData(data);
     }
-    return "Unknown";
+    emit chargeCycleStarted();
+}
+
+void WeaponController::onChargeCycleCompleted()
+{
+    // Notify GUI - weapon is now charged
+    if (m_stateModel) {
+        m_stateModel->setChargeCycleInProgress(false);
+        m_stateModel->setWeaponCharged(true);
+
+        // Update cycle count in state for OSD
+        SystemStateData data = m_stateModel->data();
+        data.chargeCyclesCompleted = m_chargingStateMachine->currentCycle();
+        m_stateModel->updateData(data);
+    }
+    emit chargeCycleCompleted();
+}
+
+void WeaponController::onChargeCycleFaulted()
+{
+    // Notify GUI
+    if (m_stateModel) {
+        m_stateModel->setChargeCycleInProgress(false);
+    }
+    emit chargeCycleFaulted();
+}
+
+void WeaponController::onChargeLockoutExpired()
+{
+    // Update state model for GUI feedback
+    if (m_stateModel) {
+        SystemStateData data = m_stateModel->data();
+        data.chargeLockoutActive = false;
+        m_stateModel->updateData(data);
+    }
+}
+
+void WeaponController::onActuatorFeedback(const ServoActuatorData& data)
+{
+    // Forward feedback to ChargingStateMachine for FSM processing
+    m_chargingStateMachine->processActuatorFeedback(data);
+}
+
+void WeaponController::onActuatorMoveRequested(double positionMM)
+{
+    // Execute actuator move request from ChargingStateMachine
+    if (m_servoActuator) {
+        m_servoActuator->moveToPosition(positionMM);
+    }
+}
+
+void WeaponController::onActuatorStopRequested()
+{
+    // Execute actuator stop request from ChargingStateMachine
+    if (m_servoActuator) {
+        m_servoActuator->stopMove();
+    }
 }
 
 // ============================================================================
@@ -976,7 +573,7 @@ void WeaponController::startFiring()
             return;
         }
 
-        if (m_chargingState != ChargingState::Idle && m_chargingState != ChargingState::Lockout) {
+        if (m_chargingStateMachine->isChargingInProgress()) {
             qWarning() << "[WeaponController] FIRE BLOCKED: Charging cycle in progress";
             return;
         }
@@ -1057,19 +654,16 @@ void WeaponController::stopFiring()
 
 void WeaponController::unloadWeapon()
 {
-    // Legacy API - delegate to FSM if not in fault
-    // For actual unload cycle, you might want a separate FSM or extend current one
+    // Legacy API - stop firing first
     stopFiring();
 
-    if (m_chargingState == ChargingState::Idle) {
-        qDebug() << "[WeaponController] Unload requested - initiating retraction cycle";
-        // Just retract (unload doesn't need extend)
-        transitionChargingState(ChargingState::Retracting);
-        m_servoActuator->moveToPosition(COCKING_RETRACT_POS);
-        m_chargingTimer->start(COCKING_TIMEOUT_MS);
-
+    // Unload is essentially a safe retraction
+    // Only allow when idle
+    if (m_chargingStateMachine->currentState() == ChargingState::Idle) {
+        qDebug() << "[WeaponController] Unload requested - initiating retraction via ChargingStateMachine";
+        // Use performStartupRetraction which handles safe retraction
         if (m_stateModel) {
-            m_stateModel->setChargeCycleInProgress(true);
+            m_chargingStateMachine->performStartupRetraction(m_stateModel->data().actuatorPosition);
         }
     } else {
         qDebug() << "[WeaponController] Cannot unload: charge cycle active or faulted";
@@ -1207,135 +801,10 @@ void WeaponController::applyFireControlResult(const FireControlResult& result, S
 }
 
 // ============================================================================
-// CROWS M153 HELPER FUNCTIONS
+// NOTE: CROWS M153 charging functions have been extracted to ChargingStateMachine
+// See: chargingstatemachine.h for getRequiredCyclesForWeapon, startLockout, etc.
 // ============================================================================
 
-int WeaponController::getRequiredCyclesForWeapon(WeaponType type) const
-{
-    switch (type) {
-    case WeaponType::M2HB:
-        // M2HB .50 cal - closed bolt weapon, requires 2 cycles to charge
-        // Cycle 1: Pulls bolt to rear, picks up first round from belt
-        // Cycle 2: Chambers the round, prepares weapon to fire
-        return 2;
-
-    case WeaponType::M240B:
-    case WeaponType::M249:
-    case WeaponType::MK19:
-    case WeaponType::Unknown:
-    default:
-        // Open bolt weapons and grenade launchers require only 1 cycle
-        return 1;
-    }
-}
-
-void WeaponController::startChargeLockout()
-{
-    qInfo() << "[WeaponController] CROWS M153: Starting 4-second charge lockout";
-
-    m_chargeLockoutActive = true;
-    transitionChargingState(ChargingState::Lockout);
-
-    // Update state model for GUI feedback
-    if (m_stateModel) {
-        SystemStateData data = m_stateModel->data();
-        data.chargeLockoutActive = true;
-        m_stateModel->updateData(data);
-    }
-
-    // Start 4-second lockout timer
-    m_lockoutTimer->start(CHARGE_LOCKOUT_MS);
-}
-
-void WeaponController::onChargeLockoutExpired()
-{
-    qInfo() << "[WeaponController] CROWS M153: 4-second lockout expired - charging now allowed";
-
-    m_chargeLockoutActive = false;
-    transitionChargingState(ChargingState::Idle);
-
-    // Update state model for GUI feedback
-    if (m_stateModel) {
-        SystemStateData data = m_stateModel->data();
-        data.chargeLockoutActive = false;
-        m_stateModel->updateData(data);
-    }
-}
-
-void WeaponController::performStartupRetraction()
-{
-    if (!m_servoActuator) {
-        return;
-    }
-
-    // Check current actuator position
-    // If extended beyond threshold, automatically retract
-    double currentPos = 0.0;
-    if (m_stateModel) {
-        currentPos = m_stateModel->data().actuatorPosition;
-    }
-
-    if (currentPos > ACTUATOR_RETRACTED_THRESHOLD) {
-        qInfo() << "╔══════════════════════════════════════════════════════════════╗";
-        qInfo() << "║  CROWS M153: STARTUP - ACTUATOR EXTENDED, AUTO-RETRACTING    ║";
-        qInfo() << "║  Current position:" << currentPos << "mm                      ║";
-        qInfo() << "╚══════════════════════════════════════════════════════════════╝";
-
-        // Command retraction to home position
-        m_servoActuator->moveToPosition(COCKING_RETRACT_POS);
-
-        // Set state to retracting but don't start watchdog timer for startup
-        // (startup retraction is best-effort, not critical)
-        transitionChargingState(ChargingState::Retracting);
-
-        if (m_stateModel) {
-            m_stateModel->setChargeCycleInProgress(true);
-        }
-
-        // Start a shorter timeout for startup retraction
-        m_chargingTimer->start(COCKING_TIMEOUT_MS / 2);
-    } else {
-        qDebug() << "[WeaponController] CROWS M153: Actuator already retracted at startup ("
-                 << currentPos << "mm)";
-    }
-}
-
-bool WeaponController::isChargingAllowed() const
-{
-    // ========================================================================
-    // SAFETY INTERLOCK INTEGRATION
-    // ========================================================================
-    // Delegate safety decision to centralized SafetyInterlock authority.
-    // This ensures all safety checks are in one place and auditable.
-    // ========================================================================
-    if (m_safetyInterlock) {
-        SafetyDenialReason reason;
-        bool allowed = m_safetyInterlock->canCharge(&reason);
-        if (!allowed) {
-            qDebug() << "[WeaponController] Charging denied by SafetyInterlock:"
-                     << SafetyInterlock::denialReasonToString(reason);
-        }
-        return allowed;
-    }
-
-    // ========================================================================
-    // LEGACY FALLBACK (if SafetyInterlock not available)
-    // ========================================================================
-    // Charging not allowed if:
-    // 1. Lockout is active
-    // 2. Cycle already in progress
-    // 3. System is in fault state
-    if (m_chargeLockoutActive) {
-        return false;
-    }
-    if (m_chargingState != ChargingState::Idle) {
-        return false;
-    }
-    return true;
-}
-
-// ============================================================================
-// CROSSWIND CALCULATION
 // ============================================================================
 // NOTE: Crosswind calculation has been extracted to FireControlComputation class
 // for unit-testability. See: FireControlComputation::calculateCrosswindComponent()
