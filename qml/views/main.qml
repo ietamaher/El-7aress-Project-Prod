@@ -169,6 +169,13 @@ Window {
         z: 100   // Above OSD
     }
 
+    // === SHUTDOWN CONFIRMATION DIALOG ===
+    ShutdownConfirmationDialog {
+        id: shutdownConfirmationDialog
+        anchors.fill: parent
+        z: 150   // Above all other overlays (critical dialog)
+    }
+
     // ========================================================================
     // DEBUG INFO (Remove in production)
     // ========================================================================

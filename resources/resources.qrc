@@ -19,6 +19,7 @@
         <file>../qml/components/ReticleRenderer.qml</file>
         <file>../qml/components/CcipPipper.qml</file>
         <file>../qml/components/AboutDialog.qml</file>
+        <file>../qml/components/ShutdownConfirmationDialog.qml</file>
         <file>../qml/components/SystemStatusOverlay.qml</file>
         <file>../config/devices.json</file>
         <file>../config/motion_tuning.json</file>

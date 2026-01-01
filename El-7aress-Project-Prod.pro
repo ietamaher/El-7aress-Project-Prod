@@ -91,6 +91,7 @@ SOURCES += \
     src/controllers/windagecontroller.cpp \
     src/controllers/zeroingcontroller.cpp \
     src/controllers/zonedefinitioncontroller.cpp \
+    src/controllers/shutdownconfirmationcontroller.cpp \
     src/managers/HardwareManager.cpp \
     src/managers/ViewModelRegistry.cpp \
     src/managers/ControllerRegistry.cpp \
@@ -124,6 +125,7 @@ SOURCES += \
     src/models/zeroingviewmodel.cpp \
     src/models/zonedefinitionviewmodel.cpp \
     src/models/zonemapviewmodel.cpp \
+    src/models/shutdownconfirmationviewmodel.cpp \
     src/utils/ballisticsprocessor.cpp \
     src/utils/ballisticslut.cpp \
     src/utils/ballisticsprocessorlut.cpp \
@@ -200,6 +202,7 @@ HEADERS += \
     src/controllers/windagecontroller.h \
     src/controllers/zeroingcontroller.h \
     src/controllers/zonedefinitioncontroller.h \
+    src/controllers/shutdownconfirmationcontroller.h \
     src/managers/HardwareManager.h \
     src/managers/ViewModelRegistry.h \
     src/managers/ControllerRegistry.h \
@@ -245,6 +248,7 @@ HEADERS += \
     src/models/zeroingviewmodel.h \
     src/models/zonedefinitionviewmodel.h \
     src/models/zonemapviewmodel.h \
+    src/models/shutdownconfirmationviewmodel.h \
     src/utils/TimestampLogger.h \
     src/utils/ballisticsprocessor.h \
     src/utils/ballisticslut.h \

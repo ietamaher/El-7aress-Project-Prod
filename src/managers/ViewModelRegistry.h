@@ -18,6 +18,7 @@ class BrightnessViewModel;
 class PresetHomePositionViewModel;
 // class SystemStatusViewModel;  // DISABLED
 class AboutViewModel;
+class ShutdownConfirmationViewModel;
 
 class QQmlContext;
 
@@ -85,6 +86,7 @@ public:
     // System Info ViewModels
     // SystemStatusViewModel* systemStatusViewModel() const { return m_systemStatusViewModel; }  // DISABLED
     AboutViewModel* aboutViewModel() const { return m_aboutViewModel; }
+    ShutdownConfirmationViewModel* shutdownConfirmationViewModel() const { return m_shutdownConfirmationViewModel; }
 
 signals:
     void viewModelsCreated();
@@ -122,6 +124,7 @@ private:
     // System Info
     // SystemStatusViewModel* m_systemStatusViewModel = nullptr;  // DISABLED
     AboutViewModel* m_aboutViewModel = nullptr;
+    ShutdownConfirmationViewModel* m_shutdownConfirmationViewModel = nullptr;
 };
 
 #endif // VIEWMODELREGISTRY_H

@@ -15,6 +15,7 @@
 #include "models/presethomepositionviewmodel.h"
 // #include "models/systemstatusviewmodel.h"  // DISABLED
 #include "models/aboutviewmodel.h"
+#include "models/shutdownconfirmationviewmodel.h"
 
 #include <QQmlContext>
 #include <QDebug>
@@ -61,6 +62,7 @@ bool ViewModelRegistry::createViewModels()
         // System Info ViewModels
         // m_systemStatusViewModel = new SystemStatusViewModel(this);  // DISABLED
         m_aboutViewModel = new AboutViewModel(this);
+        m_shutdownConfirmationViewModel = new ShutdownConfirmationViewModel(this);
 
         qInfo() << "  ✓ All ViewModels created";
         emit viewModelsCreated();
@@ -108,6 +110,7 @@ bool ViewModelRegistry::registerWithQml(QQmlContext* context)
     // System Info
     // context->setContextProperty("systemStatusViewModel", m_systemStatusViewModel);  // DISABLED
     context->setContextProperty("aboutViewModel", m_aboutViewModel);
+    context->setContextProperty("shutdownConfirmationViewModel", m_shutdownConfirmationViewModel);
 
     qInfo() << "  ✓ All ViewModels registered with QML context";
     emit viewModelsRegistered();
