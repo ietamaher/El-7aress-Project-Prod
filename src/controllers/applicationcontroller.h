@@ -16,6 +16,7 @@ class PresetHomePositionController;
 class ZoneDefinitionController;
 // class SystemStatusController;  // DISABLED
 class AboutController;
+class ShutdownConfirmationController;
 class SystemStateModel;
 
 /**
@@ -43,6 +44,7 @@ public:
     void setZoneDefinitionController(ZoneDefinitionController* controller);
     // void setSystemStatusController(SystemStatusController* controller);  // DISABLED
     void setAboutController(AboutController* controller);
+    void setShutdownConfirmationController(ShutdownConfirmationController* controller);
     void setSystemStateModel(SystemStateModel* model);
 
     // Initialization
@@ -62,7 +64,8 @@ public:
         ZoneDefinition,
         // SystemStatus,  // DISABLED
         RadarTargets,
-        HelpAbout
+        HelpAbout,
+        ShutdownConfirmation
     };
 
 public slots:
@@ -103,6 +106,7 @@ private slots:
     void handleZoneDefinitionFinished();
     // void handleSystemStatusFinished();  // DISABLED
     void handleAboutFinished();
+    void handleShutdownConfirmationFinished();
 
     void handleReturnToMainMenu();
 
@@ -140,6 +144,7 @@ private:
     ZoneDefinitionController* m_zoneDefinitionController;
     // SystemStatusController* m_systemStatusController;  // DISABLED
     AboutController* m_aboutController;
+    ShutdownConfirmationController* m_shutdownConfirmationController;
     SystemStateModel* m_systemStateModel;
 };
 

@@ -10,6 +10,7 @@
 #include "controllers/zonedefinitioncontroller.h"
 // #include "controllers/systemstatuscontroller.h"  // DISABLED
 #include "controllers/aboutcontroller.h"
+#include "controllers/shutdownconfirmationcontroller.h"
 #include "models/domain/systemstatemodel.h"
 #include <QDebug>
 #include <QCoreApplication>
@@ -29,6 +30,7 @@ ApplicationController::ApplicationController(QObject *parent)
     , m_zoneDefinitionController(nullptr)
     , m_systemStateModel(nullptr)
     , m_aboutController(nullptr)
+    , m_shutdownConfirmationController(nullptr)
 {
 }
 
@@ -91,6 +93,11 @@ void ApplicationController::setAboutController(AboutController* controller)
     m_aboutController = controller;
 }
 
+void ApplicationController::setShutdownConfirmationController(ShutdownConfirmationController* controller)
+{
+    m_shutdownConfirmationController = controller;
+}
+
 void ApplicationController::setSystemStateModel(SystemStateModel* model)
 {
     m_systemStateModel = model;
@@ -116,6 +123,7 @@ void ApplicationController::initialize()
     Q_ASSERT(m_zoneDefinitionController);
     // Q_ASSERT(m_systemStatusController);  // DISABLED
     Q_ASSERT(m_aboutController);
+    Q_ASSERT(m_shutdownConfirmationController);
     Q_ASSERT(m_systemStateModel);
 
     // =========================================================================
@@ -242,6 +250,17 @@ void ApplicationController::initialize()
         qDebug() << "ApplicationController: AboutController signals connected";
     }
 
+    // ========================================================================
+    // CONNECT SHUTDOWN CONFIRMATION CONTROLLER
+    // ========================================================================
+    if (m_shutdownConfirmationController) {
+        connect(m_shutdownConfirmationController, &ShutdownConfirmationController::dialogFinished,
+                this, &ApplicationController::handleShutdownConfirmationFinished);
+        connect(m_shutdownConfirmationController, &ShutdownConfirmationController::returnToMainMenu,
+                this, &ApplicationController::handleReturnToMainMenu);
+        qDebug() << "ApplicationController: ShutdownConfirmationController signals connected";
+    }
+
     // =========================================================================
     // HARDWARE BUTTON MONITORING (PLC21 switches)
     // =========================================================================
@@ -286,6 +305,7 @@ void ApplicationController::hideAllMenus()
     m_zoneDefinitionController->hide();
     // m_systemStatusController->hide();  // DISABLED
     m_aboutController->hide();
+    m_shutdownConfirmationController->hide();
 }
 
 // ============================================================================
@@ -305,6 +325,7 @@ void ApplicationController::onMenuValButtonPressed()
         m_currentMenuState == MenuState::PresetHomePositionProcedure ||
         m_currentMenuState == MenuState::ZoneDefinition     ||
         m_currentMenuState == MenuState::HelpAbout ||
+        m_currentMenuState == MenuState::ShutdownConfirmation ||
         // m_currentMenuState == MenuState::SystemStatus  ||  // DISABLED
         false) {
         handleMenuValInProcedure();
@@ -395,6 +416,9 @@ void ApplicationController::handleMenuValInProcedure()
     case MenuState::HelpAbout:
         if (m_aboutController) m_aboutController->onSelectButtonPressed();
         break;
+    case MenuState::ShutdownConfirmation:
+        if (m_shutdownConfirmationController) m_shutdownConfirmationController->onSelectButtonPressed();
+        break;
     default:
         break;
     }
@@ -437,6 +461,9 @@ void ApplicationController::onUpButtonPressed()
     //     break;  // DISABLED
     case MenuState::HelpAbout:
         if (m_aboutController) m_aboutController->onUpButtonPressed();
+        break;
+    case MenuState::ShutdownConfirmation:
+        if (m_shutdownConfirmationController) m_shutdownConfirmationController->onUpButtonPressed();
         break;
 
     default:
@@ -482,6 +509,9 @@ void ApplicationController::onDownButtonPressed()
     //     break;  // DISABLED
     case MenuState::HelpAbout:
         if (m_aboutController) m_aboutController->onDownButtonPressed();
+        break;
+    case MenuState::ShutdownConfirmation:
+        if (m_shutdownConfirmationController) m_shutdownConfirmationController->onDownButtonPressed();
         break;
     default:
         qDebug() << "ApplicationController: DOWN pressed with no active menu";
@@ -620,14 +650,12 @@ void ApplicationController::handleToggleDetection()
 
 void ApplicationController::handleShutdown()
 {
-    qDebug() << "ApplicationController: Shutdown System requested";
+    qDebug() << "ApplicationController: Shutdown System requested - showing confirmation";
     hideAllMenus();
 
-    // Quit the application
-    QCoreApplication::quit();
-
-    // Execute system shutdown command (Linux)
-    QProcess::startDetached("shutdown", QStringList() << "-h" << "now");
+    // Show shutdown confirmation dialog instead of direct shutdown
+    m_shutdownConfirmationController->show();
+    setMenuState(MenuState::ShutdownConfirmation);
 }
 
 void ApplicationController::handleRadarTargetList()
@@ -714,6 +742,11 @@ void ApplicationController::handleZoneDefinitionFinished()
 void ApplicationController::handleAboutFinished()
 {
     qDebug() << "ApplicationController: About finished";
+}
+
+void ApplicationController::handleShutdownConfirmationFinished()
+{
+    qDebug() << "ApplicationController: Shutdown Confirmation finished";
 }
 
 void ApplicationController::handleReturnToMainMenu()

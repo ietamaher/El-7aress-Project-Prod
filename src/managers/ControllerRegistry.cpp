@@ -26,6 +26,7 @@
 #include "controllers/zonedefinitioncontroller.h"
 // #include "controllers/systemstatuscontroller.h"  // DISABLED
 #include "controllers/aboutcontroller.h"
+#include "controllers/shutdownconfirmationcontroller.h"
 
 // ViewModels
 #include "models/osdviewmodel.h"
@@ -40,6 +41,7 @@
 #include "models/presethomepositionviewmodel.h"
 // #include "models/systemstatusviewmodel.h"  // DISABLED
 #include "models/aboutviewmodel.h"
+#include "models/shutdownconfirmationviewmodel.h"
 
 // Domain Models
 #include "models/domain/systemstatemodel.h"
@@ -232,6 +234,11 @@ bool ControllerRegistry::createQmlControllers()
         m_aboutController->setViewModel(m_viewModelRegistry->aboutViewModel());
         m_aboutController->setStateModel(m_systemStateModel);
 
+        // Shutdown Confirmation Controller
+        m_shutdownConfirmationController = new ShutdownConfirmationController(this);
+        m_shutdownConfirmationController->setViewModel(m_viewModelRegistry->shutdownConfirmationViewModel());
+        m_shutdownConfirmationController->setStateModel(m_systemStateModel);
+
         // Application Controller (LAST - needs all other controllers)
         m_appController = new ApplicationController(this);
         m_appController->setMainMenuController(m_mainMenuController);
@@ -245,6 +252,7 @@ bool ControllerRegistry::createQmlControllers()
         m_appController->setZoneDefinitionController(m_zoneDefinitionController);
         // m_appController->setSystemStatusController(m_systemStatusController);  // DISABLED
         m_appController->setAboutController(m_aboutController);
+        m_appController->setShutdownConfirmationController(m_shutdownConfirmationController);
         m_appController->setSystemStateModel(m_systemStateModel);
 
         qInfo() << "  ✓ QML controllers created";
@@ -279,6 +287,7 @@ bool ControllerRegistry::initializeControllers()
         m_zoneDefinitionController->initialize();
         // m_systemStatusController->initialize();  // DISABLED
         m_aboutController->initialize();
+        m_shutdownConfirmationController->initialize();
 
         // Initialize ApplicationController LAST (it connects to all others)
         m_appController->initialize();

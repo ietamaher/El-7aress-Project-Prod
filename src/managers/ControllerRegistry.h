@@ -26,6 +26,7 @@ class BrightnessController;
 class PresetHomePositionController;
 // class SystemStatusController;  // DISABLED
 class AboutController;
+class ShutdownConfirmationController;
 class ApplicationController;
 
 // Forward declarations - Managers & Models
@@ -120,6 +121,7 @@ public:
     PresetHomePositionController* presetHomePositionController() const { return m_presetHomePositionController; }
     // SystemStatusController* systemStatusController() const { return m_systemStatusController; }  // DISABLED
     AboutController* aboutController() const { return m_aboutController; }
+    ShutdownConfirmationController* shutdownConfirmationController() const { return m_shutdownConfirmationController; }
     ApplicationController* applicationController() const { return m_appController; }
     LedController* ledController() const { return m_ledController; }
 
@@ -157,6 +159,7 @@ private:
     PresetHomePositionController* m_presetHomePositionController = nullptr;
     // SystemStatusController* m_systemStatusController = nullptr;  // DISABLED
     AboutController* m_aboutController = nullptr;
+    ShutdownConfirmationController* m_shutdownConfirmationController = nullptr;
     ApplicationController* m_appController = nullptr;
     LedController* m_ledController = nullptr;
 
