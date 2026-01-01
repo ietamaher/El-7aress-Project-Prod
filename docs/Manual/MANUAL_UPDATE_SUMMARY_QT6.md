@@ -1,10 +1,10 @@
 # OPERATOR MANUAL UPDATE SUMMARY - QT6 VERSION
 ## El 7arress RCWS System
 
-**Date**: 2025-12-31
+**Date**: 2026-01-01
 **Update Reason**: QT6 QML code updates and corrections to system documentation
 **Reviewed Files**: Lessons 2, 3, 4, 5, and 6
-**Status**: ✅ **ALL UPDATES IMPLEMENTED**
+**Status**: ✅ **ALL UPDATES IMPLEMENTED (Phase 1 & Phase 2)**
 
 ---
 
@@ -12,11 +12,18 @@
 
 This document summarizes all critical updates made to the El 7arress RCWS Operator Manual following QT6 codebase analysis. The following lessons have been updated:
 
+### Phase 1 Updates (2025-12-31):
 - **Lesson 2 (Basic Operation)**: ✅ IMPLEMENTED - Major updates (joystick buttons, homing, LRF)
 - **Lesson 3 (Menu System)**: ✅ IMPLEMENTED - LAC menu correction
 - **Lesson 4 (Motion Modes & Surveillance)**: ✅ IMPLEMENTED - Zone selection buttons, radar note
 - **Lesson 5 (Target Engagement)**: ✅ IMPLEMENTED - Double-click timing, dead reckoning
 - **Lesson 6 (Ballistics & Fire Control)**: ✅ IMPLEMENTED - Two ballistic systems, LAC corrections
+
+### Phase 2 Updates (2026-01-01):
+- **Lesson 2 (Basic Operation)**: ✅ IMPLEMENTED - Emergency handling, safety interlocks, startup/shutdown checklists
+- **Lesson 3 (Menu System)**: ✅ IMPLEMENTED - Display Brightness, Preset Home Position, Detection toggle
+- **Lesson 4 (Motion Modes & Surveillance)**: ✅ IMPLEMENTED - Complete 5-type zone management
+- **Lesson 5 (Target Engagement)**: ✅ IMPLEMENTED - Complete cocking actuator (charging state machine)
 
 ---
 
@@ -285,9 +292,211 @@ Press Button 14 → Wrap to "Page 1"
 
 ---
 
-## FILES UPDATED (2025-12-31)
+## PHASE 2 UPDATES (2026-01-01) - NEW
+
+### 11. MENU FUNCTIONS - NEW ITEMS (Lesson 3)
+
+**New Menu Options Added**:
+
+**A. Display Brightness**:
+- Access: Main Menu → Display Brightness
+- Range: 10% to 100% (10% step size)
+- Preview: Real-time as you adjust
+- Cancel: Press BACK to restore original
+- Recommendations:
+  - 100%: Bright daylight
+  - 70-80%: Normal daylight (default)
+  - 20-30%: Night operations
+
+**B. Preset Home Position (Calibration)**:
+- Access: Main Menu → Preset Home Position
+- Purpose: Define custom HOME reference position for gimbal
+- 3-Step procedure:
+  1. Position gimbal with joystick
+  2. Confirm captured position
+  3. Validate to save to motor controller
+- Motor controller stores position in non-volatile memory (persists across power cycles)
+
+**C. Detection Toggle**:
+- Access: Main Menu → Detection: ENABLED/DISABLED
+- Availability: Day camera ONLY (unavailable on Night camera)
+- Menu States:
+  - "Detection: ENABLED" - AI detection ON
+  - "Detection: DISABLED" - AI detection OFF
+  - "Detection (Night - Unavailable)" - Night camera active
+
+**Operator Impact**: Lesson 3 menu structure updated with new sections for Brightness, Calibration, and Detection.
+
+---
+
+### 12. COCKING ACTUATOR / CHARGING STATE MACHINE (Lesson 5)
+
+**New Section Added**: Complete charging system documentation
+
+**Weapon-Specific Charging Cycles**:
+| Weapon | Cycles Required | Notes |
+|--------|-----------------|-------|
+| M2HB (.50 cal) | **2 cycles** | Closed bolt - requires double cycle |
+| M240B | 1 cycle | Open bolt weapon |
+| M249 SAW | 1 cycle | Open bolt weapon |
+| MK19 (40mm) | 1 cycle | Grenade launcher |
+
+**Two Charging Modes**:
+1. **Short Press (Automatic)**: Quick press, system auto-cycles (including 2nd cycle for M2HB)
+2. **Continuous Hold (Manual)**: Hold button, actuator extends; release, actuator retracts
+
+**Charging State Machine**:
+```
+IDLE → EXTENDING → EXTENDED (HOLD) → RETRACTING → LOCKOUT (4s) → IDLE
+                                   ↘ JAM DETECTED → FAULT → IDLE (reset)
+```
+
+**4-Second CROWS M153 Lockout**:
+- Required post-charge safety period
+- Prevents accidental double-charge
+- Button ignored during lockout
+
+**Jam Detection & Recovery**:
+- Automatic detection: High torque + no movement
+- Automatic response: Stop motor → alarm → backoff → fault state
+- Operator procedure: Wait for backoff → reset via charge button → retry
+
+**Safety Interlocks for Charging**:
+- Emergency Stop: Must NOT be active
+- Station Enable: Must be ON
+- NOT already charging
+- NOT in lockout period
+- NO fault state
+
+**Operator Impact**: Lesson 5 new section "WEAPON CHARGING (COCKING ACTUATOR)" with complete procedures.
+
+---
+
+### 13. EMERGENCY STOP MONITOR (Lesson 2)
+
+**Enhanced Emergency Stop Documentation**:
+
+**Debounce Protection**:
+- 50ms debounce period prevents false activations
+- Button state must remain stable for 50ms before triggering
+
+**Recovery Period (CROWS M153 Compliance)**:
+- 500ms minimum recovery period after E-stop released
+- OSD displays: "RECOVERY IN PROGRESS..." then "RECOVERY COMPLETE"
+
+**Event Logging**:
+- All Emergency Stop events logged with timestamp
+- Tracks: activation time, duration, source (hardware/software)
+- Accessible via System Status → Emergency Log
+
+**Software Emergency Stop**:
+- System can trigger E-stop for critical faults
+- Triggers: PLC communication loss, servo fault, safety violation
+- OSD displays: "SOFTWARE EMERGENCY STOP - [reason]"
+
+---
+
+### 14. SAFETY INTERLOCK SYSTEM (Lesson 2)
+
+**New Section Added**: Complete safety hierarchy documentation
+
+**canFire() - FIRE Permission (9 conditions)**:
+1. Emergency Stop NOT active
+2. Station Enable ON
+3. Dead Man Switch HELD
+4. Gun Arm switch ARMED
+5. Operational Mode = Engagement
+6. System Authorized
+7. NOT in No-Fire Zone
+8. NOT Charging
+9. NO Charge Fault
+
+**canCharge() - CHARGE Permission (5 conditions)**:
+1. Emergency Stop NOT active
+2. Station Enable ON
+3. NOT already charging
+4. NOT in lockout period
+5. NO fault state
+
+**canMove() - MOVEMENT Permission**:
+- Emergency Stop NOT active
+- Station Enable ON
+- Dead Man Switch HELD (for Manual, AutoTrack, ManualTrack modes)
+- Dead Man Switch NOT required for Pattern mode (Sector Scan, TRP)
+
+**canEngage() - ENGAGEMENT Permission**:
+- Emergency Stop NOT active
+- Station Enable ON
+- Dead Man Switch HELD
+
+**canHome() - HOMING Permission**:
+- Emergency Stop NOT active
+- Station Enable ON
+- NOT already homing
+
+**Safety Denial Messages**: Complete table of all denial messages with required actions.
+
+---
+
+### 15. STARTUP/SHUTDOWN CHECKLISTS (Lesson 2)
+
+**Startup Quick Reference Checklist** (25 items):
+- PRE-POWER CHECKS (8 items): Walk-around, weapon clear, personnel, power, briefing
+- POWER-UP SEQUENCE (6 items): Station disable, power on, self-test, enable, home
+- FUNCTIONAL CHECKS (5 items): Camera, gimbal, zoom, LRF, stabilization
+- FINAL STATUS (6 items): All indicator lights verified
+
+**Shutdown Quick Reference Checklist** (20 items):
+- SAFE THE SYSTEM (4 items): Release controls, Gun SAFE, exit engagement
+- RETURN TO STOW (3 items): Home gimbal, stabilization off
+- MENU SHUTDOWN (5 items): Navigate, select, confirm, wait for complete
+- POWER DOWN (4 items): Station disable, power off
+- SECURE (4 items): Clear weapon, ammo, covers, log
+
+**Format**: Checkbox-style tables for operator use during operations.
+
+---
+
+### 16. COMPLETE ZONE MANAGEMENT (Lesson 4)
+
+**5 Zone Types Documented**:
+
+| Zone Type | Primary Purpose | System Behavior |
+|-----------|-----------------|-----------------|
+| Safety Zone | Vehicle/crew protection | Configurable restrictions |
+| No-Fire Zone | Prevent firing into protected areas | **Blocks weapon fire** |
+| No-Traverse Zone | Prevent gimbal damage | **Blocks gimbal movement** |
+| Sector Scan Zone | Automated surveillance | Defines scan limits |
+| Target Reference Point | Pre-defined observations | Defines dwell locations |
+
+**Zone Creation Procedure (Aiming Method)**:
+1. Access: Menu → Zone Definitions → New Zone
+2. Select zone type
+3. AIM CORNER 1: Slew gimbal, press MENU ✓
+4. AIM CORNER 2: Slew to opposite corner, press MENU ✓
+5. SET PARAMETERS: Enabled, Overridable
+6. Validate to save
+
+**Zone Map Display**:
+- Safety Zones: Blue rectangles
+- No-Fire Zones: Red rectangles
+- No-Traverse Zones: Yellow rectangles
+- Sector Scan: Green lines
+- TRPs: Green crosshairs
+- Current Gimbal: White crosshair
+
+**TRP Pagination**:
+- Up to 200 Location Pages
+- Up to 50 TRPs per page
+- Button 14/16 for page switching during scan
+
+---
+
+## FILES UPDATED (2025-12-31 & 2026-01-01)
 
 ### Updated Lesson Files:
+
+#### Phase 1 Updates (2025-12-31):
 1. **docs/Manual/lecon02.tex** - Lesson 2: Basic Operation ✅ UPDATED
    - Complete 19-button joystick mapping (Button 0-18)
    - Detailed homing sequence with 50ms timing and 30-second timeout
@@ -319,7 +528,42 @@ Press Button 14 → Wrap to "Page 1"
    - CROWS-compliant LAC latching behavior (2-second minimum interval)
    - Target switching procedure for LAC
 
-6. **docs/Manual/MANUAL_UPDATE_SUMMARY_QT6.md** - This summary document ✅ UPDATED
+#### Phase 2 Updates (2026-01-01):
+1. **docs/Manual/lecon02.tex** - Lesson 2: Basic Operation ✅ UPDATED (Phase 2)
+   - NEW SECTION: Emergency Stop System Details (debounce, recovery, logging)
+   - NEW SECTION: Safety Interlock System (canFire, canCharge, canMove, canEngage, canHome)
+   - NEW: Startup Quick Reference Checklist (25 items, checkbox format)
+   - NEW: Shutdown Quick Reference Checklist (20 items, checkbox format)
+   - Safety denial indicator messages table
+
+2. **docs/Manual/lecon03.tex** - Lesson 3: Menu System ✅ UPDATED (Phase 2)
+   - Updated menu structure with new [NEW - QT6] items
+   - NEW SECTION: Display Brightness (10-100%, 10% steps, real-time preview)
+   - NEW SECTION: Calibration - Preset Home Position (3-step gimbal homing procedure)
+   - NEW SECTION: Detection Toggle (Day camera only, AI target detection)
+   - Clear Active Zero/Windage/Environmental Settings options
+
+3. **docs/Manual/lecon04.tex** - Lesson 4: Motion Modes & Surveillance ✅ UPDATED (Phase 2)
+   - NEW SECTION: Zone Management - Complete Zone Types (5 types)
+   - Zone Type 1: Safety Zones (configurable restrictions)
+   - Zone Type 2: No-Fire Zones (blocks weapon fire)
+   - Zone Type 3: No-Traverse Zones (blocks gimbal movement)
+   - Zone Type 4: Sector Scan Zones (scan limits, speed)
+   - Zone Type 5: Target Reference Points (TRP pagination, halt time)
+   - Zone creation procedure using aiming method
+   - Zone map display color coding
+
+4. **docs/Manual/lecon05.tex** - Lesson 5: Target Engagement ✅ UPDATED (Phase 2)
+   - NEW SECTION: Weapon Charging (Cocking Actuator)
+   - Weapon-specific charging cycles (M2HB = 2, others = 1)
+   - Two charging modes: Short Press vs Continuous Hold
+   - Charging state machine diagram
+   - 4-second CROWS M153 lockout period
+   - Jam detection and recovery procedures
+   - Charging safety interlocks table
+   - Startup actuator check documentation
+
+5. **docs/Manual/MANUAL_UPDATE_SUMMARY_QT6.md** - This summary document ✅ UPDATED
 
 ---
 

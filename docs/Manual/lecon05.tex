@@ -481,6 +481,210 @@ Practice double-click timing during training until muscle memory established.
 \end{itemize}
 
 % ============================================================================
+\section{WEAPON CHARGING (COCKING ACTUATOR) [NEW - QT6]}
+
+\subsection{COCKING ACTUATOR OVERVIEW}
+
+The cocking actuator is a servo-controlled mechanism that cycles the weapon's bolt to chamber a round. This must be performed before the weapon can fire.
+
+\subsubsection{Weapon-Specific Charging Cycles}
+
+\small
+\begin{longtable}{|L{0.18\textwidth}|L{0.18\textwidth}|L{0.55\textwidth}|}
+\hline
+\rowcolor{milblue!20}
+\textbf{Weapon Type} & \textbf{Cycles Req.} & \textbf{Notes} \\
+\hline
+\textbf{M2HB (.50 cal)} & \textbf{2 cycles} & Closed bolt weapon - Cycle 1: pulls bolt, picks up round; Cycle 2: chambers round, weapon ready \\
+\hline
+M240B & 1 cycle & Open bolt weapon - single cycle chambers round \\
+\hline
+M249 SAW & 1 cycle & Open bolt weapon \\
+\hline
+MK19 (40mm) & 1 cycle & Grenade launcher \\
+\hline
+\end{longtable}
+
+\begin{warningbox}[M2HB CRITICAL]
+The M2HB requires \textbf{TWO} complete charging cycles before the weapon is ready to fire. A single cycle will NOT chamber a round.
+\end{warningbox}
+
+\subsection{CHARGING MODES}
+
+The charging system supports two operational modes:
+
+\subsubsection{Mode 1: Short Press (Automatic Cycle)}
+
+\begin{procedurebox}[SHORT PRESS CHARGING]
+\begin{enumerate}
+    \item Press \button{Charge} button (joystick Button 9)
+    \item Release button immediately (short press)
+    \item System \textbf{automatically} cycles: Extend → Retract
+    \item For M2HB: System automatically performs second cycle
+    \item \textbf{Charging Complete} when retraction finishes
+    \item 4-second lockout begins (prevents immediate re-charge)
+\end{enumerate}
+\end{procedurebox}
+
+\textbf{Advantages}: Faster, automatic multi-cycle for M2HB
+\textbf{Best For}: Standard charging operations
+
+\subsubsection{Mode 2: Continuous Hold (Manual Control)}
+
+\begin{procedurebox}[CONTINUOUS HOLD CHARGING]
+\begin{enumerate}
+    \item Press and \textbf{HOLD} \button{Charge} button
+    \item Actuator extends (pulls bolt back)
+    \item \textbf{Hold position} while button is held
+    \item \textbf{Release} button to initiate retraction
+    \item Actuator retracts (releases bolt)
+    \item Repeat for additional cycles (M2HB)
+    \item 4-second lockout begins after final cycle
+\end{enumerate}
+\end{procedurebox}
+
+\textbf{Advantages}: Operator controls timing, can hold bolt back
+\textbf{Best For}: Clearing jams, inspection, controlled operations
+
+\subsection{CHARGING STATE MACHINE}
+
+\begin{center}
+\begin{tikzpicture}[
+    node distance=1.3cm,
+    state/.style={rectangle, rounded corners, draw=milblue, fill=milblue!10, thick, minimum width=2.5cm, minimum height=0.7cm, align=center, font=\small},
+    arrow/.style={->, thick, >=stealth}
+]
+    \node[state] (idle) {IDLE};
+    \node[state, below of=idle] (ext) {EXTENDING};
+    \node[state, below of=ext] (exd) {EXTENDED (HOLD)};
+    \node[state, below of=exd] (ret) {RETRACTING};
+    \node[state, right of=ret, node distance=4cm] (lock) {LOCKOUT (4s)};
+    \node[state, fill=milred!20, below of=ret] (jam) {JAM DETECTED};
+    \node[state, fill=milyellow!20, below of=jam] (fault) {FAULT};
+
+    \draw[arrow] (idle) -- node[right, font=\tiny] {Charge button} (ext);
+    \draw[arrow] (ext) -- node[right, font=\tiny] {Full extend + hold} (exd);
+    \draw[arrow] (ext.south east) -- ++(0.8, 0) -- node[right, font=\tiny] {Full extend + release} ++(0,-1.7) -- (ret.east);
+    \draw[arrow] (exd) -- node[right, font=\tiny] {Button released} (ret);
+    \draw[arrow] (ret) -- node[above, font=\tiny] {Full retract} (lock);
+    \draw[arrow] (lock) -- node[above, font=\tiny] {4 sec timer} ++(0,3.9) -- (idle.east);
+    \draw[arrow, red, dashed] (ext) -- node[left, font=\tiny] {Jam detected} (jam);
+    \draw[arrow, red, dashed] (ret) -- (jam);
+    \draw[arrow] (jam) -- node[right, font=\tiny] {Backoff complete} (fault);
+    \draw[arrow] (fault) -- node[left, font=\tiny] {Operator reset} ++(-2.5,0) |- (idle.west);
+\end{tikzpicture}
+\end{center}
+
+\subsection{CHARGING STATE REFERENCE}
+
+\small
+\begin{longtable}{|L{0.15\textwidth}|L{0.25\textwidth}|L{0.50\textwidth}|}
+\hline
+\rowcolor{milblue!20}
+\textbf{State} & \textbf{OSD Display} & \textbf{Description} \\
+\hline
+IDLE & CHARGING: Ready & Weapon ready to charge \\
+\hline
+EXTENDING & CHARGING: Extending & Actuator moving forward, pulling bolt \\
+\hline
+EXTENDED & CHARGING: Extended (HOLD) & Bolt pulled back, awaiting button release \\
+\hline
+RETRACTING & CHARGING: Retracting & Actuator returning, releasing bolt \\
+\hline
+LOCKOUT & CHARGING: Lockout (4s) & CROWS M153 4-second post-charge safety period \\
+\hline
+JAM DETECTED & CHARGING: JAM! & High torque + no movement = mechanical jam \\
+\hline
+FAULT & CHARGING: FAULT & Requires operator acknowledgment and reset \\
+\hline
+\end{longtable}
+
+\subsection{4-SECOND CROWS M153 LOCKOUT}
+
+\begin{warningbox}[LOCKOUT PERIOD]
+Per CROWS M153 specification, a \textbf{4-second lockout period} follows each completed charging cycle. During this time:
+\begin{itemize}
+    \item Charging button is \textbf{IGNORED}
+    \item Prevents accidental double-charge
+    \item Allows weapon to fully seat round
+    \item OSD displays countdown or "Lockout" status
+\end{itemize}
+\end{warningbox}
+
+\subsection{JAM DETECTION AND RECOVERY}
+
+The charging system includes automatic jam detection:
+
+\subsubsection{Jam Detection Criteria}
+\begin{itemize}
+    \item \textbf{High Torque}: Actuator motor exceeds torque threshold (>80\%)
+    \item \textbf{No Movement}: Position not changing despite motor effort
+    \item \textbf{Confirmation}: Condition persists for multiple samples (anti-false-positive)
+\end{itemize}
+
+\subsubsection{Automatic Jam Response}
+\begin{enumerate}
+    \item \textbf{IMMEDIATE STOP}: Motor halts to prevent damage
+    \item \textbf{STATE TRANSITION}: System enters JAM DETECTED state
+    \item \textbf{ALARM}: OSD displays "CHARGING: JAM!"
+    \item \textbf{DELAYED BACKOFF}: After 200ms stabilization, actuator retracts to home
+    \item \textbf{FAULT STATE}: System enters FAULT state, awaits operator reset
+\end{enumerate}
+
+\subsubsection{Jam Clearing Procedure}
+
+\begin{procedurebox}[CLEARING A CHARGING JAM]
+\begin{enumerate}
+    \item \textbf{STOP}: Do NOT repeatedly press charge button
+    \item \textbf{OBSERVE}: Note jam position on OSD (if displayed)
+    \item \textbf{WAIT}: Allow automatic backoff to complete
+    \item \textbf{VERIFY}: Check OSD shows "FAULT" state
+    \item \textbf{INSPECT}: If possible, visually inspect weapon for obstruction
+    \item \textbf{CLEAR}: Remove any visible obstruction (per weapon manual)
+    \item \textbf{RESET}: Press \button{Charge} button once to reset fault
+    \item \textbf{RETRY}: Actuator performs safe retraction to home position
+    \item \textbf{RE-CHARGE}: After successful reset, perform normal charging
+\end{enumerate}
+\end{procedurebox}
+
+\begin{warningbox}[SAFETY]
+If jam persists after 2 reset attempts, \textbf{STOP} and request maintenance support. Repeated jam cycling can damage the weapon or actuator.
+\end{warningbox}
+
+\subsection{CHARGING SAFETY INTERLOCKS}
+
+Charging is \textbf{BLOCKED} when:
+
+\small
+\begin{longtable}{|L{0.30\textwidth}|L{0.60\textwidth}|}
+\hline
+\rowcolor{milblue!20}
+\textbf{Condition} & \textbf{Reason/Resolution} \\
+\hline
+Emergency Stop Active & Clear E-stop before charging \\
+\hline
+Station Disabled & Enable station with Station Enable switch \\
+\hline
+Charge Already In Progress & Wait for current cycle to complete \\
+\hline
+Lockout Active & Wait 4 seconds after previous charge \\
+\hline
+Fault State & Reset fault by pressing Charge button \\
+\hline
+\end{longtable}
+
+\subsection{STARTUP ACTUATOR CHECK}
+
+On system startup, if the actuator is found in an extended position:
+
+\begin{itemize}
+    \item System automatically performs \textbf{safe retraction}
+    \item Returns actuator to home (retracted) position
+    \item Shorter timeout used (best-effort recovery)
+    \item Prevents leaving weapon in unsafe partially-charged state
+\end{itemize}
+
+% ============================================================================
 \section{WEAPONS ENGAGEMENT SEQUENCE}
 
 \subsection{PRE-ENGAGEMENT CHECKLIST}

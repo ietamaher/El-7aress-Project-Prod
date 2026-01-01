@@ -27,6 +27,78 @@
 
 \section{System Startup Procedure}
 
+\subsection{STARTUP QUICK REFERENCE CHECKLIST [NEW - QT6]}
+
+\begin{quickref}
+\textbf{EL 7ARRESS RCWS - STARTUP CHECKLIST}
+\small
+\begin{longtable}{|C{0.08\textwidth}|L{0.72\textwidth}|C{0.10\textwidth}|}
+\hline
+\rowcolor{milgreen!20}
+\textbf{Step} & \textbf{Action} & \textbf{Check} \\
+\hline
+\multicolumn{3}{|c|}{\textbf{PRE-POWER CHECKS}} \\
+\hline
+1 & Walk-around inspection complete (Lesson 1) & $\square$ \\
+\hline
+2 & Weapon cleared per Appendix A & $\square$ \\
+\hline
+3 & Ammunition accounted for / removed if required & $\square$ \\
+\hline
+4 & Personnel clear of turret (2+ meters) & $\square$ \\
+\hline
+5 & Vehicle power available (20-30V DC) & $\square$ \\
+\hline
+6 & Operator qualified and authorized & $\square$ \\
+\hline
+7 & Mission briefing received (zones, ROE, threats) & $\square$ \\
+\hline
+8 & Communication established with command & $\square$ \\
+\hline
+\multicolumn{3}{|c|}{\textbf{POWER-UP SEQUENCE}} \\
+\hline
+9 & Station Enable switch = OFF & $\square$ \\
+\hline
+10 & Apply vehicle power (circuit breaker ON) & $\square$ \\
+\hline
+11 & Power light = GREEN & $\square$ \\
+\hline
+12 & Boot self-test = All devices [OK] & $\square$ \\
+\hline
+13 & Station Enable switch = ON & $\square$ \\
+\hline
+14 & System Ready light = GREEN & $\square$ \\
+\hline
+15 & Gimbal homes to 0° AZ / 0° EL & $\square$ \\
+\hline
+\multicolumn{3}{|c|}{\textbf{FUNCTIONAL CHECKS}} \\
+\hline
+16 & Camera select: DAY / THERMAL both work & $\square$ \\
+\hline
+17 & Gimbal slew: All directions smooth & $\square$ \\
+\hline
+18 & Zoom: In/Out functional & $\square$ \\
+\hline
+19 & LRF: Range reading on known target & $\square$ \\
+\hline
+20 & Stabilization: Toggle ON, verify OSD & $\square$ \\
+\hline
+\multicolumn{3}{|c|}{\textbf{FINAL STATUS}} \\
+\hline
+21 & Power light: GREEN & $\square$ \\
+\hline
+22 & System Ready: GREEN & $\square$ \\
+\hline
+23 & Gun Armed: OFF (SAFE) & $\square$ \\
+\hline
+24 & Fault light: OFF & $\square$ \\
+\hline
+25 & OSD: No warnings displayed & $\square$ \\
+\hline
+\end{longtable}
+\textbf{IF ANY CHECK FAILS: DO NOT PROCEED. Report to maintenance.}
+\end{quickref}
+
 \subsection{Pre-Startup Checklist}
 
 Before powering on the system, verify:
@@ -342,6 +414,191 @@ Thermal frozen & FFC in progress & Wait 5 seconds for FFC to complete \\
 \begin{warningbox}[CRITICAL]
 Do NOT hesitate to use Emergency Stop. Better safe than sorry.
 \end{warningbox}
+
+\subsubsection{Emergency Stop System Details [NEW - QT6]}
+
+The Emergency Stop system includes advanced monitoring and recovery features:
+
+\textbf{Debounce Protection}:
+\begin{itemize}
+    \item \textbf{50ms debounce period} prevents false activations from electrical noise
+    \item Button state must remain stable for 50ms before triggering
+    \item Protects against accidental momentary contact
+\end{itemize}
+
+\textbf{Recovery Period (CROWS M153 Compliance)}:
+\begin{itemize}
+    \item When Emergency Stop is \textbf{released}, system enters recovery period
+    \item \textbf{500ms minimum} before normal operation resumes
+    \item Prevents immediate re-activation from switch bounce
+    \item OSD displays: "RECOVERY IN PROGRESS..."
+    \item After recovery: "RECOVERY COMPLETE - Normal operation permitted"
+\end{itemize}
+
+\textbf{Event Logging (Audit Trail)}:
+\begin{itemize}
+    \item All Emergency Stop events are logged with timestamp
+    \item Log includes: Activation time, duration, source (hardware/software)
+    \item Useful for incident investigation and maintenance
+    \item Log accessible via System Status → Emergency Log
+\end{itemize}
+
+\textbf{Software Emergency Stop}:
+\begin{itemize}
+    \item System can trigger software emergency stop for critical faults
+    \item Same effect as hardware button
+    \item Triggered by: PLC communication loss, servo fault, safety violation
+    \item OSD displays: "SOFTWARE EMERGENCY STOP - [reason]"
+\end{itemize}
+
+\subsection{Safety Interlock System [NEW - QT6]}
+
+The El 7arress RCWS employs a comprehensive Safety Interlock system that enforces CROWS M153 safety requirements. All weapon and motion operations require multiple safety conditions to be met.
+
+\subsubsection{FIRE Permission - canFire() Safety Hierarchy}
+
+\textbf{ALL conditions must be met to fire the weapon}:
+
+\small
+\begin{longtable}{|C{0.05\textwidth}|L{0.28\textwidth}|L{0.28\textwidth}|L{0.30\textwidth}|}
+\hline
+\rowcolor{milblue!20}
+\textbf{\#} & \textbf{Condition} & \textbf{Required State} & \textbf{Denial Message} \\
+\hline
+1 & Emergency Stop & NOT Active & "EMERGENCY STOP ACTIVE" \\
+\hline
+2 & Station Enable & Enabled & "Station not enabled" \\
+\hline
+3 & Dead Man Switch & Held & "Dead man switch not held" \\
+\hline
+4 & Gun Arm Switch & Armed & "Gun not armed" \\
+\hline
+5 & Operational Mode & Engagement Mode & "Invalid operational mode" \\
+\hline
+6 & Authorization & Authorized & "System not authorized" \\
+\hline
+7 & No-Fire Zone & NOT In Zone & "In NO-FIRE zone" \\
+\hline
+8 & Charging State & NOT Charging & "Charging in progress" \\
+\hline
+9 & Charge Fault & NO Fault & "Charge fault - reset required" \\
+\hline
+\end{longtable}
+
+\begin{warningbox}[SAFETY HIERARCHY]
+Conditions are checked in priority order. Emergency Stop is \textbf{always} highest priority. If ANY condition fails, weapon WILL NOT FIRE.
+\end{warningbox}
+
+\subsubsection{CHARGE Permission - canCharge() Safety}
+
+\textbf{Conditions for weapon charging (cocking actuator)}:
+
+\small
+\begin{longtable}{|L{0.35\textwidth}|L{0.55\textwidth}|}
+\hline
+\rowcolor{milblue!20}
+\textbf{Condition} & \textbf{Notes} \\
+\hline
+Emergency Stop NOT active & Highest priority \\
+\hline
+Station Enabled & Motors require power \\
+\hline
+NOT already charging & Cannot interrupt cycle \\
+\hline
+NOT in lockout period & 4-second CROWS spec lockout \\
+\hline
+NO fault state & Reset required first \\
+\hline
+\end{longtable}
+
+\textbf{NOTE}: Charging does NOT require:
+\begin{itemize}
+    \item Gun Armed (can charge with safety on)
+    \item Dead Man Switch (charging is not firing)
+    \item Authorization (preparation step)
+\end{itemize}
+
+\subsubsection{MOVEMENT Permission - canMove() Safety}
+
+\textbf{Conditions for gimbal movement}:
+
+\small
+\begin{longtable}{|L{0.25\textwidth}|L{0.35\textwidth}|L{0.30\textwidth}|}
+\hline
+\rowcolor{milblue!20}
+\textbf{Condition} & \textbf{Applies To} & \textbf{Notes} \\
+\hline
+Emergency Stop NOT active & All motion modes & Highest priority \\
+\hline
+Station Enabled & All motion modes & Motors require power \\
+\hline
+Dead Man Switch Held & Manual, AutoTrack, ManualTrack & Pattern mode exempt \\
+\hline
+\end{longtable}
+
+\textbf{Motion Mode Dead Man Requirements}:
+\begin{itemize}
+    \item \textbf{Manual Mode}: Dead Man Switch REQUIRED for joystick slew
+    \item \textbf{AutoTrack Mode}: Dead Man Switch REQUIRED for tracking
+    \item \textbf{ManualTrack Mode}: Dead Man Switch REQUIRED
+    \item \textbf{Pattern Mode (Sector Scan, TRP)}: Dead Man Switch NOT required (autonomous scan)
+\end{itemize}
+
+\subsubsection{ENGAGEMENT Permission - canEngage()}
+
+\textbf{Conditions to enter Engagement Mode}:
+
+\begin{checklist}
+    \item Emergency Stop NOT active
+    \item Station Enabled
+    \item Dead Man Switch Held
+\end{checklist}
+
+\subsubsection{HOMING Permission - canHome()}
+
+\textbf{Conditions for homing operation}:
+
+\begin{checklist}
+    \item Emergency Stop NOT active
+    \item Station Enabled
+    \item NOT already homing (prevents double-trigger)
+\end{checklist}
+
+\subsubsection{Safety Denial Indicator Messages}
+
+When an operation is denied, the OSD displays the specific reason:
+
+\small
+\begin{longtable}{|L{0.40\textwidth}|L{0.50\textwidth}|}
+\hline
+\rowcolor{milblue!20}
+\textbf{Message} & \textbf{Required Action} \\
+\hline
+"EMERGENCY STOP ACTIVE" & Release E-stop, wait for recovery \\
+\hline
+"Dead man switch not held" & Hold Button 3 (palm switch) \\
+\hline
+"Station not enabled" & Toggle Station Enable switch ON \\
+\hline
+"Gun not armed" & Move Gun Arm switch to ARM \\
+\hline
+"System not authorized" & Obtain authorization from command \\
+\hline
+"In NO-FIRE zone" & Slew out of zone, or obtain override \\
+\hline
+"In NO-TRAVERSE zone" & Cannot enter zone boundary \\
+\hline
+"Charging in progress" & Wait for charge cycle to complete \\
+\hline
+"Charge lockout active (wait 4 sec)" & Wait for lockout timer \\
+\hline
+"Charge fault - reset required" & Press Charge button to reset \\
+\hline
+"Homing in progress" & Wait for homing to complete \\
+\hline
+"PLC communication lost" & Check connections, restart system \\
+\hline
+\end{longtable}
 
 \subsubsection{Station Enable Switch}
 
@@ -695,6 +952,70 @@ Release Dead Man Switch immediately when not actively engaging a target.
 \end{itemize}
 
 \section{System Shutdown Procedure}
+
+\subsection{SHUTDOWN QUICK REFERENCE CHECKLIST [NEW - QT6]}
+
+\begin{quickref}
+\textbf{EL 7ARRESS RCWS - SHUTDOWN CHECKLIST}
+\small
+\begin{longtable}{|C{0.08\textwidth}|L{0.72\textwidth}|C{0.10\textwidth}|}
+\hline
+\rowcolor{milred!20}
+\textbf{Step} & \textbf{Action} & \textbf{Check} \\
+\hline
+\multicolumn{3}{|c|}{\textbf{SAFE THE SYSTEM}} \\
+\hline
+1 & Release Fire button and Dead Man Switch & $\square$ \\
+\hline
+2 & Gun Arm/Safe switch = SAFE & $\square$ \\
+\hline
+3 & Gun Armed light = OFF & $\square$ \\
+\hline
+4 & Exit Engagement Mode if active & $\square$ \\
+\hline
+\multicolumn{3}{|c|}{\textbf{RETURN TO STOW}} \\
+\hline
+5 & Press HOME button - gimbal returns to 0° AZ / 0° EL & $\square$ \\
+\hline
+6 & Wait for "HOME COMPLETE" message & $\square$ \\
+\hline
+7 & Stabilization switch = OFF & $\square$ \\
+\hline
+\multicolumn{3}{|c|}{\textbf{MENU SHUTDOWN}} \\
+\hline
+8 & Press MENU ✓ button & $\square$ \\
+\hline
+9 & Navigate to "Shutdown System" & $\square$ \\
+\hline
+10 & Press MENU ✓ to select & $\square$ \\
+\hline
+11 & Confirm "YES, Shutdown" & $\square$ \\
+\hline
+12 & Wait for "SHUTDOWN COMPLETE" message & $\square$ \\
+\hline
+\multicolumn{3}{|c|}{\textbf{POWER DOWN}} \\
+\hline
+13 & Station Enable switch = OFF & $\square$ \\
+\hline
+14 & System Ready light = OFF & $\square$ \\
+\hline
+15 & Circuit breaker = OFF (if end of shift) & $\square$ \\
+\hline
+16 & Power light = OFF (if power removed) & $\square$ \\
+\hline
+\multicolumn{3}{|c|}{\textbf{SECURE}} \\
+\hline
+17 & Weapon cleared per Appendix A (if required) & $\square$ \\
+\hline
+18 & Ammunition removed/secured (if required) & $\square$ \\
+\hline
+19 & Protective covers installed (if required) & $\square$ \\
+\hline
+20 & Operator log entry completed & $\square$ \\
+\hline
+\end{longtable}
+\textbf{WAIT for "SHUTDOWN COMPLETE" before removing power!}
+\end{quickref}
 
 \subsection{Shutdown Sequence (7 Steps)}
 

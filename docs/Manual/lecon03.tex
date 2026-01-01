@@ -78,23 +78,33 @@ If you get lost in menus, keep selecting "Return..." until you exit completely.
 MAIN MENU
 ├── --- RETICLE & DISPLAY ---
 │   ├── Personalize Reticle
-│   └── Personalize Colors
+│   ├── Personalize Colors
+│   └── Display Brightness         [NEW - QT6]
 │
 ├── --- BALLISTICS ---
 │   ├── Zeroing (Lesson 6)
-│   ├── Environmental Parameters (Lesson 6)
-│   └── Lead Angle Compensation (Lesson 6)
+│   ├── Clear Active Zero          [NEW - QT6]
+│   ├── Windage (Lesson 6)
+│   ├── Clear Active Windage       [NEW - QT6]
+│   ├── Environmental Settings (Lesson 6)
+│   └── Clear Environmental Settings [NEW - QT6]
+│
+├── --- CALIBRATION ---            [NEW SECTION - QT6]
+│   └── Preset Home Position
 │
 ├── --- SYSTEM ---
 │   ├── Zone Definitions (Lesson 4)
-│   ├── System Status (Lesson 7)
+│   ├── Detection: ENABLED/DISABLED [NEW - QT6]
 │   └── Shutdown System
 │
 ├── --- INFO ---
-│   └── About
-│
-└── Return ...
+│   ├── Help/About
+│   └── Return ...
 \end{lstlisting}
+
+\begin{notebox}[QT6 UPDATE]
+The menu structure has been updated with new options for Display Brightness, Calibration section with Preset Home Position, Detection toggle, and separate Clear functions for ballistic settings.
+\end{notebox}
 
 \begin{notebox}
 Ballistics and Zone Management are covered in detail in later lessons. This lesson focuses on display settings and basic navigation.
@@ -252,6 +262,132 @@ White & White & Maximum contrast \\
     \item \textbf{White}: Maximum contrast on dark backgrounds
 \end{itemize}
 
+\subsection{Display Brightness [NEW - QT6]}
+
+\textbf{Access}: Main Menu → "Display Brightness"
+
+\textbf{Purpose}: Adjust DCU display brightness for optimal visibility in varying ambient light conditions.
+
+\subsubsection{Brightness Control Parameters}
+
+\small
+\begin{longtable}{|L{0.25\textwidth}|L{0.68\textwidth}|}
+\hline
+\rowcolor{milblue!20}
+\textbf{Parameter} & \textbf{Value/Details} \\
+\hline
+\textbf{Range} & 10\% to 100\% \\
+\hline
+\textbf{Step Size} & 10\% per button press \\
+\hline
+\textbf{Default} & System default (typically 70\%) \\
+\hline
+\textbf{Preview} & Real-time preview as you adjust \\
+\hline
+\textbf{Cancel} & BACK restores original brightness \\
+\hline
+\end{longtable}
+
+\subsubsection{How to Adjust Brightness}
+
+\begin{procedurebox}[ADJUSTING DISPLAY BRIGHTNESS]
+\begin{enumerate}
+    \item Press \button{MENU ✓}
+    \item Navigate to "Display Brightness" (▼)
+    \item Press \button{MENU ✓} to enter brightness adjustment
+    \item \textbf{Screen displays}: "Adjust display brightness."
+    \item Use \button{MENU ▲} to \textbf{increase} brightness (+10\%)
+    \item Use \button{MENU ▼} to \textbf{decrease} brightness (-10\%)
+    \item \textbf{Preview is immediate} - observe screen as you adjust
+    \item Press \button{MENU ✓} to \textbf{APPLY} the new brightness
+    \item \textbf{Confirmation}: "Brightness Applied" message appears
+    \item Press \button{MENU ✓} to return to Main Menu
+\end{enumerate}
+\end{procedurebox}
+
+\begin{notebox}[CANCEL OPTION]
+Press \button{BACK} at any time during adjustment to \textbf{cancel} and restore the previous brightness level. This is useful if you accidentally set it too dark or bright.
+\end{notebox}
+
+\textbf{Brightness Recommendations}:
+\begin{itemize}
+    \item \textbf{100\%}: Bright daylight, direct sunlight
+    \item \textbf{70-80\%}: Normal daylight, overcast conditions (default)
+    \item \textbf{40-60\%}: Dawn/dusk, shaded areas
+    \item \textbf{20-30\%}: Night operations (preserves night vision adaptation)
+    \item \textbf{10\%}: Extreme low-light (minimum visible)
+\end{itemize}
+
+\begin{warningbox}[NIGHT OPERATIONS]
+High display brightness at night will illuminate your position and impair your night vision adaptation. Reduce brightness to 30\% or lower for night operations.
+\end{warningbox}
+
+\section{Calibration Menu Options [NEW SECTION - QT6]}
+
+\subsection{Preset Home Position}
+
+\textbf{Access}: Main Menu → "Preset Home Position"
+
+\textbf{Purpose}: Define the HOME reference position for the gimbal. This is where the gimbal returns when the HOME function is activated.
+
+\subsubsection{Why Set a Custom Home Position?}
+
+The default home position may not be optimal for your vehicle configuration or operational needs:
+\begin{itemize}
+    \item Orient weapon toward expected threat direction
+    \item Align with vehicle front for stowage
+    \item Position for vehicle travel mode
+    \item Set up for specific defensive sectors
+\end{itemize}
+
+\subsubsection{Preset Home Position Procedure}
+
+\begin{procedurebox}[SETTING PRESET HOME POSITION]
+\textbf{Step 1: Position Gimbal}
+\begin{enumerate}
+    \item Press \button{MENU ✓}
+    \item Navigate to "Preset Home Position"
+    \item Press \button{MENU ✓} to enter procedure
+    \item \textbf{Screen displays}: "POSITION GIMBAL TO HOME LOCATION"
+    \item Use \textbf{JOYSTICK} to slew the gimbal to your desired home position
+    \item Current Az/El position is displayed on screen in real-time
+    \item Align with your visual/mechanical reference
+    \item Press \button{MENU ✓} when positioned correctly
+\end{enumerate}
+
+\textbf{Step 2: Confirm Home Position}
+\begin{enumerate}
+    \setcounter{enumi}{8}
+    \item \textbf{Screen displays}: "CONFIRM HOME POSITION"
+    \item Displayed position: "AZ: XX.XX deg | EL: XX.XX deg"
+    \item Review the position carefully
+    \item Press \button{MENU ✓} to \textbf{CONFIRM} and save
+\end{enumerate}
+
+\textbf{Step 3: Completion}
+\begin{enumerate}
+    \setcounter{enumi}{12}
+    \item \textbf{Screen displays}: "PRESET HOME POSITION SET!"
+    \item Motor controller stores the position as zero reference
+    \item Press \button{MENU ✓} to return to Main Menu
+\end{enumerate}
+\end{procedurebox}
+
+\begin{notebox}[MOTOR CONTROLLER]
+The preset home position command (HR10) is sent to the motor controller (PLC42) which stores it in non-volatile memory. This position will persist across power cycles.
+\end{notebox}
+
+\begin{cautionbox}[CANCEL]
+Press \button{BACK} at any step to cancel the procedure and return to the Main Menu without changing the home position.
+\end{cautionbox}
+
+\textbf{Verifying Home Position}:
+\begin{enumerate}
+    \item After setting, press \button{Home} (joystick Button 4)
+    \item Gimbal should slew to the position you just set
+    \item If incorrect, repeat the Preset Home Position procedure
+\end{enumerate}
+
 \section{System Menu Options}
 
 \subsection{Zone Definitions}
@@ -271,6 +407,61 @@ White & White & Maximum contrast \\
 
 \begin{notebox}[OPERATOR NOTE]
 Zone modification usually requires supervisor authorization. Operators can VIEW zones but typically cannot CHANGE them.
+\end{notebox}
+
+\subsection{Detection Toggle [NEW - QT6]}
+
+\textbf{Access}: Main Menu → "Detection: ENABLED/DISABLED"
+
+\textbf{Purpose}: Enable or disable AI-based automatic target detection for the Day camera.
+
+\subsubsection{Detection Availability}
+
+\small
+\begin{longtable}{|L{0.25\textwidth}|L{0.68\textwidth}|}
+\hline
+\rowcolor{milblue!20}
+\textbf{Condition} & \textbf{Detection Status} \\
+\hline
+Day Camera Active & \textbf{Available} - Can be enabled/disabled \\
+\hline
+Night Camera Active & \textbf{Unavailable} - Menu shows "(Night - Unavailable)" \\
+\hline
+\end{longtable}
+
+\textbf{Menu Display States}:
+\begin{itemize}
+    \item \texttt{"Detection: ENABLED"} - Detection is ON (Day camera)
+    \item \texttt{"Detection: DISABLED"} - Detection is OFF (Day camera)
+    \item \texttt{"Detection (Night - Unavailable)"} - Night camera active, cannot toggle
+\end{itemize}
+
+\subsubsection{How to Toggle Detection}
+
+\begin{procedurebox}[ENABLING/DISABLING DETECTION]
+\begin{enumerate}
+    \item Ensure \textbf{Day camera} is active (switch camera if needed)
+    \item Press \button{MENU ✓}
+    \item Navigate to "Detection: ENABLED" or "Detection: DISABLED"
+    \item Press \button{MENU ✓} to toggle the state
+    \item Detection state changes immediately
+    \item Menu closes automatically
+\end{enumerate}
+\end{procedurebox}
+
+\textbf{Detection Indicators}:
+\begin{itemize}
+    \item When ENABLED: Detection boxes appear around identified targets
+    \item When DISABLED: No automatic target highlighting
+    \item OSD shows detection status in system status area
+\end{itemize}
+
+\begin{warningbox}[NIGHT CAMERA LIMITATION]
+Detection is \textbf{ONLY} available on the Day camera. If you switch to Night camera while detection is enabled, detection will automatically suspend and resume when you switch back to Day camera.
+\end{warningbox}
+
+\begin{notebox}[PERFORMANCE NOTE]
+Detection processing uses significant computing resources. Disable detection when not needed to improve system responsiveness.
 \end{notebox}
 
 \subsection{System Status}
