@@ -351,7 +351,7 @@ IDLE → EXTENDING → EXTENDED (HOLD) → RETRACTING → LOCKOUT (4s) → IDLE
                                    ↘ JAM DETECTED → FAULT → IDLE (reset)
 ```
 
-**4-Second CROWS M153 Lockout**:
+**4-Second El-7aress H100 Lockout**:
 - Required post-charge safety period
 - Prevents accidental double-charge
 - Button ignored during lockout
@@ -380,7 +380,7 @@ IDLE → EXTENDING → EXTENDED (HOLD) → RETRACTING → LOCKOUT (4s) → IDLE
 - 50ms debounce period prevents false activations
 - Button state must remain stable for 50ms before triggering
 
-**Recovery Period (CROWS M153 Compliance)**:
+**Recovery Period (El-7aress H100 Compliance)**:
 - 500ms minimum recovery period after E-stop released
 - OSD displays: "RECOVERY IN PROGRESS..." then "RECOVERY COMPLETE"
 
@@ -516,7 +516,7 @@ IDLE → EXTENDING → EXTENDED (HOLD) → RETRACTING → LOCKOUT (4s) → IDLE
 
 4. **docs/Manual/lecon05.tex** - Lesson 5: Target Engagement ✅ UPDATED
    - Fixed double-click abort timing from 500ms to **1000ms (1 second)**
-   - NEW SECTION: Dead Reckoning During Firing (CROWS Doctrine)
+   - NEW SECTION: Dead Reckoning During Firing (El-7aress Doctrine)
    - Documentation of gimbal behavior during firing phase
 
 5. **docs/Manual/lecon06.tex** - Lesson 6: Ballistics & Fire Control ✅ UPDATED
@@ -525,7 +525,7 @@ IDLE → EXTENDING → EXTENDED (HOLD) → RETRACTING → LOCKOUT (4s) → IDLE
      - Motion Lead Compensation (MANUAL - Button 2)
    - Critical warning that LAC is joystick Button 2 ONLY
    - Updated LAC status indicators to match code (LAC: OFF/ON/LAG/ZOOM OUT)
-   - CROWS-compliant LAC latching behavior (2-second minimum interval)
+   - El-7aress-compliant LAC latching behavior (2-second minimum interval)
    - Target switching procedure for LAC
 
 #### Phase 2 Updates (2026-01-01):
@@ -537,7 +537,7 @@ IDLE → EXTENDING → EXTENDED (HOLD) → RETRACTING → LOCKOUT (4s) → IDLE
    - Safety denial indicator messages table
 
 2. **docs/Manual/lecon03.tex** - Lesson 3: Menu System ✅ UPDATED (Phase 2)
-   - Updated menu structure with new [NEW - QT6] items
+   - Updated menu structure with new items
    - NEW SECTION: Display Brightness (10-100%, 10% steps, real-time preview)
    - NEW SECTION: Calibration - Preset Home Position (3-step gimbal homing procedure)
    - NEW SECTION: Detection Toggle (Day camera only, AI target detection)
@@ -558,7 +558,7 @@ IDLE → EXTENDING → EXTENDED (HOLD) → RETRACTING → LOCKOUT (4s) → IDLE
    - Weapon-specific charging cycles (M2HB = 2, others = 1)
    - Two charging modes: Short Press vs Continuous Hold
    - Charging state machine diagram
-   - 4-second CROWS M153 lockout period
+   - 4-second El-7aress H100 lockout period
    - Jam detection and recovery procedures
    - Charging safety interlocks table
    - Startup actuator check documentation
@@ -596,9 +596,9 @@ CCIP (*) = Gun Boresight + Zeroing Offset
            + Motion Lead Compensation (only if Button 2 toggled ON)
 ```
 
-### Section: CROWS-Compliant LAC Latching (NEW)
+### Section: El-7aress-Compliant LAC Latching (NEW)
 
-Added per CROWS TM 9-1090-225-10-2:
+Added per El-7aress H100 specification:
 - 2-second minimum interval between LAC toggles
 - Latched velocity behavior (not continuously updated)
 - Target switching procedure warning
