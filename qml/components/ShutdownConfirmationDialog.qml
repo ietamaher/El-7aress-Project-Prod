@@ -17,24 +17,21 @@ import QtQuick.Layouts
 Rectangle {
     id: root
 
-    // Bind your viewModel here (from C++)
-    property var viewModel: shutdownConfirmationViewModel
-
     // Accent color (from viewModel or fallback)
-    property color accentColor: viewModel && viewModel.accentColor ? viewModel.accentColor : "#46E2A5"
+    property color accentColor: shutdownConfirmationViewModel && shutdownConfirmationViewModel.accentColor ? shutdownConfirmationViewModel.accentColor : "#46E2A5"
 
     // Warning/danger color for shutdown
     property color dangerColor: "#FF4444"
 
-    // Visible when viewModel.visible is true
-    visible: viewModel ? !!viewModel.visible : false
+    // Visible when viewModel.visible is true - directly reference context property like ZeroingOverlay
+    visible: shutdownConfirmationViewModel ? shutdownConfirmationViewModel.visible : false
     anchors.fill: parent
 
     // Semi-transparent dark overlay
     color: "#CC000000"
 
     Component.onCompleted: {
-        console.log("ShutdownConfirmationDialog created. visible=", root.visible)
+        console.log("ShutdownConfirmationDialog created. visible=", root.visible, "viewModel=", shutdownConfirmationViewModel)
     }
 
     // Main dialog container
@@ -87,7 +84,7 @@ Rectangle {
                     spacing: 4
 
                     Text {
-                        text: viewModel ? viewModel.title : "SHUTDOWN CONFIRMATION"
+                        text: shutdownConfirmationViewModel ? shutdownConfirmationViewModel.title : "SHUTDOWN CONFIRMATION"
                         font.pixelSize: 24
                         font.bold: true
                         font.family: "Archivo Narrow"
@@ -95,7 +92,7 @@ Rectangle {
                     }
 
                     Text {
-                        text: viewModel ? viewModel.message : "Are you sure you want to shutdown?"
+                        text: shutdownConfirmationViewModel ? shutdownConfirmationViewModel.message : "Are you sure you want to shutdown?"
                         font.pixelSize: 14
                         font.family: "Archivo Narrow"
                         color: "#AAAAAA"
@@ -137,7 +134,7 @@ Rectangle {
                     Layout.leftMargin: 40
                     Layout.rightMargin: 40
 
-                    property bool isSelected: viewModel && viewModel.selectedOption === 0
+                    property bool isSelected: shutdownConfirmationViewModel && shutdownConfirmationViewModel.selectedOption === 0
 
                     color: isSelected ? dangerColor : "transparent"
                     border.color: isSelected ? dangerColor : "#666666"
@@ -175,7 +172,7 @@ Rectangle {
                     Layout.leftMargin: 40
                     Layout.rightMargin: 40
 
-                    property bool isSelected: viewModel && viewModel.selectedOption === 1
+                    property bool isSelected: shutdownConfirmationViewModel && shutdownConfirmationViewModel.selectedOption === 1
 
                     color: isSelected ? accentColor : "transparent"
                     border.color: isSelected ? accentColor : "#666666"
@@ -218,7 +215,7 @@ Rectangle {
             // STATUS MESSAGE (shows "SHUTDOWN COMPLETE" when confirmed)
             Text {
                 id: statusText
-                text: viewModel && viewModel.statusMessage ? viewModel.statusMessage : ""
+                text: shutdownConfirmationViewModel && shutdownConfirmationViewModel.statusMessage ? shutdownConfirmationViewModel.statusMessage : ""
                 font.pixelSize: 20
                 font.bold: true
                 font.family: "Archivo Narrow"
@@ -243,7 +240,7 @@ Rectangle {
                 font.family: "Archivo Narrow"
                 color: "#555555"
                 Layout.alignment: Qt.AlignHCenter
-                visible: !(viewModel && viewModel.statusMessage && viewModel.statusMessage.length > 0)
+                visible: !(shutdownConfirmationViewModel && shutdownConfirmationViewModel.statusMessage && shutdownConfirmationViewModel.statusMessage.length > 0)
             }
         }
     }
