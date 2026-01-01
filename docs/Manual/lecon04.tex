@@ -52,6 +52,10 @@ Motion modes control \textbf{how the gimbal moves} during operations:
 Manual → AutoSectorScan → TRP Scan → Radar Slew → Manual
 \end{lstlisting}
 
+\begin{notebox}
+\textbf{Radar Slew} is only available if radar hardware is installed. On systems without radar, the mode cycle is: \texttt{Manual → Sector Scan → TRP → Manual}
+\end{notebox}
+
 \textbf{Current Mode Display}: OSD bottom center shows: \osd{MODE: Manual}, \osd{MODE: Sector Scan}, \osd{MODE: TRP}, or \osd{MODE: Radar}
 
 \begin{cautionbox}[RESTRICTION]
@@ -159,8 +163,8 @@ Gimbal continuously scans left-to-right, then right-to-left, repeat.
 
 \textbf{If Multiple Sectors Defined}:
 \begin{itemize}
-    \item System scans active sector (last selected via menu)
-    \item To change active sector:
+    \item System scans active sector (last selected via menu or joystick)
+    \item To change active sector via menu:
     \begin{enumerate}
         \item Cycle to Manual mode
         \item Access menu: Zone Definitions → Sector Scans
@@ -168,6 +172,54 @@ Gimbal continuously scans left-to-right, then right-to-left, repeat.
         \item Return to AutoSectorScan mode
     \end{enumerate}
 \end{itemize}
+
+\subsection{Zone Selection via Joystick (Buttons 14/16)}
+
+\textbf{NEW CAPABILITY}: Rapid zone switching during surveillance \textbf{without menu access}.
+
+\begin{procedurebox}[JOYSTICK ZONE SELECTION]
+\textbf{During AutoSectorScan Mode}:
+\begin{itemize}
+    \item \textbf{Button 14}: Select NEXT sector scan zone
+    \item \textbf{Button 16}: Select PREVIOUS sector scan zone
+    \item Zone switches immediately, scanning resumes in new zone
+\end{itemize}
+
+\textbf{During TRP Scan Mode}:
+\begin{itemize}
+    \item \textbf{Button 14}: Select NEXT TRP location page
+    \item \textbf{Button 16}: Select PREVIOUS TRP location page
+    \item TRP scan continues with new page's target points
+\end{itemize}
+\end{procedurebox}
+
+\textbf{Operational Benefit}:
+\begin{itemize}
+    \item Rapid zone switching \textbf{without leaving surveillance mode}
+    \item Hands stay on joystick, eyes stay on video
+    \item Faster reaction to changing threat sectors
+    \item No menu navigation required
+\end{itemize}
+
+\textbf{Example - Sector Scan Zone Cycling}:
+\begin{lstlisting}
+Currently scanning: "Front Gate" (Zone 1)
+Press Button 14 → Switch to "East Perimeter" (Zone 2)
+Press Button 14 → Switch to "Rear Area" (Zone 3)
+Press Button 14 → Wrap to "Front Gate" (Zone 1)
+\end{lstlisting}
+
+\textbf{Example - TRP Page Cycling}:
+\begin{lstlisting}
+Currently on: "Page 1: Checkpoints"
+Press Button 14 → Switch to "Page 2: Hilltops"
+Press Button 14 → Switch to "Page 3: Route Monitoring"
+Press Button 14 → Wrap to "Page 1: Checkpoints"
+\end{lstlisting}
+
+\begin{notebox}
+Zone/TRP selection via joystick only works during \textbf{Surveillance} operational mode while in AutoSectorScan or TRPScan motion modes. During Tracking or Engagement, these buttons perform tracking gate control instead.
+\end{notebox}
 
 \section{TRP Scan Mode}
 
@@ -487,7 +539,304 @@ Active & Enable/disable & ON / OFF \\
     \item Confirm deletion
 \end{itemize}
 
-\section{Zone Management - No-Fire \& No-Traverse}
+\section{Zone Management - Complete Zone Types [NEW - QT6]}
+
+The El 7arress RCWS supports \textbf{FIVE} distinct zone types for comprehensive operational control:
+
+\subsection{Zone Type Summary}
+
+\small
+\begin{longtable}{|L{0.20\textwidth}|L{0.25\textwidth}|L{0.45\textwidth}|}
+\hline
+\rowcolor{milblue!20}
+\textbf{Zone Type} & \textbf{Primary Purpose} & \textbf{System Behavior} \\
+\hline
+\textbf{Safety Zone} & Vehicle/crew protection & Configurable: may restrict fire and/or traverse \\
+\hline
+\textbf{No-Fire Zone} & Prevent firing into protected areas & \textbf{Blocks weapon fire}, allows gimbal traverse \\
+\hline
+\textbf{No-Traverse Zone} & Prevent gimbal damage/obstruction & \textbf{Blocks gimbal movement} into zone \\
+\hline
+\textbf{Sector Scan Zone} & Automated surveillance patterns & Defines scan limits for AutoSectorScan mode \\
+\hline
+\textbf{Target Reference Point} & Pre-defined observation points & Defines dwell locations for TRP Scan mode \\
+\hline
+\end{longtable}
+
+\subsection{Zone Type 1: Safety Zones}
+
+\textbf{Purpose}: Define areas requiring special operational restrictions for crew/equipment safety.
+
+\textbf{Access}: Main Menu → Zone Definitions → New Zone → Safety Zone
+
+\textbf{Parameters}:
+
+\small
+\begin{longtable}{|L{0.25\textwidth}|L{0.35\textwidth}|L{0.32\textwidth}|}
+\hline
+\rowcolor{milblue!20}
+\textbf{Parameter} & \textbf{Description} & \textbf{Values} \\
+\hline
+Start Azimuth & Left boundary (clockwise) & 0° - 359° \\
+\hline
+End Azimuth & Right boundary (clockwise) & 0° - 359° \\
+\hline
+Min Elevation & Lower boundary & -20° to +60° \\
+\hline
+Max Elevation & Upper boundary & -20° to +60° \\
+\hline
+Enabled & Zone active status & ON / OFF \\
+\hline
+Overridable & Can be bypassed with authorization & YES / NO \\
+\hline
+\end{longtable}
+
+\textbf{Creating a Safety Zone}:
+
+\begin{procedurebox}[CREATING SAFETY ZONE - AIMING METHOD]
+\begin{enumerate}
+    \item Access: MENU ✓ → Zone Definitions → New Zone
+    \item Select: "Safety Zone" → MENU ✓
+    \item \textbf{AIM FIRST CORNER}:
+    \begin{itemize}
+        \item Use joystick to slew gimbal to corner 1 (Az/El)
+        \item Press MENU ✓ when positioned
+        \item OSD: "Corner 1 captured"
+    \end{itemize}
+    \item \textbf{AIM SECOND CORNER}:
+    \begin{itemize}
+        \item Slew to opposite corner (defines rectangle)
+        \item Press MENU ✓ to capture
+        \item OSD: "Corner 2 captured"
+    \end{itemize}
+    \item \textbf{SET PARAMETERS}:
+    \begin{itemize}
+        \item Enabled: Toggle ON/OFF
+        \item Overridable: Toggle YES/NO
+        \item Press "Validate" to save
+    \end{itemize}
+\end{enumerate}
+\end{procedurebox}
+
+\subsection{Zone Type 2: No-Fire Zones (NFZ)}
+
+\textbf{Purpose}: Prevent weapon discharge into protected areas (friendly positions, civilians, sensitive infrastructure).
+
+\textbf{Access}: Main Menu → Zone Definitions → New Zone → No-Fire Zone
+
+\textbf{Behavior}:
+\begin{itemize}
+    \item \textbf{BLOCKS}: Weapon fire when reticle is inside zone
+    \item \textbf{ALLOWS}: Gimbal traverse through zone
+    \item \textbf{OSD Display}: Red "NO-FIRE ZONE" warning when inside
+    \item \textbf{Trigger Pull}: Has NO effect while in NFZ (weapon safed)
+\end{itemize}
+
+\textbf{Creating a No-Fire Zone}:
+
+\begin{procedurebox}[CREATING NO-FIRE ZONE]
+\begin{enumerate}
+    \item Access: MENU ✓ → Zone Definitions → New Zone
+    \item Select: "No-Fire Zone" → MENU ✓
+    \item \textbf{AIM CORNER 1}: Slew to first corner, MENU ✓
+    \item \textbf{AIM CORNER 2}: Slew to opposite corner, MENU ✓
+    \item \textbf{SET PARAMETERS}:
+    \begin{itemize}
+        \item Enabled: ON (default)
+        \item Overridable: Set per SOP (requires authorization to override)
+    \end{itemize}
+    \item Validate to save zone
+\end{enumerate}
+\end{procedurebox}
+
+\begin{warningbox}[CRITICAL SAFETY]
+No-Fire Zones are \textbf{ENFORCED BY SOFTWARE}. If you attempt to fire while in an NFZ, the system will \textbf{BLOCK} the fire command. OSD displays: "IN NO-FIRE ZONE - FIRE BLOCKED"
+\end{warningbox}
+
+\subsection{Zone Type 3: No-Traverse Zones (NTZ)}
+
+\textbf{Purpose}: Prevent gimbal movement into areas that could cause mechanical damage or injury.
+
+\textbf{Access}: Main Menu → Zone Definitions → New Zone → No-Traverse Zone
+
+\textbf{Behavior}:
+\begin{itemize}
+    \item \textbf{BLOCKS}: Gimbal movement into zone boundaries
+    \item \textbf{Gimbal Response}: Stops at zone boundary, will not enter
+    \item \textbf{OSD Display}: Yellow "NO-TRAVERSE ZONE" when approaching
+    \item \textbf{Collision Prevention}: System predicts movement and stops before entering
+\end{itemize}
+
+\textbf{Typical Use Cases}:
+\begin{itemize}
+    \item Vehicle structure (antenna mast, exhaust, hatches)
+    \item Personnel areas (open hatches, exposed crew)
+    \item Equipment (radar dishes, sensors)
+\end{itemize}
+
+\textbf{Creating a No-Traverse Zone}:
+
+\begin{procedurebox}[CREATING NO-TRAVERSE ZONE]
+\begin{enumerate}
+    \item Access: MENU ✓ → Zone Definitions → New Zone
+    \item Select: "No-Traverse Zone" → MENU ✓
+    \item \textbf{AIM CORNER 1}: Slew to first corner, MENU ✓
+    \item \textbf{AIM CORNER 2}: Slew to opposite corner, MENU ✓
+    \item \textbf{SET PARAMETERS}:
+    \begin{itemize}
+        \item Enabled: ON (highly recommended)
+        \item Overridable: Usually NO (safety critical)
+    \end{itemize}
+    \item Validate to save zone
+\end{enumerate}
+\end{procedurebox}
+
+\textbf{Movement Collision Checking}:
+\begin{itemize}
+    \item System continuously monitors gimbal position vs. zone boundaries
+    \item When approaching NTZ: Movement slows and stops at boundary
+    \item Cannot "push through" an NTZ even with full joystick deflection
+    \item Automatic scan modes (Sector, TRP) also respect NTZ boundaries
+\end{itemize}
+
+\subsection{Zone Type 4: Sector Scan Zones}
+
+\textbf{Purpose}: Define azimuth/elevation limits for automated sector scanning.
+
+\textbf{Access}: Main Menu → Zone Definitions → New Zone → Sector Scan
+
+\textbf{Parameters}:
+
+\small
+\begin{longtable}{|L{0.25\textwidth}|L{0.40\textwidth}|L{0.27\textwidth}|}
+\hline
+\rowcolor{milblue!20}
+\textbf{Parameter} & \textbf{Description} & \textbf{Typical Value} \\
+\hline
+Point 1 (Az/El) & Starting scan position & 045° / 0° \\
+\hline
+Point 2 (Az/El) & Ending scan position & 135° / 0° \\
+\hline
+Scan Speed & Degrees per second & 1-10 (default: 5) \\
+\hline
+Enabled & Zone active status & ON / OFF \\
+\hline
+\end{longtable}
+
+\textbf{Creating a Sector Scan Zone}:
+
+\begin{procedurebox}[CREATING SECTOR SCAN ZONE]
+\begin{enumerate}
+    \item Access: MENU ✓ → Zone Definitions → New Zone
+    \item Select: "Sector Scan" → MENU ✓
+    \item \textbf{AIM START POINT}: Slew to scan start position, MENU ✓
+    \item \textbf{AIM END POINT}: Slew to scan end position, MENU ✓
+    \item \textbf{SET PARAMETERS}:
+    \begin{itemize}
+        \item Enabled: ON
+        \item Scan Speed: 1-10 deg/sec (use UP/DOWN to adjust)
+    \end{itemize}
+    \item Validate to save zone
+\end{enumerate}
+\end{procedurebox}
+
+\subsection{Zone Type 5: Target Reference Points (TRP)}
+
+\textbf{Purpose}: Define pre-set observation points with configurable dwell times.
+
+\textbf{Access}: Main Menu → Zone Definitions → New Zone → Target Ref Point
+
+\textbf{Parameters}:
+
+\small
+\begin{longtable}{|L{0.25\textwidth}|L{0.40\textwidth}|L{0.27\textwidth}|}
+\hline
+\rowcolor{milblue!20}
+\textbf{Parameter} & \textbf{Description} & \textbf{Typical Value} \\
+\hline
+Azimuth & Direction to TRP & 0° - 359° \\
+\hline
+Elevation & Vertical angle to TRP & -20° to +60° \\
+\hline
+Location Page & TRP grouping (1-200) & 1 \\
+\hline
+TRP Index in Page & Position within page (1-50) & 1-50 \\
+\hline
+Halt Time & Dwell time in seconds & 1.0 - 60.0 sec \\
+\hline
+\end{longtable}
+
+\textbf{Creating a TRP}:
+
+\begin{procedurebox}[CREATING TARGET REFERENCE POINT]
+\begin{enumerate}
+    \item Access: MENU ✓ → Zone Definitions → New Zone
+    \item Select: "Target Ref Point" → MENU ✓
+    \item \textbf{AIM AT TRP}: Slew gimbal to exact TRP location, MENU ✓
+    \item \textbf{SET PARAMETERS}:
+    \begin{itemize}
+        \item Location Page: Assign page number (for grouping)
+        \item TRP Index: Position within page (visit order)
+        \item Halt Time: Dwell time at this TRP (seconds)
+    \end{itemize}
+    \item Validate to save TRP
+\end{enumerate}
+\end{procedurebox}
+
+\textbf{TRP Pagination}:
+\begin{itemize}
+    \item TRPs are organized into \textbf{Location Pages} (1-200)
+    \item Each page can contain up to 50 TRPs
+    \item During TRP scan, system visits all TRPs on the active page
+    \item Use \textbf{Button 14/16} to switch pages during scanning
+\end{itemize}
+
+\subsection{Zone Management Operations}
+
+\subsubsection{Modifying Existing Zones}
+
+\begin{procedurebox}[MODIFY ZONE]
+\begin{enumerate}
+    \item Access: MENU ✓ → Zone Definitions → Modify Zone
+    \item Select zone type (Area Zone, Sector Scan, TRP)
+    \item Browse zone list with UP/DOWN
+    \item Select zone to modify, press MENU ✓
+    \item Modify parameters as needed
+    \item Press "Validate" to save changes
+\end{enumerate}
+\end{procedurebox}
+
+\subsubsection{Deleting Zones}
+
+\begin{procedurebox}[DELETE ZONE]
+\begin{enumerate}
+    \item Access: MENU ✓ → Zone Definitions → Delete Zone
+    \item Select zone type
+    \item Browse and select zone to delete
+    \item Confirm: "Delete Zone ID X?" → Select "Yes"
+    \item Zone is permanently removed
+\end{enumerate}
+\end{procedurebox}
+
+\begin{cautionbox}[CAUTION]
+Deleting a zone is \textbf{PERMANENT}. Ensure you have saved the zone configuration if you may need the zone later.
+\end{cautionbox}
+
+\subsubsection{Zone Map Display}
+
+While in the Zone Definition menu, a \textbf{map overlay} displays all zones:
+
+\begin{itemize}
+    \item \textbf{Safety Zones}: Blue shaded rectangles
+    \item \textbf{No-Fire Zones}: Red shaded rectangles
+    \item \textbf{No-Traverse Zones}: Yellow shaded rectangles
+    \item \textbf{Sector Scan Zones}: Green lines between start/end points
+    \item \textbf{TRPs}: Green crosshair markers
+    \item \textbf{Current Gimbal}: White crosshair showing current position
+    \item \textbf{Work-In-Progress Zone}: Dashed outline during creation
+\end{itemize}
+
+\section{Zone Management - Legacy No-Fire \& No-Traverse Reference}
 
 \subsection{Viewing No-Fire Zones}
 
