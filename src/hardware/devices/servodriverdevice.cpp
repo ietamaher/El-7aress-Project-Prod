@@ -63,7 +63,7 @@ bool ServoDriverDevice::initialize() {
 
     // Get polling intervals from config (defaults: 50ms poll, 5s temperature)
     QJsonObject config = property("config").toJsonObject();
-    int pollInterval = config["pollIntervalMs"].toInt(50);
+    int pollInterval = config["pollIntervalMs"].toInt(30);
     int tempInterval = config["temperatureIntervalMs"].toInt(2000);
 
     setState(DeviceState::Online);

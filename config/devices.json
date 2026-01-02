@@ -21,11 +21,11 @@
     "detectionModelPath": "./models/yolov8s.onnx",
     "dayCamera": {
       "devicePath": "/dev/video0",
-      "controlPort": "/dev/serial/by-id/usb-WCH.CN_USB_Quad_Serial_BCD9DCABCD-if00"
+      "controlPort": "/dev/serial/by-id/usb-WCH.CN_USB_Quad_Serial_BC046FABCD-if06"
     },
     "nightCamera": {
       "devicePath": "/dev/video1",
-      "controlPort": "/dev/serial/by-id/usb-WCH.CN_USB_Quad_Serial_BCD9DCABCD-if02"
+      "controlPort": "/dev/serial/by-id/usb-WCH.CN_USB_Quad_Serial_BC046FABCD-if04"
     }
   },
   "gimbal": {
@@ -68,13 +68,13 @@
   },
   "imu": {
     "comment": "3DM-GX3-25 MicroStrain AHRS - Serial Binary Protocol",
-    "port": "/dev/ttyUSB2",
+    "port": "/dev/imu",
     "baudRate": 115200,
     "samplingRateHz": 25,
     "tiltWarningThreshold": 30.0
   },
   "lrf": {
-    "port": "/dev/ttyUSB1",
+    "port": "/dev/lrf",
     "baudRate": 115200,
     "minRange": 50.0,
     "maxRange": 4000.0
@@ -102,7 +102,7 @@
   "servo": {
     "azimuth": {
       "name": "az",
-      "port": "/dev/serial/by-id/usb-WCH.CN_USB_Quad_Serial_BC046FABCD-if04",
+      "port": "/dev/servo_az",
       "baudRate": 230400,
       "slaveId": 2,
       "parity": "none",
@@ -113,7 +113,7 @@
     },
     "elevation": {
       "name": "el",
-      "port": "/dev/serial/by-id/usb-WCH.CN_USB_Quad_Serial_BC046FABCD-if06",
+      "port": "/dev/servo_el",
       "baudRate": 230400,
       "slaveId": 1,
       "parity": "none",
@@ -124,7 +124,7 @@
     }
   },
   "actuator": {
-    "port": "/dev/ttyUSB0",
+    "port": "/dev/actuator",
     "baudRate": 115200
   },
   "radar": {

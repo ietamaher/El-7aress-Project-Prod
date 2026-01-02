@@ -15,12 +15,17 @@ GimbalStabilizer GimbalMotionModeBase::s_stabilizer;
 // REGISTER DEFINITIONS for AZD-KX Direct Data Operation (from your manual)
 // =========================================================================
 namespace AzdReg {
-    // These are all 16-bit register addresses
     constexpr quint16 OpType      = 0x005A; // Operation Type (2 registers)
-    constexpr quint16 OpSpeed     = 0x005E; // Operating Speed (2 registers, signed +/- 4,000,000 Hz)
-    constexpr quint16 OpAccel     = 0x0060; // Starting/Changing Speed Rate (2 registers)
-    constexpr quint16 OpDecel     = 0x0062; // Stopping Deceleration (2 registers)
+    constexpr quint16 OpPosition  = 0x005C; // Position (2 registers)
+    constexpr quint16 OpSpeed     = 0x005E; // Operating Speed (2 registers)
+    constexpr quint16 OpAccel     = 0x0060; // Accel rate (2 registers)
+    constexpr quint16 OpDecel     = 0x0062; // Decel rate (2 registers)
+    constexpr quint16 OpCurrent   = 0x0064; // Operating current (2 registers)
     constexpr quint16 OpTrigger   = 0x0066; // Trigger (2 registers)
+    
+    // Trigger values
+    constexpr qint32 TRIGGER_UPDATE_SPEED = -4;  // 0xFFFFFFFC
+    constexpr qint32 TRIGGER_UPDATE_ALL   = 1;
 }
  
 
@@ -47,38 +52,58 @@ void GimbalMotionModeBase::configureVelocityMode(ServoDriverDevice* driverInterf
 }
 
 void GimbalMotionModeBase::writeVelocityCommand(ServoDriverDevice* driverInterface,
-                                              double finalVelocity,
-                                              double scalingFactor,
-                                              qint32& lastSpeedHz)
+                                                double finalVelocity,
+                                                double scalingFactor,
+                                                qint32& lastSpeedHz)
 {
     if (!driverInterface) return;
 
-    // 1. Convert physical velocity (deg/s) to motor speed (Hz) as a signed 32-bit
-    // Use lround for proper rounding instead of truncation
     qint32 speedHz = static_cast<qint32>(std::lround(finalVelocity * scalingFactor));
 
-    // ⭐ ADD THIS DEBUG LINE:
-    /*if (finalVelocity == 0.0) {
-        qDebug() << "⚠️ STOP CMD: speedHz=" << speedHz 
-                 << "lastSpeedHz=" << lastSpeedHz 
-                 << "WILL_WRITE=" << (speedHz != lastSpeedHz);
-    }*/
-
-    // 2. ✅ CRITICAL FIX: Only write if speed actually changed!
-    // This prevents redundant Modbus writes (was 60 ops/sec, now 2-6 ops/sec)
     if (speedHz != lastSpeedHz) {
-        // Do bit-preserving conversion to two 16-bit registers using central helper
+        // ✅ OPTIMIZED: Write Speed → Trigger in ONE Modbus transaction (10 registers)
+        // Registers 0x005E through 0x0067 are contiguous:
+        //   0x005E-0x005F: Speed (2)
+        //   0x0060-0x0061: Accel (2) 
+        //   0x0062-0x0063: Decel (2)
+        //   0x0064-0x0065: Current (2)
+        //   0x0066-0x0067: Trigger (2)
+        
         QVector<quint16> speedData = splitInt32ToRegs(speedHz);
-        driverInterface->writeData(AzdReg::OpSpeed, speedData);
-
-        // 3. Trigger the speed update (preserve existing trigger sequence)
-        // From manual, trigger value -4 (FFFF FFFCh) updates the operating speed
-        QVector<quint16> triggerData = {0xFFFF, 0xFFFC};
-        driverInterface->writeData(AzdReg::OpTrigger, triggerData);
-
-        lastSpeedHz = speedHz;  // Update last command
+        
+        // Use existing accel/decel values (or cache them as member variables)
+        constexpr quint32 accel = 150000;
+        constexpr quint32 decel = 150000;
+        constexpr quint32 current = 1000;  // 100% = 1000
+        constexpr qint32 trigger = AzdReg::TRIGGER_UPDATE_SPEED;  // -4
+        
+        QVector<quint16> atomicWrite;
+        atomicWrite.reserve(10);
+        
+        // Speed (0x005E-0x005F)
+        atomicWrite << speedData[0] << speedData[1];
+        
+        // Accel (0x0060-0x0061)
+        atomicWrite << static_cast<quint16>((accel >> 16) & 0xFFFF)
+                    << static_cast<quint16>(accel & 0xFFFF);
+        
+        // Decel (0x0062-0x0063)
+        atomicWrite << static_cast<quint16>((decel >> 16) & 0xFFFF)
+                    << static_cast<quint16>(decel & 0xFFFF);
+        
+        // Current (0x0064-0x0065) - 1000 = 100%
+        atomicWrite << static_cast<quint16>((current >> 16) & 0xFFFF)
+                    << static_cast<quint16>(current & 0xFFFF);
+        
+        // Trigger (0x0066-0x0067) - value -4 = update speed only
+        atomicWrite << static_cast<quint16>((trigger >> 16) & 0xFFFF)
+                    << static_cast<quint16>(trigger & 0xFFFF);
+        
+        // ⚡ SINGLE Modbus write instead of TWO!
+        driverInterface->writeData(AzdReg::OpSpeed, atomicWrite);
+        
+        lastSpeedHz = speedHz;
     }
-    // else: Speed unchanged, skip redundant Modbus write (latency fix!)
 }
 
 void GimbalMotionModeBase::updateGyroBias(const SystemStateData& systemState)

@@ -125,7 +125,7 @@ GimbalController::GimbalController(ServoDriverDevice* azServo,
     // Start periodic update timer (20Hz)
     m_updateTimer = new QTimer(this);
     connect(m_updateTimer, &QTimer::timeout, this, &GimbalController::update);
-    m_updateTimer->start(50);
+    m_updateTimer->start(30);
 
     // Initialize centralized dt measurement timer (Expert Review Fix)
     m_velocityTimer.start();
