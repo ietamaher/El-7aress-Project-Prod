@@ -115,13 +115,15 @@
       "accelHz": 150000,
       "decelHz": 100000,
       "currentPercent": 1000,
-      "comment": "Heavy turret load - SLOW decel (100kHz/s) prevents overvoltage on sudden stops"
+      "maxSpeedScale": 1.0,
+      "comment": "Heavy turret load - SLOW decel (100kHz/s) prevents overvoltage, 100% max speed"
     },
     "elevation": {
       "accelHz": 150000,
       "decelHz": 300000,
       "currentPercent": 700,
-      "comment": "Lighter gun load - FAST decel (300kHz/s) avoids overshoot, 70% current to prevent stall"
+      "maxSpeedScale": 0.7,
+      "comment": "Lighter gun - FAST decel, 70% current, 70% max speed (RCWS spec)"
     }
   },
 

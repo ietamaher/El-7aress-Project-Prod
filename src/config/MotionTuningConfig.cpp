@@ -198,6 +198,8 @@ bool MotionTuningConfig::loadFromFile(const QString& filePath)
                 static_cast<quint32>(az.value("decelHz").toDouble(100000));
             m_instance.axisServo.azimuth.currentPercent =
                 static_cast<quint32>(az.value("currentPercent").toDouble(1000));
+            m_instance.axisServo.azimuth.maxSpeedScale =
+                az.value("maxSpeedScale").toDouble(1.0);
         }
 
         if (axisServo.contains("elevation") && axisServo["elevation"].isObject()) {
@@ -208,6 +210,8 @@ bool MotionTuningConfig::loadFromFile(const QString& filePath)
                 static_cast<quint32>(el.value("decelHz").toDouble(300000));
             m_instance.axisServo.elevation.currentPercent =
                 static_cast<quint32>(el.value("currentPercent").toDouble(700));
+            m_instance.axisServo.elevation.maxSpeedScale =
+                el.value("maxSpeedScale").toDouble(0.7);  // Default 70% for elevation
         }
     }
 
@@ -220,10 +224,12 @@ bool MotionTuningConfig::loadFromFile(const QString& filePath)
     qInfo() << "  TRP travel speed:" << m_instance.motion.trpDefaultTravelSpeed << "deg/s";
     qInfo() << "  Axis Servo - Azimuth: accel=" << m_instance.axisServo.azimuth.accelHz
             << "Hz/s, decel=" << m_instance.axisServo.azimuth.decelHz
-            << "Hz/s, current=" << m_instance.axisServo.azimuth.currentPercent / 10.0 << "%";
+            << "Hz/s, current=" << m_instance.axisServo.azimuth.currentPercent / 10.0 << "%"
+            << ", maxSpeed=" << m_instance.axisServo.azimuth.maxSpeedScale * 100.0 << "%";
     qInfo() << "  Axis Servo - Elevation: accel=" << m_instance.axisServo.elevation.accelHz
             << "Hz/s, decel=" << m_instance.axisServo.elevation.decelHz
-            << "Hz/s, current=" << m_instance.axisServo.elevation.currentPercent / 10.0 << "%";
+            << "Hz/s, current=" << m_instance.axisServo.elevation.currentPercent / 10.0 << "%"
+            << ", maxSpeed=" << m_instance.axisServo.elevation.maxSpeedScale * 100.0 << "%";
 
     return true;
 }

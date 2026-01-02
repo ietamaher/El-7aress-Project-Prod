@@ -137,7 +137,15 @@ void GimbalMotionModeBase::writeVelocityCommandOptimized(
         initAxisPacketTemplates();
     }
 
-    qint32 speedHz = static_cast<qint32>(std::lround(finalVelocity * scalingFactor));
+    // ⚡ Apply axis-specific max speed scaling
+    // Elevation is typically limited to 70% of azimuth max speed (RCWS spec)
+    const auto& cfg = MotionTuningConfig::instance();
+    double speedScale = (axis == GimbalAxis::Azimuth)
+        ? cfg.axisServo.azimuth.maxSpeedScale
+        : cfg.axisServo.elevation.maxSpeedScale;
+
+    double scaledVelocity = finalVelocity * speedScale;
+    qint32 speedHz = static_cast<qint32>(std::lround(scaledVelocity * scalingFactor));
 
     if (speedHz != lastSpeedHz) {
         // Select the appropriate pre-built template

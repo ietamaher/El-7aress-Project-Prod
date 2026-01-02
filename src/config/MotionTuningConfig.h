@@ -81,6 +81,7 @@ public:
         quint32 accelHz = 150000;      ///< Acceleration rate (Hz/s)
         quint32 decelHz = 150000;      ///< Deceleration rate (Hz/s)
         quint32 currentPercent = 1000; ///< Current limit (1000 = 100%, 700 = 70%)
+        double maxSpeedScale = 1.0;    ///< Speed multiplier (1.0 = 100%, 0.7 = 70%)
     };
 
     /**
