@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Effects
+import "../common" as Common
 
 /**
  * PresetHomePositionOverlay.qml
@@ -8,28 +9,25 @@ import QtQuick.Effects
  * UI overlay for the Preset Home Position procedure.
  * Guides the operator through setting the current gimbal position
  * as the home reference point for the motor controller.
- *
- * @author Claude Code
- * @date December 2025
  */
 Rectangle {
     id: presetHomeRoot
-    width: 550
-    height: 400
-    radius: 0
-    color: "#0A0A0A"
+    width: Common.OverlayTheme.panelWidth
+    height: Common.OverlayTheme.panelHeightLarge
+    radius: Common.OverlayTheme.panelRadius
+    color: Common.OverlayTheme.backgroundColor
 
-    border.width: 1
-    border.color: "#1A1A1A"
+    border.width: Common.OverlayTheme.panelBorderWidth
+    border.color: Common.OverlayTheme.borderColor
     visible: presetHomePositionViewModel ? presetHomePositionViewModel.visible : false
-    property color accentColor: presetHomePositionViewModel ? presetHomePositionViewModel.accentColor : "#46E2A5"
+    property color accentColor: presetHomePositionViewModel ? presetHomePositionViewModel.accentColor : Common.OverlayTheme.accentDefault
 
-    layer.enabled: true
+    layer.enabled: Common.OverlayTheme.shadowEnabled
     layer.effect: MultiEffect {
-        shadowEnabled: true
-        shadowColor: "#80000000"
-        shadowBlur: 0.5
-        shadowVerticalOffset: 10
+        shadowEnabled: Common.OverlayTheme.shadowEnabled
+        shadowColor: Common.OverlayTheme.shadowColor
+        shadowBlur: Common.OverlayTheme.shadowBlur
+        shadowVerticalOffset: Common.OverlayTheme.shadowVerticalOffset
     }
 
     Column {
@@ -40,19 +38,19 @@ Rectangle {
         // Header section
         Rectangle {
             width: parent.width
-            height: 80
-            color: "transparent"
+            height: Common.OverlayTheme.headerHeight
+            color: Common.OverlayTheme.headerBackground
 
             Column {
                 anchors.centerIn: parent
-                spacing: 8
+                spacing: Common.OverlayTheme.headerSpacing
 
                 Text {
                     text: presetHomePositionViewModel ? presetHomePositionViewModel.title : "Preset Home Position"
-                    font.pixelSize: 22
-                    font.weight: Font.Normal
-                    font.family: "Segoe UI"
-                    color: "#FFFFFF"
+                    font.pixelSize: Common.OverlayTheme.fontSizeTitle
+                    font.weight: Common.OverlayTheme.fontWeightNormal
+                    font.family: Common.OverlayTheme.fontFamily
+                    color: Common.OverlayTheme.textPrimary
                     horizontalAlignment: Text.AlignHCenter
                     anchors.horizontalCenter: parent.horizontalCenter
                 }
@@ -61,30 +59,30 @@ Rectangle {
 
         Rectangle {
             width: parent.width
-            height: 1
-            color: "#151515"
+            height: Common.OverlayTheme.separatorHeight
+            color: Common.OverlayTheme.separatorColor
         }
 
         // Content section
         Item {
             width: parent.width
-            height: parent.height - 130
+            height: parent.height - Common.OverlayTheme.headerHeight - Common.OverlayTheme.footerHeight - (2 * Common.OverlayTheme.separatorHeight)
 
             Column {
                 anchors.centerIn: parent
-                spacing: 15
-                width: parent.width - 60
+                spacing: Common.OverlayTheme.contentSpacingLarge
+                width: parent.width - (2 * Common.OverlayTheme.contentMargin)
 
                 // Instruction text
                 Text {
                     text: presetHomePositionViewModel ? presetHomePositionViewModel.instruction : ""
-                    font.pixelSize: 13
-                    font.family: "Segoe UI"
-                    color: "#CCCCCC"
+                    font.pixelSize: Common.OverlayTheme.fontSizeBody
+                    font.family: Common.OverlayTheme.fontFamily
+                    color: Common.OverlayTheme.textSecondary
                     wrapMode: Text.WordWrap
                     horizontalAlignment: Text.AlignHCenter
                     anchors.horizontalCenter: parent.horizontalCenter
-                    width: presetHomeRoot.width - 60
+                    width: presetHomeRoot.width - (2 * Common.OverlayTheme.contentMargin)
                     lineHeight: 1.3
                 }
 
@@ -92,9 +90,9 @@ Rectangle {
                 Text {
                     width: parent.width
                     text: presetHomePositionViewModel ? presetHomePositionViewModel.status : ""
-                    font.pixelSize: 16
-                    font.weight: Font.DemiBold
-                    font.family: "Segoe UI"
+                    font.pixelSize: Common.OverlayTheme.fontSizeStatusLarge
+                    font.weight: Common.OverlayTheme.fontWeightDemiBold
+                    font.family: Common.OverlayTheme.fontFamily
                     color: accentColor
                     wrapMode: Text.WordWrap
                     horizontalAlignment: Text.AlignHCenter
@@ -104,10 +102,10 @@ Rectangle {
                 Rectangle {
                     width: parent.width
                     height: 100
-                    color: "#0F0F0F"
-                    radius: 5
-                    border.color: Qt.rgba(accentColor.r, accentColor.g, accentColor.b, 0.3)
-                    border.width: 1
+                    color: Common.OverlayTheme.contentPanelSolidBg
+                    radius: Common.OverlayTheme.contentPanelRadius
+                    border.color: Common.OverlayTheme.contentPanelBorder(accentColor)
+                    border.width: Common.OverlayTheme.panelBorderWidth
 
                     Column {
                         anchors.centerIn: parent
@@ -120,20 +118,20 @@ Rectangle {
 
                             Text {
                                 text: "Azimuth:"
-                                font.pixelSize: 13
-                                font.family: "Segoe UI"
-                                color: "#AAAAAA"
+                                font.pixelSize: Common.OverlayTheme.fontSizeLabel
+                                font.family: Common.OverlayTheme.fontFamily
+                                color: Common.OverlayTheme.textTertiary
                                 width: 100
                                 horizontalAlignment: Text.AlignRight
                             }
 
                             Rectangle {
-                                width: 140
-                                height: 28
-                                color: Qt.rgba(accentColor.r, accentColor.g, accentColor.b, 0.1)
-                                border.color: Qt.rgba(accentColor.r, accentColor.g, accentColor.b, 0.2)
-                                border.width: 1
-                                radius: 3
+                                width: Common.OverlayTheme.valueBoxWidthLarge
+                                height: Common.OverlayTheme.valueBoxHeightLarge
+                                color: Common.OverlayTheme.valueBoxBg(accentColor)
+                                border.color: Common.OverlayTheme.valueBoxBorder(accentColor)
+                                border.width: Common.OverlayTheme.panelBorderWidth
+                                radius: Common.OverlayTheme.valueBoxRadius
 
                                 Text {
                                     anchors.centerIn: parent
@@ -143,18 +141,18 @@ Rectangle {
                                         }
                                         return "0.00 deg"
                                     }
-                                    font.pixelSize: 14
-                                    font.weight: Font.Bold
-                                    font.family: "Segoe UI Mono", "Consolas", "Segoe UI"
-                                    color: "#FFFFFF"
+                                    font.pixelSize: Common.OverlayTheme.fontSizeBody
+                                    font.weight: Common.OverlayTheme.fontWeightBold
+                                    font.family: Common.OverlayTheme.fontFamilyMono
+                                    color: Common.OverlayTheme.textPrimary
                                 }
                             }
                         }
 
                         Rectangle {
                             width: 280
-                            height: 1
-                            color: "#252525"
+                            height: Common.OverlayTheme.separatorHeight
+                            color: Common.OverlayTheme.dividerLight
                             anchors.horizontalCenter: parent.horizontalCenter
                         }
 
@@ -165,20 +163,20 @@ Rectangle {
 
                             Text {
                                 text: "Elevation:"
-                                font.pixelSize: 13
-                                font.family: "Segoe UI"
-                                color: "#AAAAAA"
+                                font.pixelSize: Common.OverlayTheme.fontSizeLabel
+                                font.family: Common.OverlayTheme.fontFamily
+                                color: Common.OverlayTheme.textTertiary
                                 width: 100
                                 horizontalAlignment: Text.AlignRight
                             }
 
                             Rectangle {
-                                width: 140
-                                height: 28
-                                color: Qt.rgba(accentColor.r, accentColor.g, accentColor.b, 0.1)
-                                border.color: Qt.rgba(accentColor.r, accentColor.g, accentColor.b, 0.2)
-                                border.width: 1
-                                radius: 3
+                                width: Common.OverlayTheme.valueBoxWidthLarge
+                                height: Common.OverlayTheme.valueBoxHeightLarge
+                                color: Common.OverlayTheme.valueBoxBg(accentColor)
+                                border.color: Common.OverlayTheme.valueBoxBorder(accentColor)
+                                border.width: Common.OverlayTheme.panelBorderWidth
+                                radius: Common.OverlayTheme.valueBoxRadius
 
                                 Text {
                                     anchors.centerIn: parent
@@ -188,10 +186,10 @@ Rectangle {
                                         }
                                         return "0.00 deg"
                                     }
-                                    font.pixelSize: 14
-                                    font.weight: Font.Bold
-                                    font.family: "Segoe UI Mono", "Consolas", "Segoe UI"
-                                    color: "#FFFFFF"
+                                    font.pixelSize: Common.OverlayTheme.fontSizeBody
+                                    font.weight: Common.OverlayTheme.fontWeightBold
+                                    font.family: Common.OverlayTheme.fontFamilyMono
+                                    color: Common.OverlayTheme.textPrimary
                                 }
                             }
                         }
@@ -203,21 +201,21 @@ Rectangle {
         // Footer section
         Rectangle {
             width: parent.width
-            height: 1
-            color: "#151515"
+            height: Common.OverlayTheme.separatorHeight
+            color: Common.OverlayTheme.separatorColor
         }
 
         Rectangle {
             width: parent.width
-            height: 50
-            color: "#0D0D0D"
+            height: Common.OverlayTheme.footerHeight
+            color: Common.OverlayTheme.footerBackground
 
             Text {
                 anchors.centerIn: parent
                 text: "Press MENU/VAL to confirm  |  Use JOYSTICK to position"
-                font.pixelSize: 12
-                font.family: "Segoe UI"
-                color: "#606060"
+                font.pixelSize: Common.OverlayTheme.fontSizeFooter
+                font.family: Common.OverlayTheme.fontFamily
+                color: Common.OverlayTheme.textMuted
                 horizontalAlignment: Text.AlignHCenter
             }
         }
