@@ -60,6 +60,38 @@ public:
     };
 
     /**
+     * @brief Axis-specific AZD-KX servo parameters
+     *
+     * CRITICAL: These parameters are optimized for RCWS application:
+     * - Azimuth: Heavy load (turret), needs smooth decel to avoid overvoltage
+     * - Elevation: Lighter load, needs crisp decel to avoid overshoot
+     *
+     * Overvoltage prevention (Oriental Motor datasheet):
+     * - Large inertial load + sudden stop = regenerative energy spike
+     * - Slower decel rate dissipates energy over longer time
+     *
+     * Registers written in single Modbus transaction:
+     * 0x005E-0x005F: Speed (2 regs)
+     * 0x0060-0x0061: Accel (2 regs)
+     * 0x0062-0x0063: Decel (2 regs)
+     * 0x0064-0x0065: Current limit (2 regs) - 1000 = 100%
+     * 0x0066-0x0067: Trigger (2 regs)
+     */
+    struct AxisServoParams {
+        quint32 accelHz = 150000;      ///< Acceleration rate (Hz/s)
+        quint32 decelHz = 150000;      ///< Deceleration rate (Hz/s)
+        quint32 currentPercent = 1000; ///< Current limit (1000 = 100%, 700 = 70%)
+    };
+
+    /**
+     * @brief Combined axis parameters
+     */
+    struct AxisServoConfig {
+        AxisServoParams azimuth;   ///< Azimuth axis (heavy turret load)
+        AxisServoParams elevation; ///< Elevation axis (lighter gun load)
+    };
+
+    /**
      * @brief Mode-specific scan parameters
      */
     struct ScanParams {
@@ -150,6 +182,9 @@ struct StabilizerConfig {
     ScanParams trpScanParams;
     ManualLimits manualLimits;
     StabilizerConfig stabilizer;
+
+    // Axis-specific servo parameters (AZD-KX optimization)
+    AxisServoConfig axisServo;
 
 private:
     /**

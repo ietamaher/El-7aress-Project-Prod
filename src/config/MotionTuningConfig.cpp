@@ -180,6 +180,37 @@ bool MotionTuningConfig::loadFromFile(const QString& filePath)
             accelLimits.value("manualMaxAccelHzPerSec").toDouble(500000.0);
     }
 
+    // ========================================================================
+    // AXIS-SPECIFIC SERVO PARAMETERS (AZD-KX Optimization)
+    // ========================================================================
+    // Defaults optimized for RCWS:
+    // - Azimuth: Heavy turret, smooth decel (100000 Hz/s) to avoid overvoltage
+    // - Elevation: Light gun, crisp decel (300000 Hz/s) to avoid overshoot
+    // - Elevation current: 70% to prevent overheating/stall on lighter axis
+    if (root.contains("axisServo") && root["axisServo"].isObject()) {
+        QJsonObject axisServo = root["axisServo"].toObject();
+
+        if (axisServo.contains("azimuth") && axisServo["azimuth"].isObject()) {
+            QJsonObject az = axisServo["azimuth"].toObject();
+            m_instance.axisServo.azimuth.accelHz =
+                static_cast<quint32>(az.value("accelHz").toDouble(150000));
+            m_instance.axisServo.azimuth.decelHz =
+                static_cast<quint32>(az.value("decelHz").toDouble(100000));
+            m_instance.axisServo.azimuth.currentPercent =
+                static_cast<quint32>(az.value("currentPercent").toDouble(1000));
+        }
+
+        if (axisServo.contains("elevation") && axisServo["elevation"].isObject()) {
+            QJsonObject el = axisServo["elevation"].toObject();
+            m_instance.axisServo.elevation.accelHz =
+                static_cast<quint32>(el.value("accelHz").toDouble(150000));
+            m_instance.axisServo.elevation.decelHz =
+                static_cast<quint32>(el.value("decelHz").toDouble(300000));
+            m_instance.axisServo.elevation.currentPercent =
+                static_cast<quint32>(el.value("currentPercent").toDouble(700));
+        }
+    }
+
     qInfo() << "[MotionTuningConfig] Configuration summary:";
     qInfo() << "  Gyro filter cutoff:" << m_instance.filters.gyroCutoffFreqHz << "Hz";
     qInfo() << "  Max acceleration:" << m_instance.motion.maxAccelerationDegS2 << "deg/s²";
@@ -187,6 +218,12 @@ bool MotionTuningConfig::loadFromFile(const QString& filePath)
             << "Ki=" << m_instance.trackingAz.ki
             << "Kd=" << m_instance.trackingAz.kd;
     qInfo() << "  TRP travel speed:" << m_instance.motion.trpDefaultTravelSpeed << "deg/s";
+    qInfo() << "  Axis Servo - Azimuth: accel=" << m_instance.axisServo.azimuth.accelHz
+            << "Hz/s, decel=" << m_instance.axisServo.azimuth.decelHz
+            << "Hz/s, current=" << m_instance.axisServo.azimuth.currentPercent / 10.0 << "%";
+    qInfo() << "  Axis Servo - Elevation: accel=" << m_instance.axisServo.elevation.accelHz
+            << "Hz/s, decel=" << m_instance.axisServo.elevation.decelHz
+            << "Hz/s, current=" << m_instance.axisServo.elevation.currentPercent / 10.0 << "%";
 
     return true;
 }

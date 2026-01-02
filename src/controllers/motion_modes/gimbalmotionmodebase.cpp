@@ -12,6 +12,15 @@
 GimbalStabilizer GimbalMotionModeBase::s_stabilizer;
 
 // =========================================================================
+// STATIC PACKET TEMPLATES (SINGLE MODBUS WRITE OPTIMIZATION)
+// =========================================================================
+// Pre-built 10-register packets for axis-specific velocity commands.
+// Only speed (registers 0-1) changes at runtime; accel/decel/current/trigger are fixed.
+QVector<quint16> GimbalMotionModeBase::s_azVelocityPacketTemplate;
+QVector<quint16> GimbalMotionModeBase::s_elVelocityPacketTemplate;
+bool GimbalMotionModeBase::s_packetsInitialized = false;
+
+// =========================================================================
 // REGISTER DEFINITIONS for AZD-KX Direct Data Operation (from your manual)
 // =========================================================================
 namespace AzdReg {
@@ -33,77 +42,134 @@ void GimbalMotionModeBase::configureVelocityMode(ServoDriverDevice* driverInterf
 {
     if (!driverInterface) return;
 
+    // Ensure packet templates are initialized (lazy init for safety)
+    if (!s_packetsInitialized) {
+        initAxisPacketTemplates();
+    }
+
     // This function sets up the driver for continuous speed control.
     // It should be called from the enterMode() of each motion class.
 
-    // 1. Set Operation Type to 16: Continuous operation (speed control)
+    // Set Operation Type to 16: Continuous operation (speed control)
     QVector<quint16> opTypeData = {0x0000, 0x0010}; // 16 is 0x10
     driverInterface->writeData(AzdReg::OpType, opTypeData);
 
-    // 2. Set a reasonable default acceleration/deceleration rate.
-    // From manual, 1,000,000 = 1000 kHz/s. Let's set 1500 kHz/s = 1,500,000
-    quint32 accel = 150000;//0;
-    QVector<quint16> accelData = {
-        static_cast<quint16>((accel >> 16) & 0xFFFF),
-        static_cast<quint16>(accel & 0xFFFF)
-    };
-    driverInterface->writeData(AzdReg::OpAccel, accelData);
-    driverInterface->writeData(AzdReg::OpDecel, accelData); // Use same for decel
+    // NOTE: Accel/Decel/Current are now set per-write in writeVelocityCommandOptimized()
+    // This allows axis-specific values without needing to track which axis this driver is.
+    // The initial write will set all parameters correctly.
 }
 
+// =========================================================================
+// PACKET TEMPLATE INITIALIZATION (call once at startup)
+// =========================================================================
+void GimbalMotionModeBase::initAxisPacketTemplates()
+{
+    if (s_packetsInitialized) {
+        return;  // Already initialized
+    }
+
+    const auto& cfg = MotionTuningConfig::instance();
+    constexpr qint32 trigger = AzdReg::TRIGGER_UPDATE_SPEED;  // -4
+
+    // =========================================================================
+    // BUILD AZIMUTH PACKET TEMPLATE
+    // Heavy turret load: SLOW decel (100kHz/s) to prevent overvoltage
+    // =========================================================================
+    quint32 azAccel = cfg.axisServo.azimuth.accelHz;
+    quint32 azDecel = cfg.axisServo.azimuth.decelHz;
+    quint32 azCurrent = cfg.axisServo.azimuth.currentPercent;
+
+    s_azVelocityPacketTemplate.clear();
+    s_azVelocityPacketTemplate.reserve(10);
+    s_azVelocityPacketTemplate << 0 << 0;  // Speed placeholder [0-1]
+    s_azVelocityPacketTemplate << static_cast<quint16>((azAccel >> 16) & 0xFFFF)
+                               << static_cast<quint16>(azAccel & 0xFFFF);
+    s_azVelocityPacketTemplate << static_cast<quint16>((azDecel >> 16) & 0xFFFF)
+                               << static_cast<quint16>(azDecel & 0xFFFF);
+    s_azVelocityPacketTemplate << static_cast<quint16>((azCurrent >> 16) & 0xFFFF)
+                               << static_cast<quint16>(azCurrent & 0xFFFF);
+    s_azVelocityPacketTemplate << static_cast<quint16>((trigger >> 16) & 0xFFFF)
+                               << static_cast<quint16>(trigger & 0xFFFF);
+
+    // =========================================================================
+    // BUILD ELEVATION PACKET TEMPLATE
+    // Lighter gun load: FAST decel (300kHz/s) for crisp stops, 70% current
+    // =========================================================================
+    quint32 elAccel = cfg.axisServo.elevation.accelHz;
+    quint32 elDecel = cfg.axisServo.elevation.decelHz;
+    quint32 elCurrent = cfg.axisServo.elevation.currentPercent;
+
+    s_elVelocityPacketTemplate.clear();
+    s_elVelocityPacketTemplate.reserve(10);
+    s_elVelocityPacketTemplate << 0 << 0;  // Speed placeholder [0-1]
+    s_elVelocityPacketTemplate << static_cast<quint16>((elAccel >> 16) & 0xFFFF)
+                               << static_cast<quint16>(elAccel & 0xFFFF);
+    s_elVelocityPacketTemplate << static_cast<quint16>((elDecel >> 16) & 0xFFFF)
+                               << static_cast<quint16>(elDecel & 0xFFFF);
+    s_elVelocityPacketTemplate << static_cast<quint16>((elCurrent >> 16) & 0xFFFF)
+                               << static_cast<quint16>(elCurrent & 0xFFFF);
+    s_elVelocityPacketTemplate << static_cast<quint16>((trigger >> 16) & 0xFFFF)
+                               << static_cast<quint16>(trigger & 0xFFFF);
+
+    s_packetsInitialized = true;
+
+    qInfo() << "[GimbalMotionModeBase] Axis packet templates initialized:";
+    qInfo() << "  AZ: accel=" << azAccel << "Hz/s, decel=" << azDecel
+            << "Hz/s, current=" << azCurrent / 10.0 << "%";
+    qInfo() << "  EL: accel=" << elAccel << "Hz/s, decel=" << elDecel
+            << "Hz/s, current=" << elCurrent / 10.0 << "%";
+}
+
+// =========================================================================
+// OPTIMIZED VELOCITY COMMAND (SINGLE MODBUS WRITE)
+// =========================================================================
+void GimbalMotionModeBase::writeVelocityCommandOptimized(
+    ServoDriverDevice* driverInterface,
+    GimbalAxis axis,
+    double finalVelocity,
+    double scalingFactor,
+    qint32& lastSpeedHz)
+{
+    if (!driverInterface) return;
+
+    // Lazy initialization if not done at startup
+    if (!s_packetsInitialized) {
+        initAxisPacketTemplates();
+    }
+
+    qint32 speedHz = static_cast<qint32>(std::lround(finalVelocity * scalingFactor));
+
+    if (speedHz != lastSpeedHz) {
+        // Select the appropriate pre-built template
+        QVector<quint16>& packetTemplate = (axis == GimbalAxis::Azimuth)
+            ? s_azVelocityPacketTemplate
+            : s_elVelocityPacketTemplate;
+
+        // Copy template and fill in speed (only first 2 registers change)
+        QVector<quint16> packet = packetTemplate;
+        QVector<quint16> speedData = splitInt32ToRegs(speedHz);
+        packet[0] = speedData[0];
+        packet[1] = speedData[1];
+
+        // ⚡ SINGLE Modbus write: Speed→Accel→Decel→Current→Trigger (10 registers)
+        driverInterface->writeData(AzdReg::OpSpeed, packet);
+
+        lastSpeedHz = speedHz;
+    }
+}
+
+// =========================================================================
+// LEGACY VELOCITY COMMAND (for backward compatibility - uses AZ template)
+// =========================================================================
 void GimbalMotionModeBase::writeVelocityCommand(ServoDriverDevice* driverInterface,
                                                 double finalVelocity,
                                                 double scalingFactor,
                                                 qint32& lastSpeedHz)
 {
-    if (!driverInterface) return;
-
-    qint32 speedHz = static_cast<qint32>(std::lround(finalVelocity * scalingFactor));
-
-    if (speedHz != lastSpeedHz) {
-        // ✅ OPTIMIZED: Write Speed → Trigger in ONE Modbus transaction (10 registers)
-        // Registers 0x005E through 0x0067 are contiguous:
-        //   0x005E-0x005F: Speed (2)
-        //   0x0060-0x0061: Accel (2) 
-        //   0x0062-0x0063: Decel (2)
-        //   0x0064-0x0065: Current (2)
-        //   0x0066-0x0067: Trigger (2)
-        
-        QVector<quint16> speedData = splitInt32ToRegs(speedHz);
-        
-        // Use existing accel/decel values (or cache them as member variables)
-        constexpr quint32 accel = 150000;
-        constexpr quint32 decel = 150000;
-        constexpr quint32 current = 1000;  // 100% = 1000
-        constexpr qint32 trigger = AzdReg::TRIGGER_UPDATE_SPEED;  // -4
-        
-        QVector<quint16> atomicWrite;
-        atomicWrite.reserve(10);
-        
-        // Speed (0x005E-0x005F)
-        atomicWrite << speedData[0] << speedData[1];
-        
-        // Accel (0x0060-0x0061)
-        atomicWrite << static_cast<quint16>((accel >> 16) & 0xFFFF)
-                    << static_cast<quint16>(accel & 0xFFFF);
-        
-        // Decel (0x0062-0x0063)
-        atomicWrite << static_cast<quint16>((decel >> 16) & 0xFFFF)
-                    << static_cast<quint16>(decel & 0xFFFF);
-        
-        // Current (0x0064-0x0065) - 1000 = 100%
-        atomicWrite << static_cast<quint16>((current >> 16) & 0xFFFF)
-                    << static_cast<quint16>(current & 0xFFFF);
-        
-        // Trigger (0x0066-0x0067) - value -4 = update speed only
-        atomicWrite << static_cast<quint16>((trigger >> 16) & 0xFFFF)
-                    << static_cast<quint16>(trigger & 0xFFFF);
-        
-        // ⚡ SINGLE Modbus write instead of TWO!
-        driverInterface->writeData(AzdReg::OpSpeed, atomicWrite);
-        
-        lastSpeedHz = speedHz;
-    }
+    // Legacy function - defaults to azimuth parameters for backward compatibility
+    // New code should use writeVelocityCommandOptimized() with explicit axis
+    writeVelocityCommandOptimized(driverInterface, GimbalAxis::Azimuth,
+                                  finalVelocity, scalingFactor, lastSpeedHz);
 }
 
 void GimbalMotionModeBase::updateGyroBias(const SystemStateData& systemState)
@@ -256,19 +322,16 @@ void GimbalMotionModeBase::sendStabilizedServoCommands(GimbalController* control
     }
 
     // --- Step 4: Convert to servo steps and send commands (AZD-KD velocity mode) ---
+    // ⚡ OPTIMIZED: Uses axis-specific packet templates with different accel/decel/current
+    // - Azimuth: Slow decel (100kHz/s) to prevent overvoltage on heavy turret
+    // - Elevation: Fast decel (300kHz/s) for crisp stops, 70% current limit
     if (auto azServo = controller->azimuthServo()) {
-        // Log what we will write (before any sign inversion)
-       // qDebug().nospace() << "[DBG SEND] writeAz (pre-negation)=" << finalAzVelocity;
-        // Current behavior: negate when writing (keep it for now)
-        qint32 lastAz = m_lastAzSpeedHz;
-        writeVelocityCommand(azServo, finalAzVelocity, AZ_STEPS_PER_DEGREE(), m_lastAzSpeedHz);
-       // qDebug().nospace() << "[DBG SEND] wroteAz (post-negation) lastHz=" << m_lastAzSpeedHz << " (prev=" << lastAz << ")";
+        writeVelocityCommandOptimized(azServo, GimbalAxis::Azimuth,
+                                      finalAzVelocity, AZ_STEPS_PER_DEGREE(), m_lastAzSpeedHz);
     }
     if (auto elServo = controller->elevationServo()) {
-        //qDebug().nospace() << "[DBG SEND] writeEl (pre-negation)=" << finalElVelocity;
-        qint32 lastEl = m_lastElSpeedHz;
-        writeVelocityCommand(elServo, finalElVelocity, EL_STEPS_PER_DEGREE(), m_lastElSpeedHz);
-       // qDebug().nospace() << "[DBG SEND] wroteEl (post-negation) lastHz=" << m_lastElSpeedHz << " (prev=" << lastEl << ")";
+        writeVelocityCommandOptimized(elServo, GimbalAxis::Elevation,
+                                      finalElVelocity, EL_STEPS_PER_DEGREE(), m_lastElSpeedHz);
     }
 }
 

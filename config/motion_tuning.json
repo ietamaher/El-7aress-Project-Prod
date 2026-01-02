@@ -109,6 +109,22 @@
     "comment": "Matched to hardware setting"
   },
 
+  "axisServo": {
+    "comment": "Axis-specific AZD-KX parameters for RCWS - single Modbus write optimization",
+    "azimuth": {
+      "accelHz": 150000,
+      "decelHz": 100000,
+      "currentPercent": 1000,
+      "comment": "Heavy turret load - SLOW decel (100kHz/s) prevents overvoltage on sudden stops"
+    },
+    "elevation": {
+      "accelHz": 150000,
+      "decelHz": 300000,
+      "currentPercent": 700,
+      "comment": "Lighter gun load - FAST decel (300kHz/s) avoids overshoot, 70% current to prevent stall"
+    }
+  },
+
   "tuningNotes": {
     "critical1": "SOFTWARE ACCEL LIMIT MUST BE <= HARDWARE ACCEL LIMIT",
     "critical2": "Kd is ESSENTIAL for preventing overshoot - never set to 0",

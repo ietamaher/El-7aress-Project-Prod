@@ -18,6 +18,15 @@
 // Forward declare GimbalController
 class GimbalController;
 
+/**
+ * @brief Axis identifier for servo commands
+ * Used for axis-specific Modbus packet optimization
+ */
+enum class GimbalAxis {
+    Azimuth,
+    Elevation
+};
+
 // Low-pass filter class for gyroscope data
 class GyroLowPassFilter {
 private:
@@ -305,11 +314,36 @@ protected:
      * @brief Writes a new speed command to the driver in real-time.
      * @param finalVelocity The calculated velocity in degrees/second.
      * @param scalingFactor Converts deg/s to Hz for the driver.
+     * @deprecated Use writeVelocityCommandOptimized() for axis-specific parameters
      */
     void writeVelocityCommand(class ServoDriverDevice* driverInterface,
                               double finalVelocity,
                               double scalingFactor,
                               qint32& lastSpeedHz);
+
+    /**
+     * @brief OPTIMIZED: Single Modbus write for speed command with axis-specific parameters.
+     *
+     * Writes Speed→Accel→Decel→Current→Trigger (10 registers) in ONE Modbus transaction.
+     * Uses pre-built packet templates with axis-specific accel/decel/current values.
+     *
+     * @param driverInterface Servo driver to command
+     * @param axis Which axis (Azimuth or Elevation) - determines accel/decel/current
+     * @param finalVelocity Velocity in degrees/second
+     * @param scalingFactor Steps per degree (AZ_STEPS_PER_DEGREE or EL_STEPS_PER_DEGREE)
+     * @param lastSpeedHz Cache of last sent speed (for change detection)
+     */
+    void writeVelocityCommandOptimized(class ServoDriverDevice* driverInterface,
+                                       GimbalAxis axis,
+                                       double finalVelocity,
+                                       double scalingFactor,
+                                       qint32& lastSpeedHz);
+
+    /**
+     * @brief Initialize static packet templates from MotionTuningConfig.
+     * Must be called once at startup (e.g., in ControllerRegistry).
+     */
+    static void initAxisPacketTemplates();
     // --- COMMON CONSTANTS ---
     // Servo Control
     static constexpr quint32 DEFAULT_ACCELERATION = 100000;
@@ -418,6 +452,25 @@ private:
     // Last servo command tracking for change detection (prevents redundant Modbus writes)
     qint32 m_lastAzSpeedHz = std::numeric_limits<qint32>::max(); // Initialize to invalid value
     qint32 m_lastElSpeedHz = std::numeric_limits<qint32>::max();
+
+    // ========================================================================
+    // STATIC PACKET TEMPLATES (SINGLE MODBUS WRITE OPTIMIZATION)
+    // ========================================================================
+    // Pre-built 10-register packets for single-write velocity commands:
+    //   [0-1]: Speed (placeholder, filled at runtime)
+    //   [2-3]: Accel rate (from config)
+    //   [4-5]: Decel rate (from config)
+    //   [6-7]: Current limit (from config)
+    //   [8-9]: Trigger (-4 = update speed only)
+    //
+    // Benefits:
+    //   - ONE Modbus write instead of TWO (50% bus traffic reduction)
+    //   - Axis-specific decel rates prevent overvoltage (AZ) and overshoot (EL)
+    //   - Templates initialized once at startup, only speed changes at runtime
+    // ========================================================================
+    static QVector<quint16> s_azVelocityPacketTemplate;  ///< Azimuth: smooth decel
+    static QVector<quint16> s_elVelocityPacketTemplate;  ///< Elevation: crisp decel
+    static bool s_packetsInitialized;
 
     // ========================================================================
     // LEGACY FUNCTIONS (Deprecated - use GimbalStabilizer instead)
