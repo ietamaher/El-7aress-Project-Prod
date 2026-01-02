@@ -1,6 +1,8 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import QtQuick.Effects
+import "../common" as Common
 
 /**
  * ShutdownConfirmationDialog - Confirmation dialog before system shutdown
@@ -18,21 +20,17 @@ Rectangle {
     id: root
 
     // Accent color (from viewModel or fallback)
-    property color accentColor: shutdownConfirmationViewModel && shutdownConfirmationViewModel.accentColor ? shutdownConfirmationViewModel.accentColor : "#46E2A5"
+    property color accentColor: shutdownConfirmationViewModel && shutdownConfirmationViewModel.accentColor ? shutdownConfirmationViewModel.accentColor : Common.OverlayTheme.accentDefault
 
     // Warning/danger color for shutdown
-    property color dangerColor: "#FF4444"
+    property color dangerColor: Common.OverlayTheme.dangerColor
 
-    // Visible when viewModel.visible is true - directly reference context property like ZeroingOverlay
+    // Visible when viewModel.visible is true
     visible: shutdownConfirmationViewModel ? shutdownConfirmationViewModel.visible : false
     anchors.fill: parent
 
     // Semi-transparent dark overlay
-    color: "#CC000000"
-
-    Component.onCompleted: {
-        console.log("ShutdownConfirmationDialog created. visible=", root.visible, "viewModel=", shutdownConfirmationViewModel)
-    }
+    color: Common.OverlayTheme.modalBackdrop
 
     // Main dialog container
     Rectangle {
@@ -41,10 +39,18 @@ Rectangle {
         width: Math.min(parent.width * 0.6, 500)
         height: Math.min(parent.height * 0.5, 350)
 
-        color: "#1A1A1A"
-        border.color: dangerColor  // Red border for danger/warning
+        color: Common.OverlayTheme.backgroundColor
+        border.color: dangerColor
         border.width: 2
-        radius: 0
+        radius: Common.OverlayTheme.panelRadius
+
+        layer.enabled: Common.OverlayTheme.shadowEnabled
+        layer.effect: MultiEffect {
+            shadowEnabled: Common.OverlayTheme.shadowEnabled
+            shadowColor: Common.OverlayTheme.shadowColor
+            shadowBlur: Common.OverlayTheme.shadowBlur
+            shadowVerticalOffset: Common.OverlayTheme.shadowVerticalOffset
+        }
 
         // Prevent click-through
         MouseArea {
@@ -67,15 +73,15 @@ Rectangle {
                     width: 60
                     height: 60
                     color: dangerColor
-                    radius: 0
+                    radius: Common.OverlayTheme.panelRadius
 
                     Text {
                         anchors.centerIn: parent
                         text: "!"
                         font.pixelSize: 40
                         font.bold: true
-                        font.family: "Archivo Narrow"
-                        color: "#FFFFFF"
+                        font.family: Common.OverlayTheme.fontFamily
+                        color: Common.OverlayTheme.textPrimary
                     }
                 }
 
@@ -87,15 +93,15 @@ Rectangle {
                         text: shutdownConfirmationViewModel ? shutdownConfirmationViewModel.title : "SHUTDOWN CONFIRMATION"
                         font.pixelSize: 24
                         font.bold: true
-                        font.family: "Archivo Narrow"
+                        font.family: Common.OverlayTheme.fontFamily
                         color: dangerColor
                     }
 
                     Text {
                         text: shutdownConfirmationViewModel ? shutdownConfirmationViewModel.message : "Are you sure you want to shutdown?"
-                        font.pixelSize: 14
-                        font.family: "Archivo Narrow"
-                        color: "#AAAAAA"
+                        font.pixelSize: Common.OverlayTheme.fontSizeBody
+                        font.family: Common.OverlayTheme.fontFamily
+                        color: Common.OverlayTheme.textTertiary
                         wrapMode: Text.WordWrap
                         Layout.fillWidth: true
                     }
@@ -105,8 +111,8 @@ Rectangle {
             // Separator
             Rectangle {
                 Layout.fillWidth: true
-                height: 1
-                color: "#444444"
+                height: Common.OverlayTheme.separatorHeight
+                color: Common.OverlayTheme.dividerMedium
             }
 
             // OPTIONS - YES and NO buttons
@@ -118,9 +124,9 @@ Rectangle {
                 // Instruction text
                 Text {
                     text: "Use UP/DOWN to select, MENU/VAL to confirm"
-                    font.pixelSize: 12
-                    font.family: "Archivo Narrow"
-                    color: "#888888"
+                    font.pixelSize: Common.OverlayTheme.fontSizeFooter
+                    font.family: Common.OverlayTheme.fontFamily
+                    color: Common.OverlayTheme.textMuted
                     Layout.alignment: Qt.AlignHCenter
                 }
 
@@ -137,9 +143,9 @@ Rectangle {
                     property bool isSelected: shutdownConfirmationViewModel && shutdownConfirmationViewModel.selectedOption === 0
 
                     color: isSelected ? dangerColor : "transparent"
-                    border.color: isSelected ? dangerColor : "#666666"
-                    border.width: isSelected ? 2 : 1
-                    radius: 0
+                    border.color: isSelected ? dangerColor : Common.OverlayTheme.textSubtle
+                    border.width: isSelected ? 2 : Common.OverlayTheme.panelBorderWidth
+                    radius: Common.OverlayTheme.panelRadius
 
                     RowLayout {
                         anchors.centerIn: parent
@@ -148,18 +154,18 @@ Rectangle {
                         // Selection indicator
                         Text {
                             text: yesButton.isSelected ? ">" : " "
-                            font.pixelSize: 20
+                            font.pixelSize: Common.OverlayTheme.fontSizeHeading
                             font.bold: true
-                            font.family: "Archivo Narrow"
-                            color: yesButton.isSelected ? "#FFFFFF" : "#666666"
+                            font.family: Common.OverlayTheme.fontFamily
+                            color: yesButton.isSelected ? Common.OverlayTheme.textPrimary : Common.OverlayTheme.textSubtle
                         }
 
                         Text {
                             text: "YES, Shutdown"
-                            font.pixelSize: 18
+                            font.pixelSize: Common.OverlayTheme.fontSizeStatus
                             font.bold: true
-                            font.family: "Archivo Narrow"
-                            color: yesButton.isSelected ? "#FFFFFF" : "#888888"
+                            font.family: Common.OverlayTheme.fontFamily
+                            color: yesButton.isSelected ? Common.OverlayTheme.textPrimary : Common.OverlayTheme.textMuted
                         }
                     }
                 }
@@ -175,9 +181,9 @@ Rectangle {
                     property bool isSelected: shutdownConfirmationViewModel && shutdownConfirmationViewModel.selectedOption === 1
 
                     color: isSelected ? accentColor : "transparent"
-                    border.color: isSelected ? accentColor : "#666666"
-                    border.width: isSelected ? 2 : 1
-                    radius: 0
+                    border.color: isSelected ? accentColor : Common.OverlayTheme.textSubtle
+                    border.width: isSelected ? 2 : Common.OverlayTheme.panelBorderWidth
+                    radius: Common.OverlayTheme.panelRadius
 
                     RowLayout {
                         anchors.centerIn: parent
@@ -186,18 +192,18 @@ Rectangle {
                         // Selection indicator
                         Text {
                             text: noButton.isSelected ? ">" : " "
-                            font.pixelSize: 20
+                            font.pixelSize: Common.OverlayTheme.fontSizeHeading
                             font.bold: true
-                            font.family: "Archivo Narrow"
-                            color: noButton.isSelected ? "#0A0A0A" : "#666666"
+                            font.family: Common.OverlayTheme.fontFamily
+                            color: noButton.isSelected ? Common.OverlayTheme.backgroundColor : Common.OverlayTheme.textSubtle
                         }
 
                         Text {
                             text: "NO, Cancel"
-                            font.pixelSize: 18
+                            font.pixelSize: Common.OverlayTheme.fontSizeStatus
                             font.bold: true
-                            font.family: "Archivo Narrow"
-                            color: noButton.isSelected ? "#0A0A0A" : "#888888"
+                            font.family: Common.OverlayTheme.fontFamily
+                            color: noButton.isSelected ? Common.OverlayTheme.backgroundColor : Common.OverlayTheme.textMuted
                         }
                     }
                 }
@@ -208,17 +214,17 @@ Rectangle {
             // Separator
             Rectangle {
                 Layout.fillWidth: true
-                height: 1
-                color: "#444444"
+                height: Common.OverlayTheme.separatorHeight
+                color: Common.OverlayTheme.dividerMedium
             }
 
             // STATUS MESSAGE (shows "SHUTDOWN COMPLETE" when confirmed)
             Text {
                 id: statusText
                 text: shutdownConfirmationViewModel && shutdownConfirmationViewModel.statusMessage ? shutdownConfirmationViewModel.statusMessage : ""
-                font.pixelSize: 20
+                font.pixelSize: Common.OverlayTheme.fontSizeHeading
                 font.bold: true
-                font.family: "Archivo Narrow"
+                font.family: Common.OverlayTheme.fontFamily
                 color: dangerColor
                 horizontalAlignment: Text.AlignHCenter
                 Layout.fillWidth: true
@@ -228,17 +234,17 @@ Rectangle {
                 SequentialAnimation on opacity {
                     running: statusText.visible
                     loops: Animation.Infinite
-                    NumberAnimation { to: 0.3; duration: 500 }
-                    NumberAnimation { to: 1.0; duration: 500 }
+                    NumberAnimation { to: 0.3; duration: Common.OverlayTheme.animationDurationSlow }
+                    NumberAnimation { to: 1.0; duration: Common.OverlayTheme.animationDurationSlow }
                 }
             }
 
             // Footer hint
             Text {
                 text: "Default: NO (safe option)"
-                font.pixelSize: 11
-                font.family: "Archivo Narrow"
-                color: "#555555"
+                font.pixelSize: Common.OverlayTheme.fontSizeSmall
+                font.family: Common.OverlayTheme.fontFamily
+                color: Common.OverlayTheme.textSubtle
                 Layout.alignment: Qt.AlignHCenter
                 visible: !(shutdownConfirmationViewModel && shutdownConfirmationViewModel.statusMessage && shutdownConfirmationViewModel.statusMessage.length > 0)
             }

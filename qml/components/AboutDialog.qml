@@ -1,6 +1,8 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import QtQuick.Effects
+import "../common" as Common
 
 Rectangle {
     id: root
@@ -11,19 +13,15 @@ Rectangle {
     // Debug toggle: set true to force-visible while wiring viewModel
     property bool debugShow: false
 
-    // Accent color fallback (hex). If viewModel provides accentColor (string), it overrides.
-    property color accentColor: viewModel && viewModel.accentColor ? viewModel.accentColor : "#46E2A5"
+    // Accent color fallback. If viewModel provides accentColor (string), it overrides.
+    property color accentColor: viewModel && viewModel.accentColor ? viewModel.accentColor : Common.OverlayTheme.accentDefault
 
     // Visible only when either viewModel.visible is true OR debugShow = true
     visible: viewModel ? !!viewModel.visible : debugShow
     anchors.fill: parent
 
-    // Semi-transparent black overlay (AARRGGBB)
-    color: "#CC000000"
-
-    Component.onCompleted: {
-        console.log("About dialog created. visible=", root.visible, "accentColor=", accentColor)
-    }
+    // Semi-transparent black overlay
+    color: Common.OverlayTheme.modalBackdrop
 
     // Clicking outside closes the dialog (if viewModel supplied)
     MouseArea {
@@ -33,19 +31,27 @@ Rectangle {
         }
     }
 
-    // Main dialog (no rounding)
+    // Main dialog
     Rectangle {
         id: aboutDialog
         anchors.centerIn: parent
         width: Math.min(parent.width * 0.8, 700)
         height: Math.min(parent.height * 0.85, 650)
 
-        color: "#1A1A1A"       // dark panel background
+        color: Common.OverlayTheme.backgroundColor
         border.color: accentColor
-        border.width: 1
-        radius: 0              // NO rounding
+        border.width: Common.OverlayTheme.panelBorderWidth
+        radius: Common.OverlayTheme.panelRadius
 
-        // prevent click-through: eat clicks on the dialog itself
+        layer.enabled: Common.OverlayTheme.shadowEnabled
+        layer.effect: MultiEffect {
+            shadowEnabled: Common.OverlayTheme.shadowEnabled
+            shadowColor: Common.OverlayTheme.shadowColor
+            shadowBlur: Common.OverlayTheme.shadowBlur
+            shadowVerticalOffset: Common.OverlayTheme.shadowVerticalOffset
+        }
+
+        // Prevent click-through: eat clicks on the dialog itself
         MouseArea {
             anchors.fill: parent
             onClicked: {} // eat clicks
@@ -61,20 +67,20 @@ Rectangle {
                 Layout.fillWidth: true
                 spacing: 14
 
-                // Logo rectangle (no rounding)
+                // Logo rectangle
                 Rectangle {
                     width: 80
                     height: 80
                     color: accentColor
-                    radius: 0
+                    radius: Common.OverlayTheme.panelRadius
 
                     Text {
                         anchors.centerIn: parent
                         text: "RCWS"
                         font.pixelSize: 24
                         font.bold: true
-                        font.family: "Archivo Narrow"
-                        color: "#0A0A0A"
+                        font.family: Common.OverlayTheme.fontFamily
+                        color: Common.OverlayTheme.backgroundColor
                     }
                 }
 
@@ -86,30 +92,30 @@ Rectangle {
                         text: viewModel && viewModel.appName ? viewModel.appName : "El 7arress RCWS"
                         font.pixelSize: 28
                         font.bold: true
-                        font.family: "Archivo Narrow"
+                        font.family: Common.OverlayTheme.fontFamily
                         color: accentColor
                     }
 
                     Text {
                         text: viewModel && viewModel.appVersion ? viewModel.appVersion : "Version 4.5"
-                        font.pixelSize: 14
-                        font.family: "Archivo Narrow"
-                        color: "#AAAAAA"
+                        font.pixelSize: Common.OverlayTheme.fontSizeBody
+                        font.family: Common.OverlayTheme.fontFamily
+                        color: Common.OverlayTheme.textTertiary
                     }
 
                     Text {
                         text: viewModel && viewModel.buildDate ? viewModel.buildDate : ""
-                        font.pixelSize: 12
-                        font.family: "Archivo Narrow"
-                        color: "#666666"
+                        font.pixelSize: Common.OverlayTheme.fontSizeFooter
+                        font.family: Common.OverlayTheme.fontFamily
+                        color: Common.OverlayTheme.textSubtle
                     }
                 }
             }
 
-            // separator
+            // Separator
             Rectangle {
                 Layout.fillWidth: true
-                height: 1
+                height: Common.OverlayTheme.separatorHeight
                 color: accentColor
             }
 
@@ -119,7 +125,6 @@ Rectangle {
                 Layout.fillHeight: true
                 clip: true
 
-                // Use ColumnLayout inside ScrollView; width matches ScrollView's content area
                 ColumnLayout {
                     id: scrollContent
                     width: parent.width
@@ -153,19 +158,19 @@ Rectangle {
                     // Qt / Build Info
                     Text {
                         text: viewModel && viewModel.qtVersion ? viewModel.qtVersion : ""
-                        font.pixelSize: 12
-                        font.family: "Archivo Narrow"
-                        color: "#666666"
+                        font.pixelSize: Common.OverlayTheme.fontSizeFooter
+                        font.family: Common.OverlayTheme.fontFamily
+                        color: Common.OverlayTheme.textSubtle
                         horizontalAlignment: Text.AlignHCenter
                         Layout.alignment: Qt.AlignHCenter
                     }
                 }
             }
 
-            // footer separator
+            // Footer separator
             Rectangle {
                 Layout.fillWidth: true
-                height: 1
+                height: Common.OverlayTheme.separatorHeight
                 color: accentColor
             }
 
@@ -179,21 +184,20 @@ Rectangle {
                     Layout.preferredWidth: 180
 
                     onClicked: {
-                        // adjust to your docs path or URL
                         Qt.openUrlExternally("file:///path/to/README.md")
                     }
 
                     background: Rectangle {
-                        color: parent.hovered ? Qt.rgba(70/255.0,226/255.0,165/255.0,0.08) : "transparent"
+                        color: parent.hovered ? Qt.rgba(accentColor.r, accentColor.g, accentColor.b, 0.08) : "transparent"
                         border.color: accentColor
-                        border.width: 1
-                        radius: 0
+                        border.width: Common.OverlayTheme.panelBorderWidth
+                        radius: Common.OverlayTheme.panelRadius
                     }
 
                     contentItem: Text {
                         text: parent.text
-                        font.pixelSize: 14
-                        font.family: "Archivo Narrow"
+                        font.pixelSize: Common.OverlayTheme.fontSizeBody
+                        font.family: Common.OverlayTheme.fontFamily
                         color: accentColor
                         horizontalAlignment: Text.AlignHCenter
                         verticalAlignment: Text.AlignVCenter
@@ -211,16 +215,16 @@ Rectangle {
                     }
 
                     background: Rectangle {
-                        color: parent.hovered ? accentColor : accentColor
-                        radius: 0
+                        color: accentColor
+                        radius: Common.OverlayTheme.panelRadius
                     }
 
                     contentItem: Text {
                         text: parent.text
-                        font.pixelSize: 16
+                        font.pixelSize: Common.OverlayTheme.fontSizeStatusLarge
                         font.bold: true
-                        font.family: "Archivo Narrow"
-                        color: "#0A0A0A" // black text on accent background
+                        font.family: Common.OverlayTheme.fontFamily
+                        color: Common.OverlayTheme.backgroundColor
                         horizontalAlignment: Text.AlignHCenter
                         verticalAlignment: Text.AlignVCenter
                     }
@@ -229,33 +233,33 @@ Rectangle {
         }
     }
 
-    // InfoSection component (themed, uses the 'accent' property)
+    // InfoSection component (themed)
     component InfoSection: ColumnLayout {
         property string title: "Section"
         property string content: ""
-        property color accent: "#46E2A5"
+        property color accent: Common.OverlayTheme.accentDefault
 
         spacing: 8
 
         Text {
             text: title
-            font.pixelSize: 18
+            font.pixelSize: Common.OverlayTheme.fontSizeStatus
             font.bold: true
-            font.family: "Archivo Narrow"
+            font.family: Common.OverlayTheme.fontFamily
             color: accent
         }
 
         Rectangle {
             Layout.fillWidth: true
-            height: 1
-            color: "#333333"
+            height: Common.OverlayTheme.separatorHeight
+            color: Common.OverlayTheme.dividerMedium
         }
 
         Text {
             text: content
-            font.pixelSize: 14
-            font.family: "Archivo Narrow"
-            color: "#CCCCCC"
+            font.pixelSize: Common.OverlayTheme.fontSizeBody
+            font.family: Common.OverlayTheme.fontFamily
+            color: Common.OverlayTheme.textSecondary
             textFormat: Text.RichText
             wrapMode: Text.WordWrap
             Layout.fillWidth: true

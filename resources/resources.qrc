@@ -1,5 +1,9 @@
 <RCC>
     <qresource prefix="/">
+        <file>../qml/common/qmldir</file>
+        <file>../qml/common/OverlayTheme.qml</file>
+        <file>../qml/common/NavigableList.qml</file>
+        <file>../qml/common/ParameterField.qml</file>
         <file>../qml/views/main.qml</file>
         <file>../qml/views/MainMenu.qml</file>
         <file>../qml/components/OsdOverlay.qml</file>

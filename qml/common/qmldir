@@ -1,0 +1,2 @@
+module common
+singleton OverlayTheme 1.0 OverlayTheme.qml
