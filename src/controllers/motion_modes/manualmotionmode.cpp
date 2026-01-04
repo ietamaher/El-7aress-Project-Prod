@@ -22,15 +22,6 @@ void ManualMotionMode::enterMode(GimbalController* controller)
 
     // ✅ CRITICAL: Start velocity timer for dt measurement
     startVelocityTimer();
-
-    // Set initial acceleration for both servos
-    if (auto azServo = controller->azimuthServo()) {
-        setAcceleration(azServo, 100000);
-    }
-    if (auto elServo = controller->elevationServo()) {
-        setAcceleration(elServo, 100000);
-    }
-    // Add acceleration !!!!!
     
 }
 

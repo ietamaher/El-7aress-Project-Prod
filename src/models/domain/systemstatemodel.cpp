@@ -669,6 +669,9 @@ void SystemStateModel::onServoElDataChanged(const ServoDriverData &elData) {
         m_currentStateData.elTorque = elData.torque;
         m_currentStateData.elFault = elData.fault;
 
+        //debug azTorque in order to use it for display charts
+        qDebug() << "El Torque:" << m_currentStateData.elTorque;
+
         emit dataChanged(m_currentStateData); // Emit general data change
         emit gimbalPositionChanged(m_currentStateData.gimbalAz, m_currentStateData.gimbalEl); // Emit specific gimbal change
     }

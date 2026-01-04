@@ -63,7 +63,7 @@ bool ServoDriverDevice::initialize() {
 
     // Get polling intervals from config (defaults: 50ms poll, 5s temperature)
     QJsonObject config = property("config").toJsonObject();
-    int pollInterval = config["pollIntervalMs"].toInt(30);
+    int pollInterval = config["pollIntervalMs"].toInt(50);
     int tempInterval = config["temperatureIntervalMs"].toInt(2000);
 
     setState(DeviceState::Online);
@@ -190,6 +190,11 @@ void ServoDriverDevice::processMessage(const Message& message) {
             newData->rpm = partialData.rpm;
             dataChanged = true;
         }
+
+         if (!qFuzzyCompare(partialData.torque + 1.0f, currentData->torque + 1.0f)) {
+            newData->torque = partialData.torque;
+            dataChanged = true;
+        }       
 
         if (!qFuzzyCompare(partialData.driverTemp + 1.0f, currentData->driverTemp + 1.0f)) {
             newData->driverTemp = partialData.driverTemp;

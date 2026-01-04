@@ -83,22 +83,6 @@ void TrackingMotionMode::enterMode(GimbalController* controller)
 
     startVelocityTimer();
 
-    if (controller) {
-        // =====================================================================
-        // CRITICAL: Set hardware acceleration HIGH
-        // =====================================================================
-        // AZD-KD can handle 1,000,000+ Hz/s easily
-        // With 568 steps/deg, 100000 Hz/s ≈ 176 deg/s² (very responsive)
-        // This lets the servo reach commanded velocity FAST
-        // Software PID handles the control - hardware handles the ramp
-
-        if (auto azServo = controller->azimuthServo()) {
-            setAcceleration(azServo, 100000);  // 100 kHz/s
-        }
-        if (auto elServo = controller->elevationServo()) {
-            setAcceleration(elServo, 100000);  // 100 kHz/s
-        }
-    }
 
     // Capture initial gimbal position for velocity estimation
     if (controller && controller->systemStateModel()) {

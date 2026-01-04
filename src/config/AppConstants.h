@@ -315,7 +315,7 @@ namespace Paths {
 // ============================================================================
 namespace Version {
     constexpr const char* APP_NAME = "El 7arress RCWS";
-   // constexpr const char* APP_VERSION = "4.5";
+    constexpr const char* sAPP_VERSION = "4.5";
     constexpr const char* BUILD_DATE = __DATE__;
     constexpr const char* BUILD_TIME = __TIME__;
 }

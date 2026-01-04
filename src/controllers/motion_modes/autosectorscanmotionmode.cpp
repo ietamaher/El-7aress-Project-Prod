@@ -79,14 +79,6 @@ void AutoSectorScanMotionMode::enterMode(GimbalController* controller)
     // Always align elevation first
     m_state = AlignElevation;
 
-    // Smooth accel setting if needed
-    if (controller) {
-        if (auto az = controller->azimuthServo())
-            setAcceleration(az, 100000);
-        if (auto el = controller->elevationServo())
-            setAcceleration(el, 100000);
-    }
-
     qDebug() << "[AutoScan] Will align elevation to:" << m_targetEl
              << " then scan azimuth to:" << m_targetAz;
 }

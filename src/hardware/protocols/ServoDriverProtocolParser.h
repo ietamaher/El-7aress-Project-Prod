@@ -13,7 +13,7 @@
  */
 namespace ServoDriverRegisters {
     constexpr int POSITION_START_ADDR = 204;
-    constexpr int POSITION_REG_COUNT = 4;
+    constexpr int POSITION_REG_COUNT = 12;
     constexpr int TEMPERATURE_START_ADDR = 248;
     constexpr int TEMPERATURE_REG_COUNT = 4;
     constexpr int ALARM_STATUS_ADDR = 172;
