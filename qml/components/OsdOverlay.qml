@@ -1561,6 +1561,231 @@ Repeater {
         }
     }
 */
+
+    // ========================================================================
+    // SERVO DRIVER DEBUG BOX (Left side, below status block)
+    // Shows torque, motor temp, driver temp, and RPM for both Az and El
+    // Toggle visibility with viewModel.toggleServoDebugVisible()
+    // ========================================================================
+    Rectangle {
+        id: servoDebugBox
+        x: 10
+        y: statusBlock.y + statusBlock.height + 10
+        width: 320
+        height: servoDebugColumn.height + 20
+        color: "#DD000000"
+        border.color: (viewModel && (viewModel.azServoConnected || viewModel.elServoConnected)) ? accentColor : warningColor
+        border.width: 2
+        radius: 4
+        visible: viewModel ? viewModel.servoDebugVisible : false
+        z: 300
+
+        // Click to toggle visibility
+        MouseArea {
+            anchors.fill: parent
+            onClicked: {
+                if (viewModel) viewModel.toggleServoDebugVisible()
+            }
+        }
+
+        Column {
+            id: servoDebugColumn
+            anchors.left: parent.left
+            anchors.top: parent.top
+            anchors.margins: 10
+            spacing: 4
+
+            // Header
+            Row {
+                spacing: 10
+                Text {
+                    text: "SERVO DRIVER MONITOR"
+                    font.pixelSize: 14
+                    font.bold: true
+                    font.family: primaryFont
+                    color: accentColor
+                }
+            }
+
+            // Separator
+            Rectangle { width: 300; height: 1; color: "#666666" }
+
+            // === AZIMUTH SERVO ===
+            Row {
+                spacing: 10
+                Text {
+                    text: "AZIMUTH"
+                    font.pixelSize: 12
+                    font.bold: true
+                    font.family: primaryFont
+                    color: viewModel && viewModel.azServoConnected ? "#00FF00" : warningColor
+                    width: 70
+                }
+                Text {
+                    text: viewModel && viewModel.azServoConnected ? "[ONLINE]" : "[OFFLINE]"
+                    font.pixelSize: 10
+                    font.bold: true
+                    font.family: primaryFont
+                    color: viewModel && viewModel.azServoConnected ? "#00FF00" : warningColor
+                }
+                Text {
+                    visible: viewModel && viewModel.azFault
+                    text: "[FAULT]"
+                    font.pixelSize: 10
+                    font.bold: true
+                    font.family: primaryFont
+                    color: warningColor
+                }
+            }
+
+            // Azimuth data row 1: Torque & RPM
+            Row {
+                spacing: 20
+                Text {
+                    text: "TRQ: " + (viewModel ? viewModel.azTorque.toFixed(1) : "0.0") + "%"
+                    font.pixelSize: 12
+                    font.family: primaryFont
+                    color: {
+                        if (!viewModel) return "#888888"
+                        var torque = Math.abs(viewModel.azTorque)
+                        if (torque > 80) return warningColor
+                        if (torque > 50) return cautionColor
+                        return "cyan"
+                    }
+                }
+                Text {
+                    text: "RPM: " + (viewModel ? viewModel.azRpm.toFixed(1) : "0.0")
+                    font.pixelSize: 12
+                    font.family: primaryFont
+                    color: "yellow"
+                }
+            }
+
+            // Azimuth data row 2: Motor Temp & Driver Temp
+            Row {
+                spacing: 20
+                Text {
+                    text: "MTR: " + (viewModel ? viewModel.azMotorTemp.toFixed(1) : "0.0") + "°C"
+                    font.pixelSize: 12
+                    font.family: primaryFont
+                    color: {
+                        if (!viewModel) return "#888888"
+                        var temp = viewModel.azMotorTemp
+                        if (temp > 70) return warningColor
+                        if (temp > 50) return cautionColor
+                        return accentColor
+                    }
+                }
+                Text {
+                    text: "DRV: " + (viewModel ? viewModel.azDriverTemp.toFixed(1) : "0.0") + "°C"
+                    font.pixelSize: 12
+                    font.family: primaryFont
+                    color: {
+                        if (!viewModel) return "#888888"
+                        var temp = viewModel.azDriverTemp
+                        if (temp > 70) return warningColor
+                        if (temp > 50) return cautionColor
+                        return accentColor
+                    }
+                }
+            }
+
+            // Separator
+            Rectangle { width: 300; height: 1; color: "#444444" }
+
+            // === ELEVATION SERVO ===
+            Row {
+                spacing: 10
+                Text {
+                    text: "ELEVATION"
+                    font.pixelSize: 12
+                    font.bold: true
+                    font.family: primaryFont
+                    color: viewModel && viewModel.elServoConnected ? "#00FF00" : warningColor
+                    width: 70
+                }
+                Text {
+                    text: viewModel && viewModel.elServoConnected ? "[ONLINE]" : "[OFFLINE]"
+                    font.pixelSize: 10
+                    font.bold: true
+                    font.family: primaryFont
+                    color: viewModel && viewModel.elServoConnected ? "#00FF00" : warningColor
+                }
+                Text {
+                    visible: viewModel && viewModel.elFault
+                    text: "[FAULT]"
+                    font.pixelSize: 10
+                    font.bold: true
+                    font.family: primaryFont
+                    color: warningColor
+                }
+            }
+
+            // Elevation data row 1: Torque & RPM
+            Row {
+                spacing: 20
+                Text {
+                    text: "TRQ: " + (viewModel ? viewModel.elTorque.toFixed(1) : "0.0") + "%"
+                    font.pixelSize: 12
+                    font.family: primaryFont
+                    color: {
+                        if (!viewModel) return "#888888"
+                        var torque = Math.abs(viewModel.elTorque)
+                        if (torque > 80) return warningColor
+                        if (torque > 50) return cautionColor
+                        return "cyan"
+                    }
+                }
+                Text {
+                    text: "RPM: " + (viewModel ? viewModel.elRpm.toFixed(1) : "0.0")
+                    font.pixelSize: 12
+                    font.family: primaryFont
+                    color: "yellow"
+                }
+            }
+
+            // Elevation data row 2: Motor Temp & Driver Temp
+            Row {
+                spacing: 20
+                Text {
+                    text: "MTR: " + (viewModel ? viewModel.elMotorTemp.toFixed(1) : "0.0") + "°C"
+                    font.pixelSize: 12
+                    font.family: primaryFont
+                    color: {
+                        if (!viewModel) return "#888888"
+                        var temp = viewModel.elMotorTemp
+                        if (temp > 70) return warningColor
+                        if (temp > 50) return cautionColor
+                        return accentColor
+                    }
+                }
+                Text {
+                    text: "DRV: " + (viewModel ? viewModel.elDriverTemp.toFixed(1) : "0.0") + "°C"
+                    font.pixelSize: 12
+                    font.family: primaryFont
+                    color: {
+                        if (!viewModel) return "#888888"
+                        var temp = viewModel.elDriverTemp
+                        if (temp > 70) return warningColor
+                        if (temp > 50) return cautionColor
+                        return accentColor
+                    }
+                }
+            }
+
+            // Separator
+            Rectangle { width: 300; height: 1; color: "#666666" }
+
+            // Footer hint
+            Text {
+                text: "Click to hide"
+                font.pixelSize: 9
+                font.family: primaryFont
+                color: "#666666"
+            }
+        }
+    }
+
     // ========================================================================
     // HELPER FUNCTIONS
     // ========================================================================
