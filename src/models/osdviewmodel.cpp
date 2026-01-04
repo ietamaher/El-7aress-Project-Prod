@@ -961,6 +961,7 @@ void OsdViewModel::updateStabDebug(const SystemStateData& data)
     // Cache the state data for property access
     m_stateData = data;
 
-    // Always emit changed signal - QML bindings will efficiently update
+    // Always emit changed signals - QML bindings will efficiently update
     emit stabDebugChanged();
+    emit servoDebugChanged();  // Servo debug also uses m_stateData
 }

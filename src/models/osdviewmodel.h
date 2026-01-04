@@ -157,6 +157,21 @@ class OsdViewModel : public QObject
     Q_PROPERTY(bool ammoLoaded READ ammoLoaded NOTIFY ammoLoadedChanged)
 
     // ========================================================================
+    // SERVO DRIVER DEBUG DATA (for diagnostic OSD overlay)
+    // ========================================================================
+    Q_PROPERTY(bool servoDebugVisible READ servoDebugVisible NOTIFY servoDebugVisibleChanged)
+    // Azimuth Servo
+    Q_PROPERTY(float azMotorTemp READ azMotorTemp NOTIFY servoDebugChanged)
+    Q_PROPERTY(float azDriverTemp READ azDriverTemp NOTIFY servoDebugChanged)
+    Q_PROPERTY(float azRpm READ azRpm NOTIFY servoDebugChanged)
+    Q_PROPERTY(float azTorque READ azTorque NOTIFY servoDebugChanged)
+    // Elevation Servo
+    Q_PROPERTY(float elMotorTemp READ elMotorTemp NOTIFY servoDebugChanged)
+    Q_PROPERTY(float elDriverTemp READ elDriverTemp NOTIFY servoDebugChanged)
+    Q_PROPERTY(float elRpm READ elRpm NOTIFY servoDebugChanged)
+    Q_PROPERTY(float elTorque READ elTorque NOTIFY servoDebugChanged)
+
+    // ========================================================================
     // GYROSTABILIZATION DEBUG DATA (for diagnostic OSD overlay)
     // ========================================================================
     Q_PROPERTY(bool stabDebugVisible READ stabDebugVisible NOTIFY stabDebugVisibleChanged)
@@ -293,6 +308,23 @@ public:
     int ammoFeedState() const { return m_ammoFeedState; }
     bool ammoFeedCycleInProgress() const { return m_ammoFeedCycleInProgress; }
     bool ammoLoaded() const { return m_ammoLoaded; }
+
+    // Servo Driver debug getters
+    bool servoDebugVisible() const { return m_servoDebugVisible; }
+    float azMotorTemp() const { return m_stateData.azMotorTemp; }
+    float azDriverTemp() const { return m_stateData.azDriverTemp; }
+    float azRpm() const { return m_stateData.azRpm; }
+    float azTorque() const { return m_stateData.azTorque; }
+    float elMotorTemp() const { return m_stateData.elMotorTemp; }
+    float elDriverTemp() const { return m_stateData.elDriverTemp; }
+    float elRpm() const { return m_stateData.elRpm; }
+    float elTorque() const { return m_stateData.elTorque; }
+
+    // Toggle servoDebug visibility (for debugging)
+    Q_INVOKABLE void toggleServoDebugVisible() {
+        m_servoDebugVisible = !m_servoDebugVisible;
+        emit servoDebugVisibleChanged();
+    }
 
     // Gyrostabilization debug getters
     bool stabDebugVisible() const { return m_stabDebugVisible; }
@@ -492,6 +524,10 @@ signals:
     void ammoFeedCycleInProgressChanged();
     void ammoLoadedChanged();
 
+    // Servo Driver debug signals
+    void servoDebugVisibleChanged();
+    void servoDebugChanged();
+
     // Gyrostabilization debug signals
     void stabDebugVisibleChanged();
     void stabDebugChanged();
@@ -616,9 +652,12 @@ private:
     bool m_ammoFeedCycleInProgress = false;
     bool m_ammoLoaded = false;
 
+    // Servo Driver debug data
+    bool m_servoDebugVisible = true;  // Default to visible for debugging
+
     // Gyrostabilization debug data
     bool m_stabDebugVisible = true;  // Default to visible for debugging
-    SystemStateData m_stateData;      // Cached state data for stabDebug access
+    SystemStateData m_stateData;      // Cached state data for stabDebug and servoDebug access
 };
 
 #endif // OSDVIEWMODEL_H
