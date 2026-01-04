@@ -84,12 +84,25 @@ MessagePtr ServoDriverProtocolParser::parseTemperatureReply(const QModbusDataUni
     m_data.isConnected = true;
 
     // Driver temperature (registers 0-1)
+    if (unit.valueCount() < 4) {
+        qWarning() << "ServoDriverProtocolParser: Insufficient  registers";
+        return nullptr;
+    }
+    
     int32_t driverTempRaw = (static_cast<int32_t>(unit.value(0)) << 16) | unit.value(1);
     m_data.driverTemp = static_cast<float>(driverTempRaw) * 0.1f;
 
     // Motor temperature (registers 2-3)
     int32_t motorTempRaw = (static_cast<int32_t>(unit.value(2)) << 16) | unit.value(3);
     m_data.motorTemp = static_cast<float>(motorTempRaw) * 0.1f;
+
+    // Torque monitor (registers 10-11)
+    if (unit.valueCount() >= 12) {
+        int32_t torqueRaw = (static_cast<int32_t>(unit.value(10)) << 16) | unit.value(11);
+        m_data.torque = static_cast<float>(torqueRaw) * 0.1f; // 0.1% torque
+    } else {
+        m_data.torque = 0.0f; // No torque data available
+    }
 
     // Return the accumulated data (position field retains previous value)
     return std::make_unique<ServoDriverDataMessage>(m_data);
