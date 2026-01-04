@@ -58,14 +58,18 @@ private:
     void sendCommand(quint8 cmd1, quint8 cmd2, quint8 data1 = 0, quint8 data2 = 0);
     void resetCommunicationWatchdog();
     void setConnectionState(bool connected);
+    void pauseStatusCheckDuringZoom();
+    void resumeStatusCheckAfterZoom();
 
     QString m_identifier;
     Transport* m_transport = nullptr;
     DayCameraProtocolParser* m_parser = nullptr;
     QTimer* m_statusCheckTimer = nullptr;
     QTimer* m_communicationWatchdog = nullptr;
+    bool m_zoomActive = false;  // Track if zoom operation is in progress
 
     static constexpr int COMMUNICATION_TIMEOUT_MS = 15000;  // 15 seconds without data = disconnected
+    static constexpr int STATUS_CHECK_INTERVAL_MS = 10000;  // Status check interval
 };
 
 #endif // DAYCAMERACONTROLDEVICE_H
