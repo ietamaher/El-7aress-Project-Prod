@@ -48,7 +48,7 @@ bool DayCameraControlDevice::initialize() {
     qDebug() << m_identifier << "initialized successfully";
 
     setState(DeviceState::Online);
-    m_statusCheckTimer->start(10000);  // Send stop command every 10 seconds
+    m_statusCheckTimer->start(STATUS_CHECK_INTERVAL_MS);
     m_communicationWatchdog->start();
     getCameraStatus();
     return true;
@@ -118,6 +118,7 @@ void DayCameraControlDevice::sendCommand(quint8 cmd1, quint8 cmd2, quint8 data1,
 }
 
 void DayCameraControlDevice::zoomIn() {
+    pauseStatusCheckDuringZoom();
     auto newData = std::make_shared<DayCameraData>(*data());
     newData->zoomMovingIn = true;
     newData->zoomMovingOut = false;
@@ -127,6 +128,7 @@ void DayCameraControlDevice::zoomIn() {
 }
 
 void DayCameraControlDevice::zoomOut() {
+    pauseStatusCheckDuringZoom();
     auto newData = std::make_shared<DayCameraData>(*data());
     newData->zoomMovingOut = true;
     newData->zoomMovingIn = false;
@@ -136,6 +138,7 @@ void DayCameraControlDevice::zoomOut() {
 }
 
 void DayCameraControlDevice::zoomStop() {
+    resumeStatusCheckAfterZoom();
     auto newData = std::make_shared<DayCameraData>(*data());
     newData->zoomMovingIn = false;
     newData->zoomMovingOut = false;
@@ -182,10 +185,16 @@ void DayCameraControlDevice::getCameraStatus() {
 }
 
 void DayCameraControlDevice::checkCameraStatus() {
+    // Skip status check if zoom is actively in progress
+    // (Timer should already be paused, but this is a safety check)
+    if (m_zoomActive) {
+        return;
+    }
+
     // Query zoom position to sync camera state
     getCameraStatus();  // Pelco-D: 0x00, 0xA7 - Get zoom position
     // Also send stop command to keep communication alive
-    zoomStop();
+    sendCommand(0x00, 0x00);  // Direct stop command without triggering resumeStatusCheck
 }
 
 void DayCameraControlDevice::resetCommunicationWatchdog() {
@@ -212,4 +221,20 @@ void DayCameraControlDevice::onCommunicationWatchdogTimeout() {
     //qWarning() << m_identifier << "Communication timeout - no data received for"
     //           << COMMUNICATION_TIMEOUT_MS << "ms";
     setConnectionState(false);
+}
+
+void DayCameraControlDevice::pauseStatusCheckDuringZoom() {
+    if (!m_zoomActive) {
+        m_zoomActive = true;
+        m_statusCheckTimer->stop();
+        qDebug() << m_identifier << "Status check timer PAUSED for zoom operation";
+    }
+}
+
+void DayCameraControlDevice::resumeStatusCheckAfterZoom() {
+    if (m_zoomActive) {
+        m_zoomActive = false;
+        m_statusCheckTimer->start(STATUS_CHECK_INTERVAL_MS);
+        qDebug() << m_identifier << "Status check timer RESUMED after zoom stop";
+    }
 }
