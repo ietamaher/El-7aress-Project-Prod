@@ -150,5 +150,5 @@ void ShutdownConfirmationController::performShutdown()
     QCoreApplication::quit();
 
     // Execute system shutdown command (Linux)
-    QProcess::startDetached("shutdown", QStringList() << "-h" << "now");
+    QProcess::startDetached("sudo shutdown", QStringList() << "-h" << "now");
 }
