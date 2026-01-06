@@ -1,32 +1,91 @@
 # TRPScanMotionMode Class Documentation
 
-## Overview
-
-`TRPScanMotionMode` implements waypoint-based gimbal scanning through a sequence of Target Reference Points (TRPs). The gimbal visits each TRP in order, optionally pauses at each point, then loops back to the start. This enables systematic surveillance of predefined locations (checkpoints, watch positions, perimeter points).
-
-**Location:** `trpscanmotionmode.h/cpp`
-
-**Inherits From:** `GimbalMotionModeBase`
-
-**Purpose:** Autonomous surveillance by visiting a scripted sequence of geographical positions with configurable dwell times.
+**Version:** 2.0
+**Last Updated:** 2026-01-06
+**Status:** Production
 
 ---
 
-## Key Design Features
+## Overview
 
-### Waypoint-Based Path Following
-- Visits TRPs in sequential order
-- Executes motion-profiling (cruise → decelerate → halt) between waypoints
-- Automatically loops from last point back to first
+`TRPScanMotionMode` implements waypoint-based gimbal scanning through a sequence of Target Reference Points (TRPs). Organized by location pages, TRPs are visited sequentially with configurable hold times at each point, enabling systematic surveillance of predefined locations.
 
-### Halt-Dwell Pattern
-- Pauses at each TRP for configurable duration
-- Holds position actively (not just stops)
-- Resumes path after dwell time expires
+**Location:** `src/controllers/motion_modes/trpscanmotionmode.h/cpp`
 
-### Two-State Control
+**Inherits From:** `GimbalMotionModeBase`
+
+**Purpose:** Autonomous surveillance by visiting scripted sequences of geographical positions with configurable dwell times.
+
+---
+
+## Key Design Features (v2.0)
+
+### Page-Based Navigation
+- TRPs organized into location pages
+- Select page to filter visible TRPs
+- Automatic page order indexing
+
+### Hybrid Motion Profile
+1. **Cruise Phase:** Constant velocity toward waypoint
+2. **Deceleration Phase:** Trapezoidal ramp-down
+3. **Fine Approach Phase:** PID control for precise convergence
+
+### Hold Phase
+- Configurable dwell time at each TRP
+- Active position hold during dwell
+- Timer-based progression
+
+### Auto-Loop
+- Automatically cycles through all page TRPs
+- Continuous surveillance pattern
+
+---
+
+## State Machine
+
 ```
-Moving → (cruise or decelerate) → Halted → (wait) → Moving → ...
+┌─────────────────────────────────────────────────────┐
+│                TRP SCAN MODE                        │
+└─────────────────────────────────────────────────────┘
+                       │
+                       │ enterMode()
+                       ▼
+               ┌───────────────┐
+               │ Build m_pageOrder│
+               │ from current page│
+               └───────┬───────┘
+                       │
+                       │ Page has TRPs?
+                       ▼
+        ┌──────────────────────────────┐
+        │   STATE: SlewToPoint         │
+        │   - Hybrid motion profile    │
+        │   - Cruise → Decel → Fine    │
+        └──────────────┬───────────────┘
+                       │
+           ┌───────────┴───────────┐
+           │ Check Arrival         │
+           │ (|errAz| < 0.2° AND   │
+           │  |errEl| < 0.2°)      │
+           └───────────┬───────────┘
+                       │ Arrived
+                       ▼
+        ┌──────────────────────────────┐
+        │   STATE: HoldPoint           │
+        │   - Zero velocity commands   │
+        │   - Wait for haltTime        │
+        │   - Stabilization active     │
+        └──────────────┬───────────────┘
+                       │
+                       │ Timer expires
+                       ▼
+               ┌───────────────┐
+               │ Advance to    │
+               │ Next TRP      │
+               │ (wrap to 0)   │
+               └───────┬───────┘
+                       │
+                       └───────→ SlewToPoint
 ```
 
 ---
@@ -36,20 +95,34 @@ Moving → (cruise or decelerate) → Halted → (wait) → Moving → ...
 ### TargetReferencePoint
 ```cpp
 struct TargetReferencePoint {
-    int locationPage;      // Page/group identifier
+    int id;                // Unique TRP identifier
+    int locationPage;      // Page/group this TRP belongs to
+    int trpInPage;         // Order within the page (0-based)
     double azimuth;        // Target azimuth [degrees]
     double elevation;      // Target elevation [degrees]
     double haltTime;       // Pause duration at this point [seconds]
-    // (Other fields may exist depending on application)
+    QString name;          // Human-readable name
 };
 ```
 
-**Typical Values:**
+**Example:**
 ```
+id: 5
 locationPage: 1
-azimuth: -45°
-elevation: 15°
-haltTime: 5.0 seconds
+trpInPage: 2
+azimuth: -45.0°
+elevation: 15.0°
+haltTime: 5.0s
+name: "NW Checkpoint"
+```
+
+### State Enumeration
+```cpp
+enum class State {
+    Idle,          // No active scan
+    SlewToPoint,   // Moving toward TRP
+    HoldPoint      // Dwelling at TRP
+};
 ```
 
 ---
@@ -58,71 +131,34 @@ haltTime: 5.0 seconds
 
 | Variable | Type | Purpose |
 |----------|------|---------|
-| `m_trpPage` | `std::vector<TargetReferencePoint>` | Current TRP list/page |
-| `m_currentTrpIndex` | `size_t` | Index of current target TRP (0-based) |
-| `m_currentState` | `State` | Current state machine state |
-| `m_haltTimer` | `QElapsedTimer` | Timer for dwell time at waypoints |
-| `m_azPid` | `PIDController` | PID for azimuth position control |
-| `m_elPid` | `PIDController` | PID for elevation position control |
-
----
-
-## State Enumeration
-
-```cpp
-enum class State {
-    Idle,       // No path active
-    Moving,     // Traveling between waypoints
-    Halted      // Paused at waypoint, waiting for dwell time
-};
-```
-
-**Transitions:**
-```
-Idle
-  ↓ (enterMode)
-Moving
-  ├─ (arrival at waypoint)
-  ↓
-Halted
-  ├─ (dwell time expires)
-  ↓
-Moving (to next waypoint)
-  ├─ (last waypoint → next=first)
-  ↓
-Halted (at first waypoint again)
-  └─ (loop continues...)
-```
+| `m_trps` | `QVector<TargetReferencePoint>` | All loaded TRPs |
+| `m_pageOrder` | `std::vector<int>` | Indices of TRPs in current page |
+| `m_currentOrderIndex` | `size_t` | Current position in m_pageOrder |
+| `m_currentState` | `State` | State machine state |
+| `m_targetAz` | `double` | Current target azimuth |
+| `m_targetEl` | `double` | Current target elevation |
+| `m_haltTimer` | `QElapsedTimer` | Dwell time countdown |
+| `m_azPid` | `PIDController` | Fine approach PID (azimuth) |
+| `m_elPid` | `PIDController` | Fine approach PID (elevation) |
+| `m_previousDesiredAzVel` | `double` | Smoothing state |
+| `m_previousDesiredElVel` | `double` | Smoothing state |
 
 ---
 
 ## Constants
 
 ```cpp
-static constexpr double ARRIVAL_THRESHOLD_DEG = 0.5;    // Distance to "reach" waypoint
-static constexpr double DECELERATION_DISTANCE_DEG = 5.0; // Start braking distance
-static constexpr double UPDATE_INTERVAL_S = 0.05;        // 50ms control cycles
+// Arrival detection
+static constexpr double ARRIVAL_THRESHOLD_DEG = 0.2;    // Per-axis tolerance
+static constexpr double FINE_APPROACH_DIST_DEG = 8.0;   // PID takes over
+
+// Motion profile (from MotionTuningConfig)
+double trpDefaultTravelSpeed = cfg.motion.trpDefaultTravelSpeed;  // ~12 deg/s
+double trpMaxAccelDegS2 = cfg.motion.trpMaxAccelDegS2;            // ~50 deg/s²
+
+// Update rate
+static constexpr double UPDATE_INTERVAL_S = 0.05;       // 50ms
 ```
-
----
-
-## PID Gains (Default)
-
-```cpp
-Azimuth:
-  Kp = 1.2    // Responsive position control
-  Ki = 0.1    // Eliminate steady-state error
-  Kd = 0.1    // Smooth deceleration
-  maxIntegral = 20.0
-
-Elevation:
-  Kp = 1.2
-  Ki = 0.1
-  Kd = 0.1
-  maxIntegral = 20.0
-```
-
-**Characteristics:** Faster response than scanning modes (Kp=1.2 vs 1.0), focused on precise waypoint arrival.
 
 ---
 
@@ -130,395 +166,303 @@ Elevation:
 
 ### Constructor
 ```cpp
-TRPScanMotionMode()
+TRPScanMotionMode(QObject* parent = nullptr)
 ```
+**Actions:**
+- Load PID gains from `MotionTuningConfig::instance().pid.trpScanAz`
+- Initialize state to `Idle`
+- Clear page order
 
-**Purpose:** Initialize TRP scanning mode.
+### setTRPs(const QVector<TargetReferencePoint>& trps)
+```cpp
+void setTRPs(const QVector<TargetReferencePoint>& trps)
+```
+**Purpose:** Load all TRP definitions.
 
 **Actions:**
-- Sets initial state to `Idle`
-- Initializes TRP index to 0
-- Configures PID gains for responsive waypoint arrival
-- Clears TRP page
+1. Store TRPs in `m_trps`
+2. Clear `m_pageOrder` (will be rebuilt on page select)
 
----
-
-### setActiveTRPPage(const std::vector<TargetReferencePoint>& trpPage)
+### selectPage(int locationPage)
 ```cpp
-void setActiveTRPPage(const std::vector<TargetReferencePoint>& trpPage)
+void selectPage(int locationPage)
 ```
-
-**Purpose:** Load a new TRP page (list of waypoints).
-
-**Parameters:**
-- `trpPage`: Vector of TRP structures defining the path
+**Purpose:** Build navigation order for specified page.
 
 **Actions:**
-1. Stores TRP page in `m_trpPage`
-2. Resets current index to 0
-3. Sets state to `Idle` (if page empty) or `Moving` (if page has waypoints)
-4. Logs page size for debugging
-
-**Example:**
 ```cpp
-std::vector<TargetReferencePoint> perimeter = {
-    {1, -45.0, 15.0, 5.0},   // Point 0: NW corner, 5s dwell
-    {1,  45.0, 15.0, 5.0},   // Point 1: NE corner, 5s dwell
-    {1,  45.0, 50.0, 5.0},   // Point 2: NE high, 5s dwell
-    {1, -45.0, 50.0, 5.0},   // Point 3: NW high, 5s dwell
-};
-trpScanMode->setActiveTRPPage(perimeter);
+m_pageOrder.clear();
+for (int i = 0; i < m_trps.size(); ++i) {
+    if (m_trps[i].locationPage == locationPage)
+        m_pageOrder.push_back(i);
+}
+// Sort by trpInPage order
+std::sort(m_pageOrder.begin(), m_pageOrder.end(),
+    [this](int a, int b) {
+        return m_trps[a].trpInPage < m_trps[b].trpInPage;
+    });
 ```
-
----
 
 ### enterMode(GimbalController* controller)
 ```cpp
 void enterMode(GimbalController* controller) override
 ```
-
-**Purpose:** Called when gimbal switches INTO TRP scan mode.
-
 **Actions:**
-
-1. **Validate:** Check if TRP page is loaded
-   - If empty, log warning, stop servos, return to Idle
-   
-2. **Reset State:**
-   - `m_currentTrpIndex = 0`
-   - `m_currentState = State::Moving`
-   - Reset both PID controllers
-
-3. **Configure Servos:**
-   - Set acceleration to 200,000 kHz/s (faster than sector scan for point-to-point)
-
-**Safety Check:** Exits mode if no TRP page set.
-
----
+1. Validate `m_pageOrder` is not empty
+   - If empty: log warning, return to Idle
+2. Start velocity timer
+3. Reset PID controllers
+4. Set `m_currentOrderIndex = 0`
+5. Load first TRP target
+6. Set state to `SlewToPoint`
 
 ### exitMode(GimbalController* controller)
 ```cpp
 void exitMode(GimbalController* controller) override
 ```
-
-**Purpose:** Called when gimbal switches OUT of TRP scan mode.
-
 **Actions:**
-- Stops all servos (zero velocity)
-- Sets state to `Idle`
+- Stop servos
+- Set state to `Idle`
 
 ---
 
-### update(GimbalController* controller)
-```cpp
-void update(GimbalController* controller) override
-```
+## updateImpl(GimbalController* controller, double dt)
 
-**Purpose:** Main control loop executed every 50ms.
-
-**State Machine Logic:**
-
-#### State: Idle
+### State: Idle
 ```cpp
 case State::Idle:
     stopServos(controller);
     return;
 ```
-No motion. Waits for `enterMode()` or page change.
+No motion. Waits for `enterMode()`.
 
----
-
-#### State: Halted
+### State: HoldPoint
 ```cpp
-case State::Halted:
-    if (haltTimer.elapsed() >= currentTrp.haltTime * 1000.0) {
-        // Dwell time complete
-        m_currentTrpIndex++;
-        
-        // Loop: if reached end, restart from beginning
-        if (m_currentTrpIndex >= m_trpPage.size()) {
-            m_currentTrpIndex = 0;
-            qDebug() << "Path loop finished. Returning to point 0.";
+case State::HoldPoint:
+    const auto& currentTrp = m_trps[m_pageOrder[m_currentOrderIndex]];
+    qint64 haltMs = std::max(0.0, currentTrp.haltTime * 1000.0);
+
+    if (m_haltTimer.elapsed() >= haltMs) {
+        // Dwell complete, advance to next TRP
+        m_currentOrderIndex++;
+
+        // Loop back to start
+        if (m_currentOrderIndex >= m_pageOrder.size()) {
+            m_currentOrderIndex = 0;
+            qDebug() << "TRP page loop complete, restarting";
         }
-        
-        // Transition to Moving state
-        m_currentState = State::Moving;
+
+        // Load next target
+        const auto& nextTrp = m_trps[m_pageOrder[m_currentOrderIndex]];
+        m_targetAz = nextTrp.azimuth;
+        m_targetEl = nextTrp.elevation;
+
+        // Reset PIDs and transition
         m_azPid.reset();
         m_elPid.reset();
+        m_currentState = State::SlewToPoint;
     }
-    return;  // Servos remain stopped while halted
+    // During hold: zero velocity, stabilization active
+    sendStabilizedServoCommands(controller, 0.0, 0.0, true, dt);
+    return;
 ```
 
-**Key Behavior:**
-- Measures elapsed time from `m_haltTimer.start()`
-- When dwell time expires, advances to next waypoint
-- **Automatically loops:** Last point → First point
-- Resets PIDs before moving to prevent integral windup
+### State: SlewToPoint
 
----
-
-#### State: Moving (Main Motion Logic)
-
-**Step 1: Calculate Error**
+#### Step 1: Calculate Error
 ```cpp
-double errAz = targetTrp.azimuth - data.gimbalAz;
-double errEl = targetTrp.elevation - data.imuPitchDeg;
+double errAz = shortestAngleDiff(m_targetAz, data.gimbalAz);
+double errEl = -(m_targetEl - data.gimbalEl);  // Note: sign convention
 
-// Normalize azimuth for shortest path
-while (errAz > 180.0)  errAz -= 360.0;
-while (errAz < -180.0) errAz += 360.0;
-
-double distanceToTarget = std::sqrt(errAz * errAz + errEl * errEl);
+double distAz = std::abs(errAz);
+double distEl = std::abs(errEl);
 ```
 
-**Note:** Code currently computes distance using only elevation (`std::sqrt(errEl * errEl)`). This should likely use both axes: `std::sqrt(errAz * errAz + errEl * errEl)`.
-
-**Step 2: Check Arrival**
+#### Step 2: Check Arrival
 ```cpp
-if (distanceToTarget < ARRIVAL_THRESHOLD_DEG) {
-    stopServos(controller);
-    m_currentState = State::Halted;
-    m_haltTimer.start();  // Begin countdown for dwell time
+if (distAz < ARRIVAL_THRESHOLD_DEG && distEl < ARRIVAL_THRESHOLD_DEG) {
+    // Arrived at TRP
+    m_currentState = State::HoldPoint;
+    m_haltTimer.start();
+    sendStabilizedServoCommands(controller, 0.0, 0.0, true, dt);
+    qDebug() << "Arrived at TRP:" << currentTrp.name;
     return;
 }
 ```
 
-When within 0.5°, waypoint is considered "reached."
-
-**Step 3: Motion Profile**
-
-**Case A: Zero or Negative Speed**
+#### Step 3: Hybrid Motion Profile
 ```cpp
-if (travelSpeed <= 0) {
-    desiredAzVelocity = pidCompute(m_azPid, errAz, UPDATE_INTERVAL_S);
-    desiredElVelocity = pidCompute(m_elPid, errEl, UPDATE_INTERVAL_S);
+const auto& cfg = MotionTuningConfig::instance();
+double v_max = cfg.motion.trpDefaultTravelSpeed;
+double accel = cfg.motion.trpMaxAccelDegS2;
+
+double desiredAzVel, desiredElVel;
+
+// === AZIMUTH ===
+if (distAz < FINE_APPROACH_DIST_DEG) {
+    // Fine approach: PID control
+    desiredAzVel = m_azPid.Kp * errAz;
+} else {
+    // Trapezoidal: cruise or decel
+    double decelDist = (v_max * v_max) / (2.0 * accel);
+    if (distAz < decelDist) {
+        double v_req = std::sqrt(2.0 * accel * distAz);
+        desiredAzVel = (errAz > 0 ? 1.0 : -1.0) * std::min(v_max, v_req);
+    } else {
+        desiredAzVel = (errAz > 0 ? 1.0 : -1.0) * v_max;
+    }
 }
-```
-Use PID feedback to go to waypoint (similar to position-hold).
 
-**Case B: In Deceleration Zone** (< 5° away)
-```cpp
-else if (distanceToTarget < DECELERATION_DISTANCE_DEG) {
-    desiredAzVelocity = pidCompute(m_azPid, errAz, UPDATE_INTERVAL_S);
-    desiredElVelocity = pidCompute(m_elPid, errEl, UPDATE_INTERVAL_S);
-}
-```
-Use PID to smoothly slow down as waypoint approaches.
-
-**Case C: Cruising** (far from waypoint)
-```cpp
-else {
-    double dirAz = errAz / distanceToTarget;
-    double dirEl = errEl / distanceToTarget;
-    desiredAzVelocity = dirAz * travelSpeed;
-    desiredElVelocity = dirEl * travelSpeed;
-    
-    // CRITICAL: Reset PIDs to prevent integral windup during cruise
-    m_azPid.reset();
-    m_elPid.reset();
-}
-```
-Move at constant speed toward waypoint. Reset PIDs to prevent accumulating error.
-
-**Step 4: Send Commands**
-```cpp
-sendStabilizedServoCommands(controller, desiredAzVelocity, desiredElVelocity);
-```
-
----
-
-## Motion Profile Example
-
-**Scenario:** Visiting 3 waypoints in a triangle, 15 deg/s travel speed.
-
-```
-TIME   | STATE   | POSITION | ACTIVITY
-───────┼─────────┼──────────┼──────────────────────
-0.0s   | Moving  | Pt 0     | Starting toward Pt 1
-2.0s   | Moving  | 60% → Pt 1 | Cruising at 15 deg/s
-9.0s   | Moving  | 5° away  | Entering decel zone
-11.0s  | Halted  | Pt 1     | Arrived, dwell=5s
-16.0s  | Moving  | Pt 1     | Dwell complete, moving to Pt 2
-...    | ...     | ...      | ...
-```
-
----
-
-## Path Looping Behavior
-
-**Current Implementation:**
-```cpp
-if (m_currentTrpIndex >= m_trpPage.size()) {
-    m_currentTrpIndex = 0;  // Restart from first point
-    qDebug() << "Path loop finished. Returning to point 0.";
+// === ELEVATION (same logic) ===
+if (distEl < FINE_APPROACH_DIST_DEG) {
+    desiredElVel = m_elPid.Kp * errEl;
+} else {
+    double decelDist = (v_max * v_max) / (2.0 * accel);
+    if (distEl < decelDist) {
+        double v_req = std::sqrt(2.0 * accel * distEl);
+        desiredElVel = (errEl > 0 ? 1.0 : -1.0) * std::min(v_max, v_req);
+    } else {
+        desiredElVel = (errEl > 0 ? 1.0 : -1.0) * v_max;
+    }
 }
 ```
 
-**Behavior:**
-1. Visit waypoints 0, 1, 2, ..., N-1
-2. After halting at waypoint N-1, dwell time expires
-3. Automatically set target to waypoint 0
-4. Resume moving
-5. Loop continues indefinitely (or until mode changed)
-
-**Alternative Designs (Not Implemented):**
-- **One-shot:** Stop after last waypoint (requires mode change to resume)
-- **Ping-pong:** Reverse direction (go 0→1→2→...→N-1→N-2→...→0)
-- **Conditional loop:** Only loop if enabled flag set
-
----
-
-## Known Issues & Improvements
-
-### Issue 1: Distance Calculation Only Uses Elevation
-**Current Code:**
+#### Step 4: Send Commands
 ```cpp
-double distanceToTarget = std::sqrt(errEl * errEl);  // Only elevation!
-```
-
-**Problem:** Arrival detection ignores azimuth error. If azimuth is off by 10° but elevation correct, gimbal still "arrives" and halts.
-
-**Fix:**
-```cpp
-double distanceToTarget = std::sqrt(errAz * errAz + errEl * errEl);  // 2D distance
-```
-
-**Impact:** More accurate waypoint arrival detection, better convergence to waypoints.
-
----
-
-### Issue 2: Travel Speed Hardcoded
-**Current Code:**
-```cpp
-double travelSpeed = 15;  // Hardcoded!
-// targetTrp.scanSpeed;  // This line is commented out
-```
-
-**Problem:** All waypoints traverse at 15 deg/s, ignoring any per-waypoint speed setting.
-
-**Fix:**
-```cpp
-double travelSpeed = targetTrp.scanSpeed;  // Use TRP-specific speed
-// Add bounds checking:
-travelSpeed = std::clamp(travelSpeed, 0.0, 30.0);  // 0-30 deg/s
-```
-
-**Benefits:** Different waypoints can have different transit speeds (e.g., slow through dense area, fast through open area).
-
----
-
-### Issue 3: No Halt Time Validation
-**Current Code:**
-```cpp
-if (m_haltTimer.elapsed() >= static_cast<qint64>(currentTrp.haltTime * 1000.0))
-```
-
-**Problem:** If `haltTime` is negative or NaN, unpredictable behavior.
-
-**Fix:**
-```cpp
-double haltMs = std::max(0.0, currentTrp.haltTime * 1000.0);  // Clamp to 0+
-if (m_haltTimer.elapsed() >= static_cast<qint64>(haltMs)) {
+sendStabilizedServoCommands(controller, desiredAzVel, desiredElVel, true, dt);
 ```
 
 ---
 
-### Issue 4: No Arrival Threshold Configuration
-**Current Code:**
-```cpp
-static constexpr double ARRIVAL_THRESHOLD_DEG = 0.5;  // Fixed
+## Motion Profile Visualization
+
 ```
+Velocity
+  ^
+  |         ┌───────────────────┐
+  |         │                   │
+v_max ──────│      CRUISE       │
+  |         │                   │
+  |        /│                   │\
+  |       / │                   │ \
+  |      /  │     DECEL         │  \
+  |     /   │                   │   \
+  |    /    │           ┌───────┤    \
+  |   /     │           │ FINE  │     \
+  |  /      │           │ (PID) │      \
+  | /       │           │       │       \
+──┴─────────┴───────────┴───────┴────────┴──→ Distance
+  start                 8°     0.2°   target
 
-**Problem:** 0.5° might be too loose for precision tracking or too strict for fast scanning.
-
-**Solution:** Make configurable per-waypoint or mode-wide:
-```cpp
-struct TargetReferencePoint {
-    // ... existing fields ...
-    double arrivalThreshold = 0.5;  // Allow override per waypoint
-};
-```
-
----
-
-## Tuning Guide
-
-### For Faster Waypoint Traversal
-```cpp
-m_azPid.Kp = 1.5;    // Increase responsiveness
-m_elPid.Kp = 1.5;
-DECELERATION_DISTANCE_DEG = 3.0;  // Brake later
-travelSpeed = 20;  // Faster transit
-```
-
-### For Precise Waypoint Arrival
-```cpp
-m_azPid.Kp = 0.8;    // Gentler response
-m_elPid.Kp = 0.8;
-m_azPid.Ki = 0.2;    // More integral (fine-tune to target)
-m_elPid.Ki = 0.2;
-ARRIVAL_THRESHOLD_DEG = 0.2;  // Stricter arrival
-DECELERATION_DISTANCE_DEG = 8.0;  // Brake early, gently
-```
-
-### For Smooth Transitions Between Waypoints
-```cpp
-m_azPid.Kd = 0.2;    // Increase damping
-m_elPid.Kd = 0.2;
-travelSpeed = 10;  // Slower, smoother
+FINE_APPROACH_DIST_DEG = 8°
+ARRIVAL_THRESHOLD_DEG = 0.2°
 ```
 
 ---
 
-## Integration with GimbalController
+## Page-Based Navigation Example
 
-### Loading TRP Page
-```cpp
-std::vector<TargetReferencePoint> perimeter = {
-    // ... define waypoints ...
-};
+```
+m_trps = [
+    {id=0, page=1, order=0, az=-45, el=10, name="P1-A"},
+    {id=1, page=1, order=1, az=0,   el=15, name="P1-B"},
+    {id=2, page=1, order=2, az=45,  el=10, name="P1-C"},
+    {id=3, page=2, order=0, az=-30, el=20, name="P2-A"},
+    {id=4, page=2, order=1, az=30,  el=20, name="P2-B"},
+]
 
-auto trpMode = qobject_cast<TRPScanMotionMode*>(
-    controller->motionMode(MotionMode::TRPScan)
-);
-if (trpMode) {
-    trpMode->setActiveTRPPage(perimeter);
-    controller->setMotionMode(MotionMode::TRPScan);
-}
+selectPage(1):
+  m_pageOrder = [0, 1, 2]  // Indices of page 1 TRPs
+  Navigation: P1-A → P1-B → P1-C → P1-A → ...
+
+selectPage(2):
+  m_pageOrder = [3, 4]     // Indices of page 2 TRPs
+  Navigation: P2-A → P2-B → P2-A → ...
 ```
 
-### Switching TRP Pages Mid-Scan
-```cpp
-// Load new page (will reset to waypoint 0)
-trpMode->setActiveTRPPage(newPerimeter);
+---
 
-// If you want to resume from current point on old page,
-// need to save/restore m_currentTrpIndex
-```
+## Configuration Parameters
+
+### From MotionTuningConfig
+
+| Parameter | Path | Default | Effect |
+|-----------|------|---------|--------|
+| `trpDefaultTravelSpeed` | `motion` | 12.0 | Cruise velocity [deg/s] |
+| `trpMaxAccelDegS2` | `motion` | 50.0 | Trapezoidal accel [deg/s²] |
+| `trpScanAz.kp` | `pid` | 1.2 | Fine approach P-gain |
+| `trpScanAz.ki` | `pid` | 0.0 | Not used |
+| `trpScanAz.kd` | `pid` | 0.0 | Not used |
+
+### Per-TRP Parameters
+
+| Parameter | Type | Effect |
+|-----------|------|--------|
+| `azimuth` | `double` | Target azimuth [degrees] |
+| `elevation` | `double` | Target elevation [degrees] |
+| `haltTime` | `double` | Dwell duration [seconds] |
+| `locationPage` | `int` | Page grouping |
+| `trpInPage` | `int` | Visit order within page |
 
 ---
 
 ## Testing Checklist
 
-- [ ] Constructor initializes state correctly
-- [ ] `setActiveTRPPage()` loads waypoints and resets index
-- [ ] Empty TRP page handled gracefully (mode exits to Idle)
-- [ ] `enterMode()` configures servos and resets PIDs
-- [ ] Gimbal moves toward first waypoint after entering mode
-- [ ] Distance calculation uses both azimuth and elevation
-- [ ] Arrival detection triggers within ARRIVAL_THRESHOLD_DEG
-- [ ] Gimbal transitions from cruising to deceleration correctly
-- [ ] Gimbal halts precisely at waypoint
-- [ ] Halt timer counts down for dwell duration
-- [ ] Gimbal resumes after dwell time expires
-- [ ] Path loops correctly (last → first waypoint)
-- [ ] All waypoints visited in order
-- [ ] Azimuth normalization prevents long circular paths
-- [ ] No PID integral windup during cruise
-- [ ] Gimbal stops on mode exit
-- [ ] Multiple TRP pages can be loaded sequentially
-- [ ] Stabilization works during TRP scanning (if enabled)
-- [ ] Emergency stop halts gimbal immediately
+- [ ] `setTRPs()` loads all TRP definitions
+- [ ] `selectPage()` filters and orders correctly
+- [ ] Empty page handled gracefully (stays in Idle)
+- [ ] `enterMode()` starts at first TRP of page
+- [ ] Hybrid motion profile: cruise → decel → fine
+- [ ] Fine approach uses PID (8° threshold)
+- [ ] Arrival detection per-axis (0.2° each)
+- [ ] HoldPoint timer counts correctly
+- [ ] Page loops to first TRP after last
+- [ ] Stabilization active during all phases
+- [ ] Elevation sign convention correct
+- [ ] Azimuth shortest path (handles wrap)
+- [ ] exitMode() stops servos cleanly
+
+---
+
+## Known Issues & Solutions
+
+### Issue 1: TRPs Visited Out of Order
+**Cause:** `trpInPage` values not set correctly.
+
+**Solution:** Ensure TRPs have sequential `trpInPage` values:
+```cpp
+trp[0].trpInPage = 0;
+trp[1].trpInPage = 1;
+trp[2].trpInPage = 2;
+```
+
+### Issue 2: Slow Convergence to TRP
+**Cause:** `FINE_APPROACH_DIST_DEG` too large or PID Kp too low.
+
+**Solution:**
+```cpp
+FINE_APPROACH_DIST_DEG = 5.0;  // from 8.0
+m_azPid.Kp = 1.5;              // from 1.2
+```
+
+### Issue 3: Gimbal Oscillates at TRP
+**Cause:** PID Kp too high, no damping.
+
+**Solution:** Add D-term:
+```cpp
+m_azPid.Kd = 0.1;
+m_elPid.Kd = 0.1;
+```
+
+### Issue 4: Elevation Goes Wrong Direction
+**Cause:** Sign convention mismatch.
+
+**Current Code:**
+```cpp
+double errEl = -(m_targetEl - data.gimbalEl);
+```
+
+**Check:** Verify positive elevation = gimbal tilting up.
 
 ---
 
@@ -526,63 +470,12 @@ trpMode->setActiveTRPPage(newPerimeter);
 
 | Parameter | Value | Notes |
 |-----------|-------|-------|
-| **Update Frequency** | 20 Hz (50ms) | From base class |
-| **Travel Speed Range** | 0-30 deg/s | Configurable per-waypoint |
-| **Waypoint Arrival Accuracy** | ±0.5° | Configurable threshold |
-| **Deceleration Distance** | ~5° | Smooth approach zone |
-| **Dwell Time Range** | 0-∞ seconds | Per-waypoint configuration |
-| **Path Loop Latency** | ~50-100ms | One control cycle + PID reset |
-| **Max Waypoints per Page** | Unlimited | Memory dependent |
-
----
-
-## Data Flow: Visiting Three Waypoints
-
-```
-1. GimbalController sets mode to TRPScan
-   └─ TRPScanMotionMode::enterMode()
-   └─ Load waypoint 0 as target
-   └─ m_currentState = Moving
-
-2. Main control loop (50ms)
-   └─ TRPScanMotionMode::update()
-   └─ Calculate error to waypoint 0
-   └─ Cruise at constant speed
-   └─ Send servo commands
-   
-3. Approaching waypoint (5° away)
-   └─ Enter deceleration zone
-   └─ Use PID to slow down smoothly
-   
-4. Reach waypoint (<0.5° away)
-   └─ Stop servos
-   └─ m_currentState = Halted
-   └─ m_haltTimer.start()
-   
-5. Wait for dwell time (e.g., 5 seconds)
-   └─ Gimbal holds position actively
-   └─ Servos receive zero-velocity commands
-   
-6. Dwell time expires
-   └─ m_currentTrpIndex++  (advance to waypoint 1)
-   └─ m_currentState = Moving
-   └─ Reset PIDs
-   
-7. Repeat steps 2-6 for waypoint 1, 2, etc.
-
-8. After last waypoint
-   └─ m_currentTrpIndex = 0
-   └─ Loop back to waypoint 0
-   └─ Cycle continues indefinitely
-```
-
----
-
-## Revision History
-
-| Date | Version | Changes |
-|------|---------|---------|
-| 2025-10-13 | 1.0 | Initial documentation; identified distance calc bug (elevation only), hardcoded speed, missing halt validation |
+| **Update Rate** | 20 Hz | 50ms cycle |
+| **Travel Speed** | 12 deg/s | Configurable |
+| **Max Acceleration** | 50 deg/s² | Configurable |
+| **Arrival Tolerance** | 0.2° | Per-axis |
+| **Fine Approach Zone** | 8° | PID active |
+| **Min Dwell Time** | 0 sec | Can skip |
 
 ---
 
@@ -590,15 +483,18 @@ trpMode->setActiveTRPPage(newPerimeter);
 
 - **GimbalMotionModeBase:** Parent class with servo control
 - **GimbalController:** Mode orchestration
-- **SystemStateModel:** Gimbal position and state
-- **AutoSectorScanMotionMode:** Alternative scanning mode (two points, continuous)
+- **SystemStateModel:** Current gimbal position
+- **AutoSectorScanMotionMode:** Alternative (continuous two-point scan)
 
 ---
 
-## Contact & Maintenance
+## Revision History
 
-**Maintainer:** [Your Name/Team]
+| Date | Version | Changes |
+|------|---------|---------|
+| 2025-10-13 | 1.0 | Initial documentation |
+| 2026-01-06 | 2.0 | Page-based navigation, hybrid motion profile, fine approach PID |
 
-**Last Updated:** October 13, 2025
+---
 
-**Status:** Production - Tuning recommended for specific deployment
+**END OF DOCUMENTATION**
