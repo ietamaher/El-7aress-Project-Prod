@@ -1654,7 +1654,7 @@ Repeater {
                     }
                 }
                 Text {
-                    text: "RPM: " + (viewModel ? viewModel.azRpm.toFixed(1) : "0.0")
+                    text: "RPM: " + (viewModel ? viewModel.azRpm.toFixed(1)  * 6 : "0.0")
                     font.pixelSize: 12
                     font.family: primaryFont
                     color: "yellow"
@@ -1737,7 +1737,7 @@ Repeater {
                     }
                 }
                 Text {
-                    text: "RPM: " + (viewModel ? viewModel.elRpm.toFixed(1) : "0.0")
+                    text: "RPM: " + (viewModel ? viewModel.elRpm.toFixed(1) * 6 : "0.0")
                     font.pixelSize: 12
                     font.family: primaryFont
                     color: "yellow"
