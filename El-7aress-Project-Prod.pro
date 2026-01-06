@@ -126,7 +126,6 @@ SOURCES += \
     src/models/zonedefinitionviewmodel.cpp \
     src/models/zonemapviewmodel.cpp \
     src/models/shutdownconfirmationviewmodel.cpp \
-    src/utils/ballisticsprocessor.cpp \
     src/utils/ballisticslut.cpp \
     src/utils/ballisticsprocessorlut.cpp \
     src/utils/firecontrolcomputation.cpp \
@@ -249,16 +248,12 @@ HEADERS += \
     src/models/zonedefinitionviewmodel.h \
     src/models/zonemapviewmodel.h \
     src/models/shutdownconfirmationviewmodel.h \
-    src/utils/TimestampLogger.h \
-    src/utils/ballisticsprocessor.h \
     src/utils/ballisticslut.h \
     src/utils/ballisticsprocessorlut.h \
     src/utils/firecontrolcomputation.h \
     src/utils/colorutils.h \
     src/utils/inference.h \
-    src/utils/millenious.h \
     src/utils/reticleaimpointcalculator.h \
-    src/utils/targetstate.h \
     src/video/gstvideosource.h \
     src/video/videoframenotifier.h \
     src/video/videoimageprovider.h \

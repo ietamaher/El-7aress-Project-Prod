@@ -2,7 +2,6 @@
 #define TRACKINGMOTIONMODE_H
 
 #include "gimbalmotionmodebase.h"
-#include "utils/TimestampLogger.h"
 
 // =============================================================================
 // RIGID CRADLE LAC STATE MACHINE

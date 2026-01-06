@@ -166,8 +166,10 @@ float BallisticsLUT::calculateWindCorrection(float range_m, float tof_s, float c
     if (range_m < 1.0f) {
         return 0.0f;  // Avoid division by zero
     }
-
-    float deflection_m = crosswind_ms * tof_s;
+    // Negate the sign!
+    // Positive crosswind = wind from right = pushes bullet LEFT
+    // So deflection should be NEGATIVE (leftward)
+    float deflection_m = - crosswind_ms * tof_s;
     float lead_mils = (deflection_m / range_m) * 1000.0f;
 
     return lead_mils;

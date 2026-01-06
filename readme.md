@@ -819,17 +819,12 @@ DIRECTORY STRUCTURE:
     │   │   ├── zonemapviewmodel.cpp
     │   │   └── zonemapviewmodel.h
     │   ├── utils
-    │   │   ├── TimestampLogger.h
-    │   │   ├── ballisticsprocessor.cpp
-    │   │   ├── ballisticsprocessor.h
     │   │   ├── colorutils.cpp
     │   │   ├── colorutils.h
     │   │   ├── inference.cpp
     │   │   ├── inference.h
-    │   │   ├── millenious.h
-    │   │   ├── reticleaimpointcalculator.cpp
+        │   │   ├── reticleaimpointcalculator.cpp
     │   │   ├── reticleaimpointcalculator.h
-    │   │   └── targetstate.h
     │   └── video
     │       ├── gstvideosource.cpp
     │       ├── gstvideosource.h

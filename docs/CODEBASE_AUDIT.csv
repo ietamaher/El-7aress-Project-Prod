@@ -165,21 +165,16 @@ src/models/zonedefinitionviewmodel.cpp,keep,None,NONE,Clean ViewModel
 src/models/zonedefinitionviewmodel.h,keep,None,NONE,Clean ViewModel
 src/models/zonemapviewmodel.cpp,keep,None,NONE,Clean ViewModel
 src/models/zonemapviewmodel.h,keep,None,NONE,Clean ViewModel
-src/utils/TimestampLogger.h,keep,None,NONE,Header-only utility
 src/utils/ballisticslut.cpp,keep,None,NONE,Ballistics lookup table
 src/utils/ballisticslut.h,keep,None,NONE,Ballistics lookup table
-src/utils/ballisticsprocessor.cpp,keep,None,NONE,Core ballistics
-src/utils/ballisticsprocessor.h,keep,None,NONE,Core ballistics
 src/utils/ballisticsprocessorlut.cpp,keep,None,NONE,LUT-based processor
 src/utils/ballisticsprocessorlut.h,keep,None,NONE,LUT-based processor
 src/utils/colorutils.cpp,keep,None,NONE,Color utilities
 src/utils/colorutils.h,keep,None,NONE,Color utilities
 src/utils/inference.cpp,keep,None,NONE,YOLO inference
 src/utils/inference.h,keep,None,NONE,YOLO inference
-src/utils/millenious.h,keep,None,NONE,Header-only utility
 src/utils/reticleaimpointcalculator.cpp,keep,None,NONE,Aim point math
 src/utils/reticleaimpointcalculator.h,keep,None,NONE,Aim point math
-src/utils/targetstate.h,keep,None,NONE,Header-only state
 src/video/gstvideosource.cpp,keep,None,NONE,GStreamer wrapper
 src/video/gstvideosource.h,keep,None,NONE,GStreamer wrapper
 src/video/videoimageprovider.cpp,keep,None,NONE,QML image provider

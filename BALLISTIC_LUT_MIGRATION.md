@@ -78,12 +78,6 @@ python3 generate_lut.py \
 **File:** `src/controllers/weaponcontroller.h`
 
 ```cpp
-// OLD:
-#include "utils/ballisticsprocessor.h"
-private:
-    BallisticsProcessor* m_ballisticsProcessor = nullptr;
-
-// NEW:
 #include "utils/ballisticsprocessorlut.h"
 private:
     BallisticsProcessorLUT* m_ballisticsProcessor = nullptr;

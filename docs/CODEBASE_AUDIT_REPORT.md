@@ -116,15 +116,11 @@ All files under `src/hardware/` follow proper Device/Protocol/Transport separati
 
 | File | Status | Notes |
 |------|--------|-------|
-| `src/utils/TimestampLogger.h` | **keep** | Header-only utility |
 | `src/utils/ballisticslut.{cpp,h}` | **keep** | Ballistics lookup table |
-| `src/utils/ballisticsprocessor.{cpp,h}` | **keep** | Core ballistics |
 | `src/utils/ballisticsprocessorlut.{cpp,h}` | **keep** | LUT-based processor |
 | `src/utils/colorutils.{cpp,h}` | **keep** | Color utilities |
 | `src/utils/inference.{cpp,h}` | **keep** | YOLO inference |
-| `src/utils/millenious.h` | **keep** | Header-only utility |
 | `src/utils/reticleaimpointcalculator.{cpp,h}` | **keep** | Aim point math |
-| `src/utils/targetstate.h` | **keep** | Header-only state |
 
 ### Video Processing (Keep - Well Structured)
 
