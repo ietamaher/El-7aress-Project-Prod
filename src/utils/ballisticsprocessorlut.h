@@ -2,8 +2,15 @@
 #define BALLISTICSPROCESSORLUT_H
 
 #include "ballisticslut.h"
-#include "ballisticsprocessor.h"  // For LeadCalculationResult and LeadAngleStatus
 #include "models/domain/systemstatemodel.h"
+
+
+struct LeadCalculationResult {
+    float leadAzimuthDegrees   = 0.0f; // The calculated lead offset in Azimuth (degrees)
+    float leadElevationDegrees = 0.0f; // The calculated lead offset in Elevation (degrees)
+                                       // (This might include bullet drop + moving target lead)
+    LeadAngleStatus status     = LeadAngleStatus::Off; // Status of the calculation
+};
 
 /**
  * @brief Lookup Table-based Ballistics Processor (Drop-in Replacement)

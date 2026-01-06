@@ -411,6 +411,29 @@ void JoystickController::onButtonChanged(int button, bool pressed)
         break;
 
     // ==========================================================================
+    // BUTTON 12: Exit to manual Mode from any motion mode
+    // ==========================================================================
+    case 12:
+        if (pressed) {
+            if (!curr.stationEnabled) {
+                qDebug() << "Cannot enter manual mode, station is off.";
+                return;
+            }
+
+            // BUG FIX: Block motion mode changes during ANY tracking phase
+            // Military requirement: Operator must not accidentally change modes during tracking
+            if (curr.currentTrackingPhase != TrackingPhase::Off) {
+                qWarning() << "[BUG FIX] Cannot change to manual mode during tracking (phase:"
+                           << static_cast<int>(curr.currentTrackingPhase) << ")";
+                qWarning() << "[BUG FIX] Operator must stop tracking first (double-press Track button)";
+                return;
+            }
+
+            m_stateModel->setMotionMode(MotionMode::Manual);
+        }
+        break;
+
+    // ==========================================================================
     // BUTTON 14: UP / NEXT ZONE
     // ==========================================================================
     case 14:
