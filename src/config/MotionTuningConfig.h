@@ -1,6 +1,8 @@
-#ifndef MOTIONTUNINGCONFIG_H
-#define MOTIONTUNINGCONFIG_H
+#pragma once
 
+// ============================================================================
+// INCLUDES
+// ============================================================================
 #include <QString>
 
 /**
@@ -209,4 +211,3 @@ private:
     static bool m_loaded;
 };
 
-#endif  // MOTIONTUNINGCONFIG_H

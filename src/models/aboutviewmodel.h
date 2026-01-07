@@ -1,6 +1,8 @@
-#ifndef ABOUTVIEWMODEL_H
-#define ABOUTVIEWMODEL_H
+#pragma once
 
+// ============================================================================
+// INCLUDES
+// ============================================================================
 #include <QObject>
 #include <QString>
 #include <QColor>
@@ -20,8 +22,6 @@ class AboutViewModel : public QObject {
     Q_PROPERTY(QString license READ license CONSTANT)
     Q_PROPERTY(bool visible READ visible WRITE setVisible NOTIFY visibleChanged)
     Q_PROPERTY(QColor accentColor READ accentColor NOTIFY accentColorChanged)
-
-
 public:
     explicit AboutViewModel(QObject* parent = nullptr);
 
@@ -75,4 +75,4 @@ private:
     QColor m_accentColor = QColor(70, 226, 165);  // Default green
 };
 
-#endif  // ABOUTVIEWMODEL_H
+

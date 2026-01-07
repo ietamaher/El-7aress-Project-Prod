@@ -1,10 +1,16 @@
-#ifndef IMUDEVICE_H
-#define IMUDEVICE_H
+#pragma once
+
+// ============================================================================
+// INCLUDES
+// ============================================================================
+#include <QTimer>
 
 #include "../devices/TemplatedDevice.h"
 #include "../data/DataTypes.h"
-#include <QTimer>
 
+// ============================================================================
+// FORWARD DECLARATIONS
+// ============================================================================
 class Transport;
 class Imu3DMGX3ProtocolParser;
 class Message;
@@ -65,4 +71,3 @@ private:
     static constexpr int GYRO_BIAS_TIMEOUT_MS = 15000;  // 15 seconds (10s capture + margin)
 };
 
-#endif  // IMUDEVICE_H

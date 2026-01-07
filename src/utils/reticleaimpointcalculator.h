@@ -1,13 +1,20 @@
-// reticleaimpointcalculator.h
-#ifndef RETICLEAIMPOINTCALCULATOR_H
-#define RETICLEAIMPOINTCALCULATOR_H
+#pragma once
 
+/**
+ * @file reticleaimpointcalculator.h
+ * @brief Reticle aimpoint position calculator for ballistic corrections
+ */
+
+// ============================================================================
+// INCLUDES
+// ============================================================================
 #include <QPointF>
-#include "models/domain/systemstatemodel.h"  // Or wherever LeadAngleStatus is defined
 
-// Forward declare if needed, or include the header where LeadAngleStatus is defined
-// enum class LeadAngleStatus;
+#include "models/domain/systemstatemodel.h"
 
+// ============================================================================
+// CLASS DECLARATION
+// ============================================================================
 class ReticleAimpointCalculator {
 public:
     static QPointF calculateReticleImagePositionPx(float zeroingAzDeg, float zeroingElDeg,
@@ -21,5 +28,3 @@ private:
                                                     float angularOffsetElDeg, float cameraHfovDeg,
                                                     int imageWidthPx, int imageHeightPx);
 };
-
-#endif  // RETICLEAIMPOINTCALCULATOR_H

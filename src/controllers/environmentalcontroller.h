@@ -1,6 +1,8 @@
-#ifndef ENVIRONMENTALCONTROLLER_H
-#define ENVIRONMENTALCONTROLLER_H
+#pragma once
 
+// ============================================================================
+// INCLUDES
+// ============================================================================
 #include <QObject>
 
 class EnvironmentalViewModel;
@@ -44,4 +46,4 @@ private:
     // NOTE: Crosswind removed - use Windage menu instead (wind direction + speed)
 };
 
-#endif  // ENVIRONMENTALCONTROLLER_H
+

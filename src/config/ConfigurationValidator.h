@@ -1,9 +1,14 @@
-#ifndef CONFIGURATIONVALIDATOR_H
-#define CONFIGURATIONVALIDATOR_H
+#pragma once
 
+// ============================================================================
+// INCLUDES
+// ============================================================================
 #include <QString>
 #include <QStringList>
 
+// ============================================================================
+// FORWARD DECLARATIONS
+// ============================================================================
 class DeviceConfiguration;
 
 /**
@@ -65,4 +70,3 @@ private:
     static QStringList m_warnings;
 };
 
-#endif  // CONFIGURATIONVALIDATOR_H

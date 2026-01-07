@@ -1,6 +1,8 @@
-#ifndef MAINMENUCONTROLLER_H
-#define MAINMENUCONTROLLER_H
+#pragma once
 
+// ============================================================================
+// INCLUDES
+// ============================================================================
 #include <QObject>
 
 class MenuViewModel;
@@ -65,4 +67,4 @@ private:
     QStringList buildMainMenuOptions() const;
 };
 
-#endif  // MAINMENUCONTROLLER_H
+

@@ -1,6 +1,8 @@
-#ifndef CONTROLLERREGISTRY_H
-#define CONTROLLERREGISTRY_H
+#pragma once
 
+// ============================================================================
+// INCLUDES
+// ============================================================================
 #include <QObject>
 
 // Forward declarations - Safety
@@ -207,4 +209,4 @@ private:
     SystemStateModel* m_systemStateModel = nullptr;
 };
 
-#endif  // CONTROLLERREGISTRY_H
+

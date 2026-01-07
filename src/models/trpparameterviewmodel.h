@@ -1,6 +1,8 @@
-#ifndef TRPPARAMETERVIEWMODEL_H
-#define TRPPARAMETERVIEWMODEL_H
+#pragma once
 
+// ============================================================================
+// INCLUDES
+// ============================================================================
 #include <QObject>
 
 /**
@@ -66,4 +68,4 @@ private:
     bool m_isEditingValue = false;
 };
 
-#endif  // TRPPARAMETERVIEWMODEL_H
+

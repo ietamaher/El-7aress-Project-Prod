@@ -1,11 +1,18 @@
-#ifndef JOYSTICKDEVICE_H
-#define JOYSTICKDEVICE_H
+#pragma once
 
+// ============================================================================
+// INCLUDES
+// ============================================================================
 #include <QTimer>
+
 #include <SDL2/SDL.h>
+
 #include "TemplatedDevice.h"
 #include "../data/DataTypes.h"
 
+// ============================================================================
+// FORWARD DECLARATIONS
+// ============================================================================
 class JoystickProtocolParser;
 
 /**
@@ -117,4 +124,3 @@ private:
     bool m_lastConnectionState;  // Track connection state to detect changes
 };
 
-#endif  // JOYSTICKDEVICE_H

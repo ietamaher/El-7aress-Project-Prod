@@ -1,6 +1,8 @@
-#ifndef SHUTDOWNCONFIRMATIONCONTROLLER_H
-#define SHUTDOWNCONFIRMATIONCONTROLLER_H
+#pragma once
 
+// ============================================================================
+// INCLUDES
+// ============================================================================
 #include <QObject>
 #include <QTimer>
 
@@ -76,4 +78,4 @@ private:
     bool m_shutdownInProgress = false;
 };
 
-#endif  // SHUTDOWNCONFIRMATIONCONTROLLER_H
+

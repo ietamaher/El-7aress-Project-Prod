@@ -1,3 +1,5 @@
+#pragma once
+
 /**
  * @file ServoActuatorDevice.h
  * @brief Refactored serial servo actuator device following MIL-STD architecture
@@ -23,14 +25,18 @@
  * @version 2.0
  */
 
-#ifndef SERVOACTUATORDEVICE_H
-#define SERVOACTUATORDEVICE_H
-
-#include "../devices/TemplatedDevice.h"
-#include "../data/DataTypes.h"
+// ============================================================================
+// INCLUDES
+// ============================================================================
 #include <QTimer>
 #include <QQueue>
 
+#include "../devices/TemplatedDevice.h"
+#include "../data/DataTypes.h"
+
+// ============================================================================
+// FORWARD DECLARATIONS
+// ============================================================================
 class Transport;
 class ServoActuatorProtocolParser;
 class Message;
@@ -123,4 +129,3 @@ private:
     static constexpr int COMMUNICATION_TIMEOUT_MS = 10000;  // 3 seconds without data = disconnected
 };
 
-#endif  // SERVOACTUATORDEVICE_H

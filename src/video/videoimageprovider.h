@@ -1,6 +1,8 @@
-#ifndef VIDEOIMAGEPROVIDER_H
-#define VIDEOIMAGEPROVIDER_H
+#pragma once
 
+// ============================================================================
+// INCLUDES
+// ============================================================================
 #include <QQuickImageProvider>
 #include <QObject>
 #include <QImage>
@@ -61,4 +63,3 @@ private:
     VideoFrameNotifier m_notifier;
 };
 
-#endif  // VIDEOIMAGEPROVIDER_H

@@ -1,6 +1,8 @@
-#ifndef BRIGHTNESSVIEWMODEL_H
-#define BRIGHTNESSVIEWMODEL_H
+#pragma once
 
+// ============================================================================
+// INCLUDES
+// ============================================================================
 #include <QObject>
 #include <QColor>
 
@@ -67,4 +69,4 @@ private:
     QColor m_accentColor = QColor(70, 226, 165);  // Default green
 };
 
-#endif  // BRIGHTNESSVIEWMODEL_H
+

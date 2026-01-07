@@ -1,6 +1,8 @@
-#ifndef LEDCONTROLLER_H
-#define LEDCONTROLLER_H
+#pragma once
 
+// ============================================================================
+// INCLUDES
+// ============================================================================
 #include <QObject>
 #include "models/domain/systemstatemodel.h"
 
@@ -27,4 +29,4 @@ private:
     bool m_cachedPanelBacklight = false;
 };
 
-#endif  // LEDCONTROLLER_H
+

@@ -1,17 +1,21 @@
-#ifndef GSTVIDEOSOURCE_H
-#define GSTVIDEOSOURCE_H
+#pragma once
 
+// ============================================================================
+// INCLUDES
+// ============================================================================
 #include <QObject>
 #include <QImage>
 #include <QSize>
 #include <QMutex>
 
-// GStreamer includes
 #include <gst/gst.h>
 #include <gst/app/gstappsink.h>
 #include <gst/video/video.h>
 
-class VideoImageProvider;  // Forward declaration
+// ============================================================================
+// FORWARD DECLARATIONS
+// ============================================================================
+class VideoImageProvider;
 
 class GstVideoSource : public QObject {
     Q_OBJECT
@@ -46,4 +50,3 @@ signals:
     void frameUpdated();
 };
 
-#endif  // GSTVIDEOSOURCE_H

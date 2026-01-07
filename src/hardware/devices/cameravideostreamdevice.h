@@ -1,5 +1,4 @@
-#ifndef CAMERAVIDEOSTREAMDEVICE_H
-#define CAMERAVIDEOSTREAMDEVICE_H
+#pragma once
 
 // ============================================================================
 // INCLUDES
@@ -419,4 +418,3 @@ private:
     int m_frameCount;
 };
 
-#endif  // CAMERAVIDEOSTREAMDEVICE_H

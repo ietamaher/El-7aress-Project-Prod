@@ -1,6 +1,8 @@
-#ifndef HOMINGCONTROLLER_H
-#define HOMINGCONTROLLER_H
+#pragma once
 
+// ============================================================================
+// INCLUDES
+// ============================================================================
 /**
  * @file homingcontroller.h
  * @brief Homing sequence controller extracted from GimbalController
@@ -236,4 +238,4 @@ private:
     int m_homingTimeoutMs = DEFAULT_HOMING_TIMEOUT_MS;
 };
 
-#endif  // HOMINGCONTROLLER_H
+

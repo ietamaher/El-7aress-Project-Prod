@@ -1,5 +1,4 @@
-#ifndef FIRECONTROLCOMPUTATION_H
-#define FIRECONTROLCOMPUTATION_H
+#pragma once
 
 /**
  * @file firecontrolcomputation.h
@@ -18,10 +17,16 @@
  * @version 1.0
  */
 
-#include "ballisticsprocessorlut.h"
+// ============================================================================
+// INCLUDES
+// ============================================================================
 #include <cmath>
 
-// Forward declaration
+#include "ballisticsprocessorlut.h"
+
+// ============================================================================
+// FORWARD DECLARATIONS
+// ============================================================================
 class BallisticsProcessorLUT;
 
 /**
@@ -263,4 +268,3 @@ private:
                            LeadAngleStatus previousStatus, FireControlResult& result) const;
 };
 
-#endif  // FIRECONTROLCOMPUTATION_H

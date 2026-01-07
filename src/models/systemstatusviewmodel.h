@@ -1,6 +1,8 @@
-#ifndef SYSTEMSTATUSVIEWMODEL_H
-#define SYSTEMSTATUSVIEWMODEL_H
+#pragma once
 
+// ============================================================================
+// INCLUDES
+// ============================================================================
 #include <QObject>
 #include <QString>
 #include <QStringList>
@@ -629,4 +631,3 @@ private:
     QColor m_accentColor;
 };
 
-#endif  // SYSTEMSTATUSVIEWMODEL_H

@@ -1,6 +1,8 @@
-#ifndef ABOUTCONTROLLER_H
-#define ABOUTCONTROLLER_H
+#pragma once
 
+// ============================================================================
+// INCLUDES
+// ============================================================================
 #include <QObject>
 
 class AboutViewModel;
@@ -55,4 +57,4 @@ private:
     SystemStateModel* m_stateModel;
 };
 
-#endif  // ABOUTCONTROLLER_H
+

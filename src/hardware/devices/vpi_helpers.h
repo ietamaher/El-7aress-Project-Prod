@@ -1,12 +1,15 @@
-#ifndef VPI_HELPERS_H
-#define VPI_HELPERS_H
+#pragma once
 
+// ============================================================================
+// INCLUDES
+// ============================================================================
 #include <vpi/Status.h>
 #include <vpi/Types.h>
-#include <stdexcept>
+
+#include <iostream>
 #include <sstream>
+#include <stdexcept>
 #include <string>
-#include <iostream>  // For error logging
 
 // Macro to check VPI status and throw runtime_error on failure
 #define CHECK_VPI_STATUS(STMT)                                                                   \
@@ -30,4 +33,3 @@
         (OBJ) = nullptr;            \
     }
 
-#endif  // VPI_HELPERS_H

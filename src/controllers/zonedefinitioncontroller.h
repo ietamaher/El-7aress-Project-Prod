@@ -1,6 +1,8 @@
-#ifndef ZONEDEFINITIONCONTROLLER_H
-#define ZONEDEFINITIONCONTROLLER_H
+#pragma once
 
+// ============================================================================
+// INCLUDES
+// ============================================================================
 #include <QObject>
 #include "models/domain/systemstatedata.h"
 
@@ -119,8 +121,6 @@ private:
 
     // WIP zone map update
     void updateMapWipZone();
-
-
     State m_currentState;
 
     // ViewModels
@@ -154,4 +154,4 @@ private:
     int m_currentMenuIndex;
 };
 
-#endif  // ZONEDEFINITIONCONTROLLER_H
+

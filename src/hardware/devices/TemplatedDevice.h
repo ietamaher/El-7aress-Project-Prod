@@ -1,9 +1,13 @@
-#ifndef TEMPLATEDDEVICE_H
-#define TEMPLATEDDEVICE_H
+#pragma once
+
+// ============================================================================
+// INCLUDES
+// ============================================================================
+#include <QReadWriteLock>
+
+#include <memory>
 
 #include "hardware/interfaces/IDevice.h"
-#include <QReadWriteLock>
-#include <memory>
 
 /**
  * @brief Template base class providing thread-safe data access for devices
@@ -48,4 +52,3 @@ private:
     DataPtr m_data;
 };
 
-#endif  // TEMPLATEDDEVICE_H

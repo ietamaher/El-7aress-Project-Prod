@@ -1,5 +1,4 @@
-#ifndef EMERGENCYSTOPMONITOR_H
-#define EMERGENCYSTOPMONITOR_H
+#pragma once
 
 /**
  * @file EmergencyStopMonitor.h
@@ -40,9 +39,14 @@
  * @version 1.0
  */
 
+// ============================================================================
+// INCLUDES
+// ============================================================================
 #include <QObject>
 #include <QDateTime>
 #include <QElapsedTimer>
+
+#include <vector>
 
 /**
  * @brief Emergency stop event information
@@ -281,4 +285,3 @@ private:
     void recordEvent(const EmergencyStopEvent& event);
 };
 
-#endif  // EMERGENCYSTOPMONITOR_H

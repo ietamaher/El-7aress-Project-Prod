@@ -1,6 +1,8 @@
-#ifndef PRESETHOMEPOSITIONVIEWMODEL_H
-#define PRESETHOMEPOSITIONVIEWMODEL_H
+#pragma once
 
+// ============================================================================
+// INCLUDES
+// ============================================================================
 /**
  * @file PresetHomePositionViewModel.h
  * @brief ViewModel for the Preset Home Position overlay UI
@@ -82,4 +84,4 @@ private:
     QColor m_accentColor = QColor(70, 226, 165);  // Default green accent
 };
 
-#endif  // PRESETHOMEPOSITIONVIEWMODEL_H
+

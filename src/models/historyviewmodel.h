@@ -1,9 +1,9 @@
-#ifndef HISTORYVIEWMODEL_H
-#define HISTORYVIEWMODEL_H
+#pragma once
+
 
 class HistoryViewModel {
 public:
     HistoryViewModel();
 };
 
-#endif  // HISTORYVIEWMODEL_H
+

@@ -1,6 +1,8 @@
-#ifndef JOYSTICKCONTROLLER_H
-#define JOYSTICKCONTROLLER_H
+#pragma once
 
+// ============================================================================
+// INCLUDES
+// ============================================================================
 #include <QObject>
 
 #include "models/domain/joystickdatamodel.h"
@@ -60,4 +62,3 @@ private:
     bool m_continuousLrfActive = false;
 };
 
-#endif  // JOYSTICKCONTROLLER_H

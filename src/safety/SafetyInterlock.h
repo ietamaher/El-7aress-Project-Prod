@@ -1,3 +1,5 @@
+#pragma once
+
 /**
  * @file SafetyInterlock.h
  * @brief Centralized safety authority for RCWS weapon and motion control
@@ -23,14 +25,16 @@
  * @version 1.0
  */
 
-#ifndef SAFETYINTERLOCK_H
-#define SAFETYINTERLOCK_H
-
+// ============================================================================
+// INCLUDES
+// ============================================================================
 #include <QObject>
 #include <QDateTime>
 #include <QMutex>
 
-// Forward declarations
+// ============================================================================
+// FORWARD DECLARATIONS
+// ============================================================================
 class SystemStateModel;
 
 /**
@@ -268,4 +272,3 @@ private:
     mutable SafetyDenialReason m_lastMoveDenialReason = SafetyDenialReason::None;
 };
 
-#endif  // SAFETYINTERLOCK_H

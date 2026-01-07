@@ -1,5 +1,4 @@
-#ifndef APPCONSTANTS_H
-#define APPCONSTANTS_H
+#pragma once
 
 /**
  * @file AppConstants.h
@@ -12,6 +11,9 @@
  * For user preferences, use QSettings.
  */
 
+// ============================================================================
+// INCLUDES
+// ============================================================================
 #include <cmath>
 
 namespace RcwsConstants {
@@ -322,4 +324,3 @@ constexpr const char* BUILD_TIME = __TIME__;
 
 }  // namespace RcwsConstants
 
-#endif  // APPCONSTANTS_H

@@ -1,6 +1,8 @@
-#ifndef SYSTEMCONTROLLER_H
-#define SYSTEMCONTROLLER_H
+#pragma once
 
+// ============================================================================
+// INCLUDES
+// ============================================================================
 #include <QObject>
 
 // Forward declarations - Managers
@@ -78,4 +80,4 @@ private:
     VideoImageProvider* m_videoProvider = nullptr;
 };
 
-#endif  // SYSTEMCONTROLLER_H
+

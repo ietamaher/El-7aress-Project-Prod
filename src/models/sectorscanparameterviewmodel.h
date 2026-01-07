@@ -1,6 +1,8 @@
-#ifndef SECTORSCANPARAMETERVIEWMODEL_H
-#define SECTORSCANPARAMETERVIEWMODEL_H
+#pragma once
 
+// ============================================================================
+// INCLUDES
+// ============================================================================
 #include <QObject>
 
 /**
@@ -52,4 +54,4 @@ private:
     bool m_isEditingValue = false;
 };
 
-#endif  // SECTORSCANPARAMETERVIEWMODEL_H
+

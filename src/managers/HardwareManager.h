@@ -1,6 +1,8 @@
-#ifndef HARDWAREMANAGER_H
-#define HARDWAREMANAGER_H
+#pragma once
 
+// ============================================================================
+// INCLUDES
+// ============================================================================
 #include <QObject>
 #include <QThread>
 
@@ -240,4 +242,4 @@ private:
     SystemStateModel* m_systemStateModel = nullptr;
 };
 
-#endif  // HARDWAREMANAGER_H
+

@@ -1,6 +1,8 @@
-#ifndef AREAZONEPARAMETERVIEWMODEL_H
-#define AREAZONEPARAMETERVIEWMODEL_H
+#pragma once
 
+// ============================================================================
+// INCLUDES
+// ============================================================================
 #include <QObject>
 
 /**
@@ -45,4 +47,4 @@ private:
     int m_activeField = Field::Enabled;
 };
 
-#endif  // AREAZONEPARAMETERVIEWMODEL_H
+

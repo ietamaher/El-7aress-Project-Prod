@@ -1,11 +1,18 @@
-#ifndef LRFDEVICE_H
-#define LRFDEVICE_H
+#pragma once
+
+// ============================================================================
+// INCLUDES
+// ============================================================================
+#include <QTimer>
+
+#include <memory>
 
 #include "hardware/devices/TemplatedDevice.h"
 #include "hardware/data/DataTypes.h"
-#include <memory>
-#include <QTimer>
 
+// ============================================================================
+// FORWARD DECLARATIONS
+// ============================================================================
 class Transport;
 class LrfProtocolParser;
 class Message;
@@ -72,4 +79,3 @@ private:
     static constexpr int COMMUNICATION_TIMEOUT_MS = 10000;  // 3 seconds without data = disconnected
 };
 
-#endif  // LRFDEVICE_H

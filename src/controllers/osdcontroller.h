@@ -1,6 +1,8 @@
-#ifndef OSDCONTROLLER_H
-#define OSDCONTROLLER_H
+#pragma once
 
+// ============================================================================
+// INCLUDES
+// ============================================================================
 #include <QObject>
 #include <QTimer>
 
@@ -87,4 +89,4 @@ private:
     bool m_staticDetectionComplete;
 };
 
-#endif  // OSDCONTROLLER_H
+

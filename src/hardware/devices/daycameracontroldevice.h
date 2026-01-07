@@ -1,3 +1,5 @@
+#pragma once
+
 /**
  * @file daycameracontroldevice.h
  * @brief Refactored Day Camera device following MIL-STD architecture
@@ -7,12 +9,15 @@
  * @version 2.0
  */
 
-#ifndef DAYCAMERACONTROLDEVICE_H
-#define DAYCAMERACONTROLDEVICE_H
-
+// ============================================================================
+// INCLUDES
+// ============================================================================
 #include "../devices/TemplatedDevice.h"
 #include "../data/DataTypes.h"
 
+// ============================================================================
+// FORWARD DECLARATIONS
+// ============================================================================
 class Transport;
 class DayCameraProtocolParser;
 class Message;
@@ -78,4 +83,3 @@ private:
     static constexpr int STATUS_CHECK_INTERVAL_MS = 10000;  // Status check interval
 };
 
-#endif  // DAYCAMERACONTROLDEVICE_H

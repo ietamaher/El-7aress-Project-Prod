@@ -1,6 +1,8 @@
-#ifndef APPLICATIONCONTROLLER_H
-#define APPLICATIONCONTROLLER_H
+#pragma once
 
+// ============================================================================
+// INCLUDES
+// ============================================================================
 #include <QObject>
 #include "models/domain/systemstatemodel.h"
 
@@ -147,4 +149,4 @@ private:
     SystemStateModel* m_systemStateModel;
 };
 
-#endif  // APPLICATIONCONTROLLER_H
+

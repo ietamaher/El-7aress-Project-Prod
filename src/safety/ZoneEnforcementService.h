@@ -1,5 +1,4 @@
-#ifndef ZONEENFORCEMENTSERVICE_H
-#define ZONEENFORCEMENTSERVICE_H
+#pragma once
 
 /**
  * @file ZoneEnforcementService.h
@@ -37,8 +36,13 @@
  * @version 1.0
  */
 
+// ============================================================================
+// INCLUDES
+// ============================================================================
 #include <QObject>
+
 #include <vector>
+
 #include "models/domain/systemstatedata.h"
 
 /**
@@ -281,4 +285,3 @@ private:
     mutable int m_lastNTZId = -1;  ///< Last No-Traverse Zone ID (for exit detection)
 };
 
-#endif  // ZONEENFORCEMENTSERVICE_H

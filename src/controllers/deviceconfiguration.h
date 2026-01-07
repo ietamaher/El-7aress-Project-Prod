@@ -1,6 +1,8 @@
-#ifndef DEVICECONFIGURATION_H
-#define DEVICECONFIGURATION_H
+#pragma once
 
+// ============================================================================
+// INCLUDES
+// ============================================================================
 #include <QObject>
 #include <QString>
 #include <QSerialPort>
@@ -173,4 +175,4 @@ private:
     static PerformanceConfig m_performance;
 };
 
-#endif  // DEVICECONFIGURATION_H
+

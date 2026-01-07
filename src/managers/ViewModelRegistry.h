@@ -1,6 +1,8 @@
-#ifndef VIEWMODELREGISTRY_H
-#define VIEWMODELREGISTRY_H
+#pragma once
 
+// ============================================================================
+// INCLUDES
+// ============================================================================
 #include <QObject>
 
 // Forward declarations - ViewModels
@@ -158,4 +160,4 @@ private:
     ShutdownConfirmationViewModel* m_shutdownConfirmationViewModel = nullptr;
 };
 
-#endif  // VIEWMODELREGISTRY_H
+

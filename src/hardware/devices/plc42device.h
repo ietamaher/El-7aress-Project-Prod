@@ -1,3 +1,5 @@
+#pragma once
+
 /**
  * @file plc42device.h
  * @brief Refactored PLC42 device following MIL-STD architecture
@@ -22,13 +24,17 @@
  * @version 2.0
  */
 
-#ifndef PLC42DEVICE_H
-#define PLC42DEVICE_H
+// ============================================================================
+// INCLUDES
+// ============================================================================
+#include <QTimer>
 
 #include "../devices/TemplatedDevice.h"
 #include "../data/DataTypes.h"
-#include <QTimer>
 
+// ============================================================================
+// FORWARD DECLARATIONS
+// ============================================================================
 class Transport;
 class Plc42ProtocolParser;
 class QModbusReply;
@@ -110,4 +116,3 @@ private:
     static constexpr int COMMUNICATION_TIMEOUT_MS = 3000;  // 3 seconds without data = disconnected
 };
 
-#endif  // PLC42DEVICE_H

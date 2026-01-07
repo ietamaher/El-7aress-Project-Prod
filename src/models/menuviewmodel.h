@@ -1,6 +1,8 @@
-#ifndef MENUVIEWMODEL_H
-#define MENUVIEWMODEL_H
+#pragma once
 
+// ============================================================================
+// INCLUDES
+// ============================================================================
 #include <QObject>
 #include <QStringListModel>
 #include <QColor>
@@ -65,4 +67,4 @@ private:
     QColor m_accentColor = QColor(70, 226, 165);  // Default green
 };
 
-#endif  // MENUVIEWMODEL_H
+

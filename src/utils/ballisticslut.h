@@ -1,10 +1,13 @@
-#ifndef BALLISTICSLUT_H
-#define BALLISTICSLUT_H
+#pragma once
 
+// ============================================================================
+// INCLUDES
+// ============================================================================
 #include <QString>
 #include <QVector>
-#include <cstdint>
+
 #include <cmath>
+#include <cstdint>
 
 /**
  * @brief Ballistic Lookup Table Entry
@@ -180,4 +183,3 @@ private:
     QString m_tablePath;              ///< Source file path for debugging
 };
 
-#endif  // BALLISTICSLUT_H

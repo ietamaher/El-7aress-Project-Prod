@@ -1,11 +1,15 @@
-#ifndef YOLO_INFERENCE_H
-#define YOLO_INFERENCE_H
+#pragma once
 
+// ============================================================================
+// INCLUDES
+// ============================================================================
 #include <opencv2/opencv.hpp>
 #include <opencv2/dnn.hpp>
-#include <fstream>
-#include <vector>
+
 #include <algorithm>
+#include <fstream>
+#include <string>
+#include <vector>
 
 // Simple RGB color struct to replace QColor
 struct InferenceColor {
@@ -72,4 +76,3 @@ private:
     std::vector<InferenceColor> predefinedColors;
 };
 
-#endif  // YOLO_INFERENCE_H

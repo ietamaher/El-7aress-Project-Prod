@@ -1,6 +1,8 @@
-#ifndef OSDVIEWMODEL_H
-#define OSDVIEWMODEL_H
+#pragma once
 
+// ============================================================================
+// INCLUDES
+// ============================================================================
 #include <QObject>
 #include <QColor>
 #include <QRectF>
@@ -199,8 +201,6 @@ class OsdViewModel : public QObject {
     // User input velocity
     Q_PROPERTY(double stabDebugAzUser READ stabDebugAzUser NOTIFY stabDebugChanged)
     Q_PROPERTY(double stabDebugElUser READ stabDebugElUser NOTIFY stabDebugChanged)
-
-
 public:
     explicit OsdViewModel(QObject* parent = nullptr);
 
@@ -623,8 +623,6 @@ public slots:
 
     // Gyrostabilization debug update (called by OsdController from SystemStateData)
     void updateStabDebug(const SystemStateData& data);
-
-
 signals:
     void accentColorChanged();
     void modeTextChanged();
@@ -739,8 +737,6 @@ signals:
     // Gyrostabilization debug signals
     void stabDebugVisibleChanged();
     void stabDebugChanged();
-
-
 private:
     // Member variables
     QColor m_accentColor;
@@ -758,8 +754,6 @@ private:
     double m_vehicleRoll = 0.0;     // Roll angle
     double m_vehiclePitch = 0.0;    // Pitch angle
     double m_imuTemperature = 0.0;  // IMU temp
-
-
     QString m_statusText;
     QString m_rateText;
     QString m_lrfText;
@@ -868,4 +862,4 @@ private:
     SystemStateData m_stateData;     // Cached state data for stabDebug and servoDebug access
 };
 
-#endif  // OSDVIEWMODEL_H
+

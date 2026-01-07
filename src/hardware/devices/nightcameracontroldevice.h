@@ -1,3 +1,5 @@
+#pragma once
+
 /**
  * @file nightcameracontroldevice.h
  * @brief Refactored Night Camera device following MIL-STD architecture
@@ -7,13 +9,17 @@
  * @version 2.0
  */
 
-#ifndef NIGHTCAMERACONTROLDEVICE_H
-#define NIGHTCAMERACONTROLDEVICE_H
+// ============================================================================
+// INCLUDES
+// ============================================================================
+#include <QTimer>
 
 #include "../devices/TemplatedDevice.h"
 #include "../data/DataTypes.h"
-#include <QTimer>
 
+// ============================================================================
+// FORWARD DECLARATIONS
+// ============================================================================
 class Transport;
 class NightCameraProtocolParser;
 class Message;
@@ -69,4 +75,3 @@ private:
     static constexpr int COMMUNICATION_TIMEOUT_MS = 10000;  // 3 seconds without data = disconnected
 };
 
-#endif  // NIGHTCAMERACONTROLDEVICE_H

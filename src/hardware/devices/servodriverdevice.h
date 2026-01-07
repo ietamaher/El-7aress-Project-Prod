@@ -1,3 +1,5 @@
+#pragma once
+
 /**
  * @file ServoDriverDevice.h
  * @brief Refactored Modbus servo driver device following MIL-STD architecture
@@ -22,14 +24,20 @@
  * @version 2.0
  */
 
-#ifndef SERVODRIVERDEVICE_H
-#define SERVODRIVERDEVICE_H
-
-#include "../devices/TemplatedDevice.h"
-#include "../data/DataTypes.h"
+// ============================================================================
+// INCLUDES
+// ============================================================================
 #include <QTimer>
 #include <QElapsedTimer>
 
+#include <atomic>
+
+#include "../devices/TemplatedDevice.h"
+#include "../data/DataTypes.h"
+
+// ============================================================================
+// FORWARD DECLARATIONS
+// ============================================================================
 class Transport;
 class ServoDriverProtocolParser;
 class QModbusReply;
@@ -119,4 +127,3 @@ private:
     qint64 m_modbusWriteMinNs = 999999999;
 };
 
-#endif  // SERVODRIVERDEVICE_H

@@ -1,6 +1,8 @@
-#ifndef SHUTDOWNCONFIRMATIONVIEWMODEL_H
-#define SHUTDOWNCONFIRMATIONVIEWMODEL_H
+#pragma once
 
+// ============================================================================
+// INCLUDES
+// ============================================================================
 #include <QObject>
 #include <QString>
 #include <QColor>
@@ -79,4 +81,4 @@ private:
     QString m_statusMessage;
 };
 
-#endif  // SHUTDOWNCONFIRMATIONVIEWMODEL_H
+

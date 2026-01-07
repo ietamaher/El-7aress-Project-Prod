@@ -1,6 +1,8 @@
-#ifndef BRIGHTNESSCONTROLLER_H
-#define BRIGHTNESSCONTROLLER_H
+#pragma once
 
+// ============================================================================
+// INCLUDES
+// ============================================================================
 #include <QObject>
 #include <QProcess>
 
@@ -60,4 +62,4 @@ private:
     static constexpr int DEFAULT_BRIGHTNESS = 70;
 };
 
-#endif  // BRIGHTNESSCONTROLLER_H
+

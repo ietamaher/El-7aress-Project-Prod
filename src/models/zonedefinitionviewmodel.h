@@ -1,6 +1,8 @@
-#ifndef ZONEDEFINITIONVIEWMODEL_H
-#define ZONEDEFINITIONVIEWMODEL_H
+#pragma once
 
+// ============================================================================
+// INCLUDES
+// ============================================================================
 #include <QObject>
 #include <QStringList>
 #include <QColor>
@@ -36,8 +38,6 @@ class ZoneDefinitionViewModel : public QObject {
     Q_PROPERTY(float gimbalAz READ gimbalAz NOTIFY gimbalAzChanged)
     Q_PROPERTY(float gimbalEl READ gimbalEl NOTIFY gimbalElChanged)
     Q_PROPERTY(QColor accentColor READ accentColor NOTIFY accentColorChanged)
-
-
 public:
     enum PanelType { None = 0, AreaZone = 1, SectorScan = 2, TRP = 3 };
     Q_ENUM(PanelType)
@@ -135,4 +135,4 @@ private:
     QColor m_accentColor = QColor(70, 226, 165);  // Default green
 };
 
-#endif  // ZONEDEFINITIONVIEWMODEL_H
+

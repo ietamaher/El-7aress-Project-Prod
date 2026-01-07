@@ -1,9 +1,12 @@
-#ifndef LRFMESSAGE_H
-#define LRFMESSAGE_H
+#pragma once
+
+// ============================================================================
+// INCLUDES
+// ============================================================================
+#include <QString>
 
 #include "hardware/interfaces/Message.h"
 #include "hardware/data/DataTypes.h"
-#include <QString>
 
 /**
  * @brief Message carrying LRF measurement data
@@ -43,4 +46,3 @@ private:
     QString m_version;
 };
 
-#endif  // LRFMESSAGE_H

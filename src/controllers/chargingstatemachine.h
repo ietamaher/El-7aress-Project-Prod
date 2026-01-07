@@ -1,6 +1,8 @@
-#ifndef CHARGINGSTATEMACHINE_H
-#define CHARGINGSTATEMACHINE_H
+#pragma once
 
+// ============================================================================
+// INCLUDES
+// ============================================================================
 /**
  * @file chargingstatemachine.h
  * @brief Charging (cocking actuator) state machine extracted from WeaponController
@@ -384,4 +386,4 @@ private:
     bool m_jamDetectionActive = false;
 };
 
-#endif  // CHARGINGSTATEMACHINE_H
+

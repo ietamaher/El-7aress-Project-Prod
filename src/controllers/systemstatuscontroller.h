@@ -1,6 +1,8 @@
-#ifndef SYSTEMSTATUSCONTROLLER_H
-#define SYSTEMSTATUSCONTROLLER_H
+#pragma once
 
+// ============================================================================
+// INCLUDES
+// ============================================================================
 #include <QObject>
 
 class SystemStatusViewModel;
@@ -45,4 +47,4 @@ private:
     SystemStateModel* m_stateModel;
 };
 
-#endif  // SYSTEMSTATUSCONTROLLER_H
+

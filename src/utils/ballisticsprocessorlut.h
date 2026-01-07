@@ -1,10 +1,14 @@
-#ifndef BALLISTICSPROCESSORLUT_H
-#define BALLISTICSPROCESSORLUT_H
+#pragma once
 
+// ============================================================================
+// INCLUDES
+// ============================================================================
 #include "ballisticslut.h"
 #include "models/domain/systemstatemodel.h"
 
-
+// ============================================================================
+// STRUCTS
+// ============================================================================
 struct LeadCalculationResult {
     float leadAzimuthDegrees = 0.0f;    // The calculated lead offset in Azimuth (degrees)
     float leadElevationDegrees = 0.0f;  // The calculated lead offset in Elevation (degrees)
@@ -128,4 +132,3 @@ private:
     const float MAX_LEAD_ANGLE_DEGREES = 10.0f;  ///< Maximum lead allowed
 };
 
-#endif  // BALLISTICSPROCESSORLUT_H

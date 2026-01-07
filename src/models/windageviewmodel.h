@@ -1,6 +1,8 @@
-#ifndef WINDAGEVIEWMODEL_H
-#define WINDAGEVIEWMODEL_H
+#pragma once
 
+// ============================================================================
+// INCLUDES
+// ============================================================================
 #include <QObject>
 #include <QColor>
 
@@ -16,8 +18,6 @@ class WindageViewModel : public QObject {
     Q_PROPERTY(float windDirection READ windDirection NOTIFY windDirectionChanged)
     Q_PROPERTY(QString windDirectionLabel READ windDirectionLabel NOTIFY windDirectionLabelChanged)
     Q_PROPERTY(QColor accentColor READ accentColor NOTIFY accentColorChanged)
-
-
 public:
     explicit WindageViewModel(QObject* parent = nullptr);
 
@@ -89,4 +89,4 @@ private:
     QColor m_accentColor = QColor(70, 226, 165);  // Default green
 };
 
-#endif  // WINDAGEVIEWMODEL_H
+

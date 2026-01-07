@@ -1,3 +1,5 @@
+#pragma once
+
 /**
  * @file radardevice.h
  * @brief Refactored Radar device following MIL-STD architecture
@@ -22,14 +24,18 @@
  * @version 2.0
  */
 
-#ifndef RADARDEVICE_H
-#define RADARDEVICE_H
-
-#include "../devices/TemplatedDevice.h"
-#include "../data/DataTypes.h"
+// ============================================================================
+// INCLUDES
+// ============================================================================
 #include <QVector>
 #include <QTimer>
 
+#include "../devices/TemplatedDevice.h"
+#include "../data/DataTypes.h"
+
+// ============================================================================
+// FORWARD DECLARATIONS
+// ============================================================================
 class Transport;
 class RadarProtocolParser;
 class Message;
@@ -94,4 +100,3 @@ private:
         10000;  // 10 seconds without data = disconnected
 };
 
-#endif  // RADARDEVICE_H

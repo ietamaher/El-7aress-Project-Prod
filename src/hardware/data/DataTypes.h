@@ -1,9 +1,12 @@
-#ifndef DATATYPES_H
-#define DATATYPES_H
+#pragma once
 
+// ============================================================================
+// INCLUDES
+// ============================================================================
 #include <QtCore>
 #include <QStringList>
-#include <cmath>  // For std::abs in epsilon-based comparisons
+
+#include <cmath>
 
 // ============================================================================
 // CAMERA DATA STRUCTURES
@@ -396,4 +399,3 @@ struct JoystickData {
     }
 };
 
-#endif  // DATATYPES_H

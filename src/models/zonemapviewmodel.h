@@ -1,6 +1,8 @@
-#ifndef ZONEMAPVIEWMODEL_H
-#define ZONEMAPVIEWMODEL_H
+#pragma once
 
+// ============================================================================
+// INCLUDES
+// ============================================================================
 #include <QObject>
 #include <QVariantList>
 #include <QVariantMap>
@@ -34,8 +36,6 @@ class ZoneMapViewModel : public QObject {
     // Highlighted zone
     Q_PROPERTY(int highlightedZoneId READ highlightedZoneId NOTIFY highlightedZoneIdChanged)
     Q_PROPERTY(QColor accentColor READ accentColor NOTIFY accentColorChanged)
-
-
 public:
     explicit ZoneMapViewModel(QObject* parent = nullptr);
 
@@ -130,4 +130,4 @@ private:
     QColor m_accentColor = QColor(70, 226, 165);  // Default green
 };
 
-#endif  // ZONEMAPVIEWMODEL_H
+

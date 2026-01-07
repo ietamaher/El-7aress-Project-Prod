@@ -1,6 +1,8 @@
-#ifndef RETICLEMENUCONTROLLER_H
-#define RETICLEMENUCONTROLLER_H
+#pragma once
 
+// ============================================================================
+// INCLUDES
+// ============================================================================
 // ============================================================================
 // Qt Framework
 // ============================================================================
@@ -95,4 +97,3 @@ private:
     ReticleType m_originalReticleType = ReticleType::BoxCrosshair;
 };
 
-#endif  // RETICLEMENUCONTROLLER_H

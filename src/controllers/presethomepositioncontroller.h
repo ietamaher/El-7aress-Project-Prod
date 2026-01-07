@@ -1,6 +1,8 @@
-#ifndef PRESETHOMEPOSITIONCONTROLLER_H
-#define PRESETHOMEPOSITIONCONTROLLER_H
+#pragma once
 
+// ============================================================================
+// INCLUDES
+// ============================================================================
 /**
  * @file PresetHomePositionController.h
  * @brief Controller for the Preset Home Position procedure
@@ -108,4 +110,4 @@ private:
     static constexpr int POSITION_UPDATE_INTERVAL_MS = 100;
 };
 
-#endif  // PRESETHOMEPOSITIONCONTROLLER_H
+

@@ -1,9 +1,12 @@
-#ifndef LRFPROTOCOLPARSER_H
-#define LRFPROTOCOLPARSER_H
+#pragma once
+
+// ============================================================================
+// INCLUDES
+// ============================================================================
+#include <vector>
 
 #include "hardware/interfaces/ProtocolParser.h"
 #include "hardware/data/DataTypes.h"
-#include <vector>
 
 /**
  * @brief Protocol parser for Jioptics LRF devices
@@ -44,4 +47,3 @@ private:
     QByteArray m_readBuffer;
 };
 
-#endif  // LRFPROTOCOLPARSER_H
