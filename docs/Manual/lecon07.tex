@@ -43,8 +43,83 @@ The System Status display provides real-time monitoring of all critical subsyste
     \item Day/Night Cameras
     \item Control Panels
     \item Servo Actuator
+    \item Homing Status
+    \item Charging Status
+    \item Motion Mode
     \item Alarms/Warnings
 \end{itemize}
+
+% ----------------------------------------------------------------------------
+\subsection{HOMING SEQUENCE STATUS}
+
+During system startup or when homing is requested, the OSD displays the current homing phase:
+
+\begin{longtable}{|L{0.20\textwidth}|L{0.45\textwidth}|L{0.25\textwidth}|}
+\hline
+\rowcolor{milblue!20}
+\textbf{Status} & \textbf{Meaning} & \textbf{Operator Action} \\
+\hline
+\endfirsthead
+
+\hline
+\rowcolor{milblue!20}
+\textbf{Status} & \textbf{Meaning} & \textbf{Operator Action} \\
+\hline
+\endhead
+
+\textbf{Idle} & No homing operation active & Normal ops \\
+\hline
+\textbf{Requested} & Homing command sent to servos & Wait \\
+\hline
+\textbf{In Progress} & Motors actively seeking home position & Wait, do not interrupt \\
+\hline
+\textbf{Completed} & Home position found successfully & System ready \\
+\hline
+\textbf{Failed} & Homing timeout or error occurred & May need to retry \\
+\hline
+\textbf{Aborted} & Homing cancelled (E-Stop or other) & Check safety, may retry \\
+\hline
+\end{longtable}
+
+\begin{notebox}
+Motion modes are blocked during homing. Wait for homing to complete before operating the gimbal.
+\end{notebox}
+
+% ----------------------------------------------------------------------------
+\subsection{MOTION MODE STATUS}
+
+The OSD displays the current motion mode. The following modes may be displayed:
+
+\begin{longtable}{|L{0.18\textwidth}|L{0.50\textwidth}|L{0.22\textwidth}|}
+\hline
+\rowcolor{milblue!20}
+\textbf{Mode} & \textbf{Description} & \textbf{Gimbal Control} \\
+\hline
+\endfirsthead
+
+\hline
+\rowcolor{milblue!20}
+\textbf{Mode} & \textbf{Description} & \textbf{Gimbal Control} \\
+\hline
+\endhead
+
+\textbf{Manual} & Operator joystick control with stabilization & Operator (joystick) \\
+\hline
+\textbf{AutoSectorScan} & Automated scanning between two azimuth points & Automatic \\
+\hline
+\textbf{TRPScan} & Sequential scan through Target Reference Points & Automatic \\
+\hline
+\textbf{RadarSlew} & Slewing to radar-designated target & Automatic \\
+\hline
+\textbf{Tracking} & Vision-based target tracking active & Automatic (tracker) \\
+\hline
+\textbf{FREE} & Gimbal brakes released, manual positioning & None (unpowered) \\
+\hline
+\end{longtable}
+
+\begin{warningbox}[FREE MODE]
+When the local FREE toggle switch is ON, motion mode displays as \textbf{FREE}. The gimbal brakes are released and no servo power is applied. The gimbal can be manually positioned by hand. Ensure the area is clear before physically moving the gimbal.
+\end{warningbox}
 
 % ============================================================================
 \section{DEVICE STATUS REFERENCE}

@@ -24,7 +24,7 @@
 \subsection{JOYSTICK}
 
 \spectable{
-	\begin{tabular}{|L{0.25\textwidth}|L{0.65\textwidth}|}
+	\begin{tabular}{|L{0.18\textwidth}|L{0.72\textwidth}|}
 		\hline
 		\rowcolor{milblue!20}
 		\textbf{Control} & \textbf{Function} \\
@@ -33,25 +33,33 @@
 		\hline
 		\textbf{Y-Axis} & Elevation (up/down) \\
 		\hline
-		\textbf{Button 0} & Master Arm \\
+		\textbf{Button 0} & Fire Intent (half-press) - Engages LAC if armed, enters dead reckoning during tracking \\
 		\hline
-		\textbf{Button 2} & LAC Toggle (hold Button 3) \\
+		\textbf{Button 1} & LRF Trigger (single=measure, double-click=toggle continuous 5Hz mode) \\
 		\hline
-		\textbf{Button 3} & Dead Man Switch \\
+		\textbf{Button 2} & LAC Toggle (hold Button 3) - Arms/disarms LAC. 2-second minimum between toggles \\
 		\hline
-		\textbf{Button 4} & Track Select (single=start, double=abort) \\
+		\textbf{Button 3} & Dead Man Switch (Palm Switch) - Must be held for weapon ops, LAC, tracking \\
 		\hline
-		\textbf{Button 5} & Fire \\
+		\textbf{Button 4} & Track Select (single=advance phase, double-click <1sec=abort tracking) \\
 		\hline
-		\textbf{Button 6/8} & Zoom In/Out \\
+		\textbf{Button 5} & Fire - Press=fire, Release=stop. Requires all safety conditions \\
 		\hline
-		\textbf{Button 7/9} & Thermal LUT \\
+		\textbf{Button 6} & Zoom In (continuous while held) \\
 		\hline
-		\textbf{Button 10/12} & Camera Switch \\
+		\textbf{Button 7} & Video LUT Next (thermal camera only) \\
 		\hline
-		\textbf{Button 11/13} & Motion Mode Cycle \\
+		\textbf{Button 8} & Zoom Out (continuous while held) \\
 		\hline
-		\textbf{D-Pad} & Acquisition gate sizing (in Acquisition mode) \\
+		\textbf{Button 9} & Video LUT Previous (thermal camera only) \\
+		\hline
+		\textbf{Button 10} & LRF Clear - Clears range measurement only (NOT zeroing) \\
+		\hline
+		\textbf{Button 11/13} & Motion Mode Cycle - Blocked during tracking \\
+		\hline
+		\textbf{Button 12} & Exit to Manual Mode - Blocked during tracking \\
+		\hline
+		\textbf{D-Pad} & Acquisition gate sizing (in Acquisition mode only) \\
 		\hline
 	\end{tabular}
 }
@@ -91,18 +99,20 @@
 	\textbf{Indicator} & \textbf{Meaning} \\
 	\hline
 	\endfirsthead
-	
+
 	\hline
 	\rowcolor{milblue!20}
 	\textbf{Indicator} & \textbf{Meaning} \\
 	\hline
 	\endhead
-	
+
 	\textbf{Z} & Zeroing active \\
 	\hline
 	\textbf{ENV} & Environmental parameters active \\
 	\hline
-	\textcolor{milgreen}{\textbf{LEAD ANGLE ON}} (GREEN) & LAC active, ready to fire \\
+	\textcolor{cyan}{\textbf{LAC ARMED}} (CYAN) & LAC armed, awaiting fire trigger. Lead NOT applied \\
+	\hline
+	\textcolor{milgreen}{\textbf{LEAD ANGLE ON}} (GREEN) & LAC engaged during firing, lead actively applied \\
 	\hline
 	\textcolor{milyellow}{\textbf{LEAD ANGLE LAG}} (YELLOW) & LAC waiting for tracking data \\
 	\hline
@@ -113,6 +123,10 @@
 	\textbf{TRACKING} & Tracking active \\
 	\hline
 	\textbf{ACQUISITION} & Acquisition mode \\
+	\hline
+	\textbf{COAST} & Tracking lost, predicting target position \\
+	\hline
+	\textbf{FREE} & Gimbal brakes released, manual positioning \\
 	\hline
 	\textbf{RNG: xxxx m} & Laser range reading \\
 	\hline
@@ -317,39 +331,44 @@
 \section{LAC (LEAD ANGLE COMPENSATION) GUIDE}
 
 \begin{quickref}
-	\textbf{LAC ACTIVATION}
-	
+	\textbf{LAC ARMING (Two-Stage Workflow)}
+
 	\begin{enumerate}
 		\item Establish Active Lock (green gate)
 		\item Hold \button{Button 3} (Dead Man Switch)
 		\item Press \button{Button 2} (LAC Toggle)
 		\item Release both buttons
-		\item Verify: \textcolor{milgreen}{\textbf{LEAD ANGLE ON}} (GREEN)
+		\item Verify: \textcolor{cyan}{\textbf{LAC ARMED}} (CYAN) - Lead NOT yet applied
+		\item Press fire trigger (Button 0) to \textbf{engage} LAC
+		\item Status changes to \textcolor{milgreen}{\textbf{LEAD ANGLE ON}} (GREEN) - Lead applied
 	\end{enumerate}
-	
+
 	\textbf{LAC STATUS MEANINGS}
-	
+
 	\begin{itemize}
-		\item \textcolor{milgreen}{\textbf{LEAD ANGLE ON}} (GREEN): Ready to fire
+		\item \textcolor{cyan}{\textbf{LAC ARMED}} (CYAN): Armed, awaiting fire trigger
+		\item \textcolor{milgreen}{\textbf{LEAD ANGLE ON}} (GREEN): Engaged, lead applied during firing
 		\item \textcolor{milyellow}{\textbf{LEAD ANGLE LAG}} (YELLOW): Wait 2-5 seconds
 		\item \textcolor{milred}{\textbf{ZOOM OUT}} (RED): Zoom out, LAC non-functional
 	\end{itemize}
-	
+
 	\textbf{WHEN TO USE LAC}
-	
+
 	\begin{itemize}
 		\item ✅ Target moving laterally (crossing FOV)
 		\item ✅ Target speed >5 m/s
 		\item ✅ Range >100 meters
 	\end{itemize}
-	
+
 	\textbf{WHEN NOT TO USE LAC}
-	
+
 	\begin{itemize}
 		\item ❌ Stationary targets
 		\item ❌ Targets moving radially (toward/away)
 		\item ❌ Very close range (<50m)
 	\end{itemize}
+
+	\textbf{IMPORTANT:} Wait 2 seconds before re-arming LAC. System blocks early attempts.
 \end{quickref}
 
 % ============================================================================
