@@ -100,6 +100,29 @@ Only reset after verifying \textbf{ALL} items:
 \end{enumerate}
 \end{procedurebox}
 
+\subsubsection{Automatic Recovery Actions}
+
+Upon E-Stop release, the system automatically performs the following recovery actions:
+
+\begin{enumerate}
+    \item \textbf{Servos return to MANUAL mode} - Previous motion mode is restored after servos initialize
+    \item \textbf{Cocking actuator retracts} - If charging was interrupted, the actuator automatically retracts to the safe home position
+    \item \textbf{Tracking is stopped} - Any active tracking is cancelled
+    \item \textbf{Weapon state reset} - Weapon arming is disabled and must be re-armed manually
+\end{enumerate}
+
+\textbf{After E-Stop release, you must:}
+\begin{checklist}
+    \item Wait for servos to initialize (status shows "Connected")
+    \item Re-arm the weapon if needed (Gun Arm switch)
+    \item Re-charge the weapon if charging was interrupted
+    \item Resume normal operations
+\end{checklist}
+
+\begin{notebox}
+The previous motion mode is restored automatically once servos are ready. You do not need to manually select the motion mode after E-Stop recovery.
+\end{notebox}
+
 \begin{warningbox}[DO NOT RESET IF]
 \textbf{DO NOT RESET E-STOP IF:}
 \begin{itemize}
@@ -154,6 +177,18 @@ Abort tracking \textbf{immediately} when:
 \begin{notebox}
 No Dead Man Switch required for abort. Works from any phase.
 \end{notebox}
+
+\subsubsection{Motion Mode Changes Blocked During Tracking}
+
+\begin{warningbox}[RESTRICTION]
+Motion mode changes (Button 11/13 or Button 12) are \textbf{blocked} while in any tracking phase (Acquisition, Lock Pending, Active Lock, Coast, or Firing). The system will ignore the command and log a warning.
+
+\textbf{To change motion modes while tracking:}
+\begin{enumerate}
+    \item First abort tracking (double-press Button 4)
+    \item Then select the new motion mode
+\end{enumerate}
+\end{warningbox}
 
 \subsubsection{Tracking Abort vs. E-Stop}
 

@@ -539,8 +539,8 @@ Result: HIT (bullet meets target at predicted position)
     \item Camera FOV adequate (avoid max zoom)
 \end{checklist}
 
-\begin{procedurebox}[LAC ACTIVATION]
-\textbf{ACTIVATION:}
+\begin{procedurebox}[LAC ARMING]
+\textbf{ARMING LAC:}
 \begin{enumerate}
     \item Hold \button{Button 3} (Dead Man Switch)
     \item Press \button{Button 2} (LAC Toggle)
@@ -550,11 +550,30 @@ Result: HIT (bullet meets target at predicted position)
 
 \textbf{VERIFICATION:}
 \begin{checklist}
-    \item \osd{LAC: ON} indicator appears (GREEN)
-    \item CCIP reticle shifts to lead position (ahead of target)
+    \item \osd{LAC ARMED} indicator appears (CYAN/BLUE)
+    \item System latches current target tracking rate
     \item Track confidence remains >70\%
 \end{checklist}
 \end{procedurebox}
+
+\subsubsection{LAC ARM → ENGAGE → DISENGAGE Workflow}
+
+\begin{warningbox}[IMPORTANT - LAC OPERATES IN TWO STAGES]
+LAC follows a two-stage workflow:
+\begin{enumerate}
+    \item \textbf{ARM}: Press Button 2 while holding Button 3 to \textbf{arm} LAC. This latches the target's current tracking rate. Lead is NOT yet applied.
+    \item \textbf{ENGAGE}: When you press the fire trigger (Button 0), LAC becomes \textbf{engaged} and lead is actively applied to the gimbal.
+    \item \textbf{DISENGAGE}: When you release the fire trigger, LAC returns to \textbf{armed} state. Lead is removed, but LAC remains armed for subsequent bursts.
+\end{enumerate}
+\end{warningbox}
+
+\textbf{Why Two Stages?}
+\begin{itemize}
+    \item Arming captures the target's motion at a specific moment
+    \item Lead is only applied during actual firing
+    \item Allows operator to fire multiple bursts using the same latched rate
+    \item Releasing trigger removes lead but keeps LAC armed for next burst
+\end{itemize}
 
 \subsubsection{El-7aress-Compliant LAC Latching Behavior}
 
@@ -566,10 +585,10 @@ Per El-7aress H100 specification, LAC follows specific latching rules:
 
 \textbf{LAC Latching Behavior:}
 \begin{itemize}
-    \item When LAC is toggled ON, system \textbf{latches} current target tracking rate
+    \item When LAC is armed, system \textbf{latches} current target tracking rate
     \item Lead calculation uses latched rate, not continuously updated rate
-    \item If operator toggles LAC OFF then ON again, must wait \textbf{2 seconds minimum}
-    \item System will \textbf{block} LAC toggle if attempted too soon
+    \item If operator disarms LAC then attempts to re-arm, must wait \textbf{2 seconds minimum}
+    \item \textbf{System blocks the action:} If you attempt to re-arm LAC within 2 seconds of the last disarm, the button press is \textbf{ignored entirely}. The system will not respond until the 2-second interval has passed.
 \end{itemize}
 
 \textbf{Warning - Target Switching:}
@@ -592,13 +611,32 @@ Per El-7aress H100 specification, LAC follows specific latching rules:
 The OSD displays LAC status in the following formats:
 
 \begin{lstlisting}
-LAC: OFF       (gray)   - LAC disabled
-LAC: ON        (green)  - LAC active and functioning
+LAC: OFF       (gray)   - LAC disabled (not armed)
+LAC ARMED      (cyan)   - LAC armed, awaiting fire trigger
+LEAD ANGLE ON  (green)  - LAC engaged, lead actively applied
 LAC: LAG       (yellow) - Insufficient tracking data, wait 2-5 sec
 LAC: ZOOM OUT  (red)    - FOV too narrow, zoom out required
 \end{lstlisting}
 
-\subsubsection{STATUS: "LAC: ON" (GREEN)}
+\subsubsection{STATUS: "LAC ARMED" (CYAN)}
+
+\textbf{Meaning:} LAC is armed but fire trigger not pressed
+
+\textbf{Display:}
+\begin{itemize}
+    \item OSD shows: \osd{LAC ARMED} in cyan/blue
+    \item Target tracking rate has been captured (latched)
+    \item Lead angle is \textbf{NOT} being applied yet
+\end{itemize}
+
+\textbf{Operator Action:}
+\begin{itemize}
+    \item Lead will be applied when you press the fire trigger
+    \item Fire trigger engages LAC → status changes to "LEAD ANGLE ON"
+    \item Releasing trigger returns to "LAC ARMED" state
+\end{itemize}
+
+\subsubsection{STATUS: "LEAD ANGLE ON" (GREEN)}
 
 \textbf{Meaning:} LAC active and functioning correctly
 
@@ -672,9 +710,9 @@ Extremely fast-moving targets may require wide FOV even at close range.
 \end{notebox}
 
 % ----------------------------------------------------------------------------
-\subsection{LAC DEACTIVATION PROCEDURE}
+\subsection{LAC DISARMING PROCEDURE}
 
-\subsubsection{When to Deactivate}
+\subsubsection{When to Disarm LAC}
 \begin{itemize}
     \item Target stops moving
     \item Lost track of target
@@ -684,8 +722,8 @@ Extremely fast-moving targets may require wide FOV even at close range.
     \item Switching to stationary target
 \end{itemize}
 
-\begin{procedurebox}[LAC DEACTIVATION]
-\textbf{DEACTIVATION:}
+\begin{procedurebox}[LAC DISARMING]
+\textbf{DISARMING:}
 \begin{enumerate}
     \item Hold \button{Button 3} (Dead Man Switch)
     \item Press \button{Button 2} (LAC Toggle)
@@ -695,12 +733,16 @@ Extremely fast-moving targets may require wide FOV even at close range.
 
 \textbf{VERIFICATION:}
 \begin{checklist}
-    \item \osd{LEAD ANGLE ON} indicator disappears
-    \item \osd{LAC} bracket removed from CCIP reticle
-    \item Reticle pipper returns to boresight alignment
+    \item \osd{LAC ARMED} and \osd{LEAD ANGLE ON} indicators disappear
+    \item Status returns to \osd{LAC: OFF}
+    \item Reticle pipper returns to boresight alignment (with gravity drop only)
     \item System ready for stationary target engagement
 \end{checklist}
 \end{procedurebox}
+
+\begin{notebox}
+Remember: You must wait \textbf{2 seconds} before re-arming LAC. If you press Button 2 too soon, the command is ignored.
+\end{notebox}
 
 % ----------------------------------------------------------------------------
 \subsection{USING LAC IN ENGAGEMENT}
@@ -787,23 +829,20 @@ The El 7arress RCWS employs \textbf{TWO INDEPENDENT} ballistic correction system
 
 \textbf{Activation:} \textbf{AUTOMATIC} when LRF has valid range data
 
+\begin{notebox}[NO OPERATOR ACTION REQUIRED]
+Ballistic drop compensation is calculated and applied \textbf{automatically} whenever the LRF provides a valid range measurement. You do not need to activate any switch or menu option. The CCIP pipper always shows the gravity-compensated impact point when range is known.
+\end{notebox}
+
 \textbf{What It Corrects:}
 \begin{itemize}
     \item \textbf{Gravity drop} - Bullet falls due to gravity over distance
-    \item \textbf{Wind deflection} - Crosswind pushes bullet laterally
-    \item \textbf{Environmental factors} - Temperature, altitude affect trajectory
+    \item \textbf{Wind deflection} - Crosswind pushes bullet laterally (if environmental parameters set)
+    \item \textbf{Environmental factors} - Temperature, altitude affect trajectory (if environmental parameters set)
 \end{itemize}
 
-\textbf{System Variables:}
-\begin{itemize}
-    \item \texttt{ballisticDropOffsetAz} - Azimuth correction (wind deflection)
-    \item \texttt{ballisticDropOffsetEl} - Elevation correction (gravity drop)
-    \item \texttt{ballisticDropActive} - True when valid LRF range exists
-\end{itemize}
+\textbf{Operator Action:} \textbf{NONE REQUIRED} - System applies gravity drop corrections automatically when range is valid. Environmental corrections (temperature, altitude, wind) require configuration via menu.
 
-\textbf{Operator Action:} \textbf{NONE REQUIRED} - System applies corrections automatically when range is valid.
-
-\textbf{OSD Indicator:} \osd{ENV} appears when environmental parameters are active.
+\textbf{OSD Indicator:} \osd{ENV} appears when environmental parameters are active (in addition to automatic gravity drop).
 
 % ----------------------------------------------------------------------------
 \subsection{SYSTEM 2: MOTION LEAD COMPENSATION (MANUAL TOGGLE)}
@@ -829,6 +868,25 @@ The El 7arress RCWS employs \textbf{TWO INDEPENDENT} ballistic correction system
 \textbf{OSD Indicator:} \osd{LAC: ON} / \osd{LAC: LAG} / \osd{LAC: ZOOM OUT}
 
 % ----------------------------------------------------------------------------
+\subsection{CCIP PIPPER DISPLAY}
+
+The system displays two separate visual elements on the OSD:
+
+\begin{itemize}
+    \item \textbf{Reticle (Crosshair):} Shows gun boresight with zeroing only - where the gun barrel is actually pointed
+    \item \textbf{CCIP Pipper:} Shows predicted impact point including all ballistic corrections
+\end{itemize}
+
+\begin{notebox}[CCIP PIPPER VISIBILITY]
+The CCIP pipper appears whenever a valid LRF range exists. It shows where your rounds will actually impact, accounting for:
+\begin{itemize}
+    \item Gravity drop (automatic when range valid)
+    \item Wind deflection (when environmental parameters set)
+    \item Motion lead (when LAC is engaged during firing)
+\end{itemize}
+\textbf{Aim at the CCIP pipper, not the center crosshair, for accurate fire.}
+\end{notebox}
+
 \subsection{COMBINED CCIP CALCULATION}
 
 The CCIP (Continuously Computed Impact Point) pipper shows where the bullet will actually hit:
@@ -839,7 +897,7 @@ The CCIP (Continuously Computed Impact Point) pipper shows where the bullet will
 \centering
 \textbf{CCIP (*) = Gun Boresight + Zeroing Offset}\\
 \textbf{+ Ballistic Drop Compensation (auto when range valid)}\\
-\textbf{+ Motion Lead Compensation (only if Button 2 toggled ON)}
+\textbf{+ Motion Lead Compensation (only when LAC engaged during firing)}
 }
 }
 \end{center}

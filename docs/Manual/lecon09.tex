@@ -331,6 +331,68 @@ If NO-GO: Do NOT proceed with mission. Notify maintenance.
 \textbf{Escalate if:} LRF disconnected or constant fault flag.
 
 % ----------------------------------------------------------------------------
+\subsection{LRF OPERATING MODES}
+
+The LRF supports two operating modes:
+
+\subsubsection{Single-Shot Mode (Default)}
+
+\begin{itemize}
+    \item Press \button{Button 1} once to trigger a single range measurement
+    \item Range displayed on OSD: \osd{RNG: xxxx m}
+    \item Best for stationary targets or occasional ranging
+\end{itemize}
+
+\subsubsection{Continuous Mode (5Hz Automatic Ranging)}
+
+\begin{procedurebox}[ENABLING CONTINUOUS LRF MODE]
+\textbf{To enable:}
+\begin{enumerate}
+    \item \textbf{Double-press} \button{Button 1} within 1 second
+    \item System enters continuous ranging mode (5Hz)
+    \item Range updates automatically ~5 times per second
+\end{enumerate}
+
+\textbf{To disable:}
+\begin{enumerate}
+    \item \textbf{Double-press} \button{Button 1} again within 1 second
+    \item System returns to single-shot mode
+\end{enumerate}
+\end{procedurebox}
+
+\begin{notebox}
+When continuous mode is active, single presses of Button 1 are \textbf{ignored}. You must double-press again to disable continuous mode and return to single-shot operation.
+\end{notebox}
+
+\textbf{When to use Continuous Mode:}
+\begin{itemize}
+    \item Tracking moving targets where range changes rapidly
+    \item When you need constant range updates for ballistic calculations
+    \item During active engagements with maneuvering targets
+\end{itemize}
+
+\textbf{Caution:}
+\begin{itemize}
+    \item Continuous mode increases LRF component wear
+    \item May cause faster temperature rise
+    \item Disable when not needed
+\end{itemize}
+
+% ----------------------------------------------------------------------------
+\subsection{LRF CLEAR VS ZEROING CLEAR}
+
+These are \textbf{separate functions}:
+
+\begin{itemize}
+    \item \textbf{LRF Clear (Button 10):} Clears the current LRF range measurement only. Sets stored range to 0. Does \textbf{NOT} affect weapon zeroing.
+    \item \textbf{Clear Active Zero (Menu):} Clears weapon zeroing offsets. Does \textbf{NOT} affect LRF measurements.
+\end{itemize}
+
+\begin{notebox}
+If you want to clear both LRF range and zeroing, you must perform both actions separately.
+\end{notebox}
+
+% ----------------------------------------------------------------------------
 \subsection{HIGH TEMPERATURE WARNING}
 
 \subsubsection{Symptoms}
