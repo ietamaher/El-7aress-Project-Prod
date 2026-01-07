@@ -45,23 +45,23 @@
  * @brief Result of a zone check operation
  */
 struct ZoneCheckResult {
-    bool isInZone = false;          ///< True if point is inside a zone
-    int zoneId = -1;                ///< ID of the zone (if in zone)
-    QString zoneName;               ///< Name of the zone (if in zone)
+    bool isInZone = false;               ///< True if point is inside a zone
+    int zoneId = -1;                     ///< ID of the zone (if in zone)
+    QString zoneName;                    ///< Name of the zone (if in zone)
     ZoneType zoneType = ZoneType::None;  ///< Type of zone
-    bool isOverridable = false;     ///< Whether the zone can be overridden
+    bool isOverridable = false;          ///< Whether the zone can be overridden
 };
 
 /**
  * @brief Result of a collision check operation
  */
 struct CollisionCheckResult {
-    bool wouldCollide = false;      ///< True if movement would cross into zone
-    double allowedFraction = 1.0;   ///< Fraction of movement allowed (0.0-1.0)
-    int zoneId = -1;                ///< ID of the blocking zone
-    QString zoneName;               ///< Name of the blocking zone
-    double collisionAzimuth = 0.0;  ///< Azimuth at collision point
-    double collisionElevation = 0.0; ///< Elevation at collision point
+    bool wouldCollide = false;        ///< True if movement would cross into zone
+    double allowedFraction = 1.0;     ///< Fraction of movement allowed (0.0-1.0)
+    int zoneId = -1;                  ///< ID of the blocking zone
+    QString zoneName;                 ///< Name of the blocking zone
+    double collisionAzimuth = 0.0;    ///< Azimuth at collision point
+    double collisionElevation = 0.0;  ///< Elevation at collision point
 };
 
 /**
@@ -74,8 +74,7 @@ struct CollisionCheckResult {
  * - Provide single authority for zone decisions
  * - Enable zone caching for performance
  */
-class ZoneEnforcementService : public QObject
-{
+class ZoneEnforcementService : public QObject {
     Q_OBJECT
 
 public:
@@ -109,7 +108,9 @@ public:
      * @brief Get current zone list
      * @return Reference to current zone vector
      */
-    const std::vector<AreaZone>& zones() const { return m_zones; }
+    const std::vector<AreaZone>& zones() const {
+        return m_zones;
+    }
 
     // ============================================================================
     // NO-FIRE ZONE CHECKING
@@ -122,8 +123,7 @@ public:
      * @param range Optional range in meters (-1 to ignore)
      * @return ZoneCheckResult with zone details if in NFZ
      */
-    ZoneCheckResult checkNoFireZone(float azimuth, float elevation,
-                                     float range = -1.0f) const;
+    ZoneCheckResult checkNoFireZone(float azimuth, float elevation, float range = -1.0f) const;
 
     /**
      * @brief Simple boolean check for No-Fire Zone
@@ -132,8 +132,7 @@ public:
      * @param range Optional range in meters
      * @return true if point is in any enabled No-Fire Zone
      */
-    bool isInNoFireZone(float azimuth, float elevation,
-                        float range = -1.0f) const;
+    bool isInNoFireZone(float azimuth, float elevation, float range = -1.0f) const;
 
     // ============================================================================
     // NO-TRAVERSE ZONE CHECKING
@@ -163,8 +162,8 @@ public:
      * @param deltaEl Intended elevation movement in degrees
      * @return CollisionCheckResult with collision details
      */
-    CollisionCheckResult checkMovementCollision(float currentAz, float currentEl,
-                                                 float deltaAz, float deltaEl = 0.0f) const;
+    CollisionCheckResult checkMovementCollision(float currentAz, float currentEl, float deltaAz,
+                                                float deltaEl = 0.0f) const;
 
     /**
      * @brief Check if intended movement would enter a No-Traverse Zone
@@ -186,8 +185,7 @@ public:
      * @param range Optional range in meters
      * @return ZoneCheckResult for the most restrictive zone found
      */
-    ZoneCheckResult checkAllZones(float azimuth, float elevation,
-                                   float range = -1.0f) const;
+    ZoneCheckResult checkAllZones(float azimuth, float elevation, float range = -1.0f) const;
 
     /**
      * @brief Get all zones containing a given point
@@ -257,8 +255,8 @@ private:
      * @param range Range in meters (-1 to ignore)
      * @return true if point is inside zone
      */
-    bool isPointInZone(const AreaZone& zone, float azimuth,
-                       float elevation, float range = -1.0f) const;
+    bool isPointInZone(const AreaZone& zone, float azimuth, float elevation,
+                       float range = -1.0f) const;
 
     /**
      * @brief Calculate fraction of movement allowed before hitting zone boundary
@@ -268,8 +266,8 @@ private:
      * @param isAzimuth True if checking azimuth (handles wrap-around)
      * @return Fraction of movement allowed (0.0-1.0), >1.0 if no collision
      */
-    static double getCollisionFraction(double current, double boundary,
-                                        double delta, bool isAzimuth);
+    static double getCollisionFraction(double current, double boundary, double delta,
+                                       bool isAzimuth);
 
     // ============================================================================
     // ZONE STORAGE
@@ -279,8 +277,8 @@ private:
     // ============================================================================
     // CACHED STATE (for edge detection)
     // ============================================================================
-    mutable int m_lastNFZId = -1;   ///< Last No-Fire Zone ID (for exit detection)
-    mutable int m_lastNTZId = -1;   ///< Last No-Traverse Zone ID (for exit detection)
+    mutable int m_lastNFZId = -1;  ///< Last No-Fire Zone ID (for exit detection)
+    mutable int m_lastNTZId = -1;  ///< Last No-Traverse Zone ID (for exit detection)
 };
 
-#endif // ZONEENFORCEMENTSERVICE_H
+#endif  // ZONEENFORCEMENTSERVICE_H

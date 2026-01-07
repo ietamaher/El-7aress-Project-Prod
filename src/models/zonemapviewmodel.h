@@ -12,8 +12,7 @@ class SystemStateModel;
 /**
  * @brief ViewModel for ZoneMapCanvas - provides zone data for rendering
  */
-class ZoneMapViewModel : public QObject
-{
+class ZoneMapViewModel : public QObject {
     Q_OBJECT
 
     // Gimbal position
@@ -38,21 +37,45 @@ class ZoneMapViewModel : public QObject
 
 
 public:
-    explicit ZoneMapViewModel(QObject *parent = nullptr);
+    explicit ZoneMapViewModel(QObject* parent = nullptr);
 
     // Getters
-    float gimbalAz() const { return m_gimbalAz; }
-    float gimbalEl() const { return m_gimbalEl; }
-    QVariantList areaZones() const { return m_areaZones; }
-    QVariantList sectorScans() const { return m_sectorScans; }
-    QVariantList trps() const { return m_trps; }
-    bool hasWipZone() const { return m_hasWipZone; }
-    QVariantMap wipZone() const { return m_wipZone; }
-    int wipZoneType() const { return m_wipZoneType; }
-    bool isDefiningStart() const { return m_isDefiningStart; }
-    bool isDefiningEnd() const { return m_isDefiningEnd; }
-    int highlightedZoneId() const { return m_highlightedZoneId; }
-    QColor accentColor() const { return m_accentColor; }
+    float gimbalAz() const {
+        return m_gimbalAz;
+    }
+    float gimbalEl() const {
+        return m_gimbalEl;
+    }
+    QVariantList areaZones() const {
+        return m_areaZones;
+    }
+    QVariantList sectorScans() const {
+        return m_sectorScans;
+    }
+    QVariantList trps() const {
+        return m_trps;
+    }
+    bool hasWipZone() const {
+        return m_hasWipZone;
+    }
+    QVariantMap wipZone() const {
+        return m_wipZone;
+    }
+    int wipZoneType() const {
+        return m_wipZoneType;
+    }
+    bool isDefiningStart() const {
+        return m_isDefiningStart;
+    }
+    bool isDefiningEnd() const {
+        return m_isDefiningEnd;
+    }
+    int highlightedZoneId() const {
+        return m_highlightedZoneId;
+    }
+    QColor accentColor() const {
+        return m_accentColor;
+    }
 
 public slots:
     void setGimbalPosition(float az, float el);
@@ -92,7 +115,7 @@ private:
     QVariantList m_trps;
     bool m_hasWipZone = false;
     QVariantMap m_wipZone;
-    int m_wipZoneType = 0; // 0=None, 1=AreaZone, 2=SectorScan, 3=TRP
+    int m_wipZoneType = 0;  // 0=None, 1=AreaZone, 2=SectorScan, 3=TRP
     bool m_isDefiningStart = false;
     bool m_isDefiningEnd = false;
     int m_highlightedZoneId = -1;
@@ -104,7 +127,7 @@ private:
     static constexpr float EL_MIN = -20.0f;
     static constexpr float EL_MAX = 60.0f;
 
-    QColor m_accentColor = QColor(70, 226, 165); // Default green
+    QColor m_accentColor = QColor(70, 226, 165);  // Default green
 };
 
-#endif // ZONEMAPVIEWMODEL_H
+#endif  // ZONEMAPVIEWMODEL_H

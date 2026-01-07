@@ -2,23 +2,17 @@
 #include <QDebug>
 #include <cmath>
 
-BallisticsProcessorLUT::BallisticsProcessorLUT()
-{
-}
+BallisticsProcessorLUT::BallisticsProcessorLUT() {}
 
-BallisticsProcessorLUT::~BallisticsProcessorLUT()
-{
-}
+BallisticsProcessorLUT::~BallisticsProcessorLUT() {}
 
-bool BallisticsProcessorLUT::loadAmmunitionTable(const QString& filepath)
-{
+bool BallisticsProcessorLUT::loadAmmunitionTable(const QString& filepath) {
     bool success = m_lut.loadTable(filepath);
 
     if (success) {
         AmmunitionMetadata meta = m_lut.getAmmunitionMetadata();
         qInfo() << "[BallisticsProcessorLUT] Loaded ammunition:" << meta.name
-                << "| MV:" << meta.muzzle_velocity_ms << "m/s"
-                << "| BC:" << meta.bc_g1
+                << "| MV:" << meta.muzzle_velocity_ms << "m/s" << "| BC:" << meta.bc_g1
                 << "| Range:" << m_lut.getMinRange() << "-" << m_lut.getMaxRange() << "m"
                 << "| Table size:" << m_lut.getTableSize() << "entries";
     } else {
@@ -28,10 +22,8 @@ bool BallisticsProcessorLUT::loadAmmunitionTable(const QString& filepath)
     return success;
 }
 
-void BallisticsProcessorLUT::setEnvironmentalConditions(float temp_celsius,
-                                                         float altitude_m,
-                                                         float crosswind_ms)
-{
+void BallisticsProcessorLUT::setEnvironmentalConditions(float temp_celsius, float altitude_m,
+                                                        float crosswind_ms) {
     m_temperature_celsius = temp_celsius;
     m_altitude_m = altitude_m;
     m_crosswind_ms = crosswind_ms;
@@ -42,8 +34,7 @@ void BallisticsProcessorLUT::setEnvironmentalConditions(float temp_celsius,
              << "Wind:" << crosswind_ms << "m/s";*/
 }
 
-QString BallisticsProcessorLUT::getAmmunitionName() const
-{
+QString BallisticsProcessorLUT::getAmmunitionName() const {
     if (!m_lut.isLoaded()) {
         return "No table loaded";
     }
@@ -51,14 +42,9 @@ QString BallisticsProcessorLUT::getAmmunitionName() const
 }
 
 LeadCalculationResult BallisticsProcessorLUT::calculateLeadAngle(
-    float targetRangeMeters,
-    float targetAngularRateAzDegS,
-    float targetAngularRateElDegS,
-    float currentMuzzleVelocityMPS,
-    float projectileTimeOfFlightGuessS,
-    float currentCameraFovHorizontalDegrees,
-    float currentCameraFovVerticalDegrees)
-{
+    float targetRangeMeters, float targetAngularRateAzDegS, float targetAngularRateElDegS,
+    float currentMuzzleVelocityMPS, float projectileTimeOfFlightGuessS,
+    float currentCameraFovHorizontalDegrees, float currentCameraFovVerticalDegrees) {
     LeadCalculationResult result;
     result.status = LeadAngleStatus::Off;
     result.leadAzimuthDegrees = 0.0f;
@@ -80,15 +66,12 @@ LeadCalculationResult BallisticsProcessorLUT::calculateLeadAngle(
     // STEP 1: Get ballistic solution from LUT with environmental corrections
     // ============================================================================
 
-    BallisticSolution sol = m_lut.getSolution(
-        targetRangeMeters,
-        m_temperature_celsius,
-        m_altitude_m,
-        m_crosswind_ms
-    );
+    BallisticSolution sol =
+        m_lut.getSolution(targetRangeMeters, m_temperature_celsius, m_altitude_m, m_crosswind_ms);
 
     if (!sol.valid) {
-        qDebug() << "[BallisticsProcessorLUT] Invalid solution for range:" << targetRangeMeters << "m";
+        qDebug() << "[BallisticsProcessorLUT] Invalid solution for range:" << targetRangeMeters
+                 << "m";
         result.status = LeadAngleStatus::Off;
         return result;
     }
@@ -139,11 +122,13 @@ LeadCalculationResult BallisticsProcessorLUT::calculateLeadAngle(
     // Check if lead angles exceed maximum
     bool lag = false;
     if (std::abs(result.leadAzimuthDegrees) > MAX_LEAD_ANGLE_DEGREES) {
-        result.leadAzimuthDegrees = std::copysign(MAX_LEAD_ANGLE_DEGREES, result.leadAzimuthDegrees);
+        result.leadAzimuthDegrees =
+            std::copysign(MAX_LEAD_ANGLE_DEGREES, result.leadAzimuthDegrees);
         lag = true;
     }
     if (std::abs(result.leadElevationDegrees) > MAX_LEAD_ANGLE_DEGREES) {
-        result.leadElevationDegrees = std::copysign(MAX_LEAD_ANGLE_DEGREES, result.leadElevationDegrees);
+        result.leadElevationDegrees =
+            std::copysign(MAX_LEAD_ANGLE_DEGREES, result.leadElevationDegrees);
         lag = true;
     }
 
@@ -169,18 +154,21 @@ LeadCalculationResult BallisticsProcessorLUT::calculateLeadAngle(
         result.status = LeadAngleStatus::Lag;
     }
 
-    qDebug() << "[BallisticsProcessorLUT] Range:" << targetRangeMeters << "m"
-             << "| TOF:" << tof_s << "s"
-             << "| Ballistic Elev:" << sol.elevation_deg << "°"
+    qDebug() << "[BallisticsProcessorLUT] Range:" << targetRangeMeters << "m" << "| TOF:" << tof_s
+             << "s" << "| Ballistic Elev:" << sol.elevation_deg << "°"
              << "| Motion Lead Az:" << motionLeadAzDeg << "° El:" << motionLeadElDeg << "°"
              << "| Wind:" << windCorrectionDeg << "°"
-             << "| Total Lead Az:" << result.leadAzimuthDegrees << "° El:" << result.leadElevationDegrees << "°"
-             << "| FOV:" << currentCameraFovHorizontalDegrees << "×" << currentCameraFovVerticalDegrees << "°"
-             << "(limits: Az>" << (currentCameraFovHorizontalDegrees / 2.0f) << "° El>" << (currentCameraFovVerticalDegrees / 2.0f) << "°)"
+             << "| Total Lead Az:" << result.leadAzimuthDegrees
+             << "° El:" << result.leadElevationDegrees << "°"
+             << "| FOV:" << currentCameraFovHorizontalDegrees << "×"
+             << currentCameraFovVerticalDegrees << "°" << "(limits: Az>"
+             << (currentCameraFovHorizontalDegrees / 2.0f) << "° El>"
+             << (currentCameraFovVerticalDegrees / 2.0f) << "°)"
              << "| Status:" << static_cast<int>(result.status)
-             << (result.status == LeadAngleStatus::On ? "(On)" :
-                 result.status == LeadAngleStatus::Lag ? "(Lag)" :
-                 result.status == LeadAngleStatus::ZoomOut ? "(ZoomOut)" : "(Unknown)");
+             << (result.status == LeadAngleStatus::On        ? "(On)"
+                 : result.status == LeadAngleStatus::Lag     ? "(Lag)"
+                 : result.status == LeadAngleStatus::ZoomOut ? "(ZoomOut)"
+                                                             : "(Unknown)");
 
     return result;
 }
@@ -189,8 +177,7 @@ LeadCalculationResult BallisticsProcessorLUT::calculateLeadAngle(
 // PROFESSIONAL FCS METHODS - SPLIT DROP AND LEAD
 // ============================================================================
 
-LeadCalculationResult BallisticsProcessorLUT::calculateBallisticDrop(float targetRangeMeters)
-{
+LeadCalculationResult BallisticsProcessorLUT::calculateBallisticDrop(float targetRangeMeters) {
     LeadCalculationResult result;
     result.status = LeadAngleStatus::Off;
     result.leadAzimuthDegrees = 0.0f;
@@ -198,7 +185,8 @@ LeadCalculationResult BallisticsProcessorLUT::calculateBallisticDrop(float targe
 
     // Validate table loaded
     if (!m_lut.isLoaded()) {
-        qWarning() << "[BallisticsProcessorLUT] calculateBallisticDrop: No ammunition table loaded!";
+        qWarning()
+            << "[BallisticsProcessorLUT] calculateBallisticDrop: No ammunition table loaded!";
         return result;
     }
 
@@ -208,15 +196,12 @@ LeadCalculationResult BallisticsProcessorLUT::calculateBallisticDrop(float targe
     }
 
     // Get ballistic solution from LUT with environmental corrections
-    BallisticSolution sol = m_lut.getSolution(
-        targetRangeMeters,
-        m_temperature_celsius,
-        m_altitude_m,
-        m_crosswind_ms
-    );
+    BallisticSolution sol =
+        m_lut.getSolution(targetRangeMeters, m_temperature_celsius, m_altitude_m, m_crosswind_ms);
 
     if (!sol.valid) {
-        qDebug() << "[BallisticsProcessorLUT] calculateBallisticDrop: Invalid solution for range:" << targetRangeMeters << "m";
+        qDebug() << "[BallisticsProcessorLUT] calculateBallisticDrop: Invalid solution for range:"
+                 << targetRangeMeters << "m";
         return result;
     }
 
@@ -242,12 +227,8 @@ LeadCalculationResult BallisticsProcessorLUT::calculateBallisticDrop(float targe
 }
 
 LeadCalculationResult BallisticsProcessorLUT::calculateMotionLead(
-    float targetRangeMeters,
-    float targetAngularRateAzDegS,
-    float targetAngularRateElDegS,
-    float currentCameraFovHorizontalDegrees,
-    float currentCameraFovVerticalDegrees)
-{
+    float targetRangeMeters, float targetAngularRateAzDegS, float targetAngularRateElDegS,
+    float currentCameraFovHorizontalDegrees, float currentCameraFovVerticalDegrees) {
     LeadCalculationResult result;
     result.status = LeadAngleStatus::Off;
     result.leadAzimuthDegrees = 0.0f;
@@ -264,15 +245,12 @@ LeadCalculationResult BallisticsProcessorLUT::calculateMotionLead(
     }
 
     // Get TOF from LUT (environmental conditions already set)
-    BallisticSolution sol = m_lut.getSolution(
-        targetRangeMeters,
-        m_temperature_celsius,
-        m_altitude_m,
-        m_crosswind_ms
-    );
+    BallisticSolution sol =
+        m_lut.getSolution(targetRangeMeters, m_temperature_celsius, m_altitude_m, m_crosswind_ms);
 
     if (!sol.valid) {
-        qDebug() << "[BallisticsProcessorLUT] calculateMotionLead: Invalid solution for range:" << targetRangeMeters << "m";
+        qDebug() << "[BallisticsProcessorLUT] calculateMotionLead: Invalid solution for range:"
+                 << targetRangeMeters << "m";
         return result;
     }
 
@@ -287,7 +265,7 @@ LeadCalculationResult BallisticsProcessorLUT::calculateMotionLead(
 
     // Calculate motion lead (target movement during bullet flight)
     float motionLeadAzDeg = targetAngularRateAzDegS * tof_s;
-    float motionLeadElDeg = - targetAngularRateElDegS * tof_s;
+    float motionLeadElDeg = -targetAngularRateElDegS * tof_s;
 
     result.leadAzimuthDegrees = motionLeadAzDeg;
     result.leadElevationDegrees = motionLeadElDeg;
@@ -298,11 +276,13 @@ LeadCalculationResult BallisticsProcessorLUT::calculateMotionLead(
 
     bool lag = false;
     if (std::abs(result.leadAzimuthDegrees) > MAX_LEAD_ANGLE_DEGREES) {
-        result.leadAzimuthDegrees = std::copysign(MAX_LEAD_ANGLE_DEGREES, result.leadAzimuthDegrees);
+        result.leadAzimuthDegrees =
+            std::copysign(MAX_LEAD_ANGLE_DEGREES, result.leadAzimuthDegrees);
         lag = true;
     }
     if (std::abs(result.leadElevationDegrees) > MAX_LEAD_ANGLE_DEGREES) {
-        result.leadElevationDegrees = std::copysign(MAX_LEAD_ANGLE_DEGREES, result.leadElevationDegrees);
+        result.leadElevationDegrees =
+            std::copysign(MAX_LEAD_ANGLE_DEGREES, result.leadElevationDegrees);
         lag = true;
     }
 

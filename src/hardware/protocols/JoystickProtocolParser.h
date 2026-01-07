@@ -15,6 +15,7 @@
  */
 class JoystickProtocolParser : public ProtocolParser {
     Q_OBJECT
+
 public:
     explicit JoystickProtocolParser(QObject* parent = nullptr);
     ~JoystickProtocolParser() override = default;
@@ -38,7 +39,9 @@ public:
      * @brief Get the current joystick state
      * @return Current aggregated joystick data
      */
-    const JoystickData& currentState() const { return m_currentState; }
+    const JoystickData& currentState() const {
+        return m_currentState;
+    }
 
     /**
      * @brief Reset all joystick state to defaults

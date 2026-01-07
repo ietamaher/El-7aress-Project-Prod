@@ -58,8 +58,7 @@ class SystemStateModel;
  *
  * It also manages data models that bridge devices to the SystemStateModel.
  */
-class HardwareManager : public QObject
-{
+class HardwareManager : public QObject {
     Q_OBJECT
 
 public:
@@ -99,29 +98,59 @@ public:
     // ============================================================================
 
     // Camera devices
-    DayCameraControlDevice* dayCameraControl() const { return m_dayCamControl; }
-    CameraVideoStreamDevice* dayVideoProcessor() const { return m_dayVideoProcessor; }
-    NightCameraControlDevice* nightCameraControl() const { return m_nightCamControl; }
-    CameraVideoStreamDevice* nightVideoProcessor() const { return m_nightVideoProcessor; }
+    DayCameraControlDevice* dayCameraControl() const {
+        return m_dayCamControl;
+    }
+    CameraVideoStreamDevice* dayVideoProcessor() const {
+        return m_dayVideoProcessor;
+    }
+    NightCameraControlDevice* nightCameraControl() const {
+        return m_nightCamControl;
+    }
+    CameraVideoStreamDevice* nightVideoProcessor() const {
+        return m_nightVideoProcessor;
+    }
 
     // Sensor devices
-    ImuDevice* imuDevice() const { return m_gyroDevice; }
-    JoystickDevice* joystickDevice() const { return m_joystickDevice; }
-    LRFDevice* lrfDevice() const { return m_lrfDevice; }
-    RadarDevice* radarDevice() const { return m_radarDevice; }
+    ImuDevice* imuDevice() const {
+        return m_gyroDevice;
+    }
+    JoystickDevice* joystickDevice() const {
+        return m_joystickDevice;
+    }
+    LRFDevice* lrfDevice() const {
+        return m_lrfDevice;
+    }
+    RadarDevice* radarDevice() const {
+        return m_radarDevice;
+    }
 
     // PLC devices
-    Plc21Device* plc21Device() const { return m_plc21Device; }
-    Plc42Device* plc42Device() const { return m_plc42Device; }
+    Plc21Device* plc21Device() const {
+        return m_plc21Device;
+    }
+    Plc42Device* plc42Device() const {
+        return m_plc42Device;
+    }
 
     // Servo devices
-    ServoDriverDevice* servoAzDevice() const { return m_servoAzDevice; }
-    ServoDriverDevice* servoElDevice() const { return m_servoElDevice; }
-    ServoActuatorDevice* servoActuatorDevice() const { return m_servoActuatorDevice; }
+    ServoDriverDevice* servoAzDevice() const {
+        return m_servoAzDevice;
+    }
+    ServoDriverDevice* servoElDevice() const {
+        return m_servoElDevice;
+    }
+    ServoActuatorDevice* servoActuatorDevice() const {
+        return m_servoActuatorDevice;
+    }
 
     // Data Models
-    SystemStateModel* systemStateModel() const { return m_systemStateModel; }
-    JoystickDataModel* joystickDataModel() const { return m_joystickModel; }
+    SystemStateModel* systemStateModel() const {
+        return m_systemStateModel;
+    }
+    JoystickDataModel* joystickDataModel() const {
+        return m_joystickModel;
+    }
 
 signals:
     void hardwareInitialized();
@@ -211,4 +240,4 @@ private:
     SystemStateModel* m_systemStateModel = nullptr;
 };
 
-#endif // HARDWAREMANAGER_H
+#endif  // HARDWAREMANAGER_H

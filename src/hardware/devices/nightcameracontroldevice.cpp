@@ -6,24 +6,23 @@
 #include <QDebug>
 
 NightCameraControlDevice::NightCameraControlDevice(const QString& identifier, QObject* parent)
-    : TemplatedDevice<NightCameraData>(parent),
-      m_identifier(identifier),
-      m_statusCheckTimer(new QTimer(this)),
-      m_communicationWatchdog(new QTimer(this))
-{
-    connect(m_statusCheckTimer, &QTimer::timeout, this, &NightCameraControlDevice::checkCameraStatus);
+    : TemplatedDevice<NightCameraData>(parent), m_identifier(identifier),
+      m_statusCheckTimer(new QTimer(this)), m_communicationWatchdog(new QTimer(this)) {
+    connect(m_statusCheckTimer, &QTimer::timeout, this,
+            &NightCameraControlDevice::checkCameraStatus);
 
     m_communicationWatchdog->setSingleShot(false);
     m_communicationWatchdog->setInterval(COMMUNICATION_TIMEOUT_MS);
-    connect(m_communicationWatchdog, &QTimer::timeout,
-            this, &NightCameraControlDevice::onCommunicationWatchdogTimeout);
+    connect(m_communicationWatchdog, &QTimer::timeout, this,
+            &NightCameraControlDevice::onCommunicationWatchdogTimeout);
 }
 
 NightCameraControlDevice::~NightCameraControlDevice() {
     shutdown();
 }
 
-void NightCameraControlDevice::setDependencies(Transport* transport, NightCameraProtocolParser* parser) {
+void NightCameraControlDevice::setDependencies(Transport* transport,
+                                               NightCameraProtocolParser* parser) {
     m_transport = transport;
     m_parser = parser;
 
@@ -65,11 +64,13 @@ void NightCameraControlDevice::shutdown() {
 }
 
 void NightCameraControlDevice::processFrame(const QByteArray& frame) {
-    if (!m_parser) return;
+    if (!m_parser)
+        return;
 
     auto messages = m_parser->parse(frame);
     for (const auto& msg : messages) {
-        if (msg) processMessage(*msg);
+        if (msg)
+            processMessage(*msg);
     }
 }
 
@@ -122,7 +123,7 @@ void NightCameraControlDevice::processMessage(const Message& message) {
             newData->panPosition = partial.panPosition;
             newData->tiltPosition = partial.tiltPosition;
             //qDebug() << m_identifier << "Pan/Tilt updated: pan=" << newData->panPosition
-             //        << "tilt=" << newData->tiltPosition;
+            //        << "tilt=" << newData->tiltPosition;
         }
 
         updateData(newData);
@@ -131,7 +132,8 @@ void NightCameraControlDevice::processMessage(const Message& message) {
 }
 
 void NightCameraControlDevice::sendCommand(quint8 function, const QByteArray& cmdData) {
-    if (state() != DeviceState::Online || !m_transport || !m_parser) return;
+    if (state() != DeviceState::Online || !m_transport || !m_parser)
+        return;
 
     QByteArray command = m_parser->buildCommand(function, cmdData);
     m_transport->sendFrame(command);
@@ -157,7 +159,8 @@ void NightCameraControlDevice::setDigitalZoom(quint8 zoomLevel) {
     updateData(newData);
     emit nightCameraDataChanged(*newData);
 
-    QByteArray zoomArg = (zoomLevel > 0) ? QByteArray::fromHex("0004") : QByteArray::fromHex("0000");
+    QByteArray zoomArg =
+        (zoomLevel > 0) ? QByteArray::fromHex("0004") : QByteArray::fromHex("0000");
     sendCommand(0x0F, zoomArg);
 }
 
@@ -167,7 +170,8 @@ void NightCameraControlDevice::setVideoModeLUT(quint16 mode) {
     updateData(newData);
     emit nightCameraDataChanged(*newData);
 
-    if (mode > 12) mode = 12;
+    if (mode > 12)
+        mode = 12;
     QByteArray modeArg = QByteArray::fromHex(QByteArray::number(mode, 16).rightJustified(4, '0'));
     sendCommand(0x10, modeArg);
 }
@@ -205,7 +209,7 @@ void NightCameraControlDevice::setConnectionState(bool connected) {
 
 void NightCameraControlDevice::onCommunicationWatchdogTimeout() {
     //qWarning() << m_identifier << "Communication timeout - no data received for"
-     //          << COMMUNICATION_TIMEOUT_MS << "ms";
+    //          << COMMUNICATION_TIMEOUT_MS << "ms";
     setConnectionState(false);
 }
 

@@ -30,6 +30,7 @@ class JoystickProtocolParser;
  */
 class JoystickDevice : public TemplatedDevice<JoystickData> {
     Q_OBJECT
+
 public:
     explicit JoystickDevice(QObject* parent = nullptr);
     ~JoystickDevice() override;
@@ -37,7 +38,9 @@ public:
     // IDevice interface implementation
     bool initialize() override;
     void shutdown() override;
-    DeviceType type() const override { return DeviceType::Joystick; }
+    DeviceType type() const override {
+        return DeviceType::Joystick;
+    }
 
     /**
      * @brief Set the protocol parser dependency
@@ -114,4 +117,4 @@ private:
     bool m_lastConnectionState;  // Track connection state to detect changes
 };
 
-#endif // JOYSTICKDEVICE_H
+#endif  // JOYSTICKDEVICE_H

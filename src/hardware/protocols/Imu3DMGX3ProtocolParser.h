@@ -20,7 +20,7 @@ constexpr quint8 MODE_COMMAND = 0xD4;            // Set device mode
 constexpr quint8 DEVICE_RESET = 0xFE;            // Reset device (no reply)
 constexpr quint8 READ_FIRMWARE_VERSION = 0xE9;   // Get firmware version
 constexpr quint8 GYRO_STABILIZED_DATA = 0xD2;    // Alternative: gyro-stabilized outputs
-}
+}  // namespace GX3Commands
 
 /**
  * @brief Parser for 3DM-GX3-25 MicroStrain AHRS serial binary protocol
@@ -41,6 +41,7 @@ constexpr quint8 GYRO_STABILIZED_DATA = 0xD2;    // Alternative: gyro-stabilized
  */
 class Imu3DMGX3ProtocolParser : public ProtocolParser {
     Q_OBJECT
+
 public:
     explicit Imu3DMGX3ProtocolParser(QObject* parent = nullptr);
     ~Imu3DMGX3ProtocolParser() override = default;
@@ -55,7 +56,9 @@ public:
     /**
      * @brief Not used for serial protocol (Modbus-specific)
      */
-    std::vector<MessagePtr> parse(QModbusReply* /*reply*/) override { return {}; }
+    std::vector<MessagePtr> parse(QModbusReply* /*reply*/) override {
+        return {};
+    }
 
     /**
      * @brief Creates command to enter continuous mode with 0xCF data
@@ -83,8 +86,7 @@ public:
      * @param flags Data conditioning flags (default: 0x0003 = Orient+ConingAndSculling)
      * @return 21-byte command with all parameters
      */
-    static QByteArray createSamplingSettingsCommand(quint8 function = 1,
-                                                    quint16 decimation = 10,
+    static QByteArray createSamplingSettingsCommand(quint8 function = 1, quint16 decimation = 10,
                                                     quint16 flags = 0x0003);
 
     /**
@@ -184,5 +186,7 @@ public:
      * @brief Gets the last read temperature (averaged across sensors)
      * @return Temperature in degrees Celsius
      */
-    double lastTemperature() const { return m_lastTemperature; }
+    double lastTemperature() const {
+        return m_lastTemperature;
+    }
 };

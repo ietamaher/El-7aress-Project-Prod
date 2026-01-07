@@ -11,11 +11,9 @@
 // MAIN COMPUTATION ENTRY POINT
 // ============================================================================
 
-FireControlResult FireControlComputation::compute(
-    const FireControlInput& input,
-    BallisticsProcessorLUT* ballisticsProcessor,
-    const FireControlResult& previousResult) const
-{
+FireControlResult FireControlComputation::compute(const FireControlInput& input,
+                                                  BallisticsProcessorLUT* ballisticsProcessor,
+                                                  const FireControlResult& previousResult) const {
     FireControlResult result;
 
     // Store previous values for change detection
@@ -29,8 +27,8 @@ FireControlResult FireControlComputation::compute(
     // This runs INDEPENDENTLY of LAC status.
     // Crosswind component varies with absolute gimbal bearing.
     // ============================================================================
-    computeCrosswind(input, previousResult.calculatedCrosswindMS,
-                     result.calculatedCrosswindMS, result.crosswindChanged);
+    computeCrosswind(input, previousResult.calculatedCrosswindMS, result.calculatedCrosswindMS,
+                     result.crosswindChanged);
 
     // ============================================================================
     // STEP 2: NULL CHECK FOR BALLISTICS PROCESSOR
@@ -46,16 +44,12 @@ FireControlResult FireControlComputation::compute(
     // Environmental conditions affect both drop and lead calculations.
     // ============================================================================
     if (input.environmentalAppliedToBallistics) {
-        ballisticsProcessor->setEnvironmentalConditions(
-            input.environmentalTemperatureCelsius,
-            input.environmentalAltitudeMeters,
-            result.calculatedCrosswindMS
-        );
+        ballisticsProcessor->setEnvironmentalConditions(input.environmentalTemperatureCelsius,
+                                                        input.environmentalAltitudeMeters,
+                                                        result.calculatedCrosswindMS);
     } else {
         // Standard conditions + current crosswind
-        ballisticsProcessor->setEnvironmentalConditions(
-            15.0f, 0.0f, result.calculatedCrosswindMS
-        );
+        ballisticsProcessor->setEnvironmentalConditions(15.0f, 0.0f, result.calculatedCrosswindMS);
     }
 
     // ============================================================================
@@ -67,8 +61,7 @@ FireControlResult FireControlComputation::compute(
     // ============================================================================
     // STEP 5: COMPUTE MOTION LEAD (only when LAC active)
     // ============================================================================
-    computeMotionLead(input, ballisticsProcessor,
-                      previousResult.currentLeadAngleStatus, result);
+    computeMotionLead(input, ballisticsProcessor, previousResult.currentLeadAngleStatus, result);
 
     return result;
 }
@@ -77,12 +70,9 @@ FireControlResult FireControlComputation::compute(
 // CROSSWIND COMPUTATION
 // ============================================================================
 
-void FireControlComputation::computeCrosswind(
-    const FireControlInput& input,
-    float previousCrosswind,
-    float& outCrosswind,
-    bool& outChanged) const
-{
+void FireControlComputation::computeCrosswind(const FireControlInput& input,
+                                              float previousCrosswind, float& outCrosswind,
+                                              bool& outChanged) const {
     outCrosswind = 0.0f;
     outChanged = false;
 
@@ -91,15 +81,12 @@ void FireControlComputation::computeCrosswind(
         float windSpeedMS = input.windageSpeedKnots * KNOTS_TO_MS;
 
         // Calculate absolute gimbal bearing
-        float absoluteGimbalBearing = calculateAbsoluteGimbalBearing(
-            input.imuYawDeg, input.azimuthDirection);
+        float absoluteGimbalBearing =
+            calculateAbsoluteGimbalBearing(input.imuYawDeg, input.azimuthDirection);
 
         // Calculate crosswind component
-        outCrosswind = calculateCrosswindComponent(
-            windSpeedMS,
-            input.windageDirectionDegrees,
-            absoluteGimbalBearing
-        );
+        outCrosswind = calculateCrosswindComponent(windSpeedMS, input.windageDirectionDegrees,
+                                                   absoluteGimbalBearing);
 
         // Check for significant change
         if (std::abs(previousCrosswind - outCrosswind) > CROSSWIND_CHANGE_THRESHOLD) {
@@ -113,11 +100,8 @@ void FireControlComputation::computeCrosswind(
     }
 }
 
-float FireControlComputation::calculateCrosswindComponent(
-    float windSpeedMS,
-    float windDirectionDeg,
-    float gimbalAzimuthDeg)
-{
+float FireControlComputation::calculateCrosswindComponent(float windSpeedMS, float windDirectionDeg,
+                                                          float gimbalAzimuthDeg) {
     // ============================================================================
     // BALLISTICS PHYSICS: Crosswind Component Calculation
     // Wind direction: Direction wind is coming FROM (meteorological convention)
@@ -155,25 +139,21 @@ float FireControlComputation::calculateCrosswindComponent(
     return crosswindMS;
 }
 
-float FireControlComputation::calculateAbsoluteGimbalBearing(
-    float imuYawDeg,
-    float gimbalAzimuth)
-{
+float FireControlComputation::calculateAbsoluteGimbalBearing(float imuYawDeg, float gimbalAzimuth) {
     // Calculate absolute gimbal bearing (true bearing where weapon is pointing)
     float absoluteBearing = imuYawDeg + gimbalAzimuth;
 
     // Normalize to 0-360 range
-    while (absoluteBearing >= 360.0f) absoluteBearing -= 360.0f;
-    while (absoluteBearing < 0.0f) absoluteBearing += 360.0f;
+    while (absoluteBearing >= 360.0f)
+        absoluteBearing -= 360.0f;
+    while (absoluteBearing < 0.0f)
+        absoluteBearing += 360.0f;
 
     return absoluteBearing;
 }
 
-void FireControlComputation::getActiveCameraFOV(
-    const FireControlInput& input,
-    float& outHFOV,
-    float& outVFOV)
-{
+void FireControlComputation::getActiveCameraFOV(const FireControlInput& input, float& outHFOV,
+                                                float& outVFOV) {
     if (input.activeCameraIsDay) {
         outHFOV = input.dayCurrentHFOV;
         outVFOV = input.dayCurrentVFOV;
@@ -187,13 +167,10 @@ void FireControlComputation::getActiveCameraFOV(
 // BALLISTIC DROP COMPUTATION
 // ============================================================================
 
-void FireControlComputation::computeBallisticDrop(
-    const FireControlInput& input,
-    BallisticsProcessorLUT* ballisticsProcessor,
-    float crosswindMS,
-    bool previousDropActive,
-    FireControlResult& result) const
-{
+void FireControlComputation::computeBallisticDrop(const FireControlInput& input,
+                                                  BallisticsProcessorLUT* ballisticsProcessor,
+                                                  float crosswindMS, bool previousDropActive,
+                                                  FireControlResult& result) const {
     float targetRange = input.currentTargetRange;
     bool applyDrop = (targetRange > VALID_RANGE_THRESHOLD);
 
@@ -227,12 +204,10 @@ void FireControlComputation::computeBallisticDrop(
 // MOTION LEAD COMPUTATION
 // ============================================================================
 
-void FireControlComputation::computeMotionLead(
-    const FireControlInput& input,
-    BallisticsProcessorLUT* ballisticsProcessor,
-    LeadAngleStatus previousStatus,
-    FireControlResult& result) const
-{
+void FireControlComputation::computeMotionLead(const FireControlInput& input,
+                                               BallisticsProcessorLUT* ballisticsProcessor,
+                                               LeadAngleStatus previousStatus,
+                                               FireControlResult& result) const {
     if (!input.leadAngleCompensationActive) {
         // LAC toggle is OFF - clear motion lead
         result.motionLeadOffsetAz = 0.0f;
@@ -266,17 +241,11 @@ void FireControlComputation::computeMotionLead(
     // - This allows CCIP to work for close-range moving targets
     // - Status will show "Lag" to indicate estimated range is used
     // ============================================================================
-    float leadCalculationRange = (targetRange > VALID_RANGE_THRESHOLD)
-                                     ? targetRange
-                                     : DEFAULT_LAC_RANGE;
+    float leadCalculationRange =
+        (targetRange > VALID_RANGE_THRESHOLD) ? targetRange : DEFAULT_LAC_RANGE;
 
     LeadCalculationResult lead = ballisticsProcessor->calculateMotionLead(
-        leadCalculationRange,
-        targetAngRateAz,
-        targetAngRateEl,
-        currentHFOV,
-        currentVFOV
-    );
+        leadCalculationRange, targetAngRateAz, targetAngRateEl, currentHFOV, currentVFOV);
 
     // If using default range (no LRF), force Lag status to indicate estimation
     if (targetRange <= VALID_RANGE_THRESHOLD && lead.status == LeadAngleStatus::On) {
@@ -296,13 +265,12 @@ void FireControlComputation::computeMotionLead(
         result.leadChanged = true;
     }
 
-    qDebug() << "[FireControlComputation] MOTION LEAD:"
-             << "Az:" << lead.leadAzimuthDegrees << "deg"
-             << "| El:" << lead.leadElevationDegrees << "deg"
-             << "| Range:" << leadCalculationRange << "m"
-             << (targetRange <= VALID_RANGE_THRESHOLD ? "(DEFAULT)" : "(LRF)")
+    qDebug() << "[FireControlComputation] MOTION LEAD:" << "Az:" << lead.leadAzimuthDegrees << "deg"
+             << "| El:" << lead.leadElevationDegrees << "deg" << "| Range:" << leadCalculationRange
+             << "m" << (targetRange <= VALID_RANGE_THRESHOLD ? "(DEFAULT)" : "(LRF)")
              << "| Status:" << static_cast<int>(lead.status)
-             << (lead.status == LeadAngleStatus::On ? "(On)" :
-                 lead.status == LeadAngleStatus::Lag ? "(Lag)" :
-                 lead.status == LeadAngleStatus::ZoomOut ? "(ZoomOut)" : "(Unknown)");
+             << (lead.status == LeadAngleStatus::On        ? "(On)"
+                 : lead.status == LeadAngleStatus::Lag     ? "(Lag)"
+                 : lead.status == LeadAngleStatus::ZoomOut ? "(ZoomOut)"
+                                                           : "(Unknown)");
 }

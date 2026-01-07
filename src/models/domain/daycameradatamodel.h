@@ -4,19 +4,21 @@
 #include <QObject>
 #include "hardware/devices/daycameracontroldevice.h"
 
-class DayCameraDataModel : public QObject
-{
+class DayCameraDataModel : public QObject {
     Q_OBJECT
-public:
-    explicit DayCameraDataModel(QObject *parent = nullptr) : QObject(parent) {}
 
-    DayCameraData data() const { return m_data; }
+public:
+    explicit DayCameraDataModel(QObject* parent = nullptr) : QObject(parent) {}
+
+    DayCameraData data() const {
+        return m_data;
+    }
 
 signals:
-    void dataChanged(const DayCameraData &newData);
+    void dataChanged(const DayCameraData& newData);
 
 public slots:
-    void updateData(const DayCameraData &newData) {
+    void updateData(const DayCameraData& newData) {
         if (newData != m_data) {
             m_data = newData;
             emit dataChanged(m_data);
@@ -27,4 +29,4 @@ private:
     DayCameraData m_data;
 };
 
-#endif // DAYCAMERADATAMODEL_H
+#endif  // DAYCAMERADATAMODEL_H

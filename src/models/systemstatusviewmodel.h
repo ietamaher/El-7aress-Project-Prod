@@ -21,8 +21,7 @@
  * - "⚠ [ERROR DESCRIPTION]" when connected with errors
  * - "N/A" when disconnected
  */
-class SystemStatusViewModel : public QObject
-{
+class SystemStatusViewModel : public QObject {
     Q_OBJECT
 
     // ============================================================================
@@ -66,7 +65,8 @@ class SystemStatusViewModel : public QObject
     Q_PROPERTY(QString lrfDistanceText READ lrfDistanceText NOTIFY lrfDistanceTextChanged)
     Q_PROPERTY(QString lrfTempText READ lrfTempText NOTIFY lrfTempTextChanged)
     Q_PROPERTY(QString lrfLaserCountText READ lrfLaserCountText NOTIFY lrfLaserCountTextChanged)
-    Q_PROPERTY(QString lrfRawStatusByteText READ lrfRawStatusByteText NOTIFY lrfRawStatusByteTextChanged)
+    Q_PROPERTY(
+        QString lrfRawStatusByteText READ lrfRawStatusByteText NOTIFY lrfRawStatusByteTextChanged)
     Q_PROPERTY(bool lrfFault READ lrfFault NOTIFY lrfFaultChanged)
     Q_PROPERTY(QString lrfFaultText READ lrfFaultText NOTIFY lrfFaultTextChanged)
 
@@ -90,9 +90,11 @@ class SystemStatusViewModel : public QObject
     Q_PROPERTY(QString nightCamFovText READ nightCamFovText NOTIFY nightCamFovTextChanged)
     Q_PROPERTY(QString nightCamZoomText READ nightCamZoomText NOTIFY nightCamZoomTextChanged)
     Q_PROPERTY(QString nightCamTempText READ nightCamTempText NOTIFY nightCamTempTextChanged)
-    Q_PROPERTY(bool nightCamFfcInProgress READ nightCamFfcInProgress NOTIFY nightCamFfcInProgressChanged)
+    Q_PROPERTY(
+        bool nightCamFfcInProgress READ nightCamFfcInProgress NOTIFY nightCamFfcInProgressChanged)
     Q_PROPERTY(bool nightCamError READ nightCamError NOTIFY nightCamErrorChanged)
-    Q_PROPERTY(QString nightCamVideoModeText READ nightCamVideoModeText NOTIFY nightCamVideoModeTextChanged)
+    Q_PROPERTY(QString nightCamVideoModeText READ nightCamVideoModeText NOTIFY
+                   nightCamVideoModeTextChanged)
     Q_PROPERTY(QString nightCamStatusText READ nightCamStatusText NOTIFY nightCamStatusTextChanged)
 
     // ============================================================================
@@ -109,10 +111,13 @@ class SystemStatusViewModel : public QObject
     // SERVO ACTUATOR
     // ============================================================================
     Q_PROPERTY(bool actuatorConnected READ actuatorConnected NOTIFY actuatorConnectedChanged)
-    Q_PROPERTY(QString actuatorPositionText READ actuatorPositionText NOTIFY actuatorPositionTextChanged)
-    Q_PROPERTY(QString actuatorVelocityText READ actuatorVelocityText NOTIFY actuatorVelocityTextChanged)
+    Q_PROPERTY(
+        QString actuatorPositionText READ actuatorPositionText NOTIFY actuatorPositionTextChanged)
+    Q_PROPERTY(
+        QString actuatorVelocityText READ actuatorVelocityText NOTIFY actuatorVelocityTextChanged)
     Q_PROPERTY(QString actuatorTempText READ actuatorTempText NOTIFY actuatorTempTextChanged)
-    Q_PROPERTY(QString actuatorVoltageText READ actuatorVoltageText NOTIFY actuatorVoltageTextChanged)
+    Q_PROPERTY(
+        QString actuatorVoltageText READ actuatorVoltageText NOTIFY actuatorVoltageTextChanged)
     Q_PROPERTY(QString actuatorTorqueText READ actuatorTorqueText NOTIFY actuatorTorqueTextChanged)
     Q_PROPERTY(bool actuatorMotorOff READ actuatorMotorOff NOTIFY actuatorMotorOffChanged)
     Q_PROPERTY(bool actuatorFault READ actuatorFault NOTIFY actuatorFaultChanged)
@@ -131,112 +136,242 @@ class SystemStatusViewModel : public QObject
     Q_PROPERTY(QColor accentColor READ accentColor NOTIFY accentColorChanged)
 
 public:
-    explicit SystemStatusViewModel(QObject *parent = nullptr);
+    explicit SystemStatusViewModel(QObject* parent = nullptr);
 
     // ============================================================================
     // GETTERS - AZIMUTH SERVO
     // ============================================================================
-    bool azConnected() const { return m_azConnected; }
-    QString azPositionText() const { return m_azPositionText; }
-    QString azRpmText() const { return m_azRpmText; }
-    QString azTorqueText() const { return m_azTorqueText; }
-    QString azMotorTempText() const { return m_azMotorTempText; }
-    QString azDriverTempText() const { return m_azDriverTempText; }
-    bool azFault() const { return m_azFault; }
-    QString azStatusText() const { return m_azStatusText; }
+    bool azConnected() const {
+        return m_azConnected;
+    }
+    QString azPositionText() const {
+        return m_azPositionText;
+    }
+    QString azRpmText() const {
+        return m_azRpmText;
+    }
+    QString azTorqueText() const {
+        return m_azTorqueText;
+    }
+    QString azMotorTempText() const {
+        return m_azMotorTempText;
+    }
+    QString azDriverTempText() const {
+        return m_azDriverTempText;
+    }
+    bool azFault() const {
+        return m_azFault;
+    }
+    QString azStatusText() const {
+        return m_azStatusText;
+    }
 
     // ============================================================================
     // GETTERS - ELEVATION SERVO
     // ============================================================================
-    bool elConnected() const { return m_elConnected; }
-    QString elPositionText() const { return m_elPositionText; }
-    QString elRpmText() const { return m_elRpmText; }
-    QString elTorqueText() const { return m_elTorqueText; }
-    QString elMotorTempText() const { return m_elMotorTempText; }
-    QString elDriverTempText() const { return m_elDriverTempText; }
-    bool elFault() const { return m_elFault; }
-    QString elStatusText() const { return m_elStatusText; }
+    bool elConnected() const {
+        return m_elConnected;
+    }
+    QString elPositionText() const {
+        return m_elPositionText;
+    }
+    QString elRpmText() const {
+        return m_elRpmText;
+    }
+    QString elTorqueText() const {
+        return m_elTorqueText;
+    }
+    QString elMotorTempText() const {
+        return m_elMotorTempText;
+    }
+    QString elDriverTempText() const {
+        return m_elDriverTempText;
+    }
+    bool elFault() const {
+        return m_elFault;
+    }
+    QString elStatusText() const {
+        return m_elStatusText;
+    }
 
     // ============================================================================
     // GETTERS - IMU
     // ============================================================================
-    bool imuConnected() const { return m_imuConnected; }
-    QString imuRollText() const { return m_imuRollText; }
-    QString imuPitchText() const { return m_imuPitchText; }
-    QString imuYawText() const { return m_imuYawText; }
-    QString imuTempText() const { return m_imuTempText; }
-    QString imuStatusText() const { return m_imuStatusText; }
+    bool imuConnected() const {
+        return m_imuConnected;
+    }
+    QString imuRollText() const {
+        return m_imuRollText;
+    }
+    QString imuPitchText() const {
+        return m_imuPitchText;
+    }
+    QString imuYawText() const {
+        return m_imuYawText;
+    }
+    QString imuTempText() const {
+        return m_imuTempText;
+    }
+    QString imuStatusText() const {
+        return m_imuStatusText;
+    }
 
     // ============================================================================
     // GETTERS - LRF
     // ============================================================================
-    bool lrfConnected() const { return m_lrfConnected; }
-    QString lrfDistanceText() const { return m_lrfDistanceText; }
-    QString lrfTempText() const { return m_lrfTempText; }
-    QString lrfLaserCountText() const { return m_lrfLaserCountText; }
-    QString lrfRawStatusByteText() const { return m_lrfRawStatusByteText; }
-    bool lrfFault() const { return m_lrfFault; }
-    QString lrfFaultText() const { return m_lrfFaultText; }
+    bool lrfConnected() const {
+        return m_lrfConnected;
+    }
+    QString lrfDistanceText() const {
+        return m_lrfDistanceText;
+    }
+    QString lrfTempText() const {
+        return m_lrfTempText;
+    }
+    QString lrfLaserCountText() const {
+        return m_lrfLaserCountText;
+    }
+    QString lrfRawStatusByteText() const {
+        return m_lrfRawStatusByteText;
+    }
+    bool lrfFault() const {
+        return m_lrfFault;
+    }
+    QString lrfFaultText() const {
+        return m_lrfFaultText;
+    }
 
     // ============================================================================
     // GETTERS - DAY CAMERA
     // ============================================================================
-    bool dayCamConnected() const { return m_dayCamConnected; }
-    bool dayCamActive() const { return m_dayCamActive; }
-    QString dayCamFovText() const { return m_dayCamFovText; }
-    QString dayCamZoomText() const { return m_dayCamZoomText; }
-    QString dayCamFocusText() const { return m_dayCamFocusText; }
-    bool dayCamAutofocus() const { return m_dayCamAutofocus; }
-    bool dayCamError() const { return m_dayCamError; }
-    QString dayCamStatusText() const { return m_dayCamStatusText; }
+    bool dayCamConnected() const {
+        return m_dayCamConnected;
+    }
+    bool dayCamActive() const {
+        return m_dayCamActive;
+    }
+    QString dayCamFovText() const {
+        return m_dayCamFovText;
+    }
+    QString dayCamZoomText() const {
+        return m_dayCamZoomText;
+    }
+    QString dayCamFocusText() const {
+        return m_dayCamFocusText;
+    }
+    bool dayCamAutofocus() const {
+        return m_dayCamAutofocus;
+    }
+    bool dayCamError() const {
+        return m_dayCamError;
+    }
+    QString dayCamStatusText() const {
+        return m_dayCamStatusText;
+    }
 
     // ============================================================================
     // GETTERS - NIGHT CAMERA
     // ============================================================================
-    bool nightCamConnected() const { return m_nightCamConnected; }
-    bool nightCamActive() const { return m_nightCamActive; }
-    QString nightCamFovText() const { return m_nightCamFovText; }
-    QString nightCamZoomText() const { return m_nightCamZoomText; }
-    QString nightCamTempText() const { return m_nightCamTempText; }
-    bool nightCamFfcInProgress() const { return m_nightCamFfcInProgress; }
-    bool nightCamError() const { return m_nightCamError; }
-    QString nightCamVideoModeText() const { return m_nightCamVideoModeText; }
-    QString nightCamStatusText() const { return m_nightCamStatusText; }
+    bool nightCamConnected() const {
+        return m_nightCamConnected;
+    }
+    bool nightCamActive() const {
+        return m_nightCamActive;
+    }
+    QString nightCamFovText() const {
+        return m_nightCamFovText;
+    }
+    QString nightCamZoomText() const {
+        return m_nightCamZoomText;
+    }
+    QString nightCamTempText() const {
+        return m_nightCamTempText;
+    }
+    bool nightCamFfcInProgress() const {
+        return m_nightCamFfcInProgress;
+    }
+    bool nightCamError() const {
+        return m_nightCamError;
+    }
+    QString nightCamVideoModeText() const {
+        return m_nightCamVideoModeText;
+    }
+    QString nightCamStatusText() const {
+        return m_nightCamStatusText;
+    }
 
     // ============================================================================
     // GETTERS - PLC
     // ============================================================================
-    bool plc21Connected() const { return m_plc21Connected; }
-    bool plc42Connected() const { return m_plc42Connected; }
-    bool stationEnabled() const { return m_stationEnabled; }
-    bool gunArmed() const { return m_gunArmed; }
-    QString plc21StatusText() const { return m_plc21StatusText; }
-    QString plc42StatusText() const { return m_plc42StatusText; }
+    bool plc21Connected() const {
+        return m_plc21Connected;
+    }
+    bool plc42Connected() const {
+        return m_plc42Connected;
+    }
+    bool stationEnabled() const {
+        return m_stationEnabled;
+    }
+    bool gunArmed() const {
+        return m_gunArmed;
+    }
+    QString plc21StatusText() const {
+        return m_plc21StatusText;
+    }
+    QString plc42StatusText() const {
+        return m_plc42StatusText;
+    }
 
     // ============================================================================
     // GETTERS - SERVO ACTUATOR
     // ============================================================================
-    bool actuatorConnected() const { return m_actuatorConnected; }
-    QString actuatorPositionText() const { return m_actuatorPositionText; }
-    QString actuatorVelocityText() const { return m_actuatorVelocityText; }
-    QString actuatorTempText() const { return m_actuatorTempText; }
-    QString actuatorVoltageText() const { return m_actuatorVoltageText; }
-    QString actuatorTorqueText() const { return m_actuatorTorqueText; }
-    bool actuatorMotorOff() const { return m_actuatorMotorOff; }
-    bool actuatorFault() const { return m_actuatorFault; }
-    QString actuatorStatusText() const { return m_actuatorStatusText; }
+    bool actuatorConnected() const {
+        return m_actuatorConnected;
+    }
+    QString actuatorPositionText() const {
+        return m_actuatorPositionText;
+    }
+    QString actuatorVelocityText() const {
+        return m_actuatorVelocityText;
+    }
+    QString actuatorTempText() const {
+        return m_actuatorTempText;
+    }
+    QString actuatorVoltageText() const {
+        return m_actuatorVoltageText;
+    }
+    QString actuatorTorqueText() const {
+        return m_actuatorTorqueText;
+    }
+    bool actuatorMotorOff() const {
+        return m_actuatorMotorOff;
+    }
+    bool actuatorFault() const {
+        return m_actuatorFault;
+    }
+    QString actuatorStatusText() const {
+        return m_actuatorStatusText;
+    }
 
     // ============================================================================
     // GETTERS - ALARMS
     // ============================================================================
-    QStringList alarmsList() const { return m_alarmsList; }
-    bool hasAlarms() const { return m_hasAlarms; }
+    QStringList alarmsList() const {
+        return m_alarmsList;
+    }
+    bool hasAlarms() const {
+        return m_hasAlarms;
+    }
 
     // ============================================================================
     // GETTERS - VISIBILITY
     // ============================================================================
-    bool visible() const { return m_visible; }
-    QColor accentColor() const { return m_accentColor; }
+    bool visible() const {
+        return m_visible;
+    }
+    QColor accentColor() const {
+        return m_accentColor;
+    }
 
     void setVisible(bool visible);
     void setAccentColor(const QColor& color);
@@ -256,17 +391,17 @@ public slots:
     void updateLrf(bool connected, float distance, float temp, quint32 laserCount,
                    quint8 rawStatusByte, bool fault, bool noEcho, bool laserNotOut, bool overTemp);
 
-    void updateDayCamera(bool connected, bool isActive, float fov, quint16 zoom,
-                         quint16 focus, bool autofocus, bool error, quint8 errorCode);
+    void updateDayCamera(bool connected, bool isActive, float fov, quint16 zoom, quint16 focus,
+                         bool autofocus, bool error, quint8 errorCode);
 
     void updateNightCamera(bool connected, bool isActive, float fov, quint8 digitalZoom,
-                           bool ffcInProgress, bool error, quint8 errorCode, quint16 videoMode, qint16 fpaTemp);
+                           bool ffcInProgress, bool error, quint8 errorCode, quint16 videoMode,
+                           qint16 fpaTemp);
 
     void updatePlcStatus(bool plc21Conn, bool plc42Conn, bool stationEn, bool gunArm);
 
-    void updateServoActuator(bool connected, double position, double velocity,
-                             double temp, double voltage, double torque,
-                             bool motorOff, bool fault);
+    void updateServoActuator(bool connected, double position, double velocity, double temp,
+                             double voltage, double torque, bool motorOff, bool fault);
 
     void updateAlarms(const QStringList& alarms);
 
@@ -494,4 +629,4 @@ private:
     QColor m_accentColor;
 };
 
-#endif // SYSTEMSTATUSVIEWMODEL_H
+#endif  // SYSTEMSTATUSVIEWMODEL_H

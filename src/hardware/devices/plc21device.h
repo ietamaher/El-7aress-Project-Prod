@@ -43,21 +43,25 @@ class Message;
  */
 class Plc21Device : public TemplatedDevice<Plc21PanelData> {
     Q_OBJECT
+
 public:
     explicit Plc21Device(const QString& identifier, QObject* parent = nullptr);
     ~Plc21Device() override;
 
     // Device identification
-    QString identifier() const { return m_identifier; }
+    QString identifier() const {
+        return m_identifier;
+    }
 
     // Dependency injection (called before initialize)
-    Q_INVOKABLE void setDependencies(Transport* transport,
-                                      Plc21ProtocolParser* parser);
+    Q_INVOKABLE void setDependencies(Transport* transport, Plc21ProtocolParser* parser);
 
     // IDevice interface (device lifecycle)
     Q_INVOKABLE bool initialize() override;
     void shutdown() override;
-    DeviceType type() const override { return DeviceType::Plc21; }
+    DeviceType type() const override {
+        return DeviceType::Plc21;
+    }
 
     // Public API - Write outputs
     Q_INVOKABLE void setDigitalOutputs(const QVector<bool>& outputs);
@@ -94,7 +98,7 @@ private:
 
     QTimer* m_pollTimer;
     QTimer* m_communicationWatchdog = nullptr;
-    QVector<bool> m_digitalOutputs; // Cached output state for writing
+    QVector<bool> m_digitalOutputs;  // Cached output state for writing
 
     // Request sequencing to prevent concurrent Modbus requests
     bool m_waitingForResponse = false;
@@ -104,4 +108,4 @@ private:
     static constexpr int COMMUNICATION_TIMEOUT_MS = 3000;  // 3 seconds without data = disconnected
 };
 
-#endif // PLC21DEVICE_H
+#endif  // PLC21DEVICE_H

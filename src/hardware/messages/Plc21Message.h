@@ -13,8 +13,12 @@ class Plc21DataMessage : public Message {
 public:
     explicit Plc21DataMessage(const Plc21PanelData& data) : m_data(data) {}
 
-    Type typeId() const override { return Type::Plc21DataType; }
-    const Plc21PanelData& data() const { return m_data; }
+    Type typeId() const override {
+        return Type::Plc21DataType;
+    }
+    const Plc21PanelData& data() const {
+        return m_data;
+    }
 
 private:
     Plc21PanelData m_data;

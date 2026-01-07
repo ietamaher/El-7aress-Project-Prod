@@ -24,23 +24,23 @@ bool GimbalMotionModeBase::s_packetsInitialized = false;
 // REGISTER DEFINITIONS for AZD-KX Direct Data Operation (from your manual)
 // ============================================================================
 namespace AzdReg {
-    constexpr quint16 OpType      = 0x005A; // Operation Type (2 registers)
-    constexpr quint16 OpPosition  = 0x005C; // Position (2 registers)
-    constexpr quint16 OpSpeed     = 0x005E; // Operating Speed (2 registers)
-    constexpr quint16 OpAccel     = 0x0060; // Accel rate (2 registers)
-    constexpr quint16 OpDecel     = 0x0062; // Decel rate (2 registers)
-    constexpr quint16 OpCurrent   = 0x0064; // Operating current (2 registers)
-    constexpr quint16 OpTrigger   = 0x0066; // Trigger (2 registers)
+constexpr quint16 OpType = 0x005A;      // Operation Type (2 registers)
+constexpr quint16 OpPosition = 0x005C;  // Position (2 registers)
+constexpr quint16 OpSpeed = 0x005E;     // Operating Speed (2 registers)
+constexpr quint16 OpAccel = 0x0060;     // Accel rate (2 registers)
+constexpr quint16 OpDecel = 0x0062;     // Decel rate (2 registers)
+constexpr quint16 OpCurrent = 0x0064;   // Operating current (2 registers)
+constexpr quint16 OpTrigger = 0x0066;   // Trigger (2 registers)
 
-    // Trigger values
-    constexpr qint32 TRIGGER_UPDATE_SPEED = -4;  // 0xFFFFFFFC
-    constexpr qint32 TRIGGER_UPDATE_ALL   = 1;
-}
+// Trigger values
+constexpr qint32 TRIGGER_UPDATE_SPEED = -4;  // 0xFFFFFFFC
+constexpr qint32 TRIGGER_UPDATE_ALL = 1;
+}  // namespace AzdReg
 
 
-void GimbalMotionModeBase::configureVelocityMode(ServoDriverDevice* driverInterface)
-{
-    if (!driverInterface) return;
+void GimbalMotionModeBase::configureVelocityMode(ServoDriverDevice* driverInterface) {
+    if (!driverInterface)
+        return;
 
     // Ensure packet templates are initialized (lazy init for safety)
     if (!s_packetsInitialized) {
@@ -51,7 +51,7 @@ void GimbalMotionModeBase::configureVelocityMode(ServoDriverDevice* driverInterf
     // It should be called from the enterMode() of each motion class.
 
     // Set Operation Type to 16: Continuous operation (speed control)
-    QVector<quint16> opTypeData = {0x0000, 0x0010}; // 16 is 0x10
+    QVector<quint16> opTypeData = {0x0000, 0x0010};  // 16 is 0x10
     driverInterface->writeData(AzdReg::OpType, opTypeData);
 
     // NOTE: Accel/Decel/Current are now set per-write in writeVelocityCommandOptimized()
@@ -62,8 +62,7 @@ void GimbalMotionModeBase::configureVelocityMode(ServoDriverDevice* driverInterf
 // ============================================================================
 // PACKET TEMPLATE INITIALIZATION (call once at startup)
 // ============================================================================
-void GimbalMotionModeBase::initAxisPacketTemplates()
-{
+void GimbalMotionModeBase::initAxisPacketTemplates() {
     if (s_packetsInitialized) {
         return;  // Already initialized
     }
@@ -123,14 +122,12 @@ void GimbalMotionModeBase::initAxisPacketTemplates()
 // ============================================================================
 // OPTIMIZED VELOCITY COMMAND (SINGLE MODBUS WRITE)
 // ============================================================================
-void GimbalMotionModeBase::writeVelocityCommandOptimized(
-    ServoDriverDevice* driverInterface,
-    GimbalAxis axis,
-    double finalVelocity,
-    double scalingFactor,
-    qint32& lastSpeedHz)
-{
-    if (!driverInterface) return;
+void GimbalMotionModeBase::writeVelocityCommandOptimized(ServoDriverDevice* driverInterface,
+                                                         GimbalAxis axis, double finalVelocity,
+                                                         double scalingFactor,
+                                                         qint32& lastSpeedHz) {
+    if (!driverInterface)
+        return;
 
     // Lazy initialization if not done at startup
     if (!s_packetsInitialized) {
@@ -140,18 +137,16 @@ void GimbalMotionModeBase::writeVelocityCommandOptimized(
     // ⚡ Apply axis-specific max speed scaling
     // Elevation is typically limited to 70% of azimuth max speed (RCWS spec)
     const auto& cfg = MotionTuningConfig::instance();
-    double speedScale = (axis == GimbalAxis::Azimuth)
-        ? cfg.axisServo.azimuth.maxSpeedScale
-        : cfg.axisServo.elevation.maxSpeedScale;
+    double speedScale = (axis == GimbalAxis::Azimuth) ? cfg.axisServo.azimuth.maxSpeedScale
+                                                      : cfg.axisServo.elevation.maxSpeedScale;
 
     double scaledVelocity = finalVelocity * speedScale;
     qint32 speedHz = static_cast<qint32>(std::lround(scaledVelocity * scalingFactor));
 
     if (speedHz != lastSpeedHz) {
         // Select the appropriate pre-built template
-        QVector<quint16>& packetTemplate = (axis == GimbalAxis::Azimuth)
-            ? s_azVelocityPacketTemplate
-            : s_elVelocityPacketTemplate;
+        QVector<quint16>& packetTemplate =
+            (axis == GimbalAxis::Azimuth) ? s_azVelocityPacketTemplate : s_elVelocityPacketTemplate;
 
         // Copy template and fill in speed (only first 2 registers change)
         QVector<quint16> packet = packetTemplate;
@@ -170,18 +165,15 @@ void GimbalMotionModeBase::writeVelocityCommandOptimized(
 // LEGACY VELOCITY COMMAND (for backward compatibility - uses AZ template)
 // ============================================================================
 void GimbalMotionModeBase::writeVelocityCommand(ServoDriverDevice* driverInterface,
-                                                double finalVelocity,
-                                                double scalingFactor,
-                                                qint32& lastSpeedHz)
-{
+                                                double finalVelocity, double scalingFactor,
+                                                qint32& lastSpeedHz) {
     // Legacy function - defaults to azimuth parameters for backward compatibility
     // New code should use writeVelocityCommandOptimized() with explicit axis
-    writeVelocityCommandOptimized(driverInterface, GimbalAxis::Azimuth,
-                                  finalVelocity, scalingFactor, lastSpeedHz);
+    writeVelocityCommandOptimized(driverInterface, GimbalAxis::Azimuth, finalVelocity,
+                                  scalingFactor, lastSpeedHz);
 }
 
-void GimbalMotionModeBase::updateGyroBias(const SystemStateData& systemState)
-{
+void GimbalMotionModeBase::updateGyroBias(const SystemStateData& systemState) {
     // Static variables to maintain state across calls
     static double sumX = 0, sumY = 0, sumZ = 0;  // ← CHANGED: Added X and Y
     static int count = 0;
@@ -212,11 +204,9 @@ void GimbalMotionModeBase::updateGyroBias(const SystemStateData& systemState)
 }
 
 void GimbalMotionModeBase::sendStabilizedServoCommands(GimbalController* controller,
-                                 double desiredAzVelocity,
-                                 double desiredElVelocity,
-                                 bool enableStabilization,
-                                 double dt)
-{
+                                                       double desiredAzVelocity,
+                                                       double desiredElVelocity,
+                                                       bool enableStabilization, double dt) {
     // --- Shutdown safety check ---
     if (!controller || !controller->systemStateModel()) {
         // During shutdown, systemStateModel may be destroyed before controller
@@ -243,25 +233,14 @@ void GimbalMotionModeBase::sendStabilizedServoCommands(GimbalController* control
 
     if (enableStabilization && systemState.enableStabilization) {
         auto [stabAz_dps, stabEl_dps] = s_stabilizer.computeStabilizedVelocityWithDebug(
-            stabDebug,
-            desiredAzVelocity,
-            desiredElVelocity,
-            systemState.imuRollDeg,
-            systemState.imuPitchDeg,
-            systemState.imuYawDeg,
-            systemState.GyroX,
-            systemState.GyroY,
-            systemState.GyroZ,
-            systemState.gimbalAz,
-            systemState.gimbalEl,
-            systemState.targetAzimuth_world,
-            systemState.targetElevation_world,
-            systemState.useWorldFrameTarget,
-            dt
-        );
+            stabDebug, desiredAzVelocity, desiredElVelocity, systemState.imuRollDeg,
+            systemState.imuPitchDeg, systemState.imuYawDeg, systemState.GyroX, systemState.GyroY,
+            systemState.GyroZ, systemState.gimbalAz, systemState.gimbalEl,
+            systemState.targetAzimuth_world, systemState.targetElevation_world,
+            systemState.useWorldFrameTarget, dt);
 
         finalAzVelocity = stabAz_dps;
-        finalElVelocity =  stabEl_dps;
+        finalElVelocity = stabEl_dps;
     } else {
         // Not stabilizing - fill debug with raw values
         stabDebug.userAz_dps = desiredAzVelocity;
@@ -286,12 +265,12 @@ void GimbalMotionModeBase::sendStabilizedServoCommands(GimbalController* control
     // NO-TRAVERSE ENFORCEMENT (improved: clamp to boundary to avoid overshoot)
     // ----------------------------
     if (controller && controller->systemStateModel()) {
-        auto *ssm = controller->systemStateModel();
+        auto* ssm = controller->systemStateModel();
 
         float currentAz = ssm->data().gimbalAz;
         float currentEl = ssm->data().gimbalEl;
 
-                // Intended deltas (deg) for this control cycle
+        // Intended deltas (deg) for this control cycle
         float allowedAzDelta = 0.0f;
         float allowedElDelta = 0.0f;
 
@@ -300,12 +279,8 @@ void GimbalMotionModeBase::sendStabilizedServoCommands(GimbalController* control
         float intendedElDelta = finalElVelocity * dt;
 
         // 2. Compute Physics (Modifies allowed deltas independently)
-        ssm->computeAllowedDeltas(
-            currentAz, currentEl,
-            intendedAzDelta, intendedElDelta,
-            allowedAzDelta, allowedElDelta,
-            dt
-        );
+        ssm->computeAllowedDeltas(currentAz, currentEl, intendedAzDelta, intendedElDelta,
+                                  allowedAzDelta, allowedElDelta, dt);
 
         // 3. Convert back to Velocity (Per Axis)
         if (dt > 1e-6) {
@@ -322,9 +297,8 @@ void GimbalMotionModeBase::sendStabilizedServoCommands(GimbalController* control
             if (!qFuzzyCompare(static_cast<float>(intendedAzDelta), finalAzVelocity * dt) ||
                 !qFuzzyCompare(static_cast<float>(intendedElDelta), finalElVelocity * dt)) {
                 qDebug() << "[Gimbal] NTZ clamp: intendedAzDelta" << intendedAzDelta
-                         << "allowedAzDelta" << allowedAzDelta
-                         << "intendedElDelta" << intendedElDelta
-                         << "allowedElDelta" << allowedElDelta;
+                         << "allowedAzDelta" << allowedAzDelta << "intendedElDelta"
+                         << intendedElDelta << "allowedElDelta" << allowedElDelta;
             }
         }
     }
@@ -334,18 +308,19 @@ void GimbalMotionModeBase::sendStabilizedServoCommands(GimbalController* control
     // - Azimuth: Slow decel (100kHz/s) to prevent overvoltage on heavy turret
     // - Elevation: Fast decel (300kHz/s) for crisp stops, 70% current limit
     if (auto azServo = controller->azimuthServo()) {
-        writeVelocityCommandOptimized(azServo, GimbalAxis::Azimuth,
-                                      finalAzVelocity, AZ_STEPS_PER_DEGREE(), m_lastAzSpeedHz);
+        writeVelocityCommandOptimized(azServo, GimbalAxis::Azimuth, finalAzVelocity,
+                                      AZ_STEPS_PER_DEGREE(), m_lastAzSpeedHz);
     }
     if (auto elServo = controller->elevationServo()) {
-        writeVelocityCommandOptimized(elServo, GimbalAxis::Elevation,
-                                      finalElVelocity, EL_STEPS_PER_DEGREE(), m_lastElSpeedHz);
+        writeVelocityCommandOptimized(elServo, GimbalAxis::Elevation, finalElVelocity,
+                                      EL_STEPS_PER_DEGREE(), m_lastElSpeedHz);
     }
 }
 
 
-double GimbalMotionModeBase::pidCompute(PIDController& pid, double error, double setpoint, double measurement, bool derivativeOnMeasurement, double dt)
-{
+double GimbalMotionModeBase::pidCompute(PIDController& pid, double error, double setpoint,
+                                        double measurement, bool derivativeOnMeasurement,
+                                        double dt) {
     // Proportional term
     double proportional = pid.Kp * error;
 
@@ -376,8 +351,7 @@ double GimbalMotionModeBase::pidCompute(PIDController& pid, double error, double
 
 // Implementation of the original, simpler PID function (overload)
 // This function now calls the more advanced one with the correct parameters.
-double GimbalMotionModeBase::pidCompute(PIDController& pid, double error, double dt)
-{
+double GimbalMotionModeBase::pidCompute(PIDController& pid, double error, double dt) {
     // We call the main function with dummy values for setpoint/measurement
     // and explicitly set derivativeOnMeasurement to false.
     // Setpoint and measurement are not used when derivativeOnMeasurement is false,
@@ -386,30 +360,30 @@ double GimbalMotionModeBase::pidCompute(PIDController& pid, double error, double
 }
 
 
-void GimbalMotionModeBase::stopServos(GimbalController* controller)
-{
+void GimbalMotionModeBase::stopServos(GimbalController* controller) {
     // Shutdown safety: check both controller and systemStateModel
     if (!controller || !controller->systemStateModel()) {
         // During shutdown, just return - no commands needed
         return;
     }
-        // ⭐ FIX: Force write by invalidating last speed cache
+    // ⭐ FIX: Force write by invalidating last speed cache
     //m_lastAzSpeedHz = INT32_MAX;  // Impossible value forces write
     //m_lastElSpeedHz = INT32_MAX;
     // Send a zero-velocity command through the new architecture.
     // Disable stabilization when stopping (no need to hold position)
-    const double dt = 0.05; // 50ms nominal, doesn't matter for zero velocity
+    const double dt = 0.05;  // 50ms nominal, doesn't matter for zero velocity
     sendStabilizedServoCommands(controller, 0.0, 0.0, false, dt);
 }
 
-void GimbalMotionModeBase::writeServoCommands(ServoDriverDevice* driverInterface, double finalVelocity, float scalingFactor)
-{
-    if (!driverInterface) return;
+void GimbalMotionModeBase::writeServoCommands(ServoDriverDevice* driverInterface,
+                                              double finalVelocity, float scalingFactor) {
+    if (!driverInterface)
+        return;
 
     // Determine direction from the sign of the final velocity
     quint16 direction;
-    if (finalVelocity > 0.01) { // Added deadband
-        direction = DIRECTION_REVERSE; // This mapping depends on wiring
+    if (finalVelocity > 0.01) {         // Added deadband
+        direction = DIRECTION_REVERSE;  // This mapping depends on wiring
     } else if (finalVelocity < -0.01) {
         direction = DIRECTION_FORWARD;
     } else {
@@ -430,9 +404,9 @@ void GimbalMotionModeBase::writeServoCommands(ServoDriverDevice* driverInterface
 
 
 void GimbalMotionModeBase::writeTargetPosition(ServoDriverDevice* driverInterface,
-                                             long targetPositionInSteps)
-{
-    if (!driverInterface) return;
+                                               long targetPositionInSteps) {
+    if (!driverInterface)
+        return;
 
     // Oriental Motor drivers often take a 32-bit position.
     // We need to split it into two 16-bit registers.
@@ -442,20 +416,21 @@ void GimbalMotionModeBase::writeTargetPosition(ServoDriverDevice* driverInterfac
     // PSEUDO-CODE: Register addresses would come from the AZD-KX manual.
     static constexpr quint16 TARGET_POS_UPPER_REG = 0x0100;
     static constexpr quint16 TARGET_POS_LOWER_REG = 0x0102;
-    static constexpr quint16 EXECUTE_MOVE_REG     = 0x007D;
+    static constexpr quint16 EXECUTE_MOVE_REG = 0x007D;
 
     // Write the new target position
     driverInterface->writeData(TARGET_POS_UPPER_REG, {upperSteps});
     driverInterface->writeData(TARGET_POS_LOWER_REG, {lowerSteps});
 
     // Trigger the move
-    driverInterface->writeData(EXECUTE_MOVE_REG, {0x0001}); // "Start Move" command
+    driverInterface->writeData(EXECUTE_MOVE_REG, {0x0001});  // "Start Move" command
 }
 
 
-void GimbalMotionModeBase::setAcceleration(ServoDriverDevice* driverInterface, quint32 acceleration)
-{
-    if (!driverInterface) return;
+void GimbalMotionModeBase::setAcceleration(ServoDriverDevice* driverInterface,
+                                           quint32 acceleration) {
+    if (!driverInterface)
+        return;
 
     quint32 clamped = std::min(acceleration, MAX_ACCELERATION);
     quint16 upper = static_cast<quint16>((clamped >> 16) & 0xFFFF);
@@ -469,8 +444,7 @@ void GimbalMotionModeBase::setAcceleration(ServoDriverDevice* driverInterface, q
     }
 }
 
-bool GimbalMotionModeBase::checkSafetyConditions(GimbalController* controller)
-{
+bool GimbalMotionModeBase::checkSafetyConditions(GimbalController* controller) {
     if (!controller) {
         return false;
     }
@@ -511,14 +485,12 @@ bool GimbalMotionModeBase::checkSafetyConditions(GimbalController* controller)
     // Dead man switch required for Manual, AutoTrack, and ManualTrack modes
     bool deadManSwitchOk = true;
     MotionMode mode = controller->currentMotionModeType();
-    if (mode == MotionMode::Manual ||
-        mode == MotionMode::AutoTrack ||
+    if (mode == MotionMode::Manual || mode == MotionMode::AutoTrack ||
         mode == MotionMode::ManualTrack) {
         deadManSwitchOk = data.deadManSwitchActive;
     }
 
-    return data.stationEnabled &&
-           !data.emergencyStopActive && deadManSwitchOk;
+    return data.stationEnabled && !data.emergencyStopActive && deadManSwitchOk;
 }
 
 // ============================================================================
@@ -527,8 +499,7 @@ bool GimbalMotionModeBase::checkSafetyConditions(GimbalController* controller)
 // These methods enforce safety checks before any motion update.
 // The pattern guarantees that all motion passes through SafetyInterlock.
 
-void GimbalMotionModeBase::updateWithSafety(GimbalController* controller, double dt)
-{
+void GimbalMotionModeBase::updateWithSafety(GimbalController* controller, double dt) {
     // Step 1: Check safety conditions via SafetyInterlock
     if (!checkSafetyConditions(controller)) {
         // Safety denied - stop all motion immediately
@@ -540,22 +511,19 @@ void GimbalMotionModeBase::updateWithSafety(GimbalController* controller, double
     updateImpl(controller, dt);
 }
 
-void GimbalMotionModeBase::update(GimbalController* controller, double dt)
-{
+void GimbalMotionModeBase::update(GimbalController* controller, double dt) {
     // Delegate to updateWithSafety() for guaranteed safety enforcement
     // This preserves backward compatibility while ensuring safety
     updateWithSafety(controller, dt);
 }
 
-void GimbalMotionModeBase::updateImpl(GimbalController* /*controller*/, double /*dt*/)
-{
+void GimbalMotionModeBase::updateImpl(GimbalController* /*controller*/, double /*dt*/) {
     // Default implementation - no motion
     // Derived classes override this to provide their specific motion logic
 }
 
 bool GimbalMotionModeBase::checkElevationLimits(double currentEl, double targetVelocity,
-                                               bool upperLimit, bool lowerLimit)
-{
+                                                bool upperLimit, bool lowerLimit) {
     // Check upper limits
     if ((currentEl >= MAX_ELEVATION_ANGLE || upperLimit) && (targetVelocity > 0)) {
         return false;
@@ -578,11 +546,10 @@ bool GimbalMotionModeBase::checkElevationLimits(double currentEl, double targetV
 // ============================================================================
 
 
-void GimbalMotionModeBase::convertGimbalToWorldFrame(
-    double gimbalAz_platform, double gimbalEl_platform,
-    double platform_roll, double platform_pitch, double platform_yaw,
-    double& worldAz, double& worldEl)
-{
+void GimbalMotionModeBase::convertGimbalToWorldFrame(double gimbalAz_platform,
+                                                     double gimbalEl_platform, double platform_roll,
+                                                     double platform_pitch, double platform_yaw,
+                                                     double& worldAz, double& worldEl) {
     // Convert angles to radians
     double gAz = degToRad(gimbalAz_platform);
     double gEl = degToRad(gimbalEl_platform);
@@ -633,19 +600,16 @@ void GimbalMotionModeBase::convertGimbalToWorldFrame(
 // GIMBAL TO WORLD FRAME CONVERSION (Eigen-based rotation matrices)
 // ============================================================================
 
-void GimbalMotionModeBase::convertGimbalToWorldFrame(
-    const Eigen::Vector3d& linVel_gimbal_mps,
-    const Eigen::Vector3d& angVel_gimbal_dps,
-    double azDeg,
-    double elDeg,
-    Eigen::Vector3d& linVel_world_mps,
-    Eigen::Vector3d& angVel_world_dps)
-{
+void GimbalMotionModeBase::convertGimbalToWorldFrame(const Eigen::Vector3d& linVel_gimbal_mps,
+                                                     const Eigen::Vector3d& angVel_gimbal_dps,
+                                                     double azDeg, double elDeg,
+                                                     Eigen::Vector3d& linVel_world_mps,
+                                                     Eigen::Vector3d& angVel_world_dps) {
     // ============================================================================
     // 1. Convert angles to radians
     // ============================================================================
-    const double azRad = degToRad(azDeg);   // [rad]
-    const double elRad = degToRad(elDeg);   // [rad]
+    const double azRad = degToRad(azDeg);  // [rad]
+    const double elRad = degToRad(elDeg);  // [rad]
 
     // ============================================================================
     // 2. Rotation matrix: Gimbal → World
@@ -657,8 +621,10 @@ void GimbalMotionModeBase::convertGimbalToWorldFrame(
     //   1. R_el: Rotate around Y-axis (elevation) - INNER gimbal
     //   2. R_az: Rotate around Z-axis (azimuth) - OUTER gimbal
     // ============================================================================
-    const Eigen::Matrix3d R_az = Eigen::AngleAxisd(azRad, Eigen::Vector3d::UnitZ()).toRotationMatrix();
-    const Eigen::Matrix3d R_el = Eigen::AngleAxisd(elRad, Eigen::Vector3d::UnitY()).toRotationMatrix();
+    const Eigen::Matrix3d R_az =
+        Eigen::AngleAxisd(azRad, Eigen::Vector3d::UnitZ()).toRotationMatrix();
+    const Eigen::Matrix3d R_el =
+        Eigen::AngleAxisd(elRad, Eigen::Vector3d::UnitY()).toRotationMatrix();
     const Eigen::Matrix3d R_g2w = R_az * R_el;  // Gimbal-to-World rotation
 
     // ============================================================================
@@ -677,4 +643,3 @@ void GimbalMotionModeBase::convertGimbalToWorldFrame(
     const Eigen::Vector3d angVel_world_radps = R_g2w * angVel_gimbal_radps;   // Rotate (rad/s)
     angVel_world_dps = radToDeg(angVel_world_radps);                          // rad/s → deg/s
 }
-

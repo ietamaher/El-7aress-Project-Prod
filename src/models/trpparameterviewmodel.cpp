@@ -1,9 +1,6 @@
 #include "trpparameterviewmodel.h"
 
-TRPParameterViewModel::TRPParameterViewModel(QObject *parent)
-    : QObject(parent)
-{
-}
+TRPParameterViewModel::TRPParameterViewModel(QObject* parent) : QObject(parent) {}
 
 void TRPParameterViewModel::setLocationPage(int page) {
     if (m_locationPage != page) {

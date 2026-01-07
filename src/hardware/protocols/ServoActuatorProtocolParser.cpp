@@ -4,8 +4,7 @@
 #include <QRegularExpression>
 #include <cmath>
 
-ServoActuatorProtocolParser::ServoActuatorProtocolParser(QObject* parent)
-    : ProtocolParser(parent) {
+ServoActuatorProtocolParser::ServoActuatorProtocolParser(QObject* parent) : ProtocolParser(parent) {
     // Initialize m_data with defaults
     m_data = ServoActuatorData();
     initializeStatusBitMap();
@@ -22,7 +21,8 @@ std::vector<MessagePtr> ServoActuatorProtocolParser::parse(const QByteArray& raw
         m_readBuffer.remove(0, endIndex + 1);
 
         QString response = QString::fromLatin1(responseData);
-        if (response.isEmpty()) continue;
+        if (response.isEmpty())
+            continue;
 
         // Validate checksum
         if (!validateChecksum(response)) {
@@ -32,16 +32,17 @@ std::vector<MessagePtr> ServoActuatorProtocolParser::parse(const QByteArray& raw
 
         // Extract main response (remove checksum)
         int lastSpaceIndex = response.lastIndexOf(' ');
-        if (lastSpaceIndex == -1) continue;
+        if (lastSpaceIndex == -1)
+            continue;
 
         QString mainResponse = response.left(lastSpaceIndex);
 
         // Parse based on response type (ACK or NACK)
-        if (mainResponse.startsWith('A')) { // ACK
+        if (mainResponse.startsWith('A')) {  // ACK
             // Extract payload: everything after the 'A' prefix
             // Hardware format: "A5000" (no space between A and payload)
             // NOT "A 5000" (space-separated)
-            QString dataPart = mainResponse.mid(1).trimmed(); // Skip 'A', get rest
+            QString dataPart = mainResponse.mid(1).trimmed();  // Skip 'A', get rest
 
             // ⭐ Update ONLY the relevant field in accumulated m_data based on pending command
             if (m_pendingCommand == "SR") {
@@ -83,7 +84,7 @@ std::vector<MessagePtr> ServoActuatorProtocolParser::parse(const QByteArray& raw
             messages.push_back(
                 std::make_unique<ServoActuatorAckMessage>(m_pendingCommand, dataPart));
 
-        } else if (mainResponse.startsWith('N')) { // NACK
+        } else if (mainResponse.startsWith('N')) {  // NACK
             messages.push_back(
                 std::make_unique<ServoActuatorNackMessage>(m_pendingCommand, mainResponse));
         }
@@ -124,7 +125,7 @@ ActuatorStatus ServoActuatorProtocolParser::parseStatusRegister(const QString& h
 
             if (message.contains("(Latching)")) {
                 status.isLatchingFaultActive = true;
-                if (i == 3 || i == 31) { // Emergency shutdown or critical config error
+                if (i == 3 || i == 31) {  // Emergency shutdown or critical config error
                     status.isMotorOff = true;
                 }
             }
@@ -136,7 +137,7 @@ ActuatorStatus ServoActuatorProtocolParser::parseStatusRegister(const QString& h
 
 QString ServoActuatorProtocolParser::calculateChecksum(const QString& command) const {
     quint16 sum = 0;
-    for (const QChar &ch : command) {
+    for (const QChar& ch : command) {
         sum += ch.toLatin1();
     }
     quint8 checksum_val = sum % 256;
@@ -145,7 +146,8 @@ QString ServoActuatorProtocolParser::calculateChecksum(const QString& command) c
 
 bool ServoActuatorProtocolParser::validateChecksum(const QString& response) const {
     int lastSpaceIndex = response.lastIndexOf(' ');
-    if (lastSpaceIndex == -1) return false;
+    if (lastSpaceIndex == -1)
+        return false;
 
     QString mainResponse = response.left(lastSpaceIndex);
     QString receivedChecksum = response.mid(lastSpaceIndex + 1);
@@ -161,14 +163,14 @@ bool ServoActuatorProtocolParser::validateChecksum(const QString& response) cons
 
 double ServoActuatorProtocolParser::sensorCountsToMillimeters(int counts) const {
     using namespace ServoActuatorConstants;
-    return static_cast<double>(counts - RETRACTED_ENDSTOP_OFFSET) *
-           SCREW_LEAD_MM / COUNTS_PER_REVOLUTION;
+    return static_cast<double>(counts - RETRACTED_ENDSTOP_OFFSET) * SCREW_LEAD_MM /
+           COUNTS_PER_REVOLUTION;
 }
 
 int ServoActuatorProtocolParser::millimetersToSensorCounts(double millimeters) const {
     using namespace ServoActuatorConstants;
-    double counts = (millimeters * COUNTS_PER_REVOLUTION / SCREW_LEAD_MM) +
-                    RETRACTED_ENDSTOP_OFFSET;
+    double counts =
+        (millimeters * COUNTS_PER_REVOLUTION / SCREW_LEAD_MM) + RETRACTED_ENDSTOP_OFFSET;
     return static_cast<int>(std::round(counts));
 }
 

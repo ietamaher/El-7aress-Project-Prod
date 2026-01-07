@@ -4,16 +4,13 @@
 #include <QDebug>
 #include <QDateTime>  // For throttling model updates
 
-ManualMotionMode::ManualMotionMode(QObject* parent)
-    : GimbalMotionModeBase(parent)
-{
-}
+ManualMotionMode::ManualMotionMode(QObject* parent) : GimbalMotionModeBase(parent) {}
 
-void ManualMotionMode::enterMode(GimbalController* controller)
-{
+void ManualMotionMode::enterMode(GimbalController* controller) {
     qDebug() << "[ManualMotionMode] Enter";
 
-    if (!controller) return;
+    if (!controller)
+        return;
     m_currentAzVelocityCmd = 0.0;
     m_currentElVelocityCmd = 0.0;
 
@@ -22,17 +19,14 @@ void ManualMotionMode::enterMode(GimbalController* controller)
 
     // ✅ CRITICAL: Start velocity timer for dt measurement
     startVelocityTimer();
-
 }
 
-void ManualMotionMode::exitMode(GimbalController* controller)
-{
+void ManualMotionMode::exitMode(GimbalController* controller) {
     qDebug() << "[ManualMotionMode] Exit";
     stopServos(controller);
 }
 
-void ManualMotionMode::updateImpl(GimbalController* controller, double dt)
-{
+void ManualMotionMode::updateImpl(GimbalController* controller, double dt) {
     // NOTE: Safety checks are handled by base class updateWithSafety()
     // This method is only called after SafetyInterlock.canMove() returns true
 
@@ -69,22 +63,26 @@ void ManualMotionMode::updateImpl(GimbalController* controller, double dt)
     static constexpr double DEADBAND_HZ = 100.0;
 
     // Apply deadband to the target speed
-    if (std::abs(targetAzSpeedHz) < DEADBAND_HZ) targetAzSpeedHz = 0.0;
-    if (std::abs(targetElSpeedHz) < DEADBAND_HZ) targetElSpeedHz = 0.0;
+    if (std::abs(targetAzSpeedHz) < DEADBAND_HZ)
+        targetAzSpeedHz = 0.0;
+    if (std::abs(targetElSpeedHz) < DEADBAND_HZ)
+        targetElSpeedHz = 0.0;
 
     // ✅ EXPERT REVIEW FIX: Time-based rate limiter in Hz domain (from config)
-    double maxChangeHz = cfg.manualLimits.maxAccelHzPerSec * dt; // Hz/s * s = Hz
+    double maxChangeHz = cfg.manualLimits.maxAccelHzPerSec * dt;  // Hz/s * s = Hz
 
     // ✅ Apply time-based rate limiting using central helper
-    m_currentAzSpeedCmd_Hz = applyRateLimitTimeBased(targetAzSpeedHz, m_currentAzSpeedCmd_Hz, maxChangeHz);
-    m_currentElSpeedCmd_Hz = applyRateLimitTimeBased(targetElSpeedHz, m_currentElSpeedCmd_Hz, maxChangeHz);
+    m_currentAzSpeedCmd_Hz =
+        applyRateLimitTimeBased(targetAzSpeedHz, m_currentAzSpeedCmd_Hz, maxChangeHz);
+    m_currentElSpeedCmd_Hz =
+        applyRateLimitTimeBased(targetElSpeedHz, m_currentElSpeedCmd_Hz, maxChangeHz);
 
     // ✅ Use centralized unit conversions (no more magic numbers!)
     double azVelocityDegS = m_currentAzSpeedCmd_Hz / AZ_STEPS_PER_DEGREE();
     double elVelocityDegS = m_currentElSpeedCmd_Hz / EL_STEPS_PER_DEGREE();
 
     // 5. World-frame target management
-    constexpr double VELOCITY_THRESHOLD = 0.1; // deg/s
+    constexpr double VELOCITY_THRESHOLD = 0.1;  // deg/s
     bool joystickActive = (std::abs(azVelocityDegS) > VELOCITY_THRESHOLD ||
                            std::abs(elVelocityDegS) > VELOCITY_THRESHOLD);
 
@@ -98,16 +96,15 @@ void ManualMotionMode::updateImpl(GimbalController* controller, double dt)
             // Update world-frame target to current pointing direction
             // This way when joystick is released, gimbal holds current direction
             double worldAz, worldEl;
-            convertGimbalToWorldFrame(data.gimbalAz, data.gimbalEl,
-                                      data.imuRollDeg, data.imuPitchDeg, data.imuYawDeg,
-                                      worldAz, worldEl);
+            convertGimbalToWorldFrame(data.gimbalAz, data.gimbalEl, data.imuRollDeg,
+                                      data.imuPitchDeg, data.imuYawDeg, worldAz, worldEl);
 
             // Update system state model with new world target
             auto stateModel = controller->systemStateModel();
             SystemStateData updatedState = stateModel->data();
             updatedState.targetAzimuth_world = worldAz;
             updatedState.targetElevation_world = worldEl;
-            updatedState.useWorldFrameTarget = false; // Disable hold while moving
+            updatedState.useWorldFrameTarget = false;  // Disable hold while moving
             stateModel->updateData(updatedState);
             lastPublishMs = nowMs;
         }
@@ -116,17 +113,16 @@ void ManualMotionMode::updateImpl(GimbalController* controller, double dt)
         if (data.imuConnected) {
             auto stateModel = controller->systemStateModel();
             SystemStateData updatedState = stateModel->data();
-            updatedState.useWorldFrameTarget = true; // Enable world-frame stabilization
+            updatedState.useWorldFrameTarget = true;  // Enable world-frame stabilization
 
 
-                double worldAz, worldEl;
-                convertGimbalToWorldFrame(data.gimbalAz, data.gimbalEl,
-                                        data.imuRollDeg, data.imuPitchDeg, data.imuYawDeg,
-                                        worldAz, worldEl);
-                updatedState.targetAzimuth_world = worldAz;
-                updatedState.targetElevation_world = worldEl;
-                updatedState.useWorldFrameTarget = true;
-                stateModel->updateData(updatedState);
+            double worldAz, worldEl;
+            convertGimbalToWorldFrame(data.gimbalAz, data.gimbalEl, data.imuRollDeg,
+                                      data.imuPitchDeg, data.imuYawDeg, worldAz, worldEl);
+            updatedState.targetAzimuth_world = worldAz;
+            updatedState.targetElevation_world = worldEl;
+            updatedState.useWorldFrameTarget = true;
+            stateModel->updateData(updatedState);
 
             //stateModel->updateData(updatedState);
         }
@@ -144,9 +140,6 @@ double ManualMotionMode::processJoystickInput(double filteredInput) {
     double shaped = std::pow(std::abs(filteredInput), exponent);
     return (filteredInput < 0) ? -shaped : shaped;
 }
-
-
-
 
 
 /*

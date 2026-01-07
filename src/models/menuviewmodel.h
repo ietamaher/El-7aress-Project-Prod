@@ -5,8 +5,7 @@
 #include <QStringListModel>
 #include <QColor>
 
-class MenuViewModel : public QObject
-{
+class MenuViewModel : public QObject {
     Q_OBJECT
     Q_PROPERTY(bool visible READ visible NOTIFY visibleChanged)
     Q_PROPERTY(QString title READ title NOTIFY titleChanged)
@@ -16,14 +15,26 @@ class MenuViewModel : public QObject
     Q_PROPERTY(QColor accentColor READ accentColor NOTIFY accentColorChanged)
 
 public:
-    explicit MenuViewModel(QObject *parent = nullptr);
+    explicit MenuViewModel(QObject* parent = nullptr);
 
-    bool visible() const { return m_visible; }
-    QString title() const { return m_title; }
-    QString description() const { return m_description; }
-    int currentIndex() const { return m_currentIndex; }
-    QStringListModel* optionsModel() { return &m_optionsModel; }
-    QColor accentColor() const { return m_accentColor; }
+    bool visible() const {
+        return m_visible;
+    }
+    QString title() const {
+        return m_title;
+    }
+    QString description() const {
+        return m_description;
+    }
+    int currentIndex() const {
+        return m_currentIndex;
+    }
+    QStringListModel* optionsModel() {
+        return &m_optionsModel;
+    }
+    QColor accentColor() const {
+        return m_accentColor;
+    }
 
 public slots:
     void showMenu(const QString& title, const QString& description, const QStringList& options);
@@ -31,7 +42,7 @@ public slots:
     void moveSelectionUp();
     void moveSelectionDown();
     void selectCurrentItem();
-    void setCurrentIndex(int index); // NEW: Set selection programmatically
+    void setCurrentIndex(int index);  // NEW: Set selection programmatically
     void setAccentColor(const QColor& color);
 
 signals:
@@ -51,7 +62,7 @@ private:
 
     int findNextSelectable(int start, int direction);
     bool isSelectable(int index) const;
-    QColor m_accentColor = QColor(70, 226, 165); // Default green
+    QColor m_accentColor = QColor(70, 226, 165);  // Default green
 };
 
-#endif // MENUVIEWMODEL_H
+#endif  // MENUVIEWMODEL_H

@@ -54,13 +54,9 @@
 
 ControllerRegistry::ControllerRegistry(HardwareManager* hardwareManager,
                                        ViewModelRegistry* viewModelRegistry,
-                                       SystemStateModel* systemStateModel,
-                                       QObject* parent)
-    : QObject(parent),
-      m_hardwareManager(hardwareManager),
-      m_viewModelRegistry(viewModelRegistry),
-      m_systemStateModel(systemStateModel)
-{
+                                       SystemStateModel* systemStateModel, QObject* parent)
+    : QObject(parent), m_hardwareManager(hardwareManager), m_viewModelRegistry(viewModelRegistry),
+      m_systemStateModel(systemStateModel) {
     if (!m_hardwareManager) {
         qCritical() << "ControllerRegistry: HardwareManager is null!";
     }
@@ -72,8 +68,7 @@ ControllerRegistry::ControllerRegistry(HardwareManager* hardwareManager,
     }
 }
 
-ControllerRegistry::~ControllerRegistry()
-{
+ControllerRegistry::~ControllerRegistry() {
     qInfo() << "ControllerRegistry: Destroyed";
 }
 
@@ -81,8 +76,7 @@ ControllerRegistry::~ControllerRegistry()
 // HARDWARE CONTROLLERS
 // ============================================================================
 
-bool ControllerRegistry::createHardwareControllers()
-{
+bool ControllerRegistry::createHardwareControllers() {
     if (!m_hardwareManager || !m_systemStateModel) {
         qCritical() << "Cannot create hardware controllers: missing dependencies";
         return false;
@@ -97,49 +91,29 @@ bool ControllerRegistry::createHardwareControllers()
 
         // Gimbal Controller (with SafetyInterlock for motion safety)
         m_gimbalController = new GimbalController(
-            m_hardwareManager->servoAzDevice(),
-            m_hardwareManager->servoElDevice(),
-            m_hardwareManager->plc42Device(),
-            m_systemStateModel,
-            m_safetyInterlock,
-            this
-        );
+            m_hardwareManager->servoAzDevice(), m_hardwareManager->servoElDevice(),
+            m_hardwareManager->plc42Device(), m_systemStateModel, m_safetyInterlock, this);
 
         // Weapon Controller (with SafetyInterlock for centralized safety decisions)
-        m_weaponController = new WeaponController(
-            m_systemStateModel,
-            m_hardwareManager->servoActuatorDevice(),
-            m_hardwareManager->plc42Device(),
-            m_safetyInterlock,
-            this
-        );
+        m_weaponController =
+            new WeaponController(m_systemStateModel, m_hardwareManager->servoActuatorDevice(),
+                                 m_hardwareManager->plc42Device(), m_safetyInterlock, this);
 
         // Camera Controller
         m_cameraController = new CameraController(
-            m_hardwareManager->dayCameraControl(),
-            m_hardwareManager->dayVideoProcessor(),
-            m_hardwareManager->nightCameraControl(),
-            m_hardwareManager->nightVideoProcessor(),
+            m_hardwareManager->dayCameraControl(), m_hardwareManager->dayVideoProcessor(),
+            m_hardwareManager->nightCameraControl(), m_hardwareManager->nightVideoProcessor(),
             m_systemStateModel,
             m_hardwareManager->lrfDevice(),  // LRF for ranging
-            this
-        );
+            this);
 
         // Joystick Controller
-        m_joystickController = new JoystickController(
-            m_hardwareManager->joystickDataModel(),
-            m_systemStateModel,
-            m_gimbalController,
-            m_cameraController,
-            m_weaponController,
-            this
-        );
+        m_joystickController = new JoystickController(m_hardwareManager->joystickDataModel(),
+                                                      m_systemStateModel, m_gimbalController,
+                                                      m_cameraController, m_weaponController, this);
 
-        m_ledController = new LedController(
-            m_systemStateModel,
-            m_hardwareManager->plc21Device(),
-            this
-        );
+        m_ledController =
+            new LedController(m_systemStateModel, m_hardwareManager->plc21Device(), this);
 
         qInfo() << "  ✓ Hardware controllers created";
         emit hardwareControllersCreated();
@@ -155,8 +129,7 @@ bool ControllerRegistry::createHardwareControllers()
 // QML CONTROLLERS
 // ============================================================================
 
-bool ControllerRegistry::createQmlControllers()
-{
+bool ControllerRegistry::createQmlControllers() {
     if (!m_viewModelRegistry || !m_systemStateModel) {
         qCritical() << "Cannot create QML controllers: missing dependencies";
         return false;
@@ -209,7 +182,8 @@ bool ControllerRegistry::createQmlControllers()
 
         // Preset Home Position Controller
         m_presetHomePositionController = new PresetHomePositionController(this);
-        m_presetHomePositionController->setViewModel(m_viewModelRegistry->presetHomePositionViewModel());
+        m_presetHomePositionController->setViewModel(
+            m_viewModelRegistry->presetHomePositionViewModel());
         m_presetHomePositionController->setStateModel(m_systemStateModel);
         m_presetHomePositionController->setPlc42Device(m_hardwareManager->plc42Device());
 
@@ -220,8 +194,7 @@ bool ControllerRegistry::createQmlControllers()
         m_zoneDefinitionController->setParameterViewModels(
             m_viewModelRegistry->areaZoneParameterViewModel(),
             m_viewModelRegistry->sectorScanParameterViewModel(),
-            m_viewModelRegistry->trpParameterViewModel()
-        );
+            m_viewModelRegistry->trpParameterViewModel());
         m_zoneDefinitionController->setStateModel(m_systemStateModel);
 
         // System Status Controller
@@ -236,7 +209,8 @@ bool ControllerRegistry::createQmlControllers()
 
         // Shutdown Confirmation Controller
         m_shutdownConfirmationController = new ShutdownConfirmationController(this);
-        m_shutdownConfirmationController->setViewModel(m_viewModelRegistry->shutdownConfirmationViewModel());
+        m_shutdownConfirmationController->setViewModel(
+            m_viewModelRegistry->shutdownConfirmationViewModel());
         m_shutdownConfirmationController->setStateModel(m_systemStateModel);
 
         // Application Controller (LAST - needs all other controllers)
@@ -269,8 +243,7 @@ bool ControllerRegistry::createQmlControllers()
 // INITIALIZATION
 // ============================================================================
 
-bool ControllerRegistry::initializeControllers()
-{
+bool ControllerRegistry::initializeControllers() {
     qInfo() << "=== ControllerRegistry: Initializing Controllers ===";
 
     try {
@@ -306,8 +279,7 @@ bool ControllerRegistry::initializeControllers()
 // VIDEO TO OSD CONNECTION
 // ============================================================================
 
-bool ControllerRegistry::connectVideoToOsd()
-{
+bool ControllerRegistry::connectVideoToOsd() {
     if (!m_osdController || !m_hardwareManager) {
         qCritical() << "Cannot connect video to OSD: missing dependencies";
         return false;
@@ -355,8 +327,7 @@ bool ControllerRegistry::connectVideoToOsd()
 // QML REGISTRATION
 // ============================================================================
 
-bool ControllerRegistry::registerWithQml(QQmlContext* context)
-{
+bool ControllerRegistry::registerWithQml(QQmlContext* context) {
     if (!context) {
         qCritical() << "ControllerRegistry: QML context is null!";
         return false;

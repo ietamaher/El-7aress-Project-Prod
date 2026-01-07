@@ -11,24 +11,23 @@
 #include <gst/app/gstappsink.h>
 #include <gst/video/video.h>
 
-class VideoImageProvider; // Forward declaration
+class VideoImageProvider;  // Forward declaration
 
-class GstVideoSource : public QObject
-{
+class GstVideoSource : public QObject {
     Q_OBJECT
 
 public:
-    explicit GstVideoSource(VideoImageProvider* imageProvider, QObject *parent = nullptr);
+    explicit GstVideoSource(VideoImageProvider* imageProvider, QObject* parent = nullptr);
     ~GstVideoSource();
 
     Q_INVOKABLE void startPipeline();
     Q_INVOKABLE void stopPipeline();
 
 private:
-    GstElement *m_pipeline = nullptr;
+    GstElement* m_pipeline = nullptr;
     VideoImageProvider* m_imageProvider;
     GstVideoInfo m_videoInfo;
-    GstBuffer *m_buffer = nullptr;
+    GstBuffer* m_buffer = nullptr;
 
     // --- Configuration values (use your existing ones) ---
     QString m_deviceName = "/dev/video0";
@@ -40,11 +39,11 @@ private:
     int m_cropRight = 0;
 
     // GStreamer callbacks
-    static GstFlowReturn onNewSample(GstElement *sink, GstVideoSource *self);
+    static GstFlowReturn onNewSample(GstElement* sink, GstVideoSource* self);
 
 signals:
     // Signal to notify QML that the video frame has been updated.
     void frameUpdated();
 };
 
-#endif // GSTVIDEOSOURCE_H
+#endif  // GSTVIDEOSOURCE_H

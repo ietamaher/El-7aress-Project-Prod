@@ -1,9 +1,6 @@
 #include "areazoneparameterviewmodel.h"
 
-AreaZoneParameterViewModel::AreaZoneParameterViewModel(QObject *parent)
-    : QObject(parent)
-{
-}
+AreaZoneParameterViewModel::AreaZoneParameterViewModel(QObject* parent) : QObject(parent) {}
 
 void AreaZoneParameterViewModel::setIsEnabled(bool enabled) {
     if (m_isEnabled != enabled) {

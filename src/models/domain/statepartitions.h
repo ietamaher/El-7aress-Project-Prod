@@ -70,25 +70,25 @@ struct SafetyState {
     // ============================================================================
     // EMERGENCY STOP
     // ============================================================================
-    bool emergencyStopActive = false;     ///< E-stop button pressed (PLC42)
+    bool emergencyStopActive = false;  ///< E-stop button pressed (PLC42)
 
     // ============================================================================
     // STATION AUTHORIZATION
     // ============================================================================
-    bool stationEnabled = false;          ///< Station master enable switch
-    bool authorized = false;              ///< System authorized for operation
+    bool stationEnabled = false;  ///< Station master enable switch
+    bool authorized = false;      ///< System authorized for operation
 
     // ============================================================================
     // WEAPON SAFETY
     // ============================================================================
-    bool gunArmed = false;                ///< Weapon arming switch state
-    bool deadManSwitchActive = false;     ///< Dead man switch pressed
+    bool gunArmed = false;             ///< Weapon arming switch state
+    bool deadManSwitchActive = false;  ///< Dead man switch pressed
 
     // ============================================================================
     // ZONE RESTRICTIONS
     // ============================================================================
-    bool isReticleInNoFireZone = false;   ///< Aiming into NFZ
-    bool isReticleInNoTraverseZone = false; ///< Aiming into NTZ
+    bool isReticleInNoFireZone = false;      ///< Aiming into NFZ
+    bool isReticleInNoTraverseZone = false;  ///< Aiming into NTZ
 
     // ============================================================================
     // HARDWARE INTERLOCKS
@@ -105,12 +105,8 @@ struct SafetyState {
      * @return true if ANY safety condition blocks firing
      */
     bool isFireBlocked() const {
-        return emergencyStopActive ||
-               !stationEnabled ||
-               !authorized ||
-               !gunArmed ||
-               !deadManSwitchActive ||
-               isReticleInNoFireZone;
+        return emergencyStopActive || !stationEnabled || !authorized || !gunArmed ||
+               !deadManSwitchActive || isReticleInNoFireZone;
     }
 
     /**
@@ -118,9 +114,7 @@ struct SafetyState {
      * @return true if ANY safety condition blocks movement
      */
     bool isMovementBlocked() const {
-        return emergencyStopActive ||
-               !stationEnabled ||
-               isReticleInNoTraverseZone;
+        return emergencyStopActive || !stationEnabled || isReticleInNoTraverseZone;
     }
 
     /**
@@ -128,12 +122,18 @@ struct SafetyState {
      * @return QString describing why firing is blocked (empty if not blocked)
      */
     QString fireBlockReason() const {
-        if (emergencyStopActive) return "EMERGENCY STOP";
-        if (!stationEnabled) return "STATION DISABLED";
-        if (!authorized) return "NOT AUTHORIZED";
-        if (!gunArmed) return "GUN NOT ARMED";
-        if (!deadManSwitchActive) return "DEAD MAN SWITCH";
-        if (isReticleInNoFireZone) return "NO-FIRE ZONE";
+        if (emergencyStopActive)
+            return "EMERGENCY STOP";
+        if (!stationEnabled)
+            return "STATION DISABLED";
+        if (!authorized)
+            return "NOT AUTHORIZED";
+        if (!gunArmed)
+            return "GUN NOT ARMED";
+        if (!deadManSwitchActive)
+            return "DEAD MAN SWITCH";
+        if (isReticleInNoFireZone)
+            return "NO-FIRE ZONE";
         return QString();
     }
 };
@@ -152,23 +152,23 @@ struct WeaponState {
     // ============================================================================
     // CHARGING SYSTEM (Cocking Actuator)
     // ============================================================================
-    ChargingState chargingState = ChargingState::Idle; ///< Current FSM state
-    bool chargeCycleInProgress = false;   ///< Charging operation running
-    bool weaponCharged = false;           ///< Round chambered
-    int chargeCyclesCompleted = 0;        ///< Completed cycles (for M2HB)
-    int chargeCyclesRequired = 2;         ///< Required cycles for weapon type
-    bool chargeLockoutActive = false;     ///< 4-second post-charge lockout
+    ChargingState chargingState = ChargingState::Idle;  ///< Current FSM state
+    bool chargeCycleInProgress = false;                 ///< Charging operation running
+    bool weaponCharged = false;                         ///< Round chambered
+    int chargeCyclesCompleted = 0;                      ///< Completed cycles (for M2HB)
+    int chargeCyclesRequired = 2;                       ///< Required cycles for weapon type
+    bool chargeLockoutActive = false;                   ///< 4-second post-charge lockout
 
     // ============================================================================
     // WEAPON CONFIGURATION
     // ============================================================================
-    WeaponType installedWeaponType = WeaponType::M2HB; ///< Current weapon
-    FireMode fireMode = FireMode::Unknown; ///< Selected fire mode
+    WeaponType installedWeaponType = WeaponType::M2HB;  ///< Current weapon
+    FireMode fireMode = FireMode::Unknown;              ///< Selected fire mode
 
     // ============================================================================
     // OPERATOR INPUT
     // ============================================================================
-    bool chargeButtonPressed = false;     ///< CHG button state
+    bool chargeButtonPressed = false;  ///< CHG button state
 
     // ============================================================================
     // DERIVED CHECKS
@@ -179,9 +179,7 @@ struct WeaponState {
      * @return true if weapon is charged and not in lockout
      */
     bool isReadyToFire() const {
-        return weaponCharged &&
-               !chargeCycleInProgress &&
-               !chargeLockoutActive &&
+        return weaponCharged && !chargeCycleInProgress && !chargeLockoutActive &&
                chargingState == ChargingState::Idle;
     }
 
@@ -190,8 +188,7 @@ struct WeaponState {
      * @return true if charging is allowed
      */
     bool canInitiateCharge() const {
-        return chargingState == ChargingState::Idle &&
-               !chargeLockoutActive;
+        return chargingState == ChargingState::Idle && !chargeLockoutActive;
     }
 };
 
@@ -209,45 +206,45 @@ struct GimbalState {
     // ============================================================================
     // POSITION
     // ============================================================================
-    double gimbalAz = 0.0;                ///< Current azimuth (with offsets)
-    double gimbalEl = 0.0;                ///< Current elevation (with offsets)
-    double mechanicalGimbalAz = 0.0;      ///< Mechanical azimuth (raw)
-    double mechanicalGimbalEl = 0.0;      ///< Mechanical elevation (raw)
+    double gimbalAz = 0.0;            ///< Current azimuth (with offsets)
+    double gimbalEl = 0.0;            ///< Current elevation (with offsets)
+    double mechanicalGimbalAz = 0.0;  ///< Mechanical azimuth (raw)
+    double mechanicalGimbalEl = 0.0;  ///< Mechanical elevation (raw)
 
     // ============================================================================
     // MOTION CONTROL
     // ============================================================================
-    MotionMode motionMode = MotionMode::Idle; ///< Current motion mode
-    HomingState homingState = HomingState::Idle; ///< Homing FSM state
-    bool gotoHomePosition = false;        ///< Home command requested
+    MotionMode motionMode = MotionMode::Idle;     ///< Current motion mode
+    HomingState homingState = HomingState::Idle;  ///< Homing FSM state
+    bool gotoHomePosition = false;                ///< Home command requested
 
     // ============================================================================
     // AZIMUTH SERVO
     // ============================================================================
-    bool azServoConnected = false;        ///< Azimuth servo online
-    float azMotorTemp = 0.0f;             ///< Motor temperature (°C)
-    float azDriverTemp = 0.0f;            ///< Driver temperature (°C)
-    float azRpm = 0.0f;                   ///< Current RPM
-    float azTorque = 0.0f;                ///< Torque percentage
-    bool azFault = false;                 ///< Servo fault flag
+    bool azServoConnected = false;  ///< Azimuth servo online
+    float azMotorTemp = 0.0f;       ///< Motor temperature (°C)
+    float azDriverTemp = 0.0f;      ///< Driver temperature (°C)
+    float azRpm = 0.0f;             ///< Current RPM
+    float azTorque = 0.0f;          ///< Torque percentage
+    bool azFault = false;           ///< Servo fault flag
 
     // ============================================================================
     // ELEVATION SERVO
     // ============================================================================
-    bool elServoConnected = false;        ///< Elevation servo online
-    float elMotorTemp = 0.0f;             ///< Motor temperature (°C)
-    float elDriverTemp = 0.0f;            ///< Driver temperature (°C)
-    float elRpm = 0.0f;                   ///< Current RPM
-    float elTorque = 0.0f;                ///< Torque percentage
-    bool elFault = false;                 ///< Servo fault flag
+    bool elServoConnected = false;  ///< Elevation servo online
+    float elMotorTemp = 0.0f;       ///< Motor temperature (°C)
+    float elDriverTemp = 0.0f;      ///< Driver temperature (°C)
+    float elRpm = 0.0f;             ///< Current RPM
+    float elTorque = 0.0f;          ///< Torque percentage
+    bool elFault = false;           ///< Servo fault flag
 
     // ============================================================================
     // ACTUATOR (Charging Mechanism)
     // ============================================================================
-    bool actuatorConnected = false;       ///< Actuator online
-    double actuatorPosition = 0.0;        ///< Position in mm
-    double actuatorVelocity = 0.0;        ///< Velocity in mm/s
-    bool actuatorFault = false;           ///< Actuator fault flag
+    bool actuatorConnected = false;  ///< Actuator online
+    double actuatorPosition = 0.0;   ///< Position in mm
+    double actuatorVelocity = 0.0;   ///< Velocity in mm/s
+    bool actuatorFault = false;      ///< Actuator fault flag
 
     // ============================================================================
     // DERIVED CHECKS
@@ -258,8 +255,7 @@ struct GimbalState {
      * @return true if both servos are connected and not faulted
      */
     bool isOperational() const {
-        return azServoConnected && elServoConnected &&
-               !azFault && !elFault;
+        return azServoConnected && elServoConnected && !azFault && !elFault;
     }
 
     /**
@@ -276,8 +272,8 @@ struct GimbalState {
      * @return true if any servo exceeds threshold
      */
     bool hasThermalWarning(float threshold = 70.0f) const {
-        return azMotorTemp > threshold || azDriverTemp > threshold ||
-               elMotorTemp > threshold || elDriverTemp > threshold;
+        return azMotorTemp > threshold || azDriverTemp > threshold || elMotorTemp > threshold ||
+               elDriverTemp > threshold;
     }
 };
 
@@ -295,35 +291,35 @@ struct TrackingState {
     // ============================================================================
     // TRACKING STATUS
     // ============================================================================
-    bool trackingActive = false;          ///< Tracking system engaged
-    TrackingPhase currentTrackingPhase = TrackingPhase::Off; ///< Current phase
-    float trackingConfidence = 0.0f;      ///< Tracker confidence (0.0-1.0)
-    VPITrackingState trackedTargetState = VPI_TRACKING_STATE_LOST; ///< VPI state
+    bool trackingActive = false;                              ///< Tracking system engaged
+    TrackingPhase currentTrackingPhase = TrackingPhase::Off;  ///< Current phase
+    float trackingConfidence = 0.0f;                          ///< Tracker confidence (0.0-1.0)
+    VPITrackingState trackedTargetState = VPI_TRACKING_STATE_LOST;  ///< VPI state
 
     // ============================================================================
     // TRACKED TARGET
     // ============================================================================
-    bool trackerHasValidTarget = false;   ///< Tracker has lock
-    float trackedTargetCenterX_px = 0.0f; ///< Target center X (pixels)
-    float trackedTargetCenterY_px = 0.0f; ///< Target center Y (pixels)
-    float trackedTargetWidth_px = 0.0f;   ///< Target width (pixels)
-    float trackedTargetHeight_px = 0.0f;  ///< Target height (pixels)
-    float trackedTargetVelocityX_px_s = 0.0f; ///< Target X velocity (px/s)
-    float trackedTargetVelocityY_px_s = 0.0f; ///< Target Y velocity (px/s)
+    bool trackerHasValidTarget = false;        ///< Tracker has lock
+    float trackedTargetCenterX_px = 0.0f;      ///< Target center X (pixels)
+    float trackedTargetCenterY_px = 0.0f;      ///< Target center Y (pixels)
+    float trackedTargetWidth_px = 0.0f;        ///< Target width (pixels)
+    float trackedTargetHeight_px = 0.0f;       ///< Target height (pixels)
+    float trackedTargetVelocityX_px_s = 0.0f;  ///< Target X velocity (px/s)
+    float trackedTargetVelocityY_px_s = 0.0f;  ///< Target Y velocity (px/s)
 
     // ============================================================================
     // ACQUISITION GATE
     // ============================================================================
-    float acquisitionBoxX_px = 512.0f;    ///< Gate center X (pixels)
-    float acquisitionBoxY_px = 384.0f;    ///< Gate center Y (pixels)
-    float acquisitionBoxW_px = 100.0f;    ///< Gate width (pixels)
-    float acquisitionBoxH_px = 100.0f;    ///< Gate height (pixels)
+    float acquisitionBoxX_px = 512.0f;  ///< Gate center X (pixels)
+    float acquisitionBoxY_px = 384.0f;  ///< Gate center Y (pixels)
+    float acquisitionBoxW_px = 100.0f;  ///< Gate width (pixels)
+    float acquisitionBoxH_px = 100.0f;  ///< Gate height (pixels)
 
     // ============================================================================
     // TARGET ANGULAR POSITION
     // ============================================================================
-    double targetAz = 0.0;                ///< Target azimuth (degrees)
-    double targetEl = 0.0;                ///< Target elevation (degrees)
+    double targetAz = 0.0;  ///< Target azimuth (degrees)
+    double targetEl = 0.0;  ///< Target elevation (degrees)
 
     // ============================================================================
     // DERIVED CHECKS
@@ -334,8 +330,7 @@ struct TrackingState {
      * @return true if tracking with valid target
      */
     bool hasLock() const {
-        return trackingActive &&
-               trackerHasValidTarget &&
+        return trackingActive && trackerHasValidTarget &&
                (currentTrackingPhase == TrackingPhase::Tracking_ActiveLock ||
                 currentTrackingPhase == TrackingPhase::Tracking_Firing);
     }
@@ -362,8 +357,10 @@ struct TrackingState {
      * @return "GOOD" if confidence > 0.7, "MARGINAL" if > 0.4, else "POOR"
      */
     QString qualityIndicator() const {
-        if (trackingConfidence > 0.7f) return "GOOD";
-        if (trackingConfidence > 0.4f) return "MARGINAL";
+        if (trackingConfidence > 0.7f)
+            return "GOOD";
+        if (trackingConfidence > 0.4f)
+            return "MARGINAL";
         return "POOR";
     }
 };
@@ -484,23 +481,23 @@ struct ZoneState {
     // ============================================================================
     // ACTIVE ZONE STATUS
     // ============================================================================
-    bool isReticleInNoFireZone = false;   ///< Currently aiming into NFZ
-    bool isReticleInNoTraverseZone = false; ///< Currently aiming into NTZ
+    bool isReticleInNoFireZone = false;      ///< Currently aiming into NFZ
+    bool isReticleInNoTraverseZone = false;  ///< Currently aiming into NTZ
 
     // ============================================================================
     // ZONE CONFIGURATION
     // ============================================================================
-    int areaZoneCount = 0;                ///< Number of configured area zones
-    int sectorScanZoneCount = 0;          ///< Number of sector scan zones
-    int trpCount = 0;                     ///< Number of target reference points
+    int areaZoneCount = 0;        ///< Number of configured area zones
+    int sectorScanZoneCount = 0;  ///< Number of sector scan zones
+    int trpCount = 0;             ///< Number of target reference points
 
     // ============================================================================
     // ACTIVE SELECTIONS
     // ============================================================================
-    int activeAutoSectorScanZoneId = 1;   ///< Selected sector scan zone
-    int activeTRPLocationPage = 1;        ///< Selected TRP location page
-    QString currentScanName;              ///< Name of current scan operation
-    QString currentTRPScanName;           ///< Name of current TRP scan
+    int activeAutoSectorScanZoneId = 1;  ///< Selected sector scan zone
+    int activeTRPLocationPage = 1;       ///< Selected TRP location page
+    QString currentScanName;             ///< Name of current scan operation
+    QString currentTRPScanName;          ///< Name of current TRP scan
 
     // ============================================================================
     // DERIVED CHECKS
@@ -538,56 +535,56 @@ struct EnvironmentalState {
     // ============================================================================
     // ZEROING COMPENSATION
     // ============================================================================
-    bool zeroingModeActive = false;       ///< Zeroing procedure active
-    float zeroingAzimuthOffset = 0.0f;    ///< Zeroing Az offset (degrees)
-    float zeroingElevationOffset = 0.0f;  ///< Zeroing El offset (degrees)
-    bool zeroingAppliedToBallistics = false; ///< Zeroing applied to CCIP
+    bool zeroingModeActive = false;           ///< Zeroing procedure active
+    float zeroingAzimuthOffset = 0.0f;        ///< Zeroing Az offset (degrees)
+    float zeroingElevationOffset = 0.0f;      ///< Zeroing El offset (degrees)
+    bool zeroingAppliedToBallistics = false;  ///< Zeroing applied to CCIP
 
     // ============================================================================
     // WINDAGE COMPENSATION
     // ============================================================================
-    bool windageModeActive = false;       ///< Windage procedure active
-    float windageSpeedKnots = 0.0f;       ///< Wind speed (knots)
-    float windageDirectionDegrees = 0.0f; ///< Wind direction (degrees)
-    bool windageDirectionCaptured = false; ///< Direction captured
-    bool windageAppliedToBallistics = false; ///< Windage applied to CCIP
-    float calculatedCrosswindMS = 0.0f;   ///< Calculated crosswind (m/s)
+    bool windageModeActive = false;           ///< Windage procedure active
+    float windageSpeedKnots = 0.0f;           ///< Wind speed (knots)
+    float windageDirectionDegrees = 0.0f;     ///< Wind direction (degrees)
+    bool windageDirectionCaptured = false;    ///< Direction captured
+    bool windageAppliedToBallistics = false;  ///< Windage applied to CCIP
+    float calculatedCrosswindMS = 0.0f;       ///< Calculated crosswind (m/s)
 
     // ============================================================================
     // ENVIRONMENTAL CONDITIONS
     // ============================================================================
-    bool environmentalModeActive = false; ///< Environmental procedure active
-    float environmentalTemperatureCelsius = 15.0f; ///< Air temp (°C, ISA=15)
-    float environmentalAltitudeMeters = 0.0f; ///< Altitude (m ASL)
-    bool environmentalAppliedToBallistics = false; ///< Env applied to CCIP
+    bool environmentalModeActive = false;           ///< Environmental procedure active
+    float environmentalTemperatureCelsius = 15.0f;  ///< Air temp (°C, ISA=15)
+    float environmentalAltitudeMeters = 0.0f;       ///< Altitude (m ASL)
+    bool environmentalAppliedToBallistics = false;  ///< Env applied to CCIP
 
     // ============================================================================
     // BALLISTIC DROP
     // ============================================================================
-    bool ballisticDropActive = false;     ///< Auto ballistic drop active
-    float ballisticDropOffsetAz = 0.0f;   ///< Wind deflection (degrees)
-    float ballisticDropOffsetEl = 0.0f;   ///< Gravity drop (degrees)
+    bool ballisticDropActive = false;    ///< Auto ballistic drop active
+    float ballisticDropOffsetAz = 0.0f;  ///< Wind deflection (degrees)
+    float ballisticDropOffsetEl = 0.0f;  ///< Gravity drop (degrees)
 
     // ============================================================================
     // LEAD ANGLE COMPENSATION (LAC)
     // ============================================================================
-    bool leadAngleCompensationActive = false; ///< LAC toggle active
-    LeadAngleStatus currentLeadAngleStatus = LeadAngleStatus::Off; ///< LAC status
-    float motionLeadOffsetAz = 0.0f;      ///< Motion lead Az (degrees)
-    float motionLeadOffsetEl = 0.0f;      ///< Motion lead El (degrees)
+    bool leadAngleCompensationActive = false;                       ///< LAC toggle active
+    LeadAngleStatus currentLeadAngleStatus = LeadAngleStatus::Off;  ///< LAC status
+    float motionLeadOffsetAz = 0.0f;                                ///< Motion lead Az (degrees)
+    float motionLeadOffsetEl = 0.0f;                                ///< Motion lead El (degrees)
 
     // ============================================================================
     // CROWS-COMPLIANT LAC LATCHING
     // ============================================================================
-    bool lacArmed = false;                ///< LAC manually armed
-    float lacLatchedAzRate_dps = 0.0f;    ///< Latched Az rate (deg/s)
-    float lacLatchedElRate_dps = 0.0f;    ///< Latched El rate (deg/s)
+    bool lacArmed = false;              ///< LAC manually armed
+    float lacLatchedAzRate_dps = 0.0f;  ///< Latched Az rate (deg/s)
+    float lacLatchedElRate_dps = 0.0f;  ///< Latched El rate (deg/s)
 
     // ============================================================================
     // TARGET PARAMETERS
     // ============================================================================
-    float currentTargetRange = 2000.0f;   ///< Target range (meters)
-    float muzzleVelocityMPS = 900.0f;     ///< Muzzle velocity (m/s)
+    float currentTargetRange = 2000.0f;  ///< Target range (meters)
+    float muzzleVelocityMPS = 900.0f;    ///< Muzzle velocity (m/s)
 
     // ============================================================================
     // DERIVED CHECKS
@@ -598,10 +595,8 @@ struct EnvironmentalState {
      * @return true if any compensation is being applied
      */
     bool hasActiveCompensation() const {
-        return zeroingAppliedToBallistics ||
-               windageAppliedToBallistics ||
-               environmentalAppliedToBallistics ||
-               ballisticDropActive ||
+        return zeroingAppliedToBallistics || windageAppliedToBallistics ||
+               environmentalAppliedToBallistics || ballisticDropActive ||
                leadAngleCompensationActive;
     }
 
@@ -688,4 +683,4 @@ inline EnvironmentalState extractEnvironmentalState(const SystemStateData& data)
     return state;
 }
 
-#endif // STATEPARTITIONS_H
+#endif  // STATEPARTITIONS_H

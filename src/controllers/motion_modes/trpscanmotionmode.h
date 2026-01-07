@@ -15,8 +15,7 @@
     double haltTime = 0.0;
 };
 */
-class TRPScanMotionMode : public GimbalMotionModeBase
-{
+class TRPScanMotionMode : public GimbalMotionModeBase {
     Q_OBJECT
 
 public:
@@ -43,20 +42,17 @@ protected:
     void updateImpl(GimbalController* controller, double dt) override;
 
 private:
-    enum State {
-        SlewToPoint,
-        HoldPoint
-    };
+    enum State { SlewToPoint, HoldPoint };
 
     State m_state = SlewToPoint;
 
     QVector<TargetReferencePoint> m_trps;
-    QVector<int> m_pageOrder;   // indexes of TRPs in this page
+    QVector<int> m_pageOrder;  // indexes of TRPs in this page
 
     // PID controllers
     PIDController m_azPid, m_elPid;
 
-    int m_currentIndex = 0;     // index inside pageOrder
+    int m_currentIndex = 0;  // index inside pageOrder
     double m_targetAz = 0.0;
     double m_targetEl = 0.0;
     double m_holdRemaining = 0.0;
@@ -70,4 +66,4 @@ private:
     void advanceToNextPoint();
 };
 
-#endif // TRPSCANMOTIONMODE_H
+#endif  // TRPSCANMOTIONMODE_H

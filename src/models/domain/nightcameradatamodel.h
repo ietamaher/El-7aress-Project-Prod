@@ -5,19 +5,21 @@
 #include <QObject>
 #include "hardware/devices/nightcameracontroldevice.h"
 
-class NightCameraDataModel : public QObject
-{
+class NightCameraDataModel : public QObject {
     Q_OBJECT
-public:
-    explicit NightCameraDataModel(QObject *parent = nullptr) : QObject(parent) {}
 
-    NightCameraData data() const { return m_data; }
+public:
+    explicit NightCameraDataModel(QObject* parent = nullptr) : QObject(parent) {}
+
+    NightCameraData data() const {
+        return m_data;
+    }
 
 signals:
-    void dataChanged(const NightCameraData &newData);
+    void dataChanged(const NightCameraData& newData);
 
 public slots:
-    void updateData(const NightCameraData &newData) {
+    void updateData(const NightCameraData& newData) {
         if (newData != m_data) {
             m_data = newData;
             emit dataChanged(m_data);
@@ -28,4 +30,4 @@ private:
     NightCameraData m_data;
 };
 
-#endif // NIGHTCAMERADATAMODEL_H
+#endif  // NIGHTCAMERADATAMODEL_H

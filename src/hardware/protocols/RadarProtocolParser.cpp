@@ -3,10 +3,7 @@
 #include <QDebug>
 #include <QStringList>
 
-RadarProtocolParser::RadarProtocolParser(QObject* parent)
-    : ProtocolParser(parent)
-{
-}
+RadarProtocolParser::RadarProtocolParser(QObject* parent) : ProtocolParser(parent) {}
 
 std::vector<MessagePtr> RadarProtocolParser::parse(const QByteArray& rawData) {
     std::vector<MessagePtr> messages;
@@ -18,7 +15,7 @@ std::vector<MessagePtr> RadarProtocolParser::parse(const QByteArray& rawData) {
     while (m_buffer.contains("\r\n")) {
         int endIndex = m_buffer.indexOf("\r\n");
         QByteArray rawSentence = m_buffer.left(endIndex);
-        m_buffer.remove(0, endIndex + 2); // +2 for \r\n
+        m_buffer.remove(0, endIndex + 2);  // +2 for \r\n
 
         // NMEA sentences start with '$'
         if (rawSentence.startsWith("$")) {
@@ -46,7 +43,7 @@ std::vector<MessagePtr> RadarProtocolParser::parse(const QByteArray& rawData) {
 bool RadarProtocolParser::validateChecksum(const QByteArray& sentence) {
     int asteriskIndex = sentence.indexOf("*");
     if (asteriskIndex == -1 || asteriskIndex + 2 >= sentence.length()) {
-        return false; // No checksum or incomplete checksum
+        return false;  // No checksum or incomplete checksum
     }
 
     // Data to checksum: everything between '$' and '*'
@@ -72,10 +69,10 @@ MessagePtr RadarProtocolParser::parseRATTM(const QByteArray& sentence) {
     if (fields.size() >= 7) {
         plot.id = fields.at(1).toUInt();
         plot.azimuthDegrees = fields.at(2).toFloat();
-        plot.rangeMeters = fields.at(3).toFloat() * 1852.0; // Convert nautical miles to meters
+        plot.rangeMeters = fields.at(3).toFloat() * 1852.0;  // Convert nautical miles to meters
         // fields.at(4) is 'T' or 'M' for True/Magnetic bearing (ignored for now)
         plot.relativeCourseDegrees = fields.at(5).toFloat();
-        plot.relativeSpeedMPS = fields.at(6).toFloat() * 0.514444; // Convert knots to m/s
+        plot.relativeSpeedMPS = fields.at(6).toFloat() * 0.514444;  // Convert knots to m/s
 
         return std::make_unique<RadarPlotMessage>(plot);
     } else {

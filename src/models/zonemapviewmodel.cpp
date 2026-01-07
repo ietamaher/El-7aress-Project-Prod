@@ -2,10 +2,7 @@
 #include "models/domain/systemstatemodel.h"
 #include <QtMath>
 
-ZoneMapViewModel::ZoneMapViewModel(QObject *parent)
-    : QObject(parent)
-{
-}
+ZoneMapViewModel::ZoneMapViewModel(QObject* parent) : QObject(parent) {}
 
 void ZoneMapViewModel::setGimbalPosition(float az, float el) {
     bool changed = false;
@@ -24,7 +21,8 @@ void ZoneMapViewModel::setGimbalPosition(float az, float el) {
 }
 
 void ZoneMapViewModel::updateZones(SystemStateModel* model) {
-    if (!model) return;
+    if (!model)
+        return;
 
     QVariantList newAreaZones = convertAreaZonesToVariant(model);
     QVariantList newSectorScans = convertSectorScansToVariant(model);
@@ -44,7 +42,8 @@ void ZoneMapViewModel::updateZones(SystemStateModel* model) {
     }
 }
 
-void ZoneMapViewModel::setWipZone(const QVariantMap& zone, int type, bool definingStart, bool definingEnd) {
+void ZoneMapViewModel::setWipZone(const QVariantMap& zone, int type, bool definingStart,
+                                  bool definingEnd) {
     m_wipZone = zone;
     m_wipZoneType = type;
     m_isDefiningStart = definingStart;

@@ -9,19 +9,16 @@
 
 
 Plc21Device::Plc21Device(const QString& identifier, QObject* parent)
-    : TemplatedDevice<Plc21PanelData>(parent),
-      m_identifier(identifier),
-      m_pollTimer(new QTimer(this)),
-      m_communicationWatchdog(new QTimer(this))
-{
+    : TemplatedDevice<Plc21PanelData>(parent), m_identifier(identifier),
+      m_pollTimer(new QTimer(this)), m_communicationWatchdog(new QTimer(this)) {
     connect(m_pollTimer, &QTimer::timeout, this, &Plc21Device::pollTimerTimeout);
 
     // FIXED: Changed from false to true - watchdog should be single-shot
     // Gets restarted on each successful communication (resetCommunicationWatchdog)
     m_communicationWatchdog->setSingleShot(true);
     m_communicationWatchdog->setInterval(COMMUNICATION_TIMEOUT_MS);
-    connect(m_communicationWatchdog, &QTimer::timeout,
-            this, &Plc21Device::onCommunicationWatchdogTimeout);
+    connect(m_communicationWatchdog, &QTimer::timeout, this,
+            &Plc21Device::onCommunicationWatchdogTimeout);
 }
 
 Plc21Device::~Plc21Device() {
@@ -29,8 +26,7 @@ Plc21Device::~Plc21Device() {
     m_communicationWatchdog->stop();
 }
 
-void Plc21Device::setDependencies(Transport* transport,
-                                   Plc21ProtocolParser* parser) {
+void Plc21Device::setDependencies(Transport* transport, Plc21ProtocolParser* parser) {
     m_transport = transport;
     m_parser = parser;
 
@@ -66,7 +62,8 @@ bool Plc21Device::initialize() {
     // Start first poll cycle immediately
     startPollCycle();
 
-    qDebug() << m_identifier << "initialized successfully with poll interval:" << pollInterval << "ms";
+    qDebug() << m_identifier << "initialized successfully with poll interval:" << pollInterval
+             << "ms";
     return true;
 }
 
@@ -98,41 +95,40 @@ void Plc21Device::startPollCycle() {
     m_waitingForResponse = true;
 
     // Start the request sequence: first read digital inputs
-    sendReadRequest(Plc21Registers::DIGITAL_INPUTS_START_ADDR,
-                    Plc21Registers::DIGITAL_INPUTS_COUNT,
+    sendReadRequest(Plc21Registers::DIGITAL_INPUTS_START_ADDR, Plc21Registers::DIGITAL_INPUTS_COUNT,
                     true);
 }
 
 void Plc21Device::sendReadRequest(int startAddress, int count, bool isDiscreteInputs) {
-    if (state() != DeviceState::Online || !m_transport) return;
+    if (state() != DeviceState::Online || !m_transport)
+        return;
 
     // Cast to ModbusTransport to access Modbus-specific methods
-    auto modbusTransport = qobject_cast<QModbusRtuSerialClient*>(
-        m_transport->property("client").value<QObject*>());
+    auto modbusTransport =
+        qobject_cast<QModbusRtuSerialClient*>(m_transport->property("client").value<QObject*>());
 
-    if (!modbusTransport) return;
+    if (!modbusTransport)
+        return;
 
-    QModbusDataUnit::RegisterType regType = isDiscreteInputs ?
-        QModbusDataUnit::DiscreteInputs : QModbusDataUnit::HoldingRegisters;
+    QModbusDataUnit::RegisterType regType =
+        isDiscreteInputs ? QModbusDataUnit::DiscreteInputs : QModbusDataUnit::HoldingRegisters;
 
     QModbusDataUnit readUnit(regType, startAddress, count);
 
     QModbusReply* reply = nullptr;
-    QMetaObject::invokeMethod(m_transport, "sendReadRequest",
-                              Qt::DirectConnection,
-                              Q_RETURN_ARG(QModbusReply*, reply),
-                              Q_ARG(QModbusDataUnit, readUnit));
+    QMetaObject::invokeMethod(m_transport, "sendReadRequest", Qt::DirectConnection,
+                              Q_RETURN_ARG(QModbusReply*, reply), Q_ARG(QModbusDataUnit, readUnit));
 
     if (reply) {
-        connect(reply, &QModbusReply::finished, this, [this, reply]() {
-            onModbusReplyReady(reply);
-        });
+        connect(reply, &QModbusReply::finished, this,
+                [this, reply]() { onModbusReplyReady(reply); });
     }
 }
 
 void Plc21Device::onModbusReplyReady(QModbusReply* reply) {
     if (!reply || !m_parser) {
-        if (reply) reply->deleteLater();
+        if (reply)
+            reply->deleteLater();
         m_waitingForResponse = false;
         m_pollCycleActive = false;  // Abort cycle on error
         m_needsHoldingRegistersRead = false;
@@ -239,23 +235,19 @@ void Plc21Device::setDigitalOutputs(const QVector<bool>& outputs) {
     sendWriteRequest(Plc21Registers::DIGITAL_OUTPUTS_START_ADDR, outputs);
 }
 
-void Plc21Device::setGunArmedLed(bool on)
-{
+void Plc21Device::setGunArmedLed(bool on) {
     writeDigitalOutput(0, on);
 }
 
-void Plc21Device::setStationEnabledLed(bool on)
-{
+void Plc21Device::setStationEnabledLed(bool on) {
     writeDigitalOutput(1, on);
 }
 
-void Plc21Device::sethatchStateLed(bool on)
-{
+void Plc21Device::sethatchStateLed(bool on) {
     writeDigitalOutput(2, on);
 }
 
-void Plc21Device::setPanelBacklight(bool on)
-{
+void Plc21Device::setPanelBacklight(bool on) {
     writeDigitalOutput(3, on);
 }
 
@@ -275,7 +267,8 @@ void Plc21Device::writeDigitalOutput(int index, bool value) {
 }
 
 void Plc21Device::sendWriteRequest(int startAddress, const QVector<bool>& values) {
-    if (state() != DeviceState::Online || !m_transport) return;
+    if (state() != DeviceState::Online || !m_transport)
+        return;
 
     QModbusDataUnit writeUnit(QModbusDataUnit::Coils, startAddress, values.size());
     for (int i = 0; i < values.size(); ++i) {
@@ -283,8 +276,7 @@ void Plc21Device::sendWriteRequest(int startAddress, const QVector<bool>& values
     }
 
     QModbusReply* reply = nullptr;
-    QMetaObject::invokeMethod(m_transport, "sendWriteRequest",
-                              Qt::DirectConnection,
+    QMetaObject::invokeMethod(m_transport, "sendWriteRequest", Qt::DirectConnection,
                               Q_RETURN_ARG(QModbusReply*, reply),
                               Q_ARG(QModbusDataUnit, writeUnit));
 
@@ -330,8 +322,7 @@ void Plc21Device::sendNextPendingRequest() {
         m_needsHoldingRegistersRead = false;
         m_waitingForResponse = true;
         sendReadRequest(Plc21Registers::ANALOG_INPUTS_START_ADDR,
-                        Plc21Registers::ANALOG_INPUTS_COUNT,
-                        false);
+                        Plc21Registers::ANALOG_INPUTS_COUNT, false);
     } else {
         // Poll cycle complete - mark as inactive and schedule next cycle
         m_pollCycleActive = false;

@@ -43,21 +43,25 @@ class Message;
  */
 class Plc42Device : public TemplatedDevice<Plc42Data> {
     Q_OBJECT
+
 public:
     explicit Plc42Device(const QString& identifier, QObject* parent = nullptr);
     ~Plc42Device() override;
 
     // Device identification
-    QString identifier() const { return m_identifier; }
+    QString identifier() const {
+        return m_identifier;
+    }
 
     // Dependency injection (called before initialize)
-    Q_INVOKABLE void setDependencies(Transport* transport,
-                                      Plc42ProtocolParser* parser);
+    Q_INVOKABLE void setDependencies(Transport* transport, Plc42ProtocolParser* parser);
 
     // IDevice interface (device lifecycle)
     Q_INVOKABLE bool initialize() override;
     void shutdown() override;
-    DeviceType type() const override { return DeviceType::Plc42; }
+    DeviceType type() const override {
+        return DeviceType::Plc42;
+    }
 
     // Public API - Control methods
     Q_INVOKABLE void setSolenoidMode(uint16_t mode);
@@ -95,7 +99,7 @@ private:
 
     QTimer* m_pollTimer;
     QTimer* m_communicationWatchdog = nullptr;
-    Plc42Data m_pendingWrites; // Data to be written on next write cycle
+    Plc42Data m_pendingWrites;  // Data to be written on next write cycle
     bool m_hasPendingWrites = false;
 
     // Request sequencing to prevent concurrent Modbus requests
@@ -106,4 +110,4 @@ private:
     static constexpr int COMMUNICATION_TIMEOUT_MS = 3000;  // 3 seconds without data = disconnected
 };
 
-#endif // PLC42DEVICE_H
+#endif  // PLC42DEVICE_H

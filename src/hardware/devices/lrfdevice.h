@@ -56,6 +56,7 @@ private slots:
     void handleCommandResponseTimeout();
     void checkLrfStatus();
     void onCommunicationWatchdogTimeout();
+
 private:
     void sendCommand(quint8 commandCode);
     void resetCommunicationWatchdog();
@@ -71,4 +72,4 @@ private:
     static constexpr int COMMUNICATION_TIMEOUT_MS = 10000;  // 3 seconds without data = disconnected
 };
 
-#endif // LRFDEVICE_H
+#endif  // LRFDEVICE_H

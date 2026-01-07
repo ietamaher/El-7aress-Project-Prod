@@ -7,24 +7,22 @@
 #include <QDebug>
 
 DayCameraControlDevice::DayCameraControlDevice(const QString& identifier, QObject* parent)
-    : TemplatedDevice<DayCameraData>(parent),
-      m_identifier(identifier),
-      m_statusCheckTimer(new QTimer(this)),
-      m_communicationWatchdog(new QTimer(this))
-{
+    : TemplatedDevice<DayCameraData>(parent), m_identifier(identifier),
+      m_statusCheckTimer(new QTimer(this)), m_communicationWatchdog(new QTimer(this)) {
     connect(m_statusCheckTimer, &QTimer::timeout, this, &DayCameraControlDevice::checkCameraStatus);
 
     m_communicationWatchdog->setSingleShot(false);
     m_communicationWatchdog->setInterval(COMMUNICATION_TIMEOUT_MS);
-    connect(m_communicationWatchdog, &QTimer::timeout,
-            this, &DayCameraControlDevice::onCommunicationWatchdogTimeout);
+    connect(m_communicationWatchdog, &QTimer::timeout, this,
+            &DayCameraControlDevice::onCommunicationWatchdogTimeout);
 }
 
 DayCameraControlDevice::~DayCameraControlDevice() {
     shutdown();
 }
 
-void DayCameraControlDevice::setDependencies(Transport* transport, DayCameraProtocolParser* parser) {
+void DayCameraControlDevice::setDependencies(Transport* transport,
+                                             DayCameraProtocolParser* parser) {
     m_transport = transport;
     m_parser = parser;
 
@@ -66,11 +64,13 @@ void DayCameraControlDevice::shutdown() {
 }
 
 void DayCameraControlDevice::processFrame(const QByteArray& frame) {
-    if (!m_parser) return;
+    if (!m_parser)
+        return;
 
     auto messages = m_parser->parse(frame);
     for (const auto& msg : messages) {
-        if (msg) processMessage(*msg);
+        if (msg)
+            processMessage(*msg);
     }
 }
 
@@ -111,7 +111,8 @@ void DayCameraControlDevice::processMessage(const Message& message) {
 }
 
 void DayCameraControlDevice::sendCommand(quint8 cmd1, quint8 cmd2, quint8 data1, quint8 data2) {
-    if (state() != DeviceState::Online || !m_transport || !m_parser) return;
+    if (state() != DeviceState::Online || !m_transport || !m_parser)
+        return;
 
     QByteArray command = m_parser->buildCommand(cmd1, cmd2, data1, data2);
     m_transport->sendFrame(command);

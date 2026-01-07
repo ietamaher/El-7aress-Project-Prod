@@ -2,8 +2,7 @@
 #include "../messages/NightCameraMessage.h"
 #include <QDebug>
 
-NightCameraProtocolParser::NightCameraProtocolParser(QObject* parent)
-    : ProtocolParser(parent) {}
+NightCameraProtocolParser::NightCameraProtocolParser(QObject* parent) : ProtocolParser(parent) {}
 
 std::vector<MessagePtr> NightCameraProtocolParser::parse(const QByteArray& rawData) {
     std::vector<MessagePtr> messages;
@@ -15,20 +14,23 @@ std::vector<MessagePtr> NightCameraProtocolParser::parse(const QByteArray& rawDa
             continue;
         }
 
-        if (m_buffer.size() < 6) break;
+        if (m_buffer.size() < 6)
+            break;
 
-        quint16 byteCount = (static_cast<quint8>(m_buffer.at(4)) << 8) |
-                            static_cast<quint8>(m_buffer.at(5));
+        quint16 byteCount =
+            (static_cast<quint8>(m_buffer.at(4)) << 8) | static_cast<quint8>(m_buffer.at(5));
         int totalSize = 6 + byteCount + 2 + 2;
 
-        if (m_buffer.size() < totalSize) break;
+        if (m_buffer.size() < totalSize)
+            break;
 
         QByteArray packet = m_buffer.left(totalSize);
         m_buffer.remove(0, totalSize);
 
         if (verifyCRC(packet)) {
             auto msg = parsePacket(packet);
-            if (msg) messages.push_back(std::move(msg));
+            if (msg)
+                messages.push_back(std::move(msg));
         }
     }
     return messages;
@@ -50,10 +52,10 @@ quint16 NightCameraProtocolParser::calculateCRC(const QByteArray& data, int leng
 }
 
 bool NightCameraProtocolParser::verifyCRC(const QByteArray& packet) {
-    if (packet.size() < 10) return false;
+    if (packet.size() < 10)
+        return false;
 
-    quint16 receivedCRC1 = (static_cast<quint8>(packet[6]) << 8) |
-                           static_cast<quint8>(packet[7]);
+    quint16 receivedCRC1 = (static_cast<quint8>(packet[6]) << 8) | static_cast<quint8>(packet[7]);
     quint16 receivedCRC2 = (static_cast<quint8>(packet[packet.size() - 2]) << 8) |
                            static_cast<quint8>(packet[packet.size() - 1]);
 
@@ -71,8 +73,8 @@ MessagePtr NightCameraProtocolParser::parsePacket(const QByteArray& packet) {
     data.errorState = statusByte;
 
     quint8 functionCode = static_cast<quint8>(packet.at(3));
-    quint16 byteCount = (static_cast<quint8>(packet.at(4)) << 8) |
-                        static_cast<quint8>(packet.at(5));
+    quint16 byteCount =
+        (static_cast<quint8>(packet.at(4)) << 8) | static_cast<quint8>(packet.at(5));
     QByteArray payloadData = packet.mid(8, byteCount);
 
     // Parse based on function code
@@ -102,7 +104,7 @@ MessagePtr NightCameraProtocolParser::parsePacket(const QByteArray& packet) {
         data.fpaTemperature = (static_cast<qint16>(static_cast<quint8>(payloadData[0])) << 8) |
                               static_cast<qint16>(static_cast<quint8>(payloadData[1]));
         //qDebug() << "TAU2 Parser: Temperature received:" << data.fpaTemperature
-         //        << "(" << (data.fpaTemperature / 10.0) << "°C)";
+        //        << "(" << (data.fpaTemperature / 10.0) << "°C)";
     } else if (functionCode == 0x70 && payloadData.size() >= 4) {
         // PAN_AND_TILT response
         data.tiltPosition = (static_cast<qint16>(static_cast<quint8>(payloadData[0])) << 8) |

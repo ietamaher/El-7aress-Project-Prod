@@ -5,11 +5,25 @@
 
 class IDevice : public QObject {
     Q_OBJECT
+
 public:
     enum class DeviceState { Offline, Initializing, Online, Error };
     Q_ENUM(DeviceState)
 
-    enum class DeviceType { Unknown, Radar, ServoDriver, ServoActuator, LRF, Camera,  Plc21, Plc42, Imu, DayCamera, NightCamera, Joystick };
+    enum class DeviceType {
+        Unknown,
+        Radar,
+        ServoDriver,
+        ServoActuator,
+        LRF,
+        Camera,
+        Plc21,
+        Plc42,
+        Imu,
+        DayCamera,
+        NightCamera,
+        Joystick
+    };
     Q_ENUM(DeviceType)
 
     // Provide the function body (the definition) directly in the header.
@@ -22,7 +36,9 @@ public:
     virtual DeviceType type() const = 0;
 
     // Provide the definition for state()
-    DeviceState state() const { return m_state; }
+    DeviceState state() const {
+        return m_state;
+    }
 
 signals:
     void stateChanged(IDevice::DeviceState newState);
@@ -40,4 +56,4 @@ protected:
     DeviceState m_state;
 };
 
-#endif // IDEVICE_H
+#endif  // IDEVICE_H

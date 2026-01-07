@@ -11,14 +11,11 @@
 // CONSTRUCTOR
 // ============================================================================
 
-EmergencyStopMonitor::EmergencyStopMonitor(QObject* parent)
-    : QObject(parent)
-{
+EmergencyStopMonitor::EmergencyStopMonitor(QObject* parent) : QObject(parent) {
     m_stateTimer.start();
     m_debounceTimer.start();
 
-    qInfo() << "[EmergencyStopMonitor] Initialized"
-            << "| Debounce:" << DEBOUNCE_MS << "ms"
+    qInfo() << "[EmergencyStopMonitor] Initialized" << "| Debounce:" << DEBOUNCE_MS << "ms"
             << "| Recovery delay:" << RECOVERY_DELAY_MS << "ms";
 }
 
@@ -26,8 +23,7 @@ EmergencyStopMonitor::EmergencyStopMonitor(QObject* parent)
 // STATE UPDATE
 // ============================================================================
 
-void EmergencyStopMonitor::updateState(bool isActive, const QString& source)
-{
+void EmergencyStopMonitor::updateState(bool isActive, const QString& source) {
     // If state hasn't changed, nothing to do
     if (isActive == m_isActive && !m_isDebouncing) {
         return;
@@ -57,8 +53,7 @@ void EmergencyStopMonitor::updateState(bool isActive, const QString& source)
     }
 }
 
-void EmergencyStopMonitor::forceActivate(const QString& reason)
-{
+void EmergencyStopMonitor::forceActivate(const QString& reason) {
     if (m_isActive) {
         qDebug() << "[EmergencyStopMonitor] Force activate ignored - already active";
         return;
@@ -80,8 +75,7 @@ void EmergencyStopMonitor::forceActivate(const QString& reason)
 // STATE QUERIES
 // ============================================================================
 
-bool EmergencyStopMonitor::isInRecovery() const
-{
+bool EmergencyStopMonitor::isInRecovery() const {
     if (m_isActive) {
         return false;  // Can't be in recovery while active
     }
@@ -94,18 +88,15 @@ bool EmergencyStopMonitor::isInRecovery() const
     return timeSinceDeactivation < RECOVERY_DELAY_MS;
 }
 
-bool EmergencyStopMonitor::isDebouncing() const
-{
+bool EmergencyStopMonitor::isDebouncing() const {
     return m_isDebouncing;
 }
 
-qint64 EmergencyStopMonitor::timeSinceLastChange() const
-{
+qint64 EmergencyStopMonitor::timeSinceLastChange() const {
     return m_stateTimer.elapsed();
 }
 
-qint64 EmergencyStopMonitor::activeDuration() const
-{
+qint64 EmergencyStopMonitor::activeDuration() const {
     if (!m_isActive) {
         return -1;
     }
@@ -121,8 +112,7 @@ qint64 EmergencyStopMonitor::activeDuration() const
 // EVENT HISTORY
 // ============================================================================
 
-void EmergencyStopMonitor::clearHistory()
-{
+void EmergencyStopMonitor::clearHistory() {
     m_eventHistory.clear();
     qDebug() << "[EmergencyStopMonitor] Event history cleared";
 }
@@ -131,8 +121,7 @@ void EmergencyStopMonitor::clearHistory()
 // INTERNAL METHODS
 // ============================================================================
 
-void EmergencyStopMonitor::processStateChange(bool newState, const QString& source)
-{
+void EmergencyStopMonitor::processStateChange(bool newState, const QString& source) {
     if (newState == m_isActive) {
         return;  // No change
     }
@@ -200,8 +189,7 @@ void EmergencyStopMonitor::processStateChange(bool newState, const QString& sour
     emit stateChanged(newState);
 }
 
-void EmergencyStopMonitor::recordEvent(const EmergencyStopEvent& event)
-{
+void EmergencyStopMonitor::recordEvent(const EmergencyStopEvent& event) {
     m_eventHistory.push_back(event);
 
     // Trim history if too large
@@ -211,8 +199,7 @@ void EmergencyStopMonitor::recordEvent(const EmergencyStopEvent& event)
 
     // Log for audit trail
     qInfo() << "[EmergencyStopMonitor] Event recorded:"
-            << (event.wasActivation ? "ACTIVATED" : "DEACTIVATED")
-            << "| Source:" << event.source
+            << (event.wasActivation ? "ACTIVATED" : "DEACTIVATED") << "| Source:" << event.source
             << "| Duration:" << event.durationMs << "ms"
             << "| Total activations:" << m_activationCount;
 }

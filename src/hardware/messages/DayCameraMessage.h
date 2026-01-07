@@ -13,8 +13,12 @@ class DayCameraDataMessage : public Message {
 public:
     explicit DayCameraDataMessage(const DayCameraData& data) : m_data(data) {}
 
-    Type typeId() const override { return Type::DayCameraDataType; }
-    const DayCameraData& data() const { return m_data; }
+    Type typeId() const override {
+        return Type::DayCameraDataType;
+    }
+    const DayCameraData& data() const {
+        return m_data;
+    }
 
 private:
     DayCameraData m_data;

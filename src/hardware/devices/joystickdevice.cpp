@@ -5,30 +5,25 @@
 #include <cstring>
 
 JoystickDevice::JoystickDevice(QObject* parent)
-    : TemplatedDevice<JoystickData>(parent)
-    , m_joystick(nullptr)
-    , m_pollTimer(new QTimer(this))
-    , m_parser(nullptr)
-    , m_targetGUID("030000004f0400000204000011010000")  // Thrustmaster HOTAS Warthog
-    , m_pollInterval(16)  // ~60Hz
-    , m_sdlInitialized(false)
-    , m_lastConnectionState(false)
-{
+    : TemplatedDevice<JoystickData>(parent), m_joystick(nullptr), m_pollTimer(new QTimer(this)),
+      m_parser(nullptr),
+      m_targetGUID("030000004f0400000204000011010000")  // Thrustmaster HOTAS Warthog
+      ,
+      m_pollInterval(16)  // ~60Hz
+      ,
+      m_sdlInitialized(false), m_lastConnectionState(false) {
     connect(m_pollTimer, &QTimer::timeout, this, &JoystickDevice::pollJoystick);
 }
 
-JoystickDevice::~JoystickDevice()
-{
+JoystickDevice::~JoystickDevice() {
     shutdown();
 }
 
-void JoystickDevice::setParser(JoystickProtocolParser* parser)
-{
+void JoystickDevice::setParser(JoystickProtocolParser* parser) {
     m_parser = parser;
 }
 
-void JoystickDevice::setTargetGUID(const QString& guid)
-{
+void JoystickDevice::setTargetGUID(const QString& guid) {
     if (state() == DeviceState::Offline) {
         m_targetGUID = guid;
     } else {
@@ -36,16 +31,14 @@ void JoystickDevice::setTargetGUID(const QString& guid)
     }
 }
 
-void JoystickDevice::setPollInterval(int intervalMs)
-{
+void JoystickDevice::setPollInterval(int intervalMs) {
     m_pollInterval = intervalMs;
     if (m_pollTimer->isActive()) {
         m_pollTimer->setInterval(m_pollInterval);
     }
 }
 
-bool JoystickDevice::initialize()
-{
+bool JoystickDevice::initialize() {
     if (state() != DeviceState::Offline) {
         qWarning() << "JoystickDevice: Already initialized";
         return false;
@@ -88,8 +81,7 @@ bool JoystickDevice::initialize()
     return true;
 }
 
-void JoystickDevice::shutdown()
-{
+void JoystickDevice::shutdown() {
     if (state() == DeviceState::Offline) {
         return;
     }
@@ -122,8 +114,7 @@ void JoystickDevice::shutdown()
     qDebug() << "JoystickDevice: Shutdown complete";
 }
 
-void JoystickDevice::pollJoystick()
-{
+void JoystickDevice::pollJoystick() {
     if (!m_joystick || !m_parser) {
         return;
     }
@@ -172,8 +163,7 @@ void JoystickDevice::pollJoystick()
     }
 }
 
-bool JoystickDevice::initializeSDL()
-{
+bool JoystickDevice::initializeSDL() {
     if (SDL_Init(SDL_INIT_JOYSTICK) < 0) {
         qCritical() << "JoystickDevice: Failed to initialize SDL joystick subsystem:"
                     << SDL_GetError();
@@ -186,8 +176,7 @@ bool JoystickDevice::initializeSDL()
     return true;
 }
 
-bool JoystickDevice::openJoystick()
-{
+bool JoystickDevice::openJoystick() {
     int numJoysticks = SDL_NumJoysticks();
     qDebug() << "JoystickDevice: Found" << numJoysticks << "joystick(s)";
 
@@ -230,32 +219,28 @@ bool JoystickDevice::openJoystick()
     return false;
 }
 
-void JoystickDevice::emitEventSignals(const SDL_Event& event)
-{
+void JoystickDevice::emitEventSignals(const SDL_Event& event) {
     // Emit backward-compatible signals for QML/UI integration
     switch (event.type) {
-        case SDL_JOYAXISMOTION:
-            emit axisMoved(event.jaxis.axis,
-                          static_cast<float>(event.jaxis.value));
-            break;
+    case SDL_JOYAXISMOTION:
+        emit axisMoved(event.jaxis.axis, static_cast<float>(event.jaxis.value));
+        break;
 
-        case SDL_JOYBUTTONDOWN:
-        case SDL_JOYBUTTONUP:
-            emit buttonPressed(event.jbutton.button,
-                             event.type == SDL_JOYBUTTONDOWN);
-            break;
+    case SDL_JOYBUTTONDOWN:
+    case SDL_JOYBUTTONUP:
+        emit buttonPressed(event.jbutton.button, event.type == SDL_JOYBUTTONDOWN);
+        break;
 
-        case SDL_JOYHATMOTION:
-            emit hatMoved(event.jhat.hat, event.jhat.value);
-            break;
+    case SDL_JOYHATMOTION:
+        emit hatMoved(event.jhat.hat, event.jhat.value);
+        break;
 
-        default:
-            break;
+    default:
+        break;
     }
 }
 
-void JoystickDevice::printJoystickGUIDs()
-{
+void JoystickDevice::printJoystickGUIDs() {
     if (SDL_Init(SDL_INIT_JOYSTICK) < 0) {
         qCritical() << "Failed to initialize SDL:" << SDL_GetError();
         return;

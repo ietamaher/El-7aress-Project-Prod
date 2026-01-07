@@ -8,19 +8,17 @@
 #include <QDebug>
 
 ServoDriverDevice::ServoDriverDevice(const QString& identifier, QObject* parent)
-    : TemplatedDevice<ServoDriverData>(parent),
-      m_identifier(identifier),
-      m_pollTimer(new QTimer(this)),
-      m_temperatureTimer(new QTimer(this)),
-      m_communicationWatchdog(new QTimer(this))
-{
+    : TemplatedDevice<ServoDriverData>(parent), m_identifier(identifier),
+      m_pollTimer(new QTimer(this)), m_temperatureTimer(new QTimer(this)),
+      m_communicationWatchdog(new QTimer(this)) {
     connect(m_pollTimer, &QTimer::timeout, this, &ServoDriverDevice::pollTimerTimeout);
-    connect(m_temperatureTimer, &QTimer::timeout, this, &ServoDriverDevice::temperatureTimerTimeout);
+    connect(m_temperatureTimer, &QTimer::timeout, this,
+            &ServoDriverDevice::temperatureTimerTimeout);
 
     m_communicationWatchdog->setSingleShot(true);
     m_communicationWatchdog->setInterval(COMMUNICATION_TIMEOUT_MS);
-    connect(m_communicationWatchdog, &QTimer::timeout,
-            this, &ServoDriverDevice::onCommunicationWatchdogTimeout);
+    connect(m_communicationWatchdog, &QTimer::timeout, this,
+            &ServoDriverDevice::onCommunicationWatchdogTimeout);
 }
 
 ServoDriverDevice::~ServoDriverDevice() {
@@ -35,8 +33,7 @@ ServoDriverDevice::~ServoDriverDevice() {
     setState(DeviceState::Offline);
 }
 
-void ServoDriverDevice::setDependencies(Transport* transport,
-                                         ServoDriverProtocolParser* parser) {
+void ServoDriverDevice::setDependencies(Transport* transport, ServoDriverProtocolParser* parser) {
     m_transport = transport;
     m_parser = parser;
 
@@ -77,12 +74,11 @@ bool ServoDriverDevice::initialize() {
     if (m_temperatureEnabled) {
         // Start temperature timer with offset to avoid collision with position poll
         // Delay by half the poll interval to stagger the reads
-        QTimer::singleShot(pollInterval / 2, this, [this]() {
-            m_temperatureTimer->start();
-        });
+        QTimer::singleShot(pollInterval / 2, this, [this]() { m_temperatureTimer->start(); });
     }
 
-    qDebug() << m_identifier << "initialized successfully with poll interval:" << pollInterval << "ms";
+    qDebug() << m_identifier << "initialized successfully with poll interval:" << pollInterval
+             << "ms";
     return true;
 }
 
@@ -112,13 +108,15 @@ void ServoDriverDevice::temperatureTimerTimeout() {
 }
 
 void ServoDriverDevice::sendReadRequest(int startAddress, int count) {
-    if (state() != DeviceState::Online || !m_transport) return;
+    if (state() != DeviceState::Online || !m_transport)
+        return;
 
     // Cast to ModbusTransport to access Modbus-specific methods
-    auto modbusTransport = qobject_cast<QModbusRtuSerialClient*>(
-        m_transport->property("client").value<QObject*>());
+    auto modbusTransport =
+        qobject_cast<QModbusRtuSerialClient*>(m_transport->property("client").value<QObject*>());
 
-    if (!modbusTransport) return;
+    if (!modbusTransport)
+        return;
 
     QModbusDataUnit readUnit(QModbusDataUnit::HoldingRegisters, startAddress, count);
 
@@ -127,21 +125,19 @@ void ServoDriverDevice::sendReadRequest(int startAddress, int count) {
     // For now, we'll use QMetaObject::invokeMethod for loose coupling
 
     QModbusReply* reply = nullptr;
-    QMetaObject::invokeMethod(m_transport, "sendReadRequest",
-                              Qt::DirectConnection,
-                              Q_RETURN_ARG(QModbusReply*, reply),
-                              Q_ARG(QModbusDataUnit, readUnit));
+    QMetaObject::invokeMethod(m_transport, "sendReadRequest", Qt::DirectConnection,
+                              Q_RETURN_ARG(QModbusReply*, reply), Q_ARG(QModbusDataUnit, readUnit));
 
     if (reply) {
-        connect(reply, &QModbusReply::finished, this, [this, reply]() {
-            onModbusReplyReady(reply);
-        });
+        connect(reply, &QModbusReply::finished, this,
+                [this, reply]() { onModbusReplyReady(reply); });
     }
 }
 
 void ServoDriverDevice::onModbusReplyReady(QModbusReply* reply) {
     if (!reply || !m_parser) {
-        if (reply) reply->deleteLater();
+        if (reply)
+            reply->deleteLater();
         return;
     }
 
@@ -191,7 +187,7 @@ void ServoDriverDevice::processMessage(const Message& message) {
             dataChanged = true;
         }
 
-         if (!qFuzzyCompare(partialData.torque + 1.0f, currentData->torque + 1.0f)) {
+        if (!qFuzzyCompare(partialData.torque + 1.0f, currentData->torque + 1.0f)) {
             newData->torque = partialData.torque;
             dataChanged = true;
         }
@@ -269,12 +265,11 @@ void ServoDriverDevice::readAlarmStatus() {
 
 void ServoDriverDevice::clearAlarm() {
     sendWriteRequest(ServoDriverRegisters::ALARM_RESET_ADDR,
-                     QVector<quint16>{0, 1}); // Execute clear command
+                     QVector<quint16>{0, 1});  // Execute clear command
 
     // Reset register back to 0
     QTimer::singleShot(100, this, [this]() {
-        sendWriteRequest(ServoDriverRegisters::ALARM_RESET_ADDR,
-                         QVector<quint16>{0, 0});
+        sendWriteRequest(ServoDriverRegisters::ALARM_RESET_ADDR, QVector<quint16>{0, 0});
 
         auto newData = std::make_shared<ServoDriverData>(*data());
         newData->fault = false;
@@ -291,12 +286,10 @@ void ServoDriverDevice::readAlarmHistory() {
 }
 
 void ServoDriverDevice::clearAlarmHistory() {
-    sendWriteRequest(ServoDriverRegisters::ALARM_HISTORY_CLEAR_ADDR,
-                     QVector<quint16>{0, 1});
+    sendWriteRequest(ServoDriverRegisters::ALARM_HISTORY_CLEAR_ADDR, QVector<quint16>{0, 1});
 
     QTimer::singleShot(100, this, [this]() {
-        sendWriteRequest(ServoDriverRegisters::ALARM_HISTORY_CLEAR_ADDR,
-                         QVector<quint16>{0, 0});
+        sendWriteRequest(ServoDriverRegisters::ALARM_HISTORY_CLEAR_ADDR, QVector<quint16>{0, 0});
     });
 }
 
@@ -314,7 +307,8 @@ void ServoDriverDevice::setTemperatureInterval(int intervalMs) {
 }
 
 void ServoDriverDevice::sendWriteRequest(int startAddress, const QVector<quint16>& values) {
-    if (state() != DeviceState::Online || !m_transport) return;
+    if (state() != DeviceState::Online || !m_transport)
+        return;
     // ⭐ RATE LIMIT: Skip if too many pending writes (prevents queue buildup)
     if (m_pendingWrites > 2) {
         //log when skipping writes
@@ -331,8 +325,7 @@ void ServoDriverDevice::sendWriteRequest(int startAddress, const QVector<quint16
     QModbusDataUnit writeUnit(QModbusDataUnit::HoldingRegisters, startAddress, values);
 
     QModbusReply* reply = nullptr;
-    QMetaObject::invokeMethod(m_transport, "sendWriteRequest",
-                              Qt::DirectConnection,
+    QMetaObject::invokeMethod(m_transport, "sendWriteRequest", Qt::DirectConnection,
                               Q_RETURN_ARG(QModbusReply*, reply),
                               Q_ARG(QModbusDataUnit, writeUnit));
 

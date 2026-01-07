@@ -19,16 +19,21 @@ class Message;
 
 class DayCameraControlDevice : public TemplatedDevice<DayCameraData> {
     Q_OBJECT
+
 public:
     explicit DayCameraControlDevice(const QString& identifier, QObject* parent = nullptr);
     ~DayCameraControlDevice() override;
 
-    QString identifier() const { return m_identifier; }
+    QString identifier() const {
+        return m_identifier;
+    }
 
     Q_INVOKABLE void setDependencies(Transport* transport, DayCameraProtocolParser* parser);
     Q_INVOKABLE bool initialize() override;
     void shutdown() override;
-    DeviceType type() const override { return DeviceType::DayCamera; }
+    DeviceType type() const override {
+        return DeviceType::DayCamera;
+    }
 
     // Zoom controls
     Q_INVOKABLE void zoomIn();
@@ -68,8 +73,9 @@ private:
     QTimer* m_communicationWatchdog = nullptr;
     bool m_zoomActive = false;  // Track if zoom operation is in progress
 
-    static constexpr int COMMUNICATION_TIMEOUT_MS = 15000;  // 15 seconds without data = disconnected
+    static constexpr int COMMUNICATION_TIMEOUT_MS =
+        15000;  // 15 seconds without data = disconnected
     static constexpr int STATUS_CHECK_INTERVAL_MS = 10000;  // Status check interval
 };
 
-#endif // DAYCAMERACONTROLDEVICE_H
+#endif  // DAYCAMERACONTROLDEVICE_H

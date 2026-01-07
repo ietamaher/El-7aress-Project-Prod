@@ -7,7 +7,7 @@
 #include <cmath>
 #include <cstdint>
 #include <limits>
-#include "models/domain/systemstatedata.h" // Include for SystemStateData
+#include "models/domain/systemstatedata.h"  // Include for SystemStateData
 #include "config/MotionTuningConfig.h"      // Include for runtime-configurable parameters
 #include "GimbalStabilizer.h"               // Include for velocity-based stabilization
 
@@ -22,24 +22,20 @@ class GimbalController;
  * @brief Axis identifier for servo commands
  * Used for axis-specific Modbus packet optimization
  */
-enum class GimbalAxis {
-    Azimuth,
-    Elevation
-};
+enum class GimbalAxis { Azimuth, Elevation };
 
 // Low-pass filter class for gyroscope data
 class GyroLowPassFilter {
 private:
-    double cutoffFreq;      // Cutoff frequency in Hz
-    double alpha;           // Filter coefficient (0 < alpha < 1) - for fixed sampleRate fallback
-    double filteredValue;   // Current filtered value
-    bool initialized;       // Whether filter has been initialized
+    double cutoffFreq;     // Cutoff frequency in Hz
+    double alpha;          // Filter coefficient (0 < alpha < 1) - for fixed sampleRate fallback
+    double filteredValue;  // Current filtered value
+    bool initialized;      // Whether filter has been initialized
 
 public:
     // Constructor: cutoffFreq in Hz, sampleRate in Hz (optional)
     GyroLowPassFilter(double cutoffFreqHz = 5.0, double sampleRateHz = 100.0)
-        : cutoffFreq(cutoffFreqHz), initialized(false)
-    {
+        : cutoffFreq(cutoffFreqHz), initialized(false) {
         // Precompute alpha for fixed sampleRate fallback
         double dt = 1.0 / sampleRateHz;
         double RC = 1.0 / (2.0 * M_PI * cutoffFreq);
@@ -65,9 +61,10 @@ public:
             initialized = true;
             return filteredValue;
         }
-        if (dt <= 0.0) dt = 1e-3;
+        if (dt <= 0.0)
+            dt = 1e-3;
         double RC = 1.0 / (2.0 * M_PI * cutoffFreq);
-        double a = dt / (RC + dt); // computed alpha
+        double a = dt / (RC + dt);  // computed alpha
         a = qBound(1e-6, a, 0.999999);
         filteredValue = a * newValue + (1.0 - a) * filteredValue;
         return filteredValue;
@@ -78,19 +75,20 @@ public:
         filteredValue = 0.0;
     }
 
-    bool isInitialized() const { return initialized; }
+    bool isInitialized() const {
+        return initialized;
+    }
 };
 
-class GimbalMotionModeBase : public QObject
-{
+class GimbalMotionModeBase : public QObject {
     Q_OBJECT
+
 public:
     explicit GimbalMotionModeBase(QObject* parent = nullptr)
-        : QObject(parent)
-        , m_gyroXFilter(MotionTuningConfig::instance().filters.gyroCutoffFreqHz, 100.0)
-        , m_gyroYFilter(MotionTuningConfig::instance().filters.gyroCutoffFreqHz, 100.0)
-        , m_gyroZFilter(MotionTuningConfig::instance().filters.gyroCutoffFreqHz, 100.0)
-    {
+        : QObject(parent),
+          m_gyroXFilter(MotionTuningConfig::instance().filters.gyroCutoffFreqHz, 100.0),
+          m_gyroYFilter(MotionTuningConfig::instance().filters.gyroCutoffFreqHz, 100.0),
+          m_gyroZFilter(MotionTuningConfig::instance().filters.gyroCutoffFreqHz, 100.0) {
         // Filters now use runtime-configurable cutoff frequency from motion_tuning.json
     }
 
@@ -176,8 +174,8 @@ public:
      * @param worldEl Output world-frame elevation (degrees)
      */
     void convertGimbalToWorldFrame(double gimbalAz_platform, double gimbalEl_platform,
-                                    double platform_roll, double platform_pitch, double platform_yaw,
-                                    double& worldAz, double& worldEl);
+                                   double platform_roll, double platform_pitch, double platform_yaw,
+                                   double& worldAz, double& worldEl);
 
     /**
      * @brief Converts gimbal velocity vectors from gimbal frame to world frame using rotation matrices.
@@ -188,13 +186,10 @@ public:
      * @param linVel_world_mps Output linear velocity in world frame (m/s)
      * @param angVel_world_dps Output angular velocity in world frame (deg/s)
      */
-    void convertGimbalToWorldFrame(
-        const Eigen::Vector3d& linVel_gimbal_mps,
-        const Eigen::Vector3d& angVel_gimbal_dps,
-        double azDeg,
-        double elDeg,
-        Eigen::Vector3d& linVel_world_mps,
-        Eigen::Vector3d& angVel_world_dps);
+    void convertGimbalToWorldFrame(const Eigen::Vector3d& linVel_gimbal_mps,
+                                   const Eigen::Vector3d& angVel_gimbal_dps, double azDeg,
+                                   double elDeg, Eigen::Vector3d& linVel_world_mps,
+                                   Eigen::Vector3d& angVel_world_dps);
 
 protected:
     // ============================================================================
@@ -212,7 +207,7 @@ protected:
      * @return Clamped dt (minimum 1 ms, maximum implicit)
      */
     static inline double clampDt(double dt) {
-        return qMax(dt, 1e-3); // 1 ms minimum
+        return qMax(dt, 1e-3);  // 1 ms minimum
     }
 
     /**
@@ -222,7 +217,8 @@ protected:
      * @return Alpha coefficient for this update
      */
     static inline double alphaFromTauDt(double tau, double dt) {
-        if (dt <= 0.0) dt = 1e-3;
+        if (dt <= 0.0)
+            dt = 1e-3;
         return 1.0 - std::exp(-dt / tau);
     }
 
@@ -246,18 +242,18 @@ protected:
      */
     static inline QVector<quint16> splitInt32ToRegs(int32_t value) {
         uint32_t u = static_cast<uint32_t>(static_cast<int32_t>(value));
-        return { static_cast<quint16>((u >> 16) & 0xFFFF),
-                 static_cast<quint16>(u & 0xFFFF) };
+        return {static_cast<quint16>((u >> 16) & 0xFFFF), static_cast<quint16>(u & 0xFFFF)};
     }
 
 public:
     /**
      * @brief Start velocity timer - call in enterMode() of derived classes
      */
-    void startVelocityTimer() { m_velocityTimer.start(); }
+    void startVelocityTimer() {
+        m_velocityTimer.start();
+    }
 
 protected:
-
     /**
      * @brief Calculates and sends final servo commands, incorporating full kinematic stabilization.
      * @param controller Pointer to the GimbalController to access system state (IMU, angles).
@@ -266,11 +262,8 @@ protected:
      * @param enableStabilization True to apply stabilization corrections, false to send raw commands.
      * @param dt Time delta in seconds since last update (Expert Review Fix)
      */
-    void sendStabilizedServoCommands(GimbalController* controller,
-                                 double desiredAzVelocity,
-                                 double desiredElVelocity,
-                                 bool enableStabilization,
-                                 double dt);
+    void sendStabilizedServoCommands(GimbalController* controller, double desiredAzVelocity,
+                                     double desiredElVelocity, bool enableStabilization, double dt);
     // --- UNIFIED PID CONTROLLER ---
     struct PIDController {
         double Kp = 0.0;
@@ -292,7 +285,8 @@ protected:
         double d_term = 0.0;
         double total = 0.0;
     };
-    double pidCompute(PIDController& pid, double error, double setpoint, double measurement, bool derivativeOnMeasurement, double dt);
+    double pidCompute(PIDController& pid, double error, double setpoint, double measurement,
+                      bool derivativeOnMeasurement, double dt);
 
     // We can provide a convenient overload for the old "derivative on error" method
     // This way, you don't have to change your existing code in the scanning modes.
@@ -300,10 +294,13 @@ protected:
     // Helper methods for common operations
     //       double joystickInput, quint16 angularVelocity);
 
-    void writeServoCommands(class ServoDriverDevice* driverInterface, double finalVelocity, float scalingFactor = 250.0f);
-    void writeTargetPosition(ServoDriverDevice* driverInterface,  long targetPositionInSteps);
-    void setAcceleration(class ServoDriverDevice* driverInterface, quint32 acceleration = DEFAULT_ACCELERATION);
-    bool checkElevationLimits(double currentEl, double targetVelocity, bool upperLimit, bool lowerLimit);
+    void writeServoCommands(class ServoDriverDevice* driverInterface, double finalVelocity,
+                            float scalingFactor = 250.0f);
+    void writeTargetPosition(ServoDriverDevice* driverInterface, long targetPositionInSteps);
+    void setAcceleration(class ServoDriverDevice* driverInterface,
+                         quint32 acceleration = DEFAULT_ACCELERATION);
+    bool checkElevationLimits(double currentEl, double targetVelocity, bool upperLimit,
+                              bool lowerLimit);
     /**
      * @brief Configures the AZD-KX driver for continuous velocity control mode.
      *        This should be called once when a motion mode is entered.
@@ -316,10 +313,8 @@ protected:
      * @param scalingFactor Converts deg/s to Hz for the driver.
      * @deprecated Use writeVelocityCommandOptimized() for axis-specific parameters
      */
-    void writeVelocityCommand(class ServoDriverDevice* driverInterface,
-                              double finalVelocity,
-                              double scalingFactor,
-                              qint32& lastSpeedHz);
+    void writeVelocityCommand(class ServoDriverDevice* driverInterface, double finalVelocity,
+                              double scalingFactor, qint32& lastSpeedHz);
 
     /**
      * @brief OPTIMIZED: Single Modbus write for speed command with axis-specific parameters.
@@ -333,10 +328,8 @@ protected:
      * @param scalingFactor Steps per degree (AZ_STEPS_PER_DEGREE or EL_STEPS_PER_DEGREE)
      * @param lastSpeedHz Cache of last sent speed (for change detection)
      */
-    void writeVelocityCommandOptimized(class ServoDriverDevice* driverInterface,
-                                       GimbalAxis axis,
-                                       double finalVelocity,
-                                       double scalingFactor,
+    void writeVelocityCommandOptimized(class ServoDriverDevice* driverInterface, GimbalAxis axis,
+                                       double finalVelocity, double scalingFactor,
                                        qint32& lastSpeedHz);
 
     /**
@@ -414,15 +407,21 @@ protected:
      * @return Normalized angle in degrees
      */
     static inline double normalizeAngle180(double angle) {
-        while (angle > 180.0) angle -= 360.0;
-        while (angle < -180.0) angle += 360.0;
+        while (angle > 180.0)
+            angle -= 360.0;
+        while (angle < -180.0)
+            angle += 360.0;
         return angle;
     }
 
 private:
     // Helper for angle conversions (scalar)
-    static inline double degToRad(double deg) { return deg * (M_PI / 180.0); }
-    static inline double radToDeg(double rad) { return rad * (180.0 / M_PI); }
+    static inline double degToRad(double deg) {
+        return deg * (M_PI / 180.0);
+    }
+    static inline double radToDeg(double rad) {
+        return rad * (180.0 / M_PI);
+    }
 
     // Helper for angle conversions (Eigen vectors - element-wise)
     static inline Eigen::Vector3d degToRad(const Eigen::Vector3d& deg) {
@@ -450,7 +449,7 @@ private:
     double m_gyroBiasZ = 0.0;
 
     // Last servo command tracking for change detection (prevents redundant Modbus writes)
-    qint32 m_lastAzSpeedHz = std::numeric_limits<qint32>::max(); // Initialize to invalid value
+    qint32 m_lastAzSpeedHz = std::numeric_limits<qint32>::max();  // Initialize to invalid value
     qint32 m_lastElSpeedHz = std::numeric_limits<qint32>::max();
 
     // ============================================================================
@@ -485,6 +484,4 @@ private:
     // ============================================================================
 };
 
-#endif // GIMBALMOTIONMO
-
-
+#endif  // GIMBALMOTIONMO

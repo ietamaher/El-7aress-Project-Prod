@@ -4,8 +4,7 @@
 #include <QObject>
 #include <QColor>
 
-class EnvironmentalViewModel : public QObject
-{
+class EnvironmentalViewModel : public QObject {
     Q_OBJECT
     Q_PROPERTY(bool visible READ visible NOTIFY visibleChanged)
     Q_PROPERTY(QString title READ title NOTIFY titleChanged)
@@ -18,17 +17,35 @@ class EnvironmentalViewModel : public QObject
     Q_PROPERTY(QColor accentColor READ accentColor NOTIFY accentColorChanged)
 
 public:
-    explicit EnvironmentalViewModel(QObject *parent = nullptr);
+    explicit EnvironmentalViewModel(QObject* parent = nullptr);
 
-    bool visible() const { return m_visible; }
-    QString title() const { return m_title; }
-    QString instruction() const { return m_instruction; }
-    bool showParameters() const { return m_showParameters; }
-    float temperature() const { return m_temperature; }
-    float altitude() const { return m_altitude; }
-    float crosswind() const { return m_crosswind; }
-    QString parameterLabel() const { return m_parameterLabel; }
-    QColor accentColor() const { return m_accentColor; }
+    bool visible() const {
+        return m_visible;
+    }
+    QString title() const {
+        return m_title;
+    }
+    QString instruction() const {
+        return m_instruction;
+    }
+    bool showParameters() const {
+        return m_showParameters;
+    }
+    float temperature() const {
+        return m_temperature;
+    }
+    float altitude() const {
+        return m_altitude;
+    }
+    float crosswind() const {
+        return m_crosswind;
+    }
+    QString parameterLabel() const {
+        return m_parameterLabel;
+    }
+    QColor accentColor() const {
+        return m_accentColor;
+    }
 
 public slots:
     void setVisible(bool visible);
@@ -61,7 +78,7 @@ private:
     float m_altitude;
     float m_crosswind;
     QString m_parameterLabel;
-    QColor m_accentColor = QColor(70, 226, 165); // Default green
+    QColor m_accentColor = QColor(70, 226, 165);  // Default green
 };
 
-#endif // ENVIRONMENTALVIEWMODEL_H
+#endif  // ENVIRONMENTALVIEWMODEL_H

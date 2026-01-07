@@ -20,18 +20,13 @@
 #include <QQmlContext>
 #include <QDebug>
 
-ViewModelRegistry::ViewModelRegistry(QObject* parent)
-    : QObject(parent)
-{
-}
+ViewModelRegistry::ViewModelRegistry(QObject* parent) : QObject(parent) {}
 
-ViewModelRegistry::~ViewModelRegistry()
-{
+ViewModelRegistry::~ViewModelRegistry() {
     qInfo() << "ViewModelRegistry: Destroyed";
 }
 
-bool ViewModelRegistry::createViewModels()
-{
+bool ViewModelRegistry::createViewModels() {
     qInfo() << "=== ViewModelRegistry: Creating ViewModels ===";
 
     try {
@@ -74,8 +69,7 @@ bool ViewModelRegistry::createViewModels()
     }
 }
 
-bool ViewModelRegistry::registerWithQml(QQmlContext* context)
-{
+bool ViewModelRegistry::registerWithQml(QQmlContext* context) {
     if (!context) {
         qCritical() << "ViewModelRegistry: QML context is null!";
         return false;

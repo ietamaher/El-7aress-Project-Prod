@@ -45,21 +45,25 @@ class Message;
  */
 class RadarDevice : public TemplatedDevice<RadarData> {
     Q_OBJECT
+
 public:
     explicit RadarDevice(const QString& identifier, QObject* parent = nullptr);
     ~RadarDevice() override;
 
     // Device identification
-    QString identifier() const { return m_identifier; }
+    QString identifier() const {
+        return m_identifier;
+    }
 
     // Dependency injection (called before initialize)
-    Q_INVOKABLE void setDependencies(Transport* transport,
-                                      RadarProtocolParser* parser);
+    Q_INVOKABLE void setDependencies(Transport* transport, RadarProtocolParser* parser);
 
     // IDevice interface (device lifecycle)
     Q_INVOKABLE bool initialize() override;
     void shutdown() override;
-    DeviceType type() const override { return DeviceType::Radar; }
+    DeviceType type() const override {
+        return DeviceType::Radar;
+    }
 
     // Public API - Target management
     Q_INVOKABLE QVector<RadarData> trackedTargets() const;
@@ -84,9 +88,10 @@ private:
     RadarProtocolParser* m_parser = nullptr;
 
     QTimer* m_communicationWatchdog = nullptr;
-    QVector<RadarData> m_trackedTargets; // Multiple tracked targets
+    QVector<RadarData> m_trackedTargets;  // Multiple tracked targets
 
-    static constexpr int COMMUNICATION_TIMEOUT_MS = 10000;  // 10 seconds without data = disconnected
+    static constexpr int COMMUNICATION_TIMEOUT_MS =
+        10000;  // 10 seconds without data = disconnected
 };
 
-#endif // RADARDEVICE_H
+#endif  // RADARDEVICE_H

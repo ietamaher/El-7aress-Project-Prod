@@ -73,9 +73,10 @@
 /**
  * @brief Constants for stationary detection
  */
-static constexpr double STATIONARY_GYRO_LIMIT = 0.5;           ///< Max gyro magnitude (deg/s) for stationary
-static constexpr double STATIONARY_ACCEL_DELTA_LIMIT = 0.01;   ///< Max accel change (G) for stationary
-static constexpr int STATIONARY_TIME_MS = 2000;                ///< Required stationary time (2 seconds)
+static constexpr double STATIONARY_GYRO_LIMIT = 0.5;  ///< Max gyro magnitude (deg/s) for stationary
+static constexpr double STATIONARY_ACCEL_DELTA_LIMIT =
+    0.01;                                        ///< Max accel change (G) for stationary
+static constexpr int STATIONARY_TIME_MS = 2000;  ///< Required stationary time (2 seconds)
 
 struct NtzState {
     int zoneId = -1;
@@ -112,8 +113,7 @@ class EmergencyStopMonitor;
  * should ONLY be modified through SafetyInterlock::checkFirePermission() or
  * EmergencyStopMonitor::updateState(). Direct modification bypasses safety checks.
  */
-class SystemStateModel : public QObject
-{
+class SystemStateModel : public QObject {
     Q_OBJECT
 
     // ============================================================================
@@ -125,7 +125,7 @@ class SystemStateModel : public QObject
     friend class EmergencyStopMonitor;
 
 public:
-    explicit SystemStateModel(QObject *parent = nullptr);
+    explicit SystemStateModel(QObject* parent = nullptr);
     ~SystemStateModel();
 
     // =================================
@@ -136,13 +136,15 @@ public:
      * @brief Gets the current system state data.
      * @return The current SystemStateData structure.
      */
-    virtual SystemStateData data() const { return m_currentStateData; }
+    virtual SystemStateData data() const {
+        return m_currentStateData;
+    }
 
     /**
      * @brief Updates the entire system state with new data.
      * @param newState The new system state data to apply.
      */
-    void updateData(const SystemStateData &newState);
+    void updateData(const SystemStateData& newState);
 
     // =================================
     // TYPED STATE PARTITION ACCESSORS
@@ -162,7 +164,9 @@ public:
      *
      * @return SafetyState snapshot of current safety state
      */
-    SafetyState safetyState() const { return extractSafetyState(m_currentStateData); }
+    SafetyState safetyState() const {
+        return extractSafetyState(m_currentStateData);
+    }
 
     /**
      * @brief Gets the current weapon state partition
@@ -172,7 +176,9 @@ public:
      *
      * @return WeaponState snapshot of current weapon state
      */
-    WeaponState weaponState() const { return extractWeaponState(m_currentStateData); }
+    WeaponState weaponState() const {
+        return extractWeaponState(m_currentStateData);
+    }
 
     /**
      * @brief Gets the current gimbal state partition
@@ -182,7 +188,9 @@ public:
      *
      * @return GimbalState snapshot of current gimbal state
      */
-    GimbalState gimbalState() const { return extractGimbalState(m_currentStateData); }
+    GimbalState gimbalState() const {
+        return extractGimbalState(m_currentStateData);
+    }
 
     /**
      * @brief Gets the current tracking state partition
@@ -192,7 +200,9 @@ public:
      *
      * @return TrackingState snapshot of current tracking state
      */
-    TrackingState trackingState() const { return extractTrackingState(m_currentStateData); }
+    TrackingState trackingState() const {
+        return extractTrackingState(m_currentStateData);
+    }
 
     /**
      * @brief Gets the current zone state partition
@@ -202,7 +212,9 @@ public:
      *
      * @return ZoneState snapshot of current zone state
      */
-    ZoneState zoneState() const { return extractZoneState(m_currentStateData); }
+    ZoneState zoneState() const {
+        return extractZoneState(m_currentStateData);
+    }
 
     /**
      * @brief Gets the current environmental/ballistic state partition
@@ -212,7 +224,9 @@ public:
      *
      * @return EnvironmentalState snapshot of current environmental state
      */
-    EnvironmentalState environmentalState() const { return extractEnvironmentalState(m_currentStateData); }
+    EnvironmentalState environmentalState() const {
+        return extractEnvironmentalState(m_currentStateData);
+    }
 
     // =================================
     // USER INTERFACE CONTROLS
@@ -222,13 +236,13 @@ public:
      * @brief Sets the color style for the user interface.
      * @param style The color to be used for UI styling.
      */
-    void setColorStyle(const QColor &style);
+    void setColorStyle(const QColor& style);
 
     /**
      * @brief Sets the reticle style for the targeting system.
      * @param type The type of reticle to display.
      */
-    void setReticleStyle(const ReticleType &type);
+    void setReticleStyle(const ReticleType& type);
 
     /**
      * @brief Sets the dead man switch state for safety control.
@@ -319,11 +333,9 @@ public:
      */
     bool isAtNoTraverseZoneLimit(float currentAz, float currentEl, float intendedMoveAz) const;
     // Computes independent allowed deltas for sliding capability
-    void computeAllowedDeltas(
-        float currentAz, float currentEl,
-        float intendedAzDelta, float intendedElDelta,
-        float& allowedAzDelta, float& allowedElDelta,
-        double dt);
+    void computeAllowedDeltas(float currentAz, float currentEl, float intendedAzDelta,
+                              float intendedElDelta, float& allowedAzDelta, float& allowedElDelta,
+                              double dt);
 
     void resetNtzStates();
 
@@ -700,12 +712,9 @@ public:
      * @param state Raw VPI tracking state.
      * @param confidence Tracking confidence score (0.0-1.0) from VPI tracker.
      */
-    void updateTrackingResult(int cameraIndex, bool hasLock,
-                              float centerX_px, float centerY_px,
-                              float width_px, float height_px,
-                              float velocityX_px_s, float velocityY_px_s,
-                              VPITrackingState state,
-                              float confidence);
+    void updateTrackingResult(int cameraIndex, bool hasLock, float centerX_px, float centerY_px,
+                              float width_px, float height_px, float velocityX_px_s,
+                              float velocityY_px_s, VPITrackingState state, float confidence);
 
     /**
      * @brief Starts tracking acquisition mode (user positioning gate).
@@ -805,19 +814,19 @@ signals:
      * @brief Emitted when system state data changes.
      * @param newState The new system state data.
      */
-    void dataChanged(const SystemStateData &newState);
+    void dataChanged(const SystemStateData& newState);
 
     /**
      * @brief Emitted when UI color style changes.
      * @param style The new color style.
      */
-    void colorStyleChanged(const QColor &style);
+    void colorStyleChanged(const QColor& style);
 
     /**
      * @brief Emitted when reticle style changes.
      * @param type The new reticle type.
      */
-    void reticleStyleChanged(const ReticleType &type);
+    void reticleStyleChanged(const ReticleType& type);
 
     /**
      * @brief Emitted when PLC21 button states change (menuUp, menuDown, menuVal).
@@ -931,31 +940,31 @@ public slots:
      * @brief Handles changes in PLC21 panel data.
      * @param pData The new PLC21 panel data.
      */
-    void onPlc21DataChanged(const Plc21PanelData &pData);
+    void onPlc21DataChanged(const Plc21PanelData& pData);
 
     /**
      * @brief Handles changes in PLC42 data.
      * @param pData The new PLC42 data.
      */
-    void onPlc42DataChanged(const Plc42Data &pData);
+    void onPlc42DataChanged(const Plc42Data& pData);
 
     /**
      * @brief Handles changes in servo azimuth data.
      * @param azData The new azimuth servo data.
      */
-    void onServoAzDataChanged(const ServoDriverData &azData);
+    void onServoAzDataChanged(const ServoDriverData& azData);
 
     /**
      * @brief Handles changes in servo elevation data.
      * @param elData The new elevation servo data.
      */
-    void onServoElDataChanged(const ServoDriverData &elData);
+    void onServoElDataChanged(const ServoDriverData& elData);
 
     /**
      * @brief Handles changes in servo actuator data.
      * @param actuatorData The new servo actuator data.
      */
-    void onServoActuatorDataChanged(const ServoActuatorData &actuatorData);
+    void onServoActuatorDataChanged(const ServoActuatorData& actuatorData);
 
     // =================================
     // SENSOR DATA SLOTS
@@ -965,25 +974,25 @@ public slots:
      * @brief Handles changes in laser range finder data.
      * @param lrfData The new LRF data.
      */
-    void onLrfDataChanged(const LrfData &lrfData);
+    void onLrfDataChanged(const LrfData& lrfData);
 
     /**
      * @brief Handles changes in day camera data.
      * @param dayData The new day camera data.
      */
-    void onDayCameraDataChanged(const DayCameraData &dayData);
+    void onDayCameraDataChanged(const DayCameraData& dayData);
 
     /**
      * @brief Handles changes in gyroscope data.
      * @param gyroData The new gyroscope data.
      */
-    void onGyroDataChanged(const ImuData &gyroData);
+    void onGyroDataChanged(const ImuData& gyroData);
 
     /**
      * @brief Handles changes in night camera data.
      * @param nightData The new night camera data.
      */
-    void onNightCameraDataChanged(const NightCameraData &nightData);
+    void onNightCameraDataChanged(const NightCameraData& nightData);
 
     // =================================
     // JOYSTICK CONTROL SLOTS
@@ -1105,12 +1114,12 @@ private:
     // PRIVATE MEMBER VARIABLES
     // =================================
 
-    SystemStateData m_currentStateData; ///< Central data store for all system state
+    SystemStateData m_currentStateData;  ///< Central data store for all system state
 
     // ID Counters for zones
-    int m_nextAreaZoneId;       ///< Counter for assigning unique area zone IDs
-    int m_nextSectorScanId;     ///< Counter for assigning unique sector scan zone IDs
-    int m_nextTRPId;            ///< Counter for assigning unique TRP IDs
+    int m_nextAreaZoneId;    ///< Counter for assigning unique area zone IDs
+    int m_nextSectorScanId;  ///< Counter for assigning unique sector scan zone IDs
+    int m_nextTRPId;         ///< Counter for assigning unique TRP IDs
 
     // ============================================================================
     // ZEROING PROCEDURE STATE TRACKING (BUG FIX #1)
@@ -1134,19 +1143,25 @@ private:
      * @brief Gets the next available area zone ID and increments the counter.
      * @return The next available area zone ID.
      */
-    int getNextAreaZoneId() { return m_nextAreaZoneId++; }
+    int getNextAreaZoneId() {
+        return m_nextAreaZoneId++;
+    }
 
     /**
      * @brief Gets the next available sector scan zone ID and increments the counter.
      * @return The next available sector scan zone ID.
      */
-    int getNextSectorScanId() { return m_nextSectorScanId++; }
+    int getNextSectorScanId() {
+        return m_nextSectorScanId++;
+    }
 
     /**
      * @brief Gets the next available TRP ID and increments the counter.
      * @return The next available TRP ID.
      */
-    int getNextTRPId() { return m_nextTRPId++; }
+    int getNextTRPId() {
+        return m_nextTRPId++;
+    }
 
     /**
      * @brief Updates the next ID counters after loading data from file.
@@ -1174,7 +1189,8 @@ private:
      * @param nightHfov Night camera horizontal field of view in degrees.
      * @param isDayActive True if day camera is active, false for night camera.
      */
-    void updateCameraOpticsAndActivity(int width, int height, float dayHfov, float nightHfov, bool isDayActive);
+    void updateCameraOpticsAndActivity(int width, int height, float dayHfov, float nightHfov,
+                                       bool isDayActive);
 
     /**
      * @brief Updates the current scan zone name for display purposes.
@@ -1187,7 +1203,7 @@ private:
      * @param newData New system state data (may be modified).
      */
     void processStateTransitions(const SystemStateData& oldData, SystemStateData& newData);
-    void processHomingStateMachine(const SystemStateData& oldData,  SystemStateData& newData);
+    void processHomingStateMachine(const SystemStateData& oldData, SystemStateData& newData);
 
     ChargingState m_chargingState = ChargingState::Idle;
     bool m_chargeCycleInProgress = false;
@@ -1196,14 +1212,14 @@ private:
     // ============================================================================
     // HOMING DISPLAY TIMER (Bug Fix: Show completion state for 2 seconds)
     // ============================================================================
-    QElapsedTimer m_homingDisplayTimer;  ///< Timer to hold Completed/Failed/Aborted state
+    QElapsedTimer m_homingDisplayTimer;       ///< Timer to hold Completed/Failed/Aborted state
     bool m_homingDisplayTimerActive = false;  ///< True when display timer is running
     static constexpr int HOMING_DISPLAY_DURATION_MS = 2000;  ///< 2 seconds display
 
-        QMap<int, NtzState> m_ntzStates;
+    QMap<int, NtzState> m_ntzStates;
 
-    static constexpr double NTZ_EPS = 0.05;       // Stop 0.05 deg before wall
-    static constexpr double NTZ_HYSTERESIS = 0.2; // Release buffer
+    static constexpr double NTZ_EPS = 0.05;        // Stop 0.05 deg before wall
+    static constexpr double NTZ_HYSTERESIS = 0.2;  // Release buffer
 
     // Math Helpers
     static double normalize360(double a);
@@ -1212,7 +1228,8 @@ private:
 
     // Continuous Collision Detection (Ray Casting)
     // Returns 0.0 to 1.0 (Fraction of move allowed)
-    static double getCollisionFraction(double current, double boundary, double delta, bool isAzimuth);
+    static double getCollisionFraction(double current, double boundary, double delta,
+                                       bool isAzimuth);
 };
 
-#endif // SYSTEMSTATEMODEL_H
+#endif  // SYSTEMSTATEMODEL_H

@@ -2,10 +2,9 @@
 #include <chrono>
 #include <iostream>
 
-YoloInference::YoloInference(const std::string &onnxModelPath, const cv::Size &modelInputShape,
-                             const std::string &classesTxtFile, const bool &runWithCuda,
-                             const std::string &tensorrtEngine)
-{
+YoloInference::YoloInference(const std::string& onnxModelPath, const cv::Size& modelInputShape,
+                             const std::string& classesTxtFile, const bool& runWithCuda,
+                             const std::string& tensorrtEngine) {
     modelPath = onnxModelPath;
     tensorrtPath = tensorrtEngine;
     modelShape = modelInputShape;
@@ -19,8 +18,7 @@ YoloInference::YoloInference(const std::string &onnxModelPath, const cv::Size &m
     warmUpNetwork();
 }
 
-YoloInference::~YoloInference()
-{
+YoloInference::~YoloInference() {
     net = cv::dnn::Net();
     if (cudaEnabled) {
         std::cout << "CUDA/TensorRT resources for DNN Net should be released now." << std::endl;
@@ -29,8 +27,7 @@ YoloInference::~YoloInference()
     }
 }
 
-std::vector<YoloDetection> YoloInference::runInference(const cv::Mat &input)
-{
+std::vector<YoloDetection> YoloInference::runInference(const cv::Mat& input) {
     // Start timing for performance monitoring
     auto start = std::chrono::high_resolution_clock::now();
 
@@ -42,7 +39,8 @@ std::vector<YoloDetection> YoloInference::runInference(const cv::Mat &input)
         modelInput = formatToSquare(modelInput, &pad_x, &pad_y, &scale);
 
     // Optimize blob creation - reuse allocated memory when possible
-    cv::dnn::blobFromImage(modelInput, blob, 1.0/255.0, modelShape, cv::Scalar(), true, false, CV_32F);
+    cv::dnn::blobFromImage(modelInput, blob, 1.0 / 255.0, modelShape, cv::Scalar(), true, false,
+                           CV_32F);
     net.setInput(blob);
 
     // Use pre-allocated output vector
@@ -50,7 +48,8 @@ std::vector<YoloDetection> YoloInference::runInference(const cv::Mat &input)
     net.forward(outputs, outputNames);
 
     auto inference_end = std::chrono::high_resolution_clock::now();
-    auto inference_time = std::chrono::duration_cast<std::chrono::milliseconds>(inference_end - start);
+    auto inference_time =
+        std::chrono::duration_cast<std::chrono::milliseconds>(inference_end - start);
 
     int rows = outputs[0].size[1];
     int dimensions = outputs[0].size[2];
@@ -63,7 +62,7 @@ std::vector<YoloDetection> YoloInference::runInference(const cv::Mat &input)
         cv::transpose(outputs[0], outputs[0]);
     }
 
-    float *data = (float *)outputs[0].data;
+    float* data = (float*)outputs[0].data;
 
     // Pre-allocated vectors for better performance
     class_ids.clear();
@@ -77,7 +76,7 @@ std::vector<YoloDetection> YoloInference::runInference(const cv::Mat &input)
 
     // Optimize detection loop with SIMD-friendly operations
     for (int i = 0; i < rows; ++i) {
-        float *classes_scores = data + 4;
+        float* classes_scores = data + 4;
 
         // Optimize score calculation using iterator
         auto max_iter = std::max_element(classes_scores, classes_scores + classes.size());
@@ -130,17 +129,17 @@ std::vector<YoloDetection> YoloInference::runInference(const cv::Mat &input)
 
     // Optional: Print timing information
     if (printTiming) {
-        std::cout << "Inference: " << inference_time.count() << "ms, Total: " << total_time.count() << "ms" << std::endl;
+        std::cout << "Inference: " << inference_time.count() << "ms, Total: " << total_time.count()
+                  << "ms" << std::endl;
     }
 
     return detections;
 }
 
-void YoloInference::loadOnnxNetwork()
-{
+void YoloInference::loadOnnxNetwork() {
     net = cv::dnn::readNetFromONNX(modelPath);
 
-        // CRITICAL: Disable layer fusion to avoid the error
+    // CRITICAL: Disable layer fusion to avoid the error
     //net.enableFusion(false);
     //std::cout << "Layer fusion disabled to prevent OpenCV errors" << std::endl;
 
@@ -175,8 +174,7 @@ void YoloInference::loadOnnxNetwork()
     outputNames = net.getUnconnectedOutLayersNames();
 }
 
-void YoloInference::preAllocateMemory()
-{
+void YoloInference::preAllocateMemory() {
     // Pre-allocate vectors to avoid repeated memory allocations
     class_ids.reserve(1000);
     confidences.reserve(1000);
@@ -194,22 +192,22 @@ void YoloInference::preAllocateMemory()
     }
 }
 
-void YoloInference::warmUpNetwork()
-{
-    if (!cudaEnabled) return;
+void YoloInference::warmUpNetwork() {
+    if (!cudaEnabled)
+        return;
 
     std::cout << "Warming up network (building TensorRT engine)..." << std::endl;
 
     cv::Mat dummyInput = cv::Mat::zeros(modelShape.height, modelShape.width, CV_8UC3);
 
     // More warmup runs for TensorRT engine building
-    int warmupRuns = 20; // Increased for TensorRT
+    int warmupRuns = 20;  // Increased for TensorRT
     auto start = std::chrono::high_resolution_clock::now();
 
     for (int i = 0; i < warmupRuns; ++i) {
         cv::Mat warmupBlob;
-        cv::dnn::blobFromImage(dummyInput, warmupBlob, 1.0/255.0, modelShape,
-                              cv::Scalar(), true, false, CV_32F);
+        cv::dnn::blobFromImage(dummyInput, warmupBlob, 1.0 / 255.0, modelShape, cv::Scalar(), true,
+                               false, CV_32F);
         net.setInput(warmupBlob);
 
         std::vector<cv::Mat> warmupOutputs;
@@ -227,14 +225,14 @@ void YoloInference::warmUpNetwork()
     std::cout << "Network warmup completed: " << total_time.count() << "ms" << std::endl;
 }
 
-cv::Mat YoloInference::formatToSquare(const cv::Mat &source, int *pad_x, int *pad_y, float *scale)
-{
+cv::Mat YoloInference::formatToSquare(const cv::Mat& source, int* pad_x, int* pad_y, float* scale) {
     int col = source.cols;
     int row = source.rows;
     int m_inputWidth = modelShape.width;
     int m_inputHeight = modelShape.height;
 
-    *scale = std::min(static_cast<float>(m_inputWidth) / col, static_cast<float>(m_inputHeight) / row);
+    *scale =
+        std::min(static_cast<float>(m_inputWidth) / col, static_cast<float>(m_inputHeight) / row);
     int resized_w = static_cast<int>(col * *scale);
     int resized_h = static_cast<int>(row * *scale);
     *pad_x = (m_inputWidth - resized_w) / 2;
@@ -250,8 +248,7 @@ cv::Mat YoloInference::formatToSquare(const cv::Mat &source, int *pad_x, int *pa
     return result;
 }
 
-void YoloInference::loadClassesFromFile()
-{
+void YoloInference::loadClassesFromFile() {
     std::ifstream inputFile(classesPath);
     if (inputFile.is_open()) {
         std::string classLine;

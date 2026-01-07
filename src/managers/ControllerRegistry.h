@@ -49,15 +49,13 @@ class QQmlContext;
  * - Hardware Controllers: Manage physical devices (gimbal, weapon, camera, joystick)
  * - QML Controllers: Manage UI logic and ViewModels
  */
-class ControllerRegistry : public QObject
-{
+class ControllerRegistry : public QObject {
     Q_OBJECT
 
 public:
     explicit ControllerRegistry(HardwareManager* hardwareManager,
                                 ViewModelRegistry* viewModelRegistry,
-                                SystemStateModel* systemStateModel,
-                                QObject* parent = nullptr);
+                                SystemStateModel* systemStateModel, QObject* parent = nullptr);
     ~ControllerRegistry();
 
     // ============================================================================
@@ -100,30 +98,68 @@ public:
     // ============================================================================
 
     // Safety Authority
-    SafetyInterlock* safetyInterlock() const { return m_safetyInterlock; }
+    SafetyInterlock* safetyInterlock() const {
+        return m_safetyInterlock;
+    }
 
     // Hardware Controllers
-    GimbalController* gimbalController() const { return m_gimbalController; }
-    WeaponController* weaponController() const { return m_weaponController; }
-    CameraController* cameraController() const { return m_cameraController; }
-    JoystickController* joystickController() const { return m_joystickController; }
+    GimbalController* gimbalController() const {
+        return m_gimbalController;
+    }
+    WeaponController* weaponController() const {
+        return m_weaponController;
+    }
+    CameraController* cameraController() const {
+        return m_cameraController;
+    }
+    JoystickController* joystickController() const {
+        return m_joystickController;
+    }
 
     // QML Controllers
-    OsdController* osdController() const { return m_osdController; }
-    ZoneDefinitionController* zoneDefinitionController() const { return m_zoneDefinitionController; }
-    MainMenuController* mainMenuController() const { return m_mainMenuController; }
-    ReticleMenuController* reticleMenuController() const { return m_reticleMenuController; }
-    ColorMenuController* colorMenuController() const { return m_colorMenuController; }
-    ZeroingController* zeroingController() const { return m_zeroingController; }
-    WindageController* windageController() const { return m_windageController; }
-    EnvironmentalController* environmentalController() const { return m_environmentalController; }
-    BrightnessController* brightnessController() const { return m_brightnessController; }
-    PresetHomePositionController* presetHomePositionController() const { return m_presetHomePositionController; }
+    OsdController* osdController() const {
+        return m_osdController;
+    }
+    ZoneDefinitionController* zoneDefinitionController() const {
+        return m_zoneDefinitionController;
+    }
+    MainMenuController* mainMenuController() const {
+        return m_mainMenuController;
+    }
+    ReticleMenuController* reticleMenuController() const {
+        return m_reticleMenuController;
+    }
+    ColorMenuController* colorMenuController() const {
+        return m_colorMenuController;
+    }
+    ZeroingController* zeroingController() const {
+        return m_zeroingController;
+    }
+    WindageController* windageController() const {
+        return m_windageController;
+    }
+    EnvironmentalController* environmentalController() const {
+        return m_environmentalController;
+    }
+    BrightnessController* brightnessController() const {
+        return m_brightnessController;
+    }
+    PresetHomePositionController* presetHomePositionController() const {
+        return m_presetHomePositionController;
+    }
     // SystemStatusController* systemStatusController() const { return m_systemStatusController; }  // DISABLED
-    AboutController* aboutController() const { return m_aboutController; }
-    ShutdownConfirmationController* shutdownConfirmationController() const { return m_shutdownConfirmationController; }
-    ApplicationController* applicationController() const { return m_appController; }
-    LedController* ledController() const { return m_ledController; }
+    AboutController* aboutController() const {
+        return m_aboutController;
+    }
+    ShutdownConfirmationController* shutdownConfirmationController() const {
+        return m_shutdownConfirmationController;
+    }
+    ApplicationController* applicationController() const {
+        return m_appController;
+    }
+    LedController* ledController() const {
+        return m_ledController;
+    }
 
 signals:
     void hardwareControllersCreated();
@@ -171,4 +207,4 @@ private:
     SystemStateModel* m_systemStateModel = nullptr;
 };
 
-#endif // CONTROLLERREGISTRY_H
+#endif  // CONTROLLERREGISTRY_H

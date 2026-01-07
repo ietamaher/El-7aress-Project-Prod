@@ -28,8 +28,7 @@ signals:
  * Provides video frames to QML Image components via "image://video/..." URL.
  * Thread-safe for use with CameraVideoStreamDevice running in separate threads.
  */
-class VideoImageProvider : public QQuickImageProvider
-{
+class VideoImageProvider : public QQuickImageProvider {
 public:
     VideoImageProvider();
 
@@ -46,13 +45,15 @@ public:
      * @param requestedSize Requested size (ignored, we return actual size)
      * @return The current video frame
      */
-    QImage requestImage(const QString &id, QSize *size, const QSize &requestedSize) override;
+    QImage requestImage(const QString& id, QSize* size, const QSize& requestedSize) override;
 
     /**
      * @brief Get the notifier object for QML signal connections
      * Latency Fix #1: Eliminates timer-based polling
      */
-    VideoFrameNotifier* notifier() { return &m_notifier; }
+    VideoFrameNotifier* notifier() {
+        return &m_notifier;
+    }
 
 private:
     QImage m_currentImage;
@@ -60,4 +61,4 @@ private:
     VideoFrameNotifier m_notifier;
 };
 
-#endif // VIDEOIMAGEPROVIDER_H
+#endif  // VIDEOIMAGEPROVIDER_H

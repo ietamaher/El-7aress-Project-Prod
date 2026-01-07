@@ -7,12 +7,15 @@
 
 class DayCameraProtocolParser : public ProtocolParser {
     Q_OBJECT
+
 public:
     explicit DayCameraProtocolParser(QObject* parent = nullptr);
     ~DayCameraProtocolParser() override = default;
 
     std::vector<MessagePtr> parse(const QByteArray& rawData) override;
-    std::vector<MessagePtr> parse(QModbusReply* /*reply*/) override { return {}; }
+    std::vector<MessagePtr> parse(QModbusReply* /*reply*/) override {
+        return {};
+    }
 
     // Command building
     QByteArray buildCommand(quint8 cmd1, quint8 cmd2, quint8 data1 = 0, quint8 data2 = 0);

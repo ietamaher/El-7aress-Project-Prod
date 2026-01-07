@@ -15,27 +15,26 @@
  *   const auto& cfg = MotionTuningConfig::instance();
  *   m_azPid.Kp = cfg.trackingAz.kp;
  */
-class MotionTuningConfig
-{
+class MotionTuningConfig {
 public:
     /**
      * @brief PID controller gains structure
      */
     struct PIDGains {
-        double kp = 1.0;           ///< Proportional gain
-        double ki = 0.01;          ///< Integral gain
-        double kd = 0.05;          ///< Derivative gain
-        double maxIntegral = 20.0; ///< Integral windup limit
+        double kp = 1.0;            ///< Proportional gain
+        double ki = 0.01;           ///< Integral gain
+        double kd = 0.05;           ///< Derivative gain
+        double maxIntegral = 20.0;  ///< Integral windup limit
     };
 
     /**
      * @brief Filter configuration structure
      */
     struct FilterConfig {
-        double gyroCutoffFreqHz = 5.0;        ///< Gyro low-pass filter cutoff (Hz)
-        double trackingPositionTau = 0.12;    ///< Tracking position smoothing time constant (s)
-        double trackingVelocityTau = 0.08;    ///< Tracking velocity smoothing time constant (s)
-        double manualJoystickTau = 0.08;      ///< Manual mode joystick filter time constant (s)
+        double gyroCutoffFreqHz = 5.0;      ///< Gyro low-pass filter cutoff (Hz)
+        double trackingPositionTau = 0.12;  ///< Tracking position smoothing time constant (s)
+        double trackingVelocityTau = 0.08;  ///< Tracking velocity smoothing time constant (s)
+        double manualJoystickTau = 0.08;    ///< Manual mode joystick filter time constant (s)
     };
 
     /**
@@ -55,8 +54,8 @@ public:
      * @brief Servo conversion constants structure
      */
     struct ServoConstants {
-        double azStepsPerDegree = 618.0556;   ///< Azimuth servo steps/degree (222500/360)
-        double elStepsPerDegree = 555.5556;   ///< Elevation servo steps/degree (200000/360)
+        double azStepsPerDegree = 618.0556;  ///< Azimuth servo steps/degree (222500/360)
+        double elStepsPerDegree = 555.5556;  ///< Elevation servo steps/degree (200000/360)
     };
 
     /**
@@ -78,33 +77,33 @@ public:
      * 0x0066-0x0067: Trigger (2 regs)
      */
     struct AxisServoParams {
-        quint32 accelHz = 150000;      ///< Acceleration rate (Hz/s)
-        quint32 decelHz = 150000;      ///< Deceleration rate (Hz/s)
-        quint32 currentPercent = 1000; ///< Current limit (1000 = 100%, 700 = 70%)
-        double maxSpeedScale = 1.0;    ///< Speed multiplier (1.0 = 100%, 0.7 = 70%)
+        quint32 accelHz = 150000;       ///< Acceleration rate (Hz/s)
+        quint32 decelHz = 150000;       ///< Deceleration rate (Hz/s)
+        quint32 currentPercent = 1000;  ///< Current limit (1000 = 100%, 700 = 70%)
+        double maxSpeedScale = 1.0;     ///< Speed multiplier (1.0 = 100%, 0.7 = 70%)
     };
 
     /**
      * @brief Combined axis parameters
      */
     struct AxisServoConfig {
-        AxisServoParams azimuth;   ///< Azimuth axis (heavy turret load)
-        AxisServoParams elevation; ///< Elevation axis (lighter gun load)
+        AxisServoParams azimuth;    ///< Azimuth axis (heavy turret load)
+        AxisServoParams elevation;  ///< Elevation axis (lighter gun load)
     };
 
     /**
      * @brief Mode-specific scan parameters
      */
     struct ScanParams {
-        double decelerationDistanceDeg = 5.0; ///< Distance to start deceleration (deg)
-        double arrivalThresholdDeg = 0.2;     ///< Distance to consider arrived (deg)
+        double decelerationDistanceDeg = 5.0;  ///< Distance to start deceleration (deg)
+        double arrivalThresholdDeg = 0.2;      ///< Distance to consider arrived (deg)
     };
 
     /**
      * @brief Manual mode acceleration limits
      */
     struct ManualLimits {
-        double maxAccelHzPerSec = 500000.0;   ///< Max acceleration in Hz/s
+        double maxAccelHzPerSec = 500000.0;  ///< Max acceleration in Hz/s
     };
 
     /**
@@ -118,19 +117,19 @@ public:
      *
      * Defaults tuned for 50ms update rate (20Hz) on moving platform.
      */
-struct StabilizerConfig {
-    double kpPosition = 0.7;
-    double kdPosition = 0.0;
-    double maxErrorRate = 50.0;
-    double maxPositionVel = 10.0;
-    double maxVelocityCorr = 5.0;
-    double maxTotalVel = 18.0;
-    double maxTanEl = 10.0;
+    struct StabilizerConfig {
+        double kpPosition = 0.7;
+        double kdPosition = 0.0;
+        double maxErrorRate = 50.0;
+        double maxPositionVel = 10.0;
+        double maxVelocityCorr = 5.0;
+        double maxTotalVel = 18.0;
+        double maxTanEl = 10.0;
 
-    // ✅ NEW: Anti-jitter parameters
-    double positionDeadbandDeg = 0.5;   ///< Ignore errors smaller than this
-    double ahrsFilterTau = 0.15;          ///< AHRS angle filter time constant (seconds)
-};
+        // ✅ NEW: Anti-jitter parameters
+        double positionDeadbandDeg = 0.5;  ///< Ignore errors smaller than this
+        double ahrsFilterTau = 0.15;       ///< AHRS angle filter time constant (seconds)
+    };
 
     // ============================================================================
     // PUBLIC API
@@ -210,4 +209,4 @@ private:
     static bool m_loaded;
 };
 
-#endif // MOTIONTUNINGCONFIG_H
+#endif  // MOTIONTUNINGCONFIG_H

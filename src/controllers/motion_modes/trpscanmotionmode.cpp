@@ -18,14 +18,14 @@ double TRPScanMotionMode::norm360(double a) {
 
 double TRPScanMotionMode::shortestDiff(double t, double c) {
     double d = norm360(t) - norm360(c);
-    if (d > 180) d -= 360;
-    if (d <= -180) d += 360;
+    if (d > 180)
+        d -= 360;
+    if (d <= -180)
+        d += 360;
     return d;
 }
 
-TRPScanMotionMode::TRPScanMotionMode(QObject* parent)
-    : GimbalMotionModeBase(parent)
-{
+TRPScanMotionMode::TRPScanMotionMode(QObject* parent) : GimbalMotionModeBase(parent) {
     // Load PID gains from runtime config (field-tunable without rebuild)
     const auto& cfg = MotionTuningConfig::instance();
     m_azPid.Kp = cfg.trpScanAz.kp;
@@ -45,11 +45,10 @@ void TRPScanMotionMode::setTrpList(const QVector<TargetReferencePoint>& trps) {
 }
 
 
-void TRPScanMotionMode::setTrpList(const std::vector<TargetReferencePoint>& trps)
-{
+void TRPScanMotionMode::setTrpList(const std::vector<TargetReferencePoint>& trps) {
     QVector<TargetReferencePoint> qtrps;
     qtrps.reserve(static_cast<int>(trps.size()));
-    for (const auto &t : trps) {
+    for (const auto& t : trps) {
         qtrps.push_back(t);
     }
     setTrpList(qtrps);
@@ -65,7 +64,7 @@ bool TRPScanMotionMode::selectPage(int locationPage) {
     }
 
     std::sort(m_pageOrder.begin(), m_pageOrder.end(),
-              [&](int a, int b){ return m_trps[a].trpInPage < m_trps[b].trpInPage; });
+              [&](int a, int b) { return m_trps[a].trpInPage < m_trps[b].trpInPage; });
 
     if (m_pageOrder.isEmpty())
         return false;
@@ -79,7 +78,8 @@ void TRPScanMotionMode::enterMode(GimbalController* controller) {
     // If no TRPs at all -> abort
     if (m_trps.isEmpty()) {
         qWarning() << "[TRP] No TRPs selected!";
-        if (controller) controller->setMotionMode(MotionMode::Idle);
+        if (controller)
+            controller->setMotionMode(MotionMode::Idle);
         return;
     }
 
@@ -89,15 +89,17 @@ void TRPScanMotionMode::enterMode(GimbalController* controller) {
     // the code (which relies on m_pageOrder) works unchanged.
     if (m_pageOrder.isEmpty()) {
         m_pageOrder.clear();
-        for (int i = 0; i < m_trps.size(); ++i) m_pageOrder.push_back(i);
-        qDebug() << "[TRP] pageOrder was empty; populated from m_trps with"
-                 << m_pageOrder.size() << "entries.";
+        for (int i = 0; i < m_trps.size(); ++i)
+            m_pageOrder.push_back(i);
+        qDebug() << "[TRP] pageOrder was empty; populated from m_trps with" << m_pageOrder.size()
+                 << "entries.";
     }
 
     // If still empty (shouldn't happen), abort safely
     if (m_pageOrder.isEmpty()) {
         qWarning() << "[TRP] pageOrder empty after populate - aborting";
-        if (controller) controller->setMotionMode(MotionMode::Idle);
+        if (controller)
+            controller->setMotionMode(MotionMode::Idle);
         return;
     }
 
@@ -105,7 +107,8 @@ void TRPScanMotionMode::enterMode(GimbalController* controller) {
     m_state = SlewToPoint;
 
     // Ensure current index is valid
-    if (m_currentIndex < 0 || m_currentIndex >= m_pageOrder.size()) m_currentIndex = 0;
+    if (m_currentIndex < 0 || m_currentIndex >= m_pageOrder.size())
+        m_currentIndex = 0;
 
     startCurrentTarget();
 
@@ -134,14 +137,12 @@ void TRPScanMotionMode::startCurrentTarget() {
         return;
     }
 
-    const auto &T = m_trps[trpIndex];
+    const auto& T = m_trps[trpIndex];
     m_targetAz = norm360(T.azimuth);
     m_targetEl = T.elevation;
     m_holdRemaining = T.haltTime;
 
-    qDebug() << "[TRP] Go to point:" << T.id
-             << " Az=" << m_targetAz
-             << " El=" << m_targetEl
+    qDebug() << "[TRP] Go to point:" << T.id << " Az=" << m_targetAz << " El=" << m_targetEl
              << " Hold=" << m_holdRemaining;
 }
 
@@ -161,17 +162,19 @@ void TRPScanMotionMode::advanceToNextPoint() {
 void TRPScanMotionMode::updateImpl(GimbalController* controller, double dt) {
     // NOTE: Safety checks are handled by base class updateWithSafety()
     // If controller missing or no TRPs/page -> do nothing safely
-    if (!controller) return;
+    if (!controller)
+        return;
     if (m_pageOrder.isEmpty() || m_trps.isEmpty()) {
         // nothing to do, keep servos stable
         sendStabilizedServoCommands(controller, 0.0, 0.0, true, dt > 0 ? dt : 1e-3);
         return;
     }
 
-    if (dt <= 0) dt = 1e-3;
+    if (dt <= 0)
+        dt = 1e-3;
 
     auto data = controller->systemStateModel()->data();
-    const auto &T = m_trps[m_pageOrder[m_currentIndex]];
+    const auto& T = m_trps[m_pageOrder[m_currentIndex]];
 
     //------------------------------------------------------------
     // 1) HOLD PHASE
@@ -192,7 +195,7 @@ void TRPScanMotionMode::updateImpl(GimbalController* controller, double dt) {
     // 2) SLEW-TO-POINT PHASE
     //------------------------------------------------------------
     double errAz = shortestDiff(m_targetAz, data.gimbalAz);
-    double errEl = - (m_targetEl - data.gimbalEl);
+    double errEl = -(m_targetEl - data.gimbalEl);
 
     if (std::abs(errAz) <= AZIMUTH_TOLERANCE_DEG && std::abs(errEl) <= ELEVATION_TOLERANCE_DEG) {
         m_state = HoldPoint;
@@ -240,7 +243,7 @@ void TRPScanMotionMode::updateImpl(GimbalController* controller, double dt) {
     //------------------------------------------------------------
     // Elevation — simple proportional control
     //------------------------------------------------------------
-    double elVel = std::clamp( m_elPid.Kp * errEl, -15.0, 15.0);
+    double elVel = std::clamp(m_elPid.Kp * errEl, -15.0, 15.0);
 
     //------------------------------------------------------------
     // Send with stabilization enabled

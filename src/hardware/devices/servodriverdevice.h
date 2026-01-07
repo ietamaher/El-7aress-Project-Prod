@@ -44,21 +44,25 @@ class Message;
  */
 class ServoDriverDevice : public TemplatedDevice<ServoDriverData> {
     Q_OBJECT
+
 public:
     explicit ServoDriverDevice(const QString& identifier, QObject* parent = nullptr);
     ~ServoDriverDevice() override;
 
     // Device identification
-    QString identifier() const { return m_identifier; }
+    QString identifier() const {
+        return m_identifier;
+    }
 
     // Dependency injection (called before initialize)
-    Q_INVOKABLE void setDependencies(Transport* transport,
-                                      ServoDriverProtocolParser* parser);
+    Q_INVOKABLE void setDependencies(Transport* transport, ServoDriverProtocolParser* parser);
 
     // IDevice interface (device lifecycle)
     Q_INVOKABLE bool initialize() override;
     void shutdown() override;
-    DeviceType type() const override { return DeviceType::ServoDriver; }
+    DeviceType type() const override {
+        return DeviceType::ServoDriver;
+    }
 
     // Public API - Command interface
     Q_INVOKABLE void writePosition(float position);
@@ -115,4 +119,4 @@ private:
     qint64 m_modbusWriteMinNs = 999999999;
 };
 
-#endif // SERVODRIVERDEVICE_H
+#endif  // SERVODRIVERDEVICE_H

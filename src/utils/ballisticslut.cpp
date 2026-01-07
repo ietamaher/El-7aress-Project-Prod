@@ -6,16 +6,11 @@
 #include <QDebug>
 #include <cmath>
 
-BallisticsLUT::BallisticsLUT()
-{
-}
+BallisticsLUT::BallisticsLUT() {}
 
-BallisticsLUT::~BallisticsLUT()
-{
-}
+BallisticsLUT::~BallisticsLUT() {}
 
-bool BallisticsLUT::loadTable(const QString& filepath)
-{
+bool BallisticsLUT::loadTable(const QString& filepath) {
     QFile file(filepath);
     if (!file.open(QIODevice::ReadOnly)) {
         qWarning() << "[BallisticsLUT] Failed to open table file:" << filepath;
@@ -60,17 +55,14 @@ bool BallisticsLUT::loadTable(const QString& filepath)
 
     m_tablePath = filepath;
 
-    qInfo() << "[BallisticsLUT] Loaded table:" << m_metadata.name
-            << "| Entries:" << m_table.size()
+    qInfo() << "[BallisticsLUT] Loaded table:" << m_metadata.name << "| Entries:" << m_table.size()
             << "| Range:" << getMinRange() << "-" << getMaxRange() << "m"
-            << "| MV:" << m_metadata.muzzle_velocity_ms << "m/s"
-            << "| BC:" << m_metadata.bc_g1;
+            << "| MV:" << m_metadata.muzzle_velocity_ms << "m/s" << "| BC:" << m_metadata.bc_g1;
 
     return !m_table.isEmpty();
 }
 
-int BallisticsLUT::findBracket(float target_range) const
-{
+int BallisticsLUT::findBracket(float target_range) const {
     const int size = m_table.size();
 
     // Edge cases
@@ -97,8 +89,7 @@ int BallisticsLUT::findBracket(float target_range) const
     return left;  // Returns index where table[left].range <= target < table[left+1].range
 }
 
-BallisticSolution BallisticsLUT::interpolate(int idx, float target_range) const
-{
+BallisticSolution BallisticsLUT::interpolate(int idx, float target_range) const {
     BallisticSolution sol;
 
     // Validate index
@@ -122,7 +113,8 @@ BallisticSolution BallisticsLUT::interpolate(int idx, float target_range) const
     // Linear interpolation for all values
     sol.elevation_mils = e1.elevation_mils + t * (e2.elevation_mils - e1.elevation_mils);
     sol.tof_s = e1.tof_s + t * (e2.tof_s - e1.tof_s);
-    sol.impact_velocity_ms = e1.impact_velocity_ms + t * (e2.impact_velocity_ms - e1.impact_velocity_ms);
+    sol.impact_velocity_ms =
+        e1.impact_velocity_ms + t * (e2.impact_velocity_ms - e1.impact_velocity_ms);
 
     // Convert mils to degrees for compatibility
     sol.elevation_deg = sol.elevation_mils * 0.05625f;  // 1 mil = 0.05625 deg
@@ -133,8 +125,7 @@ BallisticSolution BallisticsLUT::interpolate(int idx, float target_range) const
     return sol;
 }
 
-float BallisticsLUT::applyTemperatureCorrection(float elevation_mils, float temp_celsius) const
-{
+float BallisticsLUT::applyTemperatureCorrection(float elevation_mils, float temp_celsius) const {
     // Air density changes with temperature
     // Standard conditions: 15°C (288.15 K)
     // Formula: ρ_correction = sqrt(T_standard / T_actual)
@@ -145,8 +136,7 @@ float BallisticsLUT::applyTemperatureCorrection(float elevation_mils, float temp
     return elevation_mils * temp_correction;
 }
 
-float BallisticsLUT::applyAltitudeCorrection(float elevation_mils, float altitude_m) const
-{
+float BallisticsLUT::applyAltitudeCorrection(float elevation_mils, float altitude_m) const {
     // Air density decreases exponentially with altitude
     // Scale height: ~8500m
     // Formula: ρ(h) = ρ₀ × exp(-h / 8500)
@@ -157,8 +147,7 @@ float BallisticsLUT::applyAltitudeCorrection(float elevation_mils, float altitud
     return elevation_mils * altitude_correction;
 }
 
-float BallisticsLUT::calculateWindCorrection(float range_m, float tof_s, float crosswind_ms) const
-{
+float BallisticsLUT::calculateWindCorrection(float range_m, float tof_s, float crosswind_ms) const {
     // Wind deflection during bullet flight
     // deflection = crosswind × TOF
     // lead_angle (mils) = (deflection / range) × 1000
@@ -169,17 +158,14 @@ float BallisticsLUT::calculateWindCorrection(float range_m, float tof_s, float c
     // Negate the sign!
     // Positive crosswind = wind from right = pushes bullet LEFT
     // So deflection should be NEGATIVE (leftward)
-    float deflection_m = - crosswind_ms * tof_s;
+    float deflection_m = -crosswind_ms * tof_s;
     float lead_mils = (deflection_m / range_m) * 1000.0f;
 
     return lead_mils;
 }
 
-BallisticSolution BallisticsLUT::getSolution(float target_range_m,
-                                               float temp_celsius,
-                                               float altitude_m,
-                                               float crosswind_ms) const
-{
+BallisticSolution BallisticsLUT::getSolution(float target_range_m, float temp_celsius,
+                                             float altitude_m, float crosswind_ms) const {
     BallisticSolution sol;
 
     // Validate table is loaded
@@ -191,9 +177,8 @@ BallisticSolution BallisticsLUT::getSolution(float target_range_m,
 
     // Validate range is within table bounds
     if (target_range_m < getMinRange() || target_range_m > getMaxRange()) {
-        qDebug() << "[BallisticsLUT] Range out of bounds:"
-                 << target_range_m << "m (valid range:"
-                 << getMinRange() << "-" << getMaxRange() << "m)";
+        qDebug() << "[BallisticsLUT] Range out of bounds:" << target_range_m
+                 << "m (valid range:" << getMinRange() << "-" << getMaxRange() << "m)";
         sol.valid = false;
         return sol;
     }

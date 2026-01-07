@@ -14,18 +14,22 @@ class Message;
  */
 class ImuDevice : public TemplatedDevice<ImuData> {
     Q_OBJECT
+
 public:
     explicit ImuDevice(const QString& identifier, QObject* parent = nullptr);
     ~ImuDevice() override;
 
-    QString identifier() const { return m_identifier; }
+    QString identifier() const {
+        return m_identifier;
+    }
 
-    Q_INVOKABLE void setDependencies(Transport* transport,
-                                      Imu3DMGX3ProtocolParser* parser);
+    Q_INVOKABLE void setDependencies(Transport* transport, Imu3DMGX3ProtocolParser* parser);
 
     Q_INVOKABLE bool initialize() override;
     void shutdown() override;
-    DeviceType type() const override { return DeviceType::Imu; }
+    DeviceType type() const override {
+        return DeviceType::Imu;
+    }
 
     Q_INVOKABLE void setPollInterval(int intervalMs);
 
@@ -61,4 +65,4 @@ private:
     static constexpr int GYRO_BIAS_TIMEOUT_MS = 15000;  // 15 seconds (10s capture + margin)
 };
 
-#endif // IMUDEVICE_H
+#endif  // IMUDEVICE_H

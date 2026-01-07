@@ -3,9 +3,7 @@
 #include <QModbusDataUnit>
 #include <QDebug>
 
-Plc42ProtocolParser::Plc42ProtocolParser(QObject* parent)
-    : ProtocolParser(parent)
-{
+Plc42ProtocolParser::Plc42ProtocolParser(QObject* parent) : ProtocolParser(parent) {
     // Initialize m_data with defaults
     m_data.isConnected = false;
 }
@@ -23,9 +21,8 @@ std::vector<MessagePtr> Plc42ProtocolParser::parse(QModbusReply* reply) {
     if (unit.registerType() == QModbusDataUnit::DiscreteInputs &&
         unit.startAddress() == Plc42Registers::DIGITAL_INPUTS_START_ADDR) {
         messages.push_back(parseDigitalInputsReply(unit));
-    }
-    else if (unit.registerType() == QModbusDataUnit::HoldingRegisters &&
-             unit.startAddress() == Plc42Registers::HOLDING_REGISTERS_START_ADDR) {
+    } else if (unit.registerType() == QModbusDataUnit::HoldingRegisters &&
+               unit.startAddress() == Plc42Registers::HOLDING_REGISTERS_START_ADDR) {
         messages.push_back(parseHoldingRegistersReply(unit));
     }
 
@@ -48,14 +45,14 @@ MessagePtr Plc42ProtocolParser::parseDigitalInputsReply(const QModbusDataUnit& u
     // I0_7 (DI7) → elevationHomeComplete (El HOME-END from Oriental Motor) ⭐ NEW
 
     if (unit.valueCount() >= 8) {
-        m_data.stationUpperSensor     = (unit.value(0) != 0);  // I0_0
-        m_data.stationLowerSensor     = (unit.value(1) != 0);  // I0_1
-        m_data.hatchState             = (unit.value(2) != 0);  // I0_2
-        m_data.freeGimbalState        = (unit.value(3) != 0);  // I0_3 (LOCAL toggle)
-        m_data.ammunitionLevel        = (unit.value(4) != 0);  // I0_4
+        m_data.stationUpperSensor = (unit.value(0) != 0);  // I0_0
+        m_data.stationLowerSensor = (unit.value(1) != 0);  // I0_1
+        m_data.hatchState = (unit.value(2) != 0);          // I0_2
+        m_data.freeGimbalState = (unit.value(3) != 0);     // I0_3 (LOCAL toggle)
+        m_data.ammunitionLevel = (unit.value(4) != 0);     // I0_4
         // unit.value(5) - Reserved for future E-STOP button
-        m_data.azimuthHomeComplete    = (unit.value(6) != 0);  // I0_6 ⭐ NEW (Az HOME-END)
-        m_data.elevationHomeComplete  = (unit.value(5) != 0);  // I0_7 ⭐ NEW (El HOME-END)
+        m_data.azimuthHomeComplete = (unit.value(6) != 0);    // I0_6 ⭐ NEW (Az HOME-END)
+        m_data.elevationHomeComplete = (unit.value(5) != 0);  // I0_7 ⭐ NEW (El HOME-END)
 
         // Note: emergencyStopActive is NOT a physical input - it's derived from
         // gimbalOpMode (set to true when gimbalOpMode == 1)
@@ -86,17 +83,17 @@ MessagePtr Plc42ProtocolParser::parseHoldingRegistersReply(const QModbusDataUnit
     // HR10: azimuthReset (0=Normal, 1=Set Preset Home)
 
     if (unit.valueCount() >= 11) {
-        m_data.solenoidMode = unit.value(0);        // HR0
-        m_data.gimbalOpMode = unit.value(1);        // HR1
+        m_data.solenoidMode = unit.value(0);  // HR0
+        m_data.gimbalOpMode = unit.value(1);  // HR1
 
         // Combine two 16-bit registers into 32-bit azimuthSpeed
-        uint16_t azLow  = unit.value(2);            // HR2
-        uint16_t azHigh = unit.value(3);            // HR3
+        uint16_t azLow = unit.value(2);   // HR2
+        uint16_t azHigh = unit.value(3);  // HR3
         m_data.azimuthSpeed = (static_cast<uint32_t>(azHigh) << 16) | azLow;
 
         // Combine two 16-bit registers into 32-bit elevationSpeed
-        uint16_t elLow  = unit.value(4);            // HR4
-        uint16_t elHigh = unit.value(5);            // HR5
+        uint16_t elLow = unit.value(4);   // HR4
+        uint16_t elHigh = unit.value(5);  // HR5
         m_data.elevationSpeed = (static_cast<uint32_t>(elHigh) << 16) | elLow;
 
         m_data.azimuthDirection = unit.value(6);    // HR6

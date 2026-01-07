@@ -1,12 +1,9 @@
 #include "menuviewmodel.h"
 
-MenuViewModel::MenuViewModel(QObject *parent)
-    : QObject(parent)
-{
-}
+MenuViewModel::MenuViewModel(QObject* parent) : QObject(parent) {}
 
-void MenuViewModel::showMenu(const QString& title, const QString& description, const QStringList& options)
-{
+void MenuViewModel::showMenu(const QString& title, const QString& description,
+                             const QStringList& options) {
     m_title = title;
     emit titleChanged();
 
@@ -22,16 +19,14 @@ void MenuViewModel::showMenu(const QString& title, const QString& description, c
     emit visibleChanged();
 }
 
-void MenuViewModel::hideMenu()
-{
+void MenuViewModel::hideMenu() {
     if (m_visible) {
         m_visible = false;
         emit visibleChanged();
     }
 }
 
-bool MenuViewModel::isSelectable(int index) const
-{
+bool MenuViewModel::isSelectable(int index) const {
     if (index < 0 || index >= m_optionsModel.rowCount()) {
         return false;
     }
@@ -40,8 +35,7 @@ bool MenuViewModel::isSelectable(int index) const
     return !text.startsWith("---");
 }
 
-void MenuViewModel::setCurrentIndex(int index)
-{
+void MenuViewModel::setCurrentIndex(int index) {
     if (index >= 0 && index < m_optionsModel.rowCount()) {
         if (isSelectable(index)) {
             m_currentIndex = index;
@@ -60,9 +54,9 @@ void MenuViewModel::setCurrentIndex(int index)
     }
 }
 
-void MenuViewModel::moveSelectionUp()
-{
-    if (!m_visible) return;
+void MenuViewModel::moveSelectionUp() {
+    if (!m_visible)
+        return;
 
     int nextIndex = findNextSelectable(m_currentIndex, -1);
     if (nextIndex != -1 && nextIndex != m_currentIndex) {
@@ -71,9 +65,9 @@ void MenuViewModel::moveSelectionUp()
     }
 }
 
-void MenuViewModel::moveSelectionDown()
-{
-    if (!m_visible) return;
+void MenuViewModel::moveSelectionDown() {
+    if (!m_visible)
+        return;
 
     int nextIndex = findNextSelectable(m_currentIndex, 1);
     if (nextIndex != -1 && nextIndex != m_currentIndex) {
@@ -82,8 +76,7 @@ void MenuViewModel::moveSelectionDown()
     }
 }
 
-void MenuViewModel::selectCurrentItem()
-{
+void MenuViewModel::selectCurrentItem() {
     if (!m_visible || m_currentIndex < 0 || m_currentIndex >= m_optionsModel.rowCount())
         return;
 
@@ -91,9 +84,9 @@ void MenuViewModel::selectCurrentItem()
     emit optionSelected(selectedOption);
 }
 
-int MenuViewModel::findNextSelectable(int start, int direction)
-{
-    if (m_optionsModel.rowCount() == 0) return -1;
+int MenuViewModel::findNextSelectable(int start, int direction) {
+    if (m_optionsModel.rowCount() == 0)
+        return -1;
 
     int current = start;
     int count = m_optionsModel.rowCount();
@@ -102,8 +95,10 @@ int MenuViewModel::findNextSelectable(int start, int direction)
         current += direction;
 
         // Wrap around
-        if (current >= count) current = 0;
-        if (current < 0) current = count - 1;
+        if (current >= count)
+            current = 0;
+        if (current < 0)
+            current = count - 1;
 
         if (isSelectable(current)) {
             return current;

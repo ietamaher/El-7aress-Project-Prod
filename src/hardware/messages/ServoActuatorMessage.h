@@ -14,8 +14,12 @@ class ServoActuatorDataMessage : public Message {
 public:
     explicit ServoActuatorDataMessage(const ServoActuatorData& data) : m_data(data) {}
 
-    Type typeId() const override { return Type::ServoActuatorDataType; }
-    const ServoActuatorData& data() const { return m_data; }
+    Type typeId() const override {
+        return Type::ServoActuatorDataType;
+    }
+    const ServoActuatorData& data() const {
+        return m_data;
+    }
 
 private:
     ServoActuatorData m_data;
@@ -29,9 +33,15 @@ public:
     explicit ServoActuatorAckMessage(const QString& cmd, const QString& response = "")
         : m_command(cmd), m_response(response) {}
 
-    Type typeId() const override { return Type::ServoActuatorAckType; }
-    const QString& command() const { return m_command; }
-    const QString& response() const { return m_response; }
+    Type typeId() const override {
+        return Type::ServoActuatorAckType;
+    }
+    const QString& command() const {
+        return m_command;
+    }
+    const QString& response() const {
+        return m_response;
+    }
 
 private:
     QString m_command;
@@ -46,9 +56,15 @@ public:
     explicit ServoActuatorNackMessage(const QString& cmd, const QString& error)
         : m_command(cmd), m_errorDetails(error) {}
 
-    Type typeId() const override { return Type::ServoActuatorNackType; }
-    const QString& command() const { return m_command; }
-    const QString& errorDetails() const { return m_errorDetails; }
+    Type typeId() const override {
+        return Type::ServoActuatorNackType;
+    }
+    const QString& command() const {
+        return m_command;
+    }
+    const QString& errorDetails() const {
+        return m_errorDetails;
+    }
 
 private:
     QString m_command;
@@ -63,8 +79,12 @@ public:
     explicit ServoActuatorCriticalFaultMessage(const QStringList& faults)
         : m_criticalFaults(faults) {}
 
-    Type typeId() const override { return Type::ServoActuatorCriticalFaultType; }
-    const QStringList& criticalFaults() const { return m_criticalFaults; }
+    Type typeId() const override {
+        return Type::ServoActuatorCriticalFaultType;
+    }
+    const QStringList& criticalFaults() const {
+        return m_criticalFaults;
+    }
 
 private:
     QStringList m_criticalFaults;

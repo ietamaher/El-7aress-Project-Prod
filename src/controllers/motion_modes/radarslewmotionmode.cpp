@@ -1,15 +1,13 @@
 #include "radarslewmotionmode.h"
-#include "controllers/gimbalcontroller.h" // For GimbalController and SystemStateData
-#include "models/domain/systemstatemodel.h" // For SimpleRadarPlot
+#include "controllers/gimbalcontroller.h"    // For GimbalController and SystemStateData
+#include "models/domain/systemstatemodel.h"  // For SimpleRadarPlot
 #include <QDebug>
 #include <cmath>
 #include <QtGlobal>
 
 RadarSlewMotionMode::RadarSlewMotionMode(QObject* parent)
-    : GimbalMotionModeBase(parent), // Call base constructor
-    m_currentTargetId(0),
-    m_isSlewInProgress(false)
-{
+    : GimbalMotionModeBase(parent),  // Call base constructor
+      m_currentTargetId(0), m_isSlewInProgress(false) {
     // ✅ Load PID gains from runtime config (field-tunable without rebuild)
     const auto& cfg = MotionTuningConfig::instance();
     m_azPid.Kp = cfg.radarSlewAz.kp;
@@ -23,8 +21,7 @@ RadarSlewMotionMode::RadarSlewMotionMode(QObject* parent)
     m_elPid.maxIntegral = cfg.radarSlewEl.maxIntegral;
 }
 
-void RadarSlewMotionMode::enterMode(GimbalController* controller)
-{
+void RadarSlewMotionMode::enterMode(GimbalController* controller) {
     qDebug() << "[RadarSlewMotionMode] Enter. Awaiting slew command.";
     m_isSlewInProgress = false;
     m_currentTargetId = 0;
@@ -38,33 +35,33 @@ void RadarSlewMotionMode::enterMode(GimbalController* controller)
     // if (controller) {
     //     stopServos(controller); // <<< TRY COMMENTING THIS OUT
     // }
-
 }
 
-void RadarSlewMotionMode::exitMode(GimbalController* controller)
-{
+void RadarSlewMotionMode::exitMode(GimbalController* controller) {
     qDebug() << "[RadarSlewMotionMode] Exit.";
     stopServos(controller);
 }
 
-void RadarSlewMotionMode::updateImpl(GimbalController* controller, double dt)
-{
+void RadarSlewMotionMode::updateImpl(GimbalController* controller, double dt) {
     // NOTE: Safety checks are handled by base class updateWithSafety()
     // This method is only called after SafetyInterlock.canMove() returns true
 
     // --- 1. Pre-condition Checks ---
-    if (!controller || !controller->systemStateModel()) { return; }
+    if (!controller || !controller->systemStateModel()) {
+        return;
+    }
 
     SystemStateData data = controller->systemStateModel()->data();
 
     // --- 2. Check for a New Slew Command from the Model ---
     if (data.selectedRadarTrackId != 0 && data.selectedRadarTrackId != m_currentTargetId) {
-        qInfo() << "[RadarSlewMotionMode] New slew command received for Target ID:" << data.selectedRadarTrackId;
+        qInfo() << "[RadarSlewMotionMode] New slew command received for Target ID:"
+                << data.selectedRadarTrackId;
         m_currentTargetId = data.selectedRadarTrackId;
 
         // Find the full plot data for the commanded target ID
         auto it = std::find_if(data.radarPlots.begin(), data.radarPlots.end(),
-                               [&](const SimpleRadarPlot& p){ return p.id == m_currentTargetId; });
+                               [&](const SimpleRadarPlot& p) { return p.id == m_currentTargetId; });
 
         if (it != data.radarPlots.end()) {
             m_targetAz = it->azimuth;
@@ -78,9 +75,11 @@ void RadarSlewMotionMode::updateImpl(GimbalController* controller, double dt)
             m_previousDesiredAzVel = 0.0;
             m_previousDesiredElVel = 0.0;
 
-            qDebug() << "[RadarSlewMotionMode] Target set to Az:" << m_targetAz << "| Calculated El:" << m_targetEl;
+            qDebug() << "[RadarSlewMotionMode] Target set to Az:" << m_targetAz
+                     << "| Calculated El:" << m_targetEl;
         } else {
-            qWarning() << "[RadarSlewMotionMode] Could not find commanded target ID" << m_currentTargetId << "in model data. Slew aborted.";
+            qWarning() << "[RadarSlewMotionMode] Could not find commanded target ID"
+                       << m_currentTargetId << "in model data. Slew aborted.";
             m_isSlewInProgress = false;
             m_currentTargetId = 0;
         }
@@ -95,21 +94,20 @@ void RadarSlewMotionMode::updateImpl(GimbalController* controller, double dt)
     // Convert radar target to world-frame for AHRS stabilization
     if (data.imuConnected) {
         double worldAz, worldEl;
-        convertGimbalToWorldFrame(m_targetAz, m_targetEl,
-                                  data.imuRollDeg, data.imuPitchDeg, data.imuYawDeg,
-                                  worldAz, worldEl);
+        convertGimbalToWorldFrame(m_targetAz, m_targetEl, data.imuRollDeg, data.imuPitchDeg,
+                                  data.imuYawDeg, worldAz, worldEl);
 
         auto stateModel = controller->systemStateModel();
         SystemStateData updatedState = stateModel->data();
         updatedState.targetAzimuth_world = worldAz;
         updatedState.targetElevation_world = worldEl;
-        updatedState.useWorldFrameTarget = true; // Enable stabilized radar slewing
+        updatedState.useWorldFrameTarget = true;  // Enable stabilized radar slewing
         stateModel->updateData(updatedState);
     }
 
     // Calculate error to the target
-    double errAz = m_targetAz - data.gimbalAz; // Azimuth still uses encoder
-    double errEl = m_targetEl - data.imuPitchDeg; // Elevation now uses IMU Pitch
+    double errAz = m_targetAz - data.gimbalAz;     // Azimuth still uses encoder
+    double errEl = m_targetEl - data.imuPitchDeg;  // Elevation now uses IMU Pitch
 
     // Normalize Azimuth error to take the shortest path
     errAz = normalizeAngle180(errAz);
@@ -129,9 +127,10 @@ void RadarSlewMotionMode::updateImpl(GimbalController* controller, double dt)
     double desiredElVelocity = 0.0;
 
     // Define constants for motion profiling
-    static const double DECELERATION_DISTANCE_DEG = 5.0;  // Start decelerating when within 5 degrees
-    static const double CRUISE_SPEED_DEGS = 12.0;         // Cruise speed for slewing
-    static const double MAX_VELOCITY_CHANGE = 3.0;        // Maximum velocity change per update cycle
+    static const double DECELERATION_DISTANCE_DEG =
+        5.0;                                        // Start decelerating when within 5 degrees
+    static const double CRUISE_SPEED_DEGS = 12.0;   // Cruise speed for slewing
+    static const double MAX_VELOCITY_CHANGE = 3.0;  // Maximum velocity change per update cycle
 
     if (distanceToTarget < DECELERATION_DISTANCE_DEG) {
         // DECELERATION ZONE: Use PID to slow down smoothly
@@ -159,12 +158,14 @@ void RadarSlewMotionMode::updateImpl(GimbalController* controller, double dt)
     // Apply rate limiting to prevent sudden velocity changes
     double velocityChangeAz = desiredAzVelocity - m_previousDesiredAzVel;
     if (std::abs(velocityChangeAz) > MAX_VELOCITY_CHANGE) {
-        desiredAzVelocity = m_previousDesiredAzVel + (velocityChangeAz > 0 ? MAX_VELOCITY_CHANGE : -MAX_VELOCITY_CHANGE);
+        desiredAzVelocity = m_previousDesiredAzVel +
+                            (velocityChangeAz > 0 ? MAX_VELOCITY_CHANGE : -MAX_VELOCITY_CHANGE);
     }
 
     double velocityChangeEl = desiredElVelocity - m_previousDesiredElVel;
     if (std::abs(velocityChangeEl) > MAX_VELOCITY_CHANGE) {
-        desiredElVelocity = m_previousDesiredElVel + (velocityChangeEl > 0 ? MAX_VELOCITY_CHANGE : -MAX_VELOCITY_CHANGE);
+        desiredElVelocity = m_previousDesiredElVel +
+                            (velocityChangeEl > 0 ? MAX_VELOCITY_CHANGE : -MAX_VELOCITY_CHANGE);
     }
 
     // Store current velocities for next cycle
@@ -173,7 +174,7 @@ void RadarSlewMotionMode::updateImpl(GimbalController* controller, double dt)
 
     // Debug output
     static int debugCounter = 0;
-    if (++debugCounter % 25 == 0) { // Print every 25 updates (~0.5 seconds at 50Hz)
+    if (++debugCounter % 25 == 0) {  // Print every 25 updates (~0.5 seconds at 50Hz)
         qDebug() << "[RadarSlewMotionMode] Error(Az,El):" << errAz << "," << errEl
                  << "| Vel(Az,El):" << desiredAzVelocity << "," << desiredElVelocity
                  << "| Distance:" << distanceToTarget;
@@ -182,5 +183,3 @@ void RadarSlewMotionMode::updateImpl(GimbalController* controller, double dt)
     // Let the base class handle stabilization and sending the final command
     sendStabilizedServoCommands(controller, desiredAzVelocity, desiredElVelocity, true, dt);
 }
-
-

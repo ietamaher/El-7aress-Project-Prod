@@ -14,8 +14,12 @@ class RadarPlotMessage : public Message {
 public:
     explicit RadarPlotMessage(const RadarData& data) : m_data(data) {}
 
-    Type typeId() const override { return Type::RadarPlotType; }
-    const RadarData& data() const { return m_data; }
+    Type typeId() const override {
+        return Type::RadarPlotType;
+    }
+    const RadarData& data() const {
+        return m_data;
+    }
 
 private:
     RadarData m_data;

@@ -1,10 +1,9 @@
 #ifndef HISTORYVIEWMODEL_H
 #define HISTORYVIEWMODEL_H
 
-class HistoryViewModel
-{
+class HistoryViewModel {
 public:
     HistoryViewModel();
 };
 
-#endif // HISTORYVIEWMODEL_H
+#endif  // HISTORYVIEWMODEL_H

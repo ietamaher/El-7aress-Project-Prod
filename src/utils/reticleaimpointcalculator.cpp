@@ -1,6 +1,6 @@
 #include "reticleaimpointcalculator.h"
 #include <cmath>   // For M_PI, std::atan, std::tan
-#include <QDebug> // For logging
+#include <QDebug>  // For logging
 
 // ============================================================================
 // CROWS-GRADE TAN-PROJECTION MATH FOR ANGULAR-TO-PIXEL CONVERSION
@@ -36,10 +36,11 @@
  * @param imageHeightPx Image height in pixels
  * @return QPointF Pixel displacement from image center (X right, Y down in Qt coords)
  */
-QPointF ReticleAimpointCalculator::convertSingleAngularToPixelShift(
-    float angularOffsetAzDeg, float angularOffsetElDeg,
-    float cameraHfovDeg, int imageWidthPx, int imageHeightPx)
-{
+QPointF ReticleAimpointCalculator::convertSingleAngularToPixelShift(float angularOffsetAzDeg,
+                                                                    float angularOffsetElDeg,
+                                                                    float cameraHfovDeg,
+                                                                    int imageWidthPx,
+                                                                    int imageHeightPx) {
     // Validate inputs
     if (cameraHfovDeg <= 0.001f || imageWidthPx <= 0 || imageHeightPx <= 0) {
         qWarning() << "ReticleAimpointCalculator::convertSingleAngularToPixelShift: Invalid params"
@@ -124,10 +125,9 @@ QPointF ReticleAimpointCalculator::convertSingleAngularToPixelShift(
  * @return QPointF Final position in image pixel coordinates
  */
 QPointF ReticleAimpointCalculator::calculateReticleImagePositionPx(
-    float zeroingAzDeg, float zeroingElDeg, bool zeroingActive,
-    float leadAzDeg, float leadElDeg, bool leadActive, LeadAngleStatus leadStatus,
-    float cameraHfovDeg, int imageWidthPx, int imageHeightPx)
-{
+    float zeroingAzDeg, float zeroingElDeg, bool zeroingActive, float leadAzDeg, float leadElDeg,
+    bool leadActive, LeadAngleStatus leadStatus, float cameraHfovDeg, int imageWidthPx,
+    int imageHeightPx) {
     // ============================================================================
     // ACCUMULATE TOTAL ANGULAR OFFSET
     // ============================================================================
@@ -154,8 +154,8 @@ QPointF ReticleAimpointCalculator::calculateReticleImagePositionPx(
     // ============================================================================
     if (zeroingActive) {
         totalPixelShift += ReticleAimpointCalculator::convertSingleAngularToPixelShift(
-            zeroingAzDeg,   // Positive = impact right → reticle shifts right
-            zeroingElDeg,   // Positive = impact up → reticle shifts up
+            zeroingAzDeg,  // Positive = impact right → reticle shifts right
+            zeroingElDeg,  // Positive = impact up → reticle shifts up
             cameraHfovDeg, imageWidthPx, imageHeightPx);
     }
 
@@ -176,8 +176,8 @@ QPointF ReticleAimpointCalculator::calculateReticleImagePositionPx(
     // ============================================================================
     if (leadActive) {
         totalPixelShift += ReticleAimpointCalculator::convertSingleAngularToPixelShift(
-            leadAzDeg,      // Combined ballistic + lead in azimuth direction
-            leadElDeg,      // Combined ballistic + lead in elevation direction
+            leadAzDeg,  // Combined ballistic + lead in azimuth direction
+            leadElDeg,  // Combined ballistic + lead in elevation direction
             cameraHfovDeg, imageWidthPx, imageHeightPx);
     }
 

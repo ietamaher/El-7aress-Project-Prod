@@ -9,6 +9,7 @@ class QModbusReply;
 
 class ProtocolParser : public QObject {
     Q_OBJECT
+
 public:
     explicit ProtocolParser(QObject* parent = nullptr) : QObject(parent) {}
 

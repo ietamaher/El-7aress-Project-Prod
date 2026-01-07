@@ -1,9 +1,6 @@
 #include "zonedefinitionviewmodel.h"
 
-ZoneDefinitionViewModel::ZoneDefinitionViewModel(QObject *parent)
-    : QObject(parent)
-{
-}
+ZoneDefinitionViewModel::ZoneDefinitionViewModel(QObject* parent) : QObject(parent) {}
 
 void ZoneDefinitionViewModel::setVisible(bool visible) {
     if (m_visible != visible) {

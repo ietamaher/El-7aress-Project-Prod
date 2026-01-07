@@ -11,8 +11,7 @@
  */
 class JoystickDataMessage : public Message {
 public:
-    explicit JoystickDataMessage(const JoystickData& data)
-        : m_data(data) {}
+    explicit JoystickDataMessage(const JoystickData& data) : m_data(data) {}
 
     Type typeId() const override {
         return Type::JoystickDataType;

@@ -34,7 +34,7 @@ struct FireControlInput {
     // ============================================================================
     // RANGE DATA
     // ============================================================================
-    float currentTargetRange = 0.0f;        ///< LRF range in meters (0 = no lock)
+    float currentTargetRange = 0.0f;  ///< LRF range in meters (0 = no lock)
 
     // ============================================================================
     // ANGULAR RATE DATA (for motion lead)
@@ -45,11 +45,11 @@ struct FireControlInput {
     // ============================================================================
     // CAMERA DATA (for FOV checks)
     // ============================================================================
-    bool activeCameraIsDay = true;          ///< True if day camera active
-    float dayCurrentHFOV = 20.0f;           ///< Day camera horizontal FOV (deg)
-    float dayCurrentVFOV = 15.0f;           ///< Day camera vertical FOV (deg)
-    float nightCurrentHFOV = 20.0f;         ///< Night camera horizontal FOV (deg)
-    float nightCurrentVFOV = 15.0f;         ///< Night camera vertical FOV (deg)
+    bool activeCameraIsDay = true;   ///< True if day camera active
+    float dayCurrentHFOV = 20.0f;    ///< Day camera horizontal FOV (deg)
+    float dayCurrentVFOV = 15.0f;    ///< Day camera vertical FOV (deg)
+    float nightCurrentHFOV = 20.0f;  ///< Night camera horizontal FOV (deg)
+    float nightCurrentVFOV = 15.0f;  ///< Night camera vertical FOV (deg)
 
     // ============================================================================
     // WINDAGE DATA
@@ -61,8 +61,8 @@ struct FireControlInput {
     // ============================================================================
     // GIMBAL / VEHICLE DATA (for crosswind calculation)
     // ============================================================================
-    float imuYawDeg = 0.0f;                 ///< Vehicle heading (deg true)
-    float azimuthDirection = 0.0f;          ///< Gimbal azimuth relative to vehicle (deg)
+    float imuYawDeg = 0.0f;         ///< Vehicle heading (deg true)
+    float azimuthDirection = 0.0f;  ///< Gimbal azimuth relative to vehicle (deg)
 
     // ============================================================================
     // ENVIRONMENTAL DATA
@@ -87,36 +87,36 @@ struct FireControlResult {
     // ============================================================================
     // CROSSWIND
     // ============================================================================
-    float calculatedCrosswindMS = 0.0f;     ///< Computed crosswind component (m/s)
-    bool crosswindChanged = false;          ///< True if crosswind value changed
+    float calculatedCrosswindMS = 0.0f;  ///< Computed crosswind component (m/s)
+    bool crosswindChanged = false;       ///< True if crosswind value changed
 
     // ============================================================================
     // BALLISTIC DROP (auto-applied when range valid)
     // ============================================================================
-    float ballisticDropOffsetAz = 0.0f;     ///< Drop offset azimuth (deg, wind component)
-    float ballisticDropOffsetEl = 0.0f;     ///< Drop offset elevation (deg, gravity)
-    bool ballisticDropActive = false;       ///< True if drop is being applied
-    bool dropChanged = false;               ///< True if drop values changed
+    float ballisticDropOffsetAz = 0.0f;  ///< Drop offset azimuth (deg, wind component)
+    float ballisticDropOffsetEl = 0.0f;  ///< Drop offset elevation (deg, gravity)
+    bool ballisticDropActive = false;    ///< True if drop is being applied
+    bool dropChanged = false;            ///< True if drop values changed
 
     // ============================================================================
     // MOTION LEAD (only when LAC active)
     // ============================================================================
-    float motionLeadOffsetAz = 0.0f;        ///< Motion lead azimuth (deg)
-    float motionLeadOffsetEl = 0.0f;        ///< Motion lead elevation (deg)
+    float motionLeadOffsetAz = 0.0f;                                ///< Motion lead azimuth (deg)
+    float motionLeadOffsetEl = 0.0f;                                ///< Motion lead elevation (deg)
     LeadAngleStatus currentLeadAngleStatus = LeadAngleStatus::Off;  ///< LAC status
-    bool leadChanged = false;               ///< True if lead values changed
+    bool leadChanged = false;                                       ///< True if lead values changed
 
     // ============================================================================
     // BACKWARD COMPATIBILITY (deprecated fields)
     // ============================================================================
-    float leadAngleOffsetAz = 0.0f;         ///< Deprecated: use motionLeadOffsetAz
-    float leadAngleOffsetEl = 0.0f;         ///< Deprecated: use motionLeadOffsetEl
+    float leadAngleOffsetAz = 0.0f;  ///< Deprecated: use motionLeadOffsetAz
+    float leadAngleOffsetEl = 0.0f;  ///< Deprecated: use motionLeadOffsetEl
 
     // ============================================================================
     // PREVIOUS VALUES (for change detection)
     // ============================================================================
-    float previousCrosswindMS = 0.0f;       ///< Previous crosswind for change detection
-    bool previousDropActive = false;        ///< Previous drop state for change detection
+    float previousCrosswindMS = 0.0f;  ///< Previous crosswind for change detection
+    bool previousDropActive = false;   ///< Previous drop state for change detection
     LeadAngleStatus previousLeadStatus = LeadAngleStatus::Off;  ///< Previous lead status
 };
 
@@ -135,8 +135,7 @@ struct FireControlResult {
  * applyResultToState(result, systemState);
  * @endcode
  */
-class FireControlComputation
-{
+class FireControlComputation {
 public:
     // ============================================================================
     // CONFIGURATION CONSTANTS
@@ -190,10 +189,9 @@ public:
      * @param previousResult Previous result for change detection
      * @return Computed fire control result
      */
-    FireControlResult compute(
-        const FireControlInput& input,
-        BallisticsProcessorLUT* ballisticsProcessor,
-        const FireControlResult& previousResult) const;
+    FireControlResult compute(const FireControlInput& input,
+                              BallisticsProcessorLUT* ballisticsProcessor,
+                              const FireControlResult& previousResult) const;
 
     /**
      * @brief Calculate crosswind component from wind and bearing
@@ -206,10 +204,8 @@ public:
      * @param gimbalAzimuthDeg Gimbal azimuth (where TO, degrees true)
      * @return Crosswind component in m/s (positive = right, negative = left)
      */
-    static float calculateCrosswindComponent(
-        float windSpeedMS,
-        float windDirectionDeg,
-        float gimbalAzimuthDeg);
+    static float calculateCrosswindComponent(float windSpeedMS, float windDirectionDeg,
+                                             float gimbalAzimuthDeg);
 
     /**
      * @brief Calculate absolute gimbal bearing (world frame)
@@ -218,9 +214,7 @@ public:
      * @param gimbalAzimuth Gimbal azimuth relative to vehicle (degrees)
      * @return Absolute bearing (degrees true, normalized 0-360)
      */
-    static float calculateAbsoluteGimbalBearing(
-        float imuYawDeg,
-        float gimbalAzimuth);
+    static float calculateAbsoluteGimbalBearing(float imuYawDeg, float gimbalAzimuth);
 
     /**
      * @brief Get active camera FOV values
@@ -229,10 +223,7 @@ public:
      * @param outHFOV Output horizontal FOV
      * @param outVFOV Output vertical FOV
      */
-    static void getActiveCameraFOV(
-        const FireControlInput& input,
-        float& outHFOV,
-        float& outVFOV);
+    static void getActiveCameraFOV(const FireControlInput& input, float& outHFOV, float& outVFOV);
 
 private:
     /**
@@ -243,11 +234,8 @@ private:
      * @param outCrosswind Output crosswind value
      * @param outChanged Output whether value changed
      */
-    void computeCrosswind(
-        const FireControlInput& input,
-        float previousCrosswind,
-        float& outCrosswind,
-        bool& outChanged) const;
+    void computeCrosswind(const FireControlInput& input, float previousCrosswind,
+                          float& outCrosswind, bool& outChanged) const;
 
     /**
      * @brief Compute ballistic drop compensation
@@ -258,12 +246,9 @@ private:
      * @param previousDropActive Previous drop state
      * @param result Output result to populate
      */
-    void computeBallisticDrop(
-        const FireControlInput& input,
-        BallisticsProcessorLUT* ballisticsProcessor,
-        float crosswindMS,
-        bool previousDropActive,
-        FireControlResult& result) const;
+    void computeBallisticDrop(const FireControlInput& input,
+                              BallisticsProcessorLUT* ballisticsProcessor, float crosswindMS,
+                              bool previousDropActive, FireControlResult& result) const;
 
     /**
      * @brief Compute motion lead compensation
@@ -273,11 +258,9 @@ private:
      * @param previousStatus Previous lead status
      * @param result Output result to populate
      */
-    void computeMotionLead(
-        const FireControlInput& input,
-        BallisticsProcessorLUT* ballisticsProcessor,
-        LeadAngleStatus previousStatus,
-        FireControlResult& result) const;
+    void computeMotionLead(const FireControlInput& input,
+                           BallisticsProcessorLUT* ballisticsProcessor,
+                           LeadAngleStatus previousStatus, FireControlResult& result) const;
 };
 
-#endif // FIRECONTROLCOMPUTATION_H
+#endif  // FIRECONTROLCOMPUTATION_H

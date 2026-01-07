@@ -4,8 +4,7 @@
 #include "gimbalmotionmodebase.h"
 #include "models/domain/systemstatemodel.h"
 
-class AutoSectorScanMotionMode : public GimbalMotionModeBase
-{
+class AutoSectorScanMotionMode : public GimbalMotionModeBase {
     Q_OBJECT
 
 public:
@@ -30,11 +29,7 @@ protected:
     void updateImpl(GimbalController* controller, double dt) override;
 
 private:
-
-    enum ScanState {
-        AlignElevation,
-        ScanAzimuth
-    };
+    enum ScanState { AlignElevation, ScanAzimuth };
 
     ScanState m_state = AlignElevation;
 
@@ -46,7 +41,7 @@ private:
     double m_targetEl = 0.0;
 
     // Tracking state
-    bool   m_movingToPoint2 = true;
+    bool m_movingToPoint2 = true;
     double m_previousDesiredAzVel = 0.0;
     double m_timeAtTarget = 0.0;
 
@@ -58,4 +53,4 @@ private:
     int m_azHardwareSign = +1;
 };
 
-#endif // AUTOSECTORSCANMOTIONMODE_H
+#endif  // AUTOSECTORSCANMOTIONMODE_H

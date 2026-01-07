@@ -4,8 +4,7 @@
 #include <QObject>
 #include <QColor>
 
-class WindageViewModel : public QObject
-{
+class WindageViewModel : public QObject {
     Q_OBJECT
     Q_PROPERTY(bool visible READ visible NOTIFY visibleChanged)
     Q_PROPERTY(QString title READ title NOTIFY titleChanged)
@@ -20,18 +19,38 @@ class WindageViewModel : public QObject
 
 
 public:
-    explicit WindageViewModel(QObject *parent = nullptr);
+    explicit WindageViewModel(QObject* parent = nullptr);
 
-    bool visible() const { return m_visible; }
-    QString title() const { return m_title; }
-    QString instruction() const { return m_instruction; }
-    bool showWindSpeed() const { return m_showWindSpeed; }
-    float windSpeed() const { return m_windSpeed; }
-    QString windSpeedLabel() const { return m_windSpeedLabel; }
-    bool showWindDirection() const { return m_showWindDirection; }
-    float windDirection() const { return m_windDirection; }
-    QString windDirectionLabel() const { return m_windDirectionLabel; }
-    QColor accentColor() const { return m_accentColor; }
+    bool visible() const {
+        return m_visible;
+    }
+    QString title() const {
+        return m_title;
+    }
+    QString instruction() const {
+        return m_instruction;
+    }
+    bool showWindSpeed() const {
+        return m_showWindSpeed;
+    }
+    float windSpeed() const {
+        return m_windSpeed;
+    }
+    QString windSpeedLabel() const {
+        return m_windSpeedLabel;
+    }
+    bool showWindDirection() const {
+        return m_showWindDirection;
+    }
+    float windDirection() const {
+        return m_windDirection;
+    }
+    QString windDirectionLabel() const {
+        return m_windDirectionLabel;
+    }
+    QColor accentColor() const {
+        return m_accentColor;
+    }
 
 public slots:
     void setVisible(bool visible);
@@ -67,7 +86,7 @@ private:
     bool m_showWindDirection;
     float m_windDirection;
     QString m_windDirectionLabel;
-    QColor m_accentColor = QColor(70, 226, 165); // Default green
+    QColor m_accentColor = QColor(70, 226, 165);  // Default green
 };
 
-#endif // WINDAGEVIEWMODEL_H
+#endif  // WINDAGEVIEWMODEL_H

@@ -4,10 +4,7 @@
 #include <cstring>
 #include <QtEndian>
 
-Imu3DMGX3ProtocolParser::Imu3DMGX3ProtocolParser(QObject* parent)
-    : ProtocolParser(parent)
-{
-}
+Imu3DMGX3ProtocolParser::Imu3DMGX3ProtocolParser(QObject* parent) : ProtocolParser(parent) {}
 
 std::vector<MessagePtr> Imu3DMGX3ProtocolParser::parse(const QByteArray& rawData) {
     std::vector<MessagePtr> messages;
@@ -27,39 +24,39 @@ std::vector<MessagePtr> Imu3DMGX3ProtocolParser::parse(const QByteArray& rawData
         // Determine expected packet size based on command byte
         int expectedSize = 0;
         switch (command) {
-            case GX3Commands::EULER_ANGLES_AND_RATES:
-                expectedSize = PACKET_SIZE_0xCF;
-                break;
-            case GX3Commands::CAPTURE_GYRO_BIAS:
-                expectedSize = PACKET_SIZE_0xCD;
-                break;
-            case GX3Commands::SAMPLING_SETTINGS:
-                expectedSize = PACKET_SIZE_0xDB;
-                break;
-            case GX3Commands::TEMPERATURES:
-                expectedSize = PACKET_SIZE_0xD1;
-                break;
-            default:
-                // Unknown command - try to find next valid command byte
-                qWarning() << "Imu3DMGX3Parser: Unknown command byte" << Qt::hex << command;
+        case GX3Commands::EULER_ANGLES_AND_RATES:
+            expectedSize = PACKET_SIZE_0xCF;
+            break;
+        case GX3Commands::CAPTURE_GYRO_BIAS:
+            expectedSize = PACKET_SIZE_0xCD;
+            break;
+        case GX3Commands::SAMPLING_SETTINGS:
+            expectedSize = PACKET_SIZE_0xDB;
+            break;
+        case GX3Commands::TEMPERATURES:
+            expectedSize = PACKET_SIZE_0xD1;
+            break;
+        default:
+            // Unknown command - try to find next valid command byte
+            qWarning() << "Imu3DMGX3Parser: Unknown command byte" << Qt::hex << command;
 
-                // Track consecutive errors - if too many, clear buffer to force resync
-                m_consecutiveErrors++;
-                if (m_consecutiveErrors >= MAX_CONSECUTIVE_ERRORS) {
-                    qWarning() << "Imu3DMGX3Parser: Too many consecutive errors ("
-                               << m_consecutiveErrors << ") - clearing buffer to resync";
-                    m_buffer.clear();
-                    m_consecutiveErrors = 0;
-                    break;
-                }
+            // Track consecutive errors - if too many, clear buffer to force resync
+            m_consecutiveErrors++;
+            if (m_consecutiveErrors >= MAX_CONSECUTIVE_ERRORS) {
+                qWarning() << "Imu3DMGX3Parser: Too many consecutive errors ("
+                           << m_consecutiveErrors << ") - clearing buffer to resync";
+                m_buffer.clear();
+                m_consecutiveErrors = 0;
+                break;
+            }
 
-                m_buffer.remove(0, 1); // Discard invalid byte
-                continue;
+            m_buffer.remove(0, 1);  // Discard invalid byte
+            continue;
         }
 
         // Wait for complete packet
         if (m_buffer.size() < expectedSize) {
-            break; // Need more data
+            break;  // Need more data
         }
 
         // Extract packet
@@ -72,8 +69,8 @@ std::vector<MessagePtr> Imu3DMGX3ProtocolParser::parse(const QByteArray& rawData
         quint16 calculatedChecksum = calculateChecksum(dataWithoutChecksum);
 
         if (receivedChecksum != calculatedChecksum) {
-            qWarning() << "Imu3DMGX3Parser: Checksum mismatch! Expected"
-                       << Qt::hex << calculatedChecksum << "got" << receivedChecksum;
+            qWarning() << "Imu3DMGX3Parser: Checksum mismatch! Expected" << Qt::hex
+                       << calculatedChecksum << "got" << receivedChecksum;
 
             // Track consecutive errors - if too many, clear buffer to force resync
             m_consecutiveErrors++;
@@ -84,7 +81,7 @@ std::vector<MessagePtr> Imu3DMGX3ProtocolParser::parse(const QByteArray& rawData
                 m_consecutiveErrors = 0;
                 break;
             }
-            continue; // Discard corrupted packet
+            continue;  // Discard corrupted packet
         }
 
         // Valid packet received - reset error counter
@@ -93,19 +90,19 @@ std::vector<MessagePtr> Imu3DMGX3ProtocolParser::parse(const QByteArray& rawData
         // Parse packet based on command
         MessagePtr msg = nullptr;
         switch (command) {
-            case GX3Commands::EULER_ANGLES_AND_RATES:
-                msg = parse0xCFPacket(packet);
-                break;
-            case GX3Commands::CAPTURE_GYRO_BIAS:
-                parse0xCDPacket(packet);  // Now properly parses the response
-                break;
-            case GX3Commands::SAMPLING_SETTINGS:
-                parse0xDBPacket(packet);  // Now properly parses the response
-                break;
-            case GX3Commands::TEMPERATURES:
-                parse0xD1Packet(packet);
-                break;
-            }
+        case GX3Commands::EULER_ANGLES_AND_RATES:
+            msg = parse0xCFPacket(packet);
+            break;
+        case GX3Commands::CAPTURE_GYRO_BIAS:
+            parse0xCDPacket(packet);  // Now properly parses the response
+            break;
+        case GX3Commands::SAMPLING_SETTINGS:
+            parse0xDBPacket(packet);  // Now properly parses the response
+            break;
+        case GX3Commands::TEMPERATURES:
+            parse0xD1Packet(packet);
+            break;
+        }
 
         if (msg) {
             messages.push_back(std::move(msg));
@@ -172,7 +169,8 @@ MessagePtr Imu3DMGX3ProtocolParser::parse0xCFPacket(const QByteArray& packet) {
 
     // Validate data ranges (sanity checks)
     if (std::isnan(data.rollDeg) || std::isnan(data.pitchDeg) || std::isnan(data.yawDeg) ||
-        std::isnan(data.angRateX_dps) || std::isnan(data.angRateY_dps) || std::isnan(data.angRateZ_dps)) {
+        std::isnan(data.angRateX_dps) || std::isnan(data.angRateY_dps) ||
+        std::isnan(data.angRateZ_dps)) {
         qWarning() << "Imu3DMGX3Parser: NaN detected in 0xCF data!";
         return nullptr;
     }
@@ -214,9 +212,8 @@ void Imu3DMGX3ProtocolParser::parse0xD1Packet(const QByteArray& packet) {
     // Calculate average temperature across all sensors
     m_lastTemperature = (magTemp + accelTemp + gyroXTemp + gyroYTemp + gyroZTemp) / 5.0;
 
-    qDebug() << "Imu3DMGX3Parser: Temperatures -"
-             << "Mag:" << QString::number(magTemp, 'f', 1) << "°C"
-             << "Accel:" << QString::number(accelTemp, 'f', 1) << "°C"
+    qDebug() << "Imu3DMGX3Parser: Temperatures -" << "Mag:" << QString::number(magTemp, 'f', 1)
+             << "°C" << "Accel:" << QString::number(accelTemp, 'f', 1) << "°C"
              << "GyroX:" << QString::number(gyroXTemp, 'f', 1) << "°C"
              << "GyroY:" << QString::number(gyroYTemp, 'f', 1) << "°C"
              << "GyroZ:" << QString::number(gyroZTemp, 'f', 1) << "°C"
@@ -229,9 +226,8 @@ float Imu3DMGX3ProtocolParser::extractFloat(const QByteArray& data, int offset) 
     }
 
     // Extract 4 bytes as big-endian
-    quint32 rawBits = qFromBigEndian<quint32>(
-        reinterpret_cast<const uchar*>(data.constData() + offset)
-    );
+    quint32 rawBits =
+        qFromBigEndian<quint32>(reinterpret_cast<const uchar*>(data.constData() + offset));
 
     // Reinterpret bits as IEEE 754 float
     float value;
@@ -245,9 +241,7 @@ quint32 Imu3DMGX3ProtocolParser::extractUInt32(const QByteArray& data, int offse
         return 0;
     }
 
-    return qFromBigEndian<quint32>(
-        reinterpret_cast<const uchar*>(data.constData() + offset)
-    );
+    return qFromBigEndian<quint32>(reinterpret_cast<const uchar*>(data.constData() + offset));
 }
 
 quint16 Imu3DMGX3ProtocolParser::extractUInt16(const QByteArray& data, int offset) const {
@@ -255,9 +249,7 @@ quint16 Imu3DMGX3ProtocolParser::extractUInt16(const QByteArray& data, int offse
         return 0;
     }
 
-    return qFromBigEndian<quint16>(
-        reinterpret_cast<const uchar*>(data.constData() + offset)
-    );
+    return qFromBigEndian<quint16>(reinterpret_cast<const uchar*>(data.constData() + offset));
 }
 
 quint16 Imu3DMGX3ProtocolParser::calculateChecksum(const QByteArray& data) {
@@ -288,8 +280,8 @@ QByteArray Imu3DMGX3ProtocolParser::createCaptureGyroBiasCommand(quint16 samplin
     // [0xCD, 0xC1, 0x29, SamplingTime_MSB, SamplingTime_LSB]
     QByteArray cmd;
     cmd.append(static_cast<char>(GX3Commands::CAPTURE_GYRO_BIAS));  // 0xCD
-    cmd.append(static_cast<char>(0xC1));  // Confirmation byte 1
-    cmd.append(static_cast<char>(0x29));  // Confirmation byte 2
+    cmd.append(static_cast<char>(0xC1));                            // Confirmation byte 1
+    cmd.append(static_cast<char>(0x29));                            // Confirmation byte 2
 
     // Sampling time in milliseconds (big-endian, recommended: 10000-30000 ms)
     cmd.append(static_cast<char>((samplingTimeMs >> 8) & 0xFF));  // MSB
@@ -308,8 +300,8 @@ QByteArray Imu3DMGX3ProtocolParser::createSamplingSettingsCommand(quint8 functio
 
     QByteArray cmd;
     cmd.append(static_cast<char>(GX3Commands::SAMPLING_SETTINGS));  // 0xDB
-    cmd.append(static_cast<char>(0xA8));  // Confirmation byte 1
-    cmd.append(static_cast<char>(0xB9));  // Confirmation byte 2
+    cmd.append(static_cast<char>(0xA8));                            // Confirmation byte 1
+    cmd.append(static_cast<char>(0xB9));                            // Confirmation byte 2
 
     // Function selector (0=Read, 1=Write, 2=Write+Save, 3=Write no reply)
     cmd.append(static_cast<char>(function));
@@ -376,9 +368,9 @@ void Imu3DMGX3ProtocolParser::parse0xCDPacket(const QByteArray& packet) {
     }
 
     // Parse gyro bias values (all big-endian IEEE 754 floats)
-    float gyroBiasX = extractFloat(packet, 1);   // Offset 1
-    float gyroBiasY = extractFloat(packet, 5);   // Offset 5
-    float gyroBiasZ = extractFloat(packet, 9);   // Offset 9
+    float gyroBiasX = extractFloat(packet, 1);  // Offset 1
+    float gyroBiasY = extractFloat(packet, 5);  // Offset 5
+    float gyroBiasZ = extractFloat(packet, 9);  // Offset 9
     // quint32 timer = extractUInt32(packet, 13);  // Offset 13
 
     qDebug() << "Imu3DMGX3Parser: Gyro bias captured successfully -"
@@ -415,4 +407,3 @@ void Imu3DMGX3ProtocolParser::parse0xDBPacket(const QByteArray& packet) {
              << "Filters: Gyro/Accel=" << gyroAccelFilter << "Mag=" << magFilter
              << "Comp: Up=" << upComp << "s, North=" << northComp << "s";
 }
-

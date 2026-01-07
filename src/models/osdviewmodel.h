@@ -6,11 +6,10 @@
 #include <QRectF>
 #include <QString>
 #include <QVariantList>
-#include "models/domain/systemstatedata.h" // For enums
-#include "utils/inference.h" // For YoloDetection
+#include "models/domain/systemstatedata.h"  // For enums
+#include "utils/inference.h"                // For YoloDetection
 
-class OsdViewModel : public QObject
-{
+class OsdViewModel : public QObject {
     Q_OBJECT
 
     // ============================================================================
@@ -59,7 +58,8 @@ class OsdViewModel : public QObject
 
     // Acquisition box (for Tracking_Acquisition phase)
     Q_PROPERTY(QRectF acquisitionBox READ acquisitionBox NOTIFY acquisitionBoxChanged)
-    Q_PROPERTY(bool acquisitionBoxVisible READ acquisitionBoxVisible NOTIFY acquisitionBoxVisibleChanged)
+    Q_PROPERTY(
+        bool acquisitionBoxVisible READ acquisitionBoxVisible NOTIFY acquisitionBoxVisibleChanged)
 
     // ============================================================================
     // RETICLE (Main aiming reticle - with zeroing only)
@@ -116,7 +116,8 @@ class OsdViewModel : public QObject
     // STARTUP SEQUENCE & ERROR MESSAGES
     // ============================================================================
     Q_PROPERTY(QString startupMessageText READ startupMessageText NOTIFY startupMessageTextChanged)
-    Q_PROPERTY(bool startupMessageVisible READ startupMessageVisible NOTIFY startupMessageVisibleChanged)
+    Q_PROPERTY(
+        bool startupMessageVisible READ startupMessageVisible NOTIFY startupMessageVisibleChanged)
 
     Q_PROPERTY(QString errorMessageText READ errorMessageText NOTIFY errorMessageTextChanged)
     Q_PROPERTY(bool errorMessageVisible READ errorMessageVisible NOTIFY errorMessageVisibleChanged)
@@ -126,7 +127,8 @@ class OsdViewModel : public QObject
     // ============================================================================
     Q_PROPERTY(bool dayCameraConnected READ dayCameraConnected NOTIFY dayCameraConnectedChanged)
     Q_PROPERTY(bool dayCameraError READ dayCameraError NOTIFY dayCameraErrorChanged)
-    Q_PROPERTY(bool nightCameraConnected READ nightCameraConnected NOTIFY nightCameraConnectedChanged)
+    Q_PROPERTY(
+        bool nightCameraConnected READ nightCameraConnected NOTIFY nightCameraConnectedChanged)
     Q_PROPERTY(bool nightCameraError READ nightCameraError NOTIFY nightCameraErrorChanged)
 
     Q_PROPERTY(bool azServoConnected READ azServoConnected NOTIFY azServoConnectedChanged)
@@ -153,7 +155,8 @@ class OsdViewModel : public QObject
     // States: 0=Idle, 1=Extending, 2=Retracting, 3=Fault
     // ============================================================================
     Q_PROPERTY(int ammoFeedState READ ammoFeedState NOTIFY ammoFeedStateChanged)
-    Q_PROPERTY(bool ammoFeedCycleInProgress READ ammoFeedCycleInProgress NOTIFY ammoFeedCycleInProgressChanged)
+    Q_PROPERTY(bool ammoFeedCycleInProgress READ ammoFeedCycleInProgress NOTIFY
+                   ammoFeedCycleInProgressChanged)
     Q_PROPERTY(bool ammoLoaded READ ammoLoaded NOTIFY ammoLoadedChanged)
 
     // ============================================================================
@@ -199,126 +202,300 @@ class OsdViewModel : public QObject
 
 
 public:
-    explicit OsdViewModel(QObject *parent = nullptr);
+    explicit OsdViewModel(QObject* parent = nullptr);
 
     // Getters
-    QColor accentColor() const { return m_accentColor; }
-    QString modeText() const { return m_modeText; }
-    QString motionText() const { return m_motionText; }
-    QString stabText() const { return m_stabText; }
-    QString cameraText() const { return m_cameraText; }
-    QString speedText() const { return m_speedText; }
+    QColor accentColor() const {
+        return m_accentColor;
+    }
+    QString modeText() const {
+        return m_modeText;
+    }
+    QString motionText() const {
+        return m_motionText;
+    }
+    QString stabText() const {
+        return m_stabText;
+    }
+    QString cameraText() const {
+        return m_cameraText;
+    }
+    QString speedText() const {
+        return m_speedText;
+    }
 
-    float azimuth() const { return m_azimuth; }
-    float elevation() const { return m_elevation; }
+    float azimuth() const {
+        return m_azimuth;
+    }
+    float elevation() const {
+        return m_elevation;
+    }
 
-    bool imuConnected() const { return m_imuConnected; }
-    double vehicleHeading() const { return m_vehicleHeading; }
-    double vehicleRoll() const { return m_vehicleRoll; }
-    double vehiclePitch() const { return m_vehiclePitch; }
-    double imuTemperature() const { return m_imuTemperature; }
+    bool imuConnected() const {
+        return m_imuConnected;
+    }
+    double vehicleHeading() const {
+        return m_vehicleHeading;
+    }
+    double vehicleRoll() const {
+        return m_vehicleRoll;
+    }
+    double vehiclePitch() const {
+        return m_vehiclePitch;
+    }
+    double imuTemperature() const {
+        return m_imuTemperature;
+    }
 
-    QString statusText() const { return m_statusText; }
-    QString rateText() const { return m_rateText; }
-    QString lrfText() const { return m_lrfText; }
-    QString fovText() const { return m_fovText; }
+    QString statusText() const {
+        return m_statusText;
+    }
+    QString rateText() const {
+        return m_rateText;
+    }
+    QString lrfText() const {
+        return m_lrfText;
+    }
+    QString fovText() const {
+        return m_fovText;
+    }
 
     // ⭐ Homing getters
-    QString homingText() const { return m_homingText; }
-    bool homingVisible() const { return m_homingVisible; }
+    QString homingText() const {
+        return m_homingText;
+    }
+    bool homingVisible() const {
+        return m_homingVisible;
+    }
 
-    QRectF trackingBox() const { return m_trackingBox; }
-    bool trackingBoxVisible() const { return m_trackingBoxVisible; }
-    QColor trackingBoxColor() const { return m_trackingBoxColor; }
-    bool trackingBoxDashed() const { return m_trackingBoxDashed; }
-    bool isTrackingActive() const { return m_isTrackingActive; }
-    float trackingConfidence() const { return m_trackingConfidence; }  // VPI tracking confidence
-    bool trackingActive() const { return m_isTrackingActive; }         // Alias for backward compatibility
+    QRectF trackingBox() const {
+        return m_trackingBox;
+    }
+    bool trackingBoxVisible() const {
+        return m_trackingBoxVisible;
+    }
+    QColor trackingBoxColor() const {
+        return m_trackingBoxColor;
+    }
+    bool trackingBoxDashed() const {
+        return m_trackingBoxDashed;
+    }
+    bool isTrackingActive() const {
+        return m_isTrackingActive;
+    }
+    float trackingConfidence() const {
+        return m_trackingConfidence;
+    }  // VPI tracking confidence
+    bool trackingActive() const {
+        return m_isTrackingActive;
+    }  // Alias for backward compatibility
 
-    QRectF acquisitionBox() const { return m_acquisitionBox; }
-    bool acquisitionBoxVisible() const { return m_acquisitionBoxVisible; }
+    QRectF acquisitionBox() const {
+        return m_acquisitionBox;
+    }
+    bool acquisitionBoxVisible() const {
+        return m_acquisitionBoxVisible;
+    }
 
-    int reticleType() const { return static_cast<int>(m_reticleType); }
-    float reticleOffsetX() const { return m_reticleOffsetX; }
-    float reticleOffsetY() const { return m_reticleOffsetY; }
-    float currentFov() const { return m_currentFov; }
+    int reticleType() const {
+        return static_cast<int>(m_reticleType);
+    }
+    float reticleOffsetX() const {
+        return m_reticleOffsetX;
+    }
+    float reticleOffsetY() const {
+        return m_reticleOffsetY;
+    }
+    float currentFov() const {
+        return m_currentFov;
+    }
 
-    float ccipX() const { return m_ccipX; }
-    float ccipY() const { return m_ccipY; }
-    bool ccipVisible() const { return m_ccipVisible; }
-    QString ccipStatus() const { return m_ccipStatus; }
+    float ccipX() const {
+        return m_ccipX;
+    }
+    float ccipY() const {
+        return m_ccipY;
+    }
+    bool ccipVisible() const {
+        return m_ccipVisible;
+    }
+    QString ccipStatus() const {
+        return m_ccipStatus;
+    }
 
-    QString zeroingText() const { return m_zeroingText; }
-    bool zeroingVisible() const { return m_zeroingVisible; }
+    QString zeroingText() const {
+        return m_zeroingText;
+    }
+    bool zeroingVisible() const {
+        return m_zeroingVisible;
+    }
 
-    QString environmentText() const { return m_environmentText; }
-    bool environmentVisible() const { return m_environmentVisible; }
+    QString environmentText() const {
+        return m_environmentText;
+    }
+    bool environmentVisible() const {
+        return m_environmentVisible;
+    }
 
-    QString windageText() const { return m_windageText; }
-    bool windageVisible() const { return m_windageVisible; }
+    QString windageText() const {
+        return m_windageText;
+    }
+    bool windageVisible() const {
+        return m_windageVisible;
+    }
 
-    QString detectionText() const { return m_detectionText; }
-    bool detectionVisible() const { return m_detectionVisible; }
-    QVariantList detectionBoxes() const { return m_detectionBoxes; }
+    QString detectionText() const {
+        return m_detectionText;
+    }
+    bool detectionVisible() const {
+        return m_detectionVisible;
+    }
+    QVariantList detectionBoxes() const {
+        return m_detectionBoxes;
+    }
 
-    QString zoneWarningText() const { return m_zoneWarningText; }
-    bool zoneWarningVisible() const { return m_zoneWarningVisible; }
+    QString zoneWarningText() const {
+        return m_zoneWarningText;
+    }
+    bool zoneWarningVisible() const {
+        return m_zoneWarningVisible;
+    }
 
-    QString leadAngleText() const { return m_leadAngleText; }
-    bool leadAngleVisible() const { return m_leadAngleVisible; }
+    QString leadAngleText() const {
+        return m_leadAngleText;
+    }
+    bool leadAngleVisible() const {
+        return m_leadAngleVisible;
+    }
 
-    QString scanNameText() const { return m_scanNameText; }
-    bool scanNameVisible() const { return m_scanNameVisible; }
+    QString scanNameText() const {
+        return m_scanNameText;
+    }
+    bool scanNameVisible() const {
+        return m_scanNameVisible;
+    }
 
-    bool lacActive() const { return m_lacActive; }
-    float rangeMeters() const { return m_rangeMeters; }
-    float confidenceLevel() const { return m_confidenceLevel; }
+    bool lacActive() const {
+        return m_lacActive;
+    }
+    float rangeMeters() const {
+        return m_rangeMeters;
+    }
+    float confidenceLevel() const {
+        return m_confidenceLevel;
+    }
 
-    QString startupMessageText() const { return m_startupMessageText; }
-    bool startupMessageVisible() const { return m_startupMessageVisible; }
+    QString startupMessageText() const {
+        return m_startupMessageText;
+    }
+    bool startupMessageVisible() const {
+        return m_startupMessageVisible;
+    }
 
-    QString errorMessageText() const { return m_errorMessageText; }
-    bool errorMessageVisible() const { return m_errorMessageVisible; }
+    QString errorMessageText() const {
+        return m_errorMessageText;
+    }
+    bool errorMessageVisible() const {
+        return m_errorMessageVisible;
+    }
 
-    bool dayCameraConnected() const { return m_dayCameraConnected; }
-    bool dayCameraError() const { return m_dayCameraError; }
-    bool nightCameraConnected() const { return m_nightCameraConnected; }
-    bool nightCameraError() const { return m_nightCameraError; }
+    bool dayCameraConnected() const {
+        return m_dayCameraConnected;
+    }
+    bool dayCameraError() const {
+        return m_dayCameraError;
+    }
+    bool nightCameraConnected() const {
+        return m_nightCameraConnected;
+    }
+    bool nightCameraError() const {
+        return m_nightCameraError;
+    }
 
-    bool azServoConnected() const { return m_azServoConnected; }
-    bool azFault() const { return m_azFault; }
-    bool elServoConnected() const { return m_elServoConnected; }
-    bool elFault() const { return m_elFault; }
+    bool azServoConnected() const {
+        return m_azServoConnected;
+    }
+    bool azFault() const {
+        return m_azFault;
+    }
+    bool elServoConnected() const {
+        return m_elServoConnected;
+    }
+    bool elFault() const {
+        return m_elFault;
+    }
 
-    bool lrfConnected() const { return m_lrfConnected; }
-    bool lrfFault() const { return m_lrfFault; }
-    bool lrfOverTemp() const { return m_lrfOverTemp; }
+    bool lrfConnected() const {
+        return m_lrfConnected;
+    }
+    bool lrfFault() const {
+        return m_lrfFault;
+    }
+    bool lrfOverTemp() const {
+        return m_lrfOverTemp;
+    }
 
-    bool actuatorConnected() const { return m_actuatorConnected; }
-    bool actuatorFault() const { return m_actuatorFault; }
+    bool actuatorConnected() const {
+        return m_actuatorConnected;
+    }
+    bool actuatorFault() const {
+        return m_actuatorFault;
+    }
 
-    bool plc21Connected() const { return m_plc21Connected; }
-    bool plc42Connected() const { return m_plc42Connected; }
+    bool plc21Connected() const {
+        return m_plc21Connected;
+    }
+    bool plc42Connected() const {
+        return m_plc42Connected;
+    }
 
-    bool joystickConnected() const { return m_joystickConnected; }
+    bool joystickConnected() const {
+        return m_joystickConnected;
+    }
 
-    bool ammunitionLevel() const { return m_ammunitionLevel; }
+    bool ammunitionLevel() const {
+        return m_ammunitionLevel;
+    }
 
     // Ammunition Feed Status getters
-    int ammoFeedState() const { return m_ammoFeedState; }
-    bool ammoFeedCycleInProgress() const { return m_ammoFeedCycleInProgress; }
-    bool ammoLoaded() const { return m_ammoLoaded; }
+    int ammoFeedState() const {
+        return m_ammoFeedState;
+    }
+    bool ammoFeedCycleInProgress() const {
+        return m_ammoFeedCycleInProgress;
+    }
+    bool ammoLoaded() const {
+        return m_ammoLoaded;
+    }
 
     // Servo Driver debug getters
-    bool servoDebugVisible() const { return m_servoDebugVisible; }
-    float azMotorTemp() const { return m_stateData.azMotorTemp; }
-    float azDriverTemp() const { return m_stateData.azDriverTemp; }
-    float azRpm() const { return m_stateData.azRpm; }
-    float azTorque() const { return m_stateData.azTorque; }
-    float elMotorTemp() const { return m_stateData.elMotorTemp; }
-    float elDriverTemp() const { return m_stateData.elDriverTemp; }
-    float elRpm() const { return m_stateData.elRpm; }
-    float elTorque() const { return m_stateData.elTorque; }
+    bool servoDebugVisible() const {
+        return m_servoDebugVisible;
+    }
+    float azMotorTemp() const {
+        return m_stateData.azMotorTemp;
+    }
+    float azDriverTemp() const {
+        return m_stateData.azDriverTemp;
+    }
+    float azRpm() const {
+        return m_stateData.azRpm;
+    }
+    float azTorque() const {
+        return m_stateData.azTorque;
+    }
+    float elMotorTemp() const {
+        return m_stateData.elMotorTemp;
+    }
+    float elDriverTemp() const {
+        return m_stateData.elDriverTemp;
+    }
+    float elRpm() const {
+        return m_stateData.elRpm;
+    }
+    float elTorque() const {
+        return m_stateData.elTorque;
+    }
 
     // Toggle servoDebug visibility (for debugging)
     Q_INVOKABLE void toggleServoDebugVisible() {
@@ -327,22 +504,54 @@ public:
     }
 
     // Gyrostabilization debug getters
-    bool stabDebugVisible() const { return m_stabDebugVisible; }
-    bool stabDebugActive() const { return m_stateData.stabDebug.stabActive; }
-    bool stabDebugWorldHeld() const { return m_stateData.stabDebug.worldTargetHeld; }
-    double stabDebugP() const { return m_stateData.stabDebug.p_dps; }
-    double stabDebugQ() const { return m_stateData.stabDebug.q_dps; }
-    double stabDebugR() const { return m_stateData.stabDebug.r_dps; }
-    double stabDebugAzError() const { return m_stateData.stabDebug.azError_deg; }
-    double stabDebugElError() const { return m_stateData.stabDebug.elError_deg; }
-    double stabDebugAzPosCorr() const { return m_stateData.stabDebug.azPosCorr_dps; }
-    double stabDebugElPosCorr() const { return m_stateData.stabDebug.elPosCorr_dps; }
-    double stabDebugAzRateFF() const { return m_stateData.stabDebug.azRateFF_dps; }
-    double stabDebugElRateFF() const { return m_stateData.stabDebug.elRateFF_dps; }
-    double stabDebugAzFinal() const { return m_stateData.stabDebug.finalAz_dps; }
-    double stabDebugElFinal() const { return m_stateData.stabDebug.finalEl_dps; }
-    double stabDebugAzUser() const { return m_stateData.stabDebug.userAz_dps; }
-    double stabDebugElUser() const { return m_stateData.stabDebug.userEl_dps; }
+    bool stabDebugVisible() const {
+        return m_stabDebugVisible;
+    }
+    bool stabDebugActive() const {
+        return m_stateData.stabDebug.stabActive;
+    }
+    bool stabDebugWorldHeld() const {
+        return m_stateData.stabDebug.worldTargetHeld;
+    }
+    double stabDebugP() const {
+        return m_stateData.stabDebug.p_dps;
+    }
+    double stabDebugQ() const {
+        return m_stateData.stabDebug.q_dps;
+    }
+    double stabDebugR() const {
+        return m_stateData.stabDebug.r_dps;
+    }
+    double stabDebugAzError() const {
+        return m_stateData.stabDebug.azError_deg;
+    }
+    double stabDebugElError() const {
+        return m_stateData.stabDebug.elError_deg;
+    }
+    double stabDebugAzPosCorr() const {
+        return m_stateData.stabDebug.azPosCorr_dps;
+    }
+    double stabDebugElPosCorr() const {
+        return m_stateData.stabDebug.elPosCorr_dps;
+    }
+    double stabDebugAzRateFF() const {
+        return m_stateData.stabDebug.azRateFF_dps;
+    }
+    double stabDebugElRateFF() const {
+        return m_stateData.stabDebug.elRateFF_dps;
+    }
+    double stabDebugAzFinal() const {
+        return m_stateData.stabDebug.finalAz_dps;
+    }
+    double stabDebugElFinal() const {
+        return m_stateData.stabDebug.finalEl_dps;
+    }
+    double stabDebugAzUser() const {
+        return m_stateData.stabDebug.userAz_dps;
+    }
+    double stabDebugElUser() const {
+        return m_stateData.stabDebug.userEl_dps;
+    }
 
     // Toggle stabDebug visibility (for debugging)
     Q_INVOKABLE void toggleStabDebugVisible() {
@@ -373,7 +582,8 @@ public slots:
 
     void updateTrackingBox(float x, float y, float width, float height);
     void updateTrackingState(VPITrackingState state);
-    void updateTrackingPhase(TrackingPhase phase, bool hasValidTarget, const QRectF& acquisitionBox);
+    void updateTrackingPhase(TrackingPhase phase, bool hasValidTarget,
+                             const QRectF& acquisitionBox);
     void updateTrackingActive(bool active);
 
     void updateReticleType(ReticleType type);
@@ -383,7 +593,8 @@ public slots:
 
     void updateZeroingDisplay(bool modeActive, bool applied, float azOffset, float elOffset);
     void updateEnvironmentDisplay(float tempCelsius, float altitudeMeters);
-    void updateWindageDisplay(bool windageApplied, float windSpeedKnots, float windDirectionDeg, float calculatedCrosswindMS);
+    void updateWindageDisplay(bool windageApplied, float windSpeedKnots, float windDirectionDeg,
+                              float calculatedCrosswindMS);
     void updateDetectionDisplay(bool enabled);
     void updateDetectionBoxes(const std::vector<YoloDetection>& detections);
 
@@ -393,21 +604,18 @@ public slots:
 
     void updateLacActive(bool active);
     void updateRangeMeters(float range);
-    void updateConfidenceLevel(float confidence);      // LAC confidence
-    void updateTrackingConfidence(float confidence);   // VPI tracking confidence
+    void updateConfidenceLevel(float confidence);     // LAC confidence
+    void updateTrackingConfidence(float confidence);  // VPI tracking confidence
 
     void updateStartupMessage(const QString& message, bool visible);
     void updateErrorMessage(const QString& message, bool visible);
 
-    void updateDeviceHealth(bool dayCamConnected, bool dayCamError,
-                           bool nightCamConnected, bool nightCamError,
-                           bool azServoConnected, bool azFault,
-                           bool elServoConnected, bool elFault,
-                           bool lrfConnected, bool lrfFault, bool lrfOverTemp,
-                           bool actuatorConnected, bool actuatorFault,
-                           bool imuConnected,
-                           bool plc21Connected, bool plc42Connected,
-                           bool joystickConnected);
+    void updateDeviceHealth(bool dayCamConnected, bool dayCamError, bool nightCamConnected,
+                            bool nightCamError, bool azServoConnected, bool azFault,
+                            bool elServoConnected, bool elFault, bool lrfConnected, bool lrfFault,
+                            bool lrfOverTemp, bool actuatorConnected, bool actuatorFault,
+                            bool imuConnected, bool plc21Connected, bool plc42Connected,
+                            bool joystickConnected);
     void updateAmmunitionLevel(bool level);
 
     // Ammunition Feed Status update
@@ -545,11 +753,11 @@ private:
     float m_azimuth;
     float m_elevation;
 
-     bool m_imuConnected = false;
-    double m_vehicleHeading = 0.0;    // Yaw/Heading (0-360°)
-    double m_vehicleRoll = 0.0;       // Roll angle
-    double m_vehiclePitch = 0.0;      // Pitch angle
-    double m_imuTemperature = 0.0;    // IMU temp
+    bool m_imuConnected = false;
+    double m_vehicleHeading = 0.0;  // Yaw/Heading (0-360°)
+    double m_vehicleRoll = 0.0;     // Roll angle
+    double m_vehiclePitch = 0.0;    // Pitch angle
+    double m_imuTemperature = 0.0;  // IMU temp
 
 
     QString m_statusText;
@@ -614,8 +822,8 @@ private:
 
     bool m_lacActive;
     float m_rangeMeters;
-    float m_confidenceLevel;           // LAC confidence (lead angle compensation)
-    float m_trackingConfidence;        // VPI tracking confidence (separate from LAC)
+    float m_confidenceLevel;     // LAC confidence (lead angle compensation)
+    float m_trackingConfidence;  // VPI tracking confidence (separate from LAC)
 
     QString m_startupMessageText;
     bool m_startupMessageVisible;
@@ -657,7 +865,7 @@ private:
 
     // Gyrostabilization debug data
     bool m_stabDebugVisible = true;  // Default to visible for debugging
-    SystemStateData m_stateData;      // Cached state data for stabDebug and servoDebug access
+    SystemStateData m_stateData;     // Cached state data for stabDebug and servoDebug access
 };
 
-#endif // OSDVIEWMODEL_H
+#endif  // OSDVIEWMODEL_H

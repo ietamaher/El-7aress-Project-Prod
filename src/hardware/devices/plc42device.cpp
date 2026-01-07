@@ -8,17 +8,14 @@
 #include <QDebug>
 
 Plc42Device::Plc42Device(const QString& identifier, QObject* parent)
-    : TemplatedDevice<Plc42Data>(parent),
-      m_identifier(identifier),
-      m_pollTimer(new QTimer(this)),
-      m_communicationWatchdog(new QTimer(this))
-{
+    : TemplatedDevice<Plc42Data>(parent), m_identifier(identifier), m_pollTimer(new QTimer(this)),
+      m_communicationWatchdog(new QTimer(this)) {
     connect(m_pollTimer, &QTimer::timeout, this, &Plc42Device::pollTimerTimeout);
 
     m_communicationWatchdog->setSingleShot(false);
     m_communicationWatchdog->setInterval(COMMUNICATION_TIMEOUT_MS);
-    connect(m_communicationWatchdog, &QTimer::timeout,
-            this, &Plc42Device::onCommunicationWatchdogTimeout);
+    connect(m_communicationWatchdog, &QTimer::timeout, this,
+            &Plc42Device::onCommunicationWatchdogTimeout);
 }
 
 Plc42Device::~Plc42Device() {
@@ -26,8 +23,7 @@ Plc42Device::~Plc42Device() {
     m_communicationWatchdog->stop();
 }
 
-void Plc42Device::setDependencies(Transport* transport,
-                                   Plc42ProtocolParser* parser) {
+void Plc42Device::setDependencies(Transport* transport, Plc42ProtocolParser* parser) {
     m_transport = transport;
     m_parser = parser;
 
@@ -63,7 +59,8 @@ bool Plc42Device::initialize() {
     // Start first poll cycle immediately
     startPollCycle();
 
-    qDebug() << m_identifier << "initialized successfully with poll interval:" << pollInterval << "ms";
+    qDebug() << m_identifier << "initialized successfully with poll interval:" << pollInterval
+             << "ms";
     return true;
 }
 
@@ -101,35 +98,35 @@ void Plc42Device::startPollCycle() {
 }
 
 void Plc42Device::sendReadRequest(int startAddress, int count, bool isDiscreteInputs) {
-    if (state() != DeviceState::Online || !m_transport) return;
+    if (state() != DeviceState::Online || !m_transport)
+        return;
 
     // Cast to ModbusTransport to access Modbus-specific methods
-    auto modbusTransport = qobject_cast<QModbusRtuSerialClient*>(
-        m_transport->property("client").value<QObject*>());
+    auto modbusTransport =
+        qobject_cast<QModbusRtuSerialClient*>(m_transport->property("client").value<QObject*>());
 
-    if (!modbusTransport) return;
+    if (!modbusTransport)
+        return;
 
-    QModbusDataUnit::RegisterType regType = isDiscreteInputs ?
-        QModbusDataUnit::DiscreteInputs : QModbusDataUnit::HoldingRegisters;
+    QModbusDataUnit::RegisterType regType =
+        isDiscreteInputs ? QModbusDataUnit::DiscreteInputs : QModbusDataUnit::HoldingRegisters;
 
     QModbusDataUnit readUnit(regType, startAddress, count);
 
     QModbusReply* reply = nullptr;
-    QMetaObject::invokeMethod(m_transport, "sendReadRequest",
-                              Qt::DirectConnection,
-                              Q_RETURN_ARG(QModbusReply*, reply),
-                              Q_ARG(QModbusDataUnit, readUnit));
+    QMetaObject::invokeMethod(m_transport, "sendReadRequest", Qt::DirectConnection,
+                              Q_RETURN_ARG(QModbusReply*, reply), Q_ARG(QModbusDataUnit, readUnit));
 
     if (reply) {
-        connect(reply, &QModbusReply::finished, this, [this, reply]() {
-            onModbusReplyReady(reply);
-        });
+        connect(reply, &QModbusReply::finished, this,
+                [this, reply]() { onModbusReplyReady(reply); });
     }
 }
 
 void Plc42Device::onModbusReplyReady(QModbusReply* reply) {
     if (!reply || !m_parser) {
-        if (reply) reply->deleteLater();
+        if (reply)
+            reply->deleteLater();
         m_waitingForResponse = false;
         m_pollCycleActive = false;  // Abort cycle on error
         m_needsHoldingRegistersRead = false;
@@ -263,9 +260,9 @@ void Plc42Device::setResetAlarm(uint16_t alarm) {
     sendWriteHoldingRegisters();
 }
 // setHome position, method
-void  Plc42Device::setHomePosition() {
+void Plc42Device::setHomePosition() {
     auto newData = std::make_shared<Plc42Data>(*data());
-    newData->gimbalOpMode = 3; // Assuming '3' is the code for 'Home Position' mode
+    newData->gimbalOpMode = 3;  // Assuming '3' is the code for 'Home Position' mode
     updateData(newData);
     m_hasPendingWrites = true;
     sendWriteHoldingRegisters();
@@ -274,7 +271,7 @@ void  Plc42Device::setHomePosition() {
 //  setStop gimbal methods
 void Plc42Device::setStopGimbal() {
     auto newData = std::make_shared<Plc42Data>(*data());
-    newData->gimbalOpMode = 1; // Assuming '1' is the code for 'Stop' mode
+    newData->gimbalOpMode = 1;  // Assuming '1' is the code for 'Stop' mode
     updateData(newData);
     m_hasPendingWrites = true;
     sendWriteHoldingRegisters();
@@ -282,7 +279,7 @@ void Plc42Device::setStopGimbal() {
 
 void Plc42Device::setManualMode() {
     auto newData = std::make_shared<Plc42Data>(*data());
-    newData->gimbalOpMode = 0; // GIMBAL_MANUAL mode
+    newData->gimbalOpMode = 0;  // GIMBAL_MANUAL mode
     updateData(newData);
     m_hasPendingWrites = true;
     sendWriteHoldingRegisters();
@@ -292,7 +289,7 @@ void Plc42Device::setManualMode() {
 void Plc42Device::setPresetHomePosition() {
     // Set HR10 to 1 to command the motor to set current position as home reference
     auto newData = std::make_shared<Plc42Data>(*data());
-    newData->azimuthReset = 1; // Set Preset Home Position
+    newData->azimuthReset = 1;  // Set Preset Home Position
     updateData(newData);
     m_hasPendingWrites = true;
     sendWriteHoldingRegisters();
@@ -301,7 +298,7 @@ void Plc42Device::setPresetHomePosition() {
     // After a short delay, reset the flag back to 0
     QTimer::singleShot(500, this, [this]() {
         auto newData = std::make_shared<Plc42Data>(*data());
-        newData->azimuthReset = 0; // Clear the reset flag
+        newData->azimuthReset = 0;  // Clear the reset flag
         updateData(newData);
         m_hasPendingWrites = true;
         sendWriteHoldingRegisters();
@@ -310,7 +307,8 @@ void Plc42Device::setPresetHomePosition() {
 }
 
 void Plc42Device::sendWriteHoldingRegisters() {
-    if (state() != DeviceState::Online || !m_transport) return;
+    if (state() != DeviceState::Online || !m_transport)
+        return;
 
     auto currentData = data();
 
@@ -322,13 +320,13 @@ void Plc42Device::sendWriteHoldingRegisters() {
     writeUnit.setValue(1, currentData->gimbalOpMode);
 
     // Split 32-bit azimuth speed into two 16-bit registers
-    uint16_t azLow  = static_cast<uint16_t>(currentData->azimuthSpeed & 0xFFFF);
+    uint16_t azLow = static_cast<uint16_t>(currentData->azimuthSpeed & 0xFFFF);
     uint16_t azHigh = static_cast<uint16_t>((currentData->azimuthSpeed >> 16) & 0xFFFF);
     writeUnit.setValue(2, azLow);
     writeUnit.setValue(3, azHigh);
 
     // Split 32-bit elevation speed into two 16-bit registers
-    uint16_t elLow  = static_cast<uint16_t>(currentData->elevationSpeed & 0xFFFF);
+    uint16_t elLow = static_cast<uint16_t>(currentData->elevationSpeed & 0xFFFF);
     uint16_t elHigh = static_cast<uint16_t>((currentData->elevationSpeed >> 16) & 0xFFFF);
     writeUnit.setValue(4, elLow);
     writeUnit.setValue(5, elHigh);
@@ -340,8 +338,7 @@ void Plc42Device::sendWriteHoldingRegisters() {
     writeUnit.setValue(10, currentData->azimuthReset);
 
     QModbusReply* reply = nullptr;
-    QMetaObject::invokeMethod(m_transport, "sendWriteRequest",
-                              Qt::DirectConnection,
+    QMetaObject::invokeMethod(m_transport, "sendWriteRequest", Qt::DirectConnection,
                               Q_RETURN_ARG(QModbusReply*, reply),
                               Q_ARG(QModbusDataUnit, writeUnit));
 
@@ -388,8 +385,7 @@ void Plc42Device::sendNextPendingRequest() {
         m_needsHoldingRegistersRead = false;
         m_waitingForResponse = true;
         sendReadRequest(Plc42Registers::HOLDING_REGISTERS_START_ADDR,
-                        Plc42Registers::HOLDING_REGISTERS_COUNT,
-                        false);
+                        Plc42Registers::HOLDING_REGISTERS_COUNT, false);
     } else {
         // Poll cycle complete - mark as inactive and schedule next cycle
         m_pollCycleActive = false;
@@ -402,6 +398,6 @@ void Plc42Device::sendNextPendingRequest() {
 
 void Plc42Device::onCommunicationWatchdogTimeout() {
     //qWarning() << m_identifier << "Communication timeout - no data received for"
-     //          << COMMUNICATION_TIMEOUT_MS << "ms";
+    //          << COMMUNICATION_TIMEOUT_MS << "ms";
     setConnectionState(false);
 }

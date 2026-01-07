@@ -36,7 +36,9 @@ public:
     };
 
     virtual ~Message() = default;
-    virtual Type typeId() const { return Type::Generic; }
+    virtual Type typeId() const {
+        return Type::Generic;
+    }
 };
 
 using MessagePtr = std::unique_ptr<Message>;

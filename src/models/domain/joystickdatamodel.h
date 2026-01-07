@@ -6,23 +6,23 @@
 #include "hardware/devices/joystickdevice.h"
 
 
-
-class JoystickDataModel : public QObject
-{
+class JoystickDataModel : public QObject {
     Q_OBJECT
+
 public:
-    explicit JoystickDataModel(QObject *parent = nullptr);
+    explicit JoystickDataModel(QObject* parent = nullptr);
 
 signals:
     void axisMoved(int axis, float normalizedValue);
     void buttonPressed(int button, bool pressed);
-    void hatMoved(int hat, int value); // For hat switches (if needed)
+    void hatMoved(int hat, int value);  // For hat switches (if needed)
 
 public slots:
     void onRawAxisMoved(int axis, int value) {
         // normalize
         float normalized = static_cast<float>(value) / 32767.0f;
-        if (std::abs(value) < 3000) normalized = 0.0f;
+        if (std::abs(value) < 3000)
+            normalized = 0.0f;
         emit axisMoved(axis, normalized);
     }
     void onRawButtonChanged(int button, bool pressed) {
@@ -33,4 +33,4 @@ public slots:
     }
 };
 
-#endif // JOYSTICK_DATAMODEL_H
+#endif  // JOYSTICK_DATAMODEL_H

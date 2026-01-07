@@ -6,6 +6,7 @@
 class ModbusTransport : public Transport {
     Q_OBJECT
     Q_PROPERTY(QObject* client READ clientObject)
+
 public:
     explicit ModbusTransport(QObject* parent = nullptr);
     ~ModbusTransport() override;
@@ -15,15 +16,21 @@ public:
     void sendFrame(const QByteArray& /*frame*/) override { /* no-op */ }
 
     // FIXED: Remove slaveId parameter - it should come from config
-    Q_INVOKABLE QModbusReply* sendReadRequest(const QModbusDataUnit &unit);
-    Q_INVOKABLE QModbusReply* sendWriteRequest(const QModbusDataUnit &unit);
+    Q_INVOKABLE QModbusReply* sendReadRequest(const QModbusDataUnit& unit);
+    Q_INVOKABLE QModbusReply* sendWriteRequest(const QModbusDataUnit& unit);
 
     // FIXED: Add method to get current slave ID
-    int slaveId() const { return m_slaveId; }
+    int slaveId() const {
+        return m_slaveId;
+    }
 
     // Expose client for direct Modbus access (needed by devices)
-    QModbusRtuSerialClient* client() const { return m_client; }
-    QObject* clientObject() const { return m_client; }
+    QModbusRtuSerialClient* client() const {
+        return m_client;
+    }
+    QObject* clientObject() const {
+        return m_client;
+    }
 
 signals:
     void modbusReplyReady(QModbusReply* reply);
@@ -35,5 +42,5 @@ private slots:
 private:
     QModbusRtuSerialClient* m_client;
     QJsonObject m_config;
-    int m_slaveId; // FIXED: Store slave ID from config
+    int m_slaveId;  // FIXED: Store slave ID from config
 };

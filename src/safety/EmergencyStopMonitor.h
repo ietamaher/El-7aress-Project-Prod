@@ -48,10 +48,10 @@
  * @brief Emergency stop event information
  */
 struct EmergencyStopEvent {
-    QDateTime timestamp;           ///< When the event occurred
-    bool wasActivation = false;    ///< true = activated, false = deactivated
-    qint64 durationMs = 0;         ///< Duration of previous state (ms)
-    QString source;                ///< Source identifier (for multi-source systems)
+    QDateTime timestamp;         ///< When the event occurred
+    bool wasActivation = false;  ///< true = activated, false = deactivated
+    qint64 durationMs = 0;       ///< Duration of previous state (ms)
+    QString source;              ///< Source identifier (for multi-source systems)
 };
 
 /**
@@ -65,8 +65,7 @@ struct EmergencyStopEvent {
  * - Event history for audit
  * - Recovery coordination signals
  */
-class EmergencyStopMonitor : public QObject
-{
+class EmergencyStopMonitor : public QObject {
     Q_OBJECT
 
 public:
@@ -131,7 +130,9 @@ public:
      * @brief Check if emergency stop is currently active
      * @return true if emergency stop is active
      */
-    bool isActive() const { return m_isActive; }
+    bool isActive() const {
+        return m_isActive;
+    }
 
     /**
      * @brief Check if system is in recovery period after E-stop
@@ -161,19 +162,25 @@ public:
      * @brief Get timestamp of last activation
      * @return QDateTime of last activation (invalid if never activated)
      */
-    QDateTime lastActivationTime() const { return m_lastActivationTime; }
+    QDateTime lastActivationTime() const {
+        return m_lastActivationTime;
+    }
 
     /**
      * @brief Get timestamp of last deactivation
      * @return QDateTime of last deactivation (invalid if never deactivated)
      */
-    QDateTime lastDeactivationTime() const { return m_lastDeactivationTime; }
+    QDateTime lastDeactivationTime() const {
+        return m_lastDeactivationTime;
+    }
 
     /**
      * @brief Get total activation count since startup
      * @return Number of times E-stop has been activated
      */
-    int activationCount() const { return m_activationCount; }
+    int activationCount() const {
+        return m_activationCount;
+    }
 
     // ============================================================================
     // EVENT HISTORY
@@ -183,7 +190,9 @@ public:
      * @brief Get recent event history
      * @return Vector of recent EmergencyStopEvent records
      */
-    const std::vector<EmergencyStopEvent>& eventHistory() const { return m_eventHistory; }
+    const std::vector<EmergencyStopEvent>& eventHistory() const {
+        return m_eventHistory;
+    }
 
     /**
      * @brief Clear event history
@@ -232,22 +241,22 @@ private:
     // ============================================================================
     // STATE
     // ============================================================================
-    bool m_isActive = false;              ///< Current E-stop state
-    bool m_pendingState = false;          ///< State being debounced
-    bool m_isDebouncing = false;          ///< Currently in debounce period
+    bool m_isActive = false;      ///< Current E-stop state
+    bool m_pendingState = false;  ///< State being debounced
+    bool m_isDebouncing = false;  ///< Currently in debounce period
 
     // ============================================================================
     // TIMING
     // ============================================================================
-    QElapsedTimer m_stateTimer;           ///< Time since last state change
-    QElapsedTimer m_debounceTimer;        ///< Time since debounce started
-    QDateTime m_lastActivationTime;       ///< Timestamp of last activation
-    QDateTime m_lastDeactivationTime;     ///< Timestamp of last deactivation
+    QElapsedTimer m_stateTimer;        ///< Time since last state change
+    QElapsedTimer m_debounceTimer;     ///< Time since debounce started
+    QDateTime m_lastActivationTime;    ///< Timestamp of last activation
+    QDateTime m_lastDeactivationTime;  ///< Timestamp of last deactivation
 
     // ============================================================================
     // STATISTICS
     // ============================================================================
-    int m_activationCount = 0;            ///< Total activations since startup
+    int m_activationCount = 0;  ///< Total activations since startup
 
     // ============================================================================
     // EVENT HISTORY
@@ -272,4 +281,4 @@ private:
     void recordEvent(const EmergencyStopEvent& event);
 };
 
-#endif // EMERGENCYSTOPMONITOR_H
+#endif  // EMERGENCYSTOPMONITOR_H

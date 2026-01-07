@@ -4,8 +4,7 @@
 #include <QModbusDataUnit>
 #include <QDebug>
 
-ServoDriverProtocolParser::ServoDriverProtocolParser(QObject* parent)
-    : ProtocolParser(parent) {
+ServoDriverProtocolParser::ServoDriverProtocolParser(QObject* parent) : ProtocolParser(parent) {
     // Initialize m_data with defaults (connection will be set when data arrives)
     m_data.isConnected = false;
     initializeAlarmMap();
@@ -47,8 +46,7 @@ std::vector<MessagePtr> ServoDriverProtocolParser::parse(QModbusReply* reply) {
         break;
 
     default:
-        qWarning() << "ServoDriverProtocolParser: Unknown register address"
-                   << unit.startAddress();
+        qWarning() << "ServoDriverProtocolParser: Unknown register address" << unit.startAddress();
         break;
     }
 
@@ -68,15 +66,15 @@ MessagePtr ServoDriverProtocolParser::parsePositionReply(const QModbusDataUnit& 
     int32_t positionRaw = (static_cast<int32_t>(unit.value(0)) << 16) | unit.value(1);
     m_data.position = static_cast<float>(positionRaw);
 
-        int32_t speedRaw = (static_cast<int32_t>(unit.value(2)) << 16) | unit.value(3);
+    int32_t speedRaw = (static_cast<int32_t>(unit.value(2)) << 16) | unit.value(3);
     m_data.rpm = static_cast<float>(speedRaw);
 
-        // Torque monitor (registers 10-11)
+    // Torque monitor (registers 10-11)
     if (unit.valueCount() >= 12) {
         int32_t torqueRaw = (static_cast<int32_t>(unit.value(10)) << 16) | unit.value(11);
         m_data.torque = static_cast<float>(torqueRaw);
     } else {
-        m_data.torque = 0.0f; // No torque data available
+        m_data.torque = 0.0f;  // No torque data available
     }
 
     // Return the accumulated data (temperature fields retain previous values)
@@ -133,7 +131,7 @@ MessagePtr ServoDriverProtocolParser::parseAlarmHistoryReply(const QModbusDataUn
     for (int i = 0; i < unit.valueCount(); i += 2) {
         if (i + 1 < unit.valueCount()) {
             uint32_t alarmCode = (static_cast<uint32_t>(unit.value(i)) << 16) | unit.value(i + 1);
-            if (alarmCode != 0) { // Only add non-zero alarm codes
+            if (alarmCode != 0) {  // Only add non-zero alarm codes
                 alarmHistory.append(static_cast<uint16_t>(alarmCode));
             }
         }
@@ -144,7 +142,7 @@ MessagePtr ServoDriverProtocolParser::parseAlarmHistoryReply(const QModbusDataUn
 
 QString ServoDriverProtocolParser::getAlarmDescription(uint16_t alarmCode) {
     return m_alarmMap.value(alarmCode,
-        QString("Unknown Alarm: 0x%1").arg(alarmCode, 4, 16, QChar('0')));
+                            QString("Unknown Alarm: 0x%1").arg(alarmCode, 4, 16, QChar('0')));
 }
 
 void ServoDriverProtocolParser::initializeAlarmMap() {

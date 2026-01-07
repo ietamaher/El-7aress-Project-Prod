@@ -8,8 +8,7 @@
 /**
  * @brief AboutViewModel - Application information for About dialog
  */
-class AboutViewModel : public QObject
-{
+class AboutViewModel : public QObject {
     Q_OBJECT
 
     Q_PROPERTY(QString appName READ appName CONSTANT)
@@ -24,18 +23,36 @@ class AboutViewModel : public QObject
 
 
 public:
-    explicit AboutViewModel(QObject *parent = nullptr);
+    explicit AboutViewModel(QObject* parent = nullptr);
 
-    QString appName() const { return m_appName; }
-    QString appVersion() const { return m_appVersion; }
-    QString buildDate() const { return m_buildDate; }
-    QString qtVersion() const { return m_qtVersion; }
-    QString credits() const { return m_credits; }
-    QString copyright() const { return m_copyright; }
-    QString license() const { return m_license; }
-    QColor accentColor() const { return m_accentColor; }
+    QString appName() const {
+        return m_appName;
+    }
+    QString appVersion() const {
+        return m_appVersion;
+    }
+    QString buildDate() const {
+        return m_buildDate;
+    }
+    QString qtVersion() const {
+        return m_qtVersion;
+    }
+    QString credits() const {
+        return m_credits;
+    }
+    QString copyright() const {
+        return m_copyright;
+    }
+    QString license() const {
+        return m_license;
+    }
+    QColor accentColor() const {
+        return m_accentColor;
+    }
 
-    bool visible() const { return m_visible; }
+    bool visible() const {
+        return m_visible;
+    }
     void setVisible(bool visible);
 
 public slots:
@@ -55,7 +72,7 @@ private:
     QString m_license;
     bool m_visible;
 
-    QColor m_accentColor = QColor(70, 226, 165); // Default green
+    QColor m_accentColor = QColor(70, 226, 165);  // Default green
 };
 
-#endif // ABOUTVIEWMODEL_H
+#endif  // ABOUTVIEWMODEL_H

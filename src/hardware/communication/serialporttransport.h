@@ -6,6 +6,7 @@
 
 class SerialPortTransport : public Transport {
     Q_OBJECT
+
 public:
     explicit SerialPortTransport(QObject* parent = nullptr);
     bool open(const QJsonObject& config) override;
@@ -25,4 +26,3 @@ private:
     int m_retryCount = 0;
     int m_baseDelayMs = 1000;
 };
-

@@ -1,77 +1,33 @@
 #include "systemstatusviewmodel.h"
 #include <QDebug>
 
-SystemStatusViewModel::SystemStatusViewModel(QObject *parent)
-    : QObject(parent)
-    , m_azConnected(false)
-    , m_azPositionText("N/A")
-    , m_azRpmText("N/A")
-    , m_azTorqueText("N/A")
-    , m_azMotorTempText("N/A")
-    , m_azDriverTempText("N/A")
-    , m_azFault(false)
-    , m_elConnected(false)
-    , m_elPositionText("N/A")
-    , m_elRpmText("N/A")
-    , m_elTorqueText("N/A")
-    , m_elMotorTempText("N/A")
-    , m_elDriverTempText("N/A")
-    , m_elFault(false)
-    , m_imuConnected(false)
-    , m_imuRollText("N/A")
-    , m_imuPitchText("N/A")
-    , m_imuYawText("N/A")
-    , m_imuTempText("N/A")
-    , m_lrfConnected(false)
-    , m_lrfDistanceText("N/A")
-    , m_lrfTempText("N/A")
-    , m_lrfLaserCountText("N/A")
-    , m_lrfRawStatusByteText("N/A")
-    , m_lrfFault(false)
-    , m_lrfFaultText("No Faults")
-    , m_dayCamConnected(false)
-    , m_dayCamActive(false)
-    , m_dayCamFovText("N/A")
-    , m_dayCamZoomText("N/A")
-    , m_dayCamFocusText("N/A")
-    , m_dayCamAutofocus(false)
-    , m_dayCamError(false)
-    , m_nightCamConnected(false)
-    , m_nightCamActive(false)
-    , m_nightCamFovText("N/A")
-    , m_nightCamZoomText("N/A")
-    , m_nightCamTempText("N/A")
-    , m_nightCamFfcInProgress(false)
-    , m_nightCamError(false)
-    , m_plc21Connected(false)
-    , m_plc42Connected(false)
-    , m_stationEnabled(false)
-    , m_gunArmed(false)
-    , m_actuatorConnected(false)
-    , m_actuatorPositionText("N/A")
-    , m_actuatorVelocityText("N/A")
-    , m_actuatorTempText("N/A")
-    , m_actuatorVoltageText("N/A")
-    , m_actuatorTorqueText("N/A")
-    , m_actuatorMotorOff(false)
-    , m_actuatorFault(false)
-    , m_actuatorStatusText("N/A")
-    , m_hasAlarms(false)
-    , m_visible(false)
-    , m_accentColor(QColor(70, 226, 165))
-{
-}
+SystemStatusViewModel::SystemStatusViewModel(QObject* parent)
+    : QObject(parent), m_azConnected(false), m_azPositionText("N/A"), m_azRpmText("N/A"),
+      m_azTorqueText("N/A"), m_azMotorTempText("N/A"), m_azDriverTempText("N/A"), m_azFault(false),
+      m_elConnected(false), m_elPositionText("N/A"), m_elRpmText("N/A"), m_elTorqueText("N/A"),
+      m_elMotorTempText("N/A"), m_elDriverTempText("N/A"), m_elFault(false), m_imuConnected(false),
+      m_imuRollText("N/A"), m_imuPitchText("N/A"), m_imuYawText("N/A"), m_imuTempText("N/A"),
+      m_lrfConnected(false), m_lrfDistanceText("N/A"), m_lrfTempText("N/A"),
+      m_lrfLaserCountText("N/A"), m_lrfRawStatusByteText("N/A"), m_lrfFault(false),
+      m_lrfFaultText("No Faults"), m_dayCamConnected(false), m_dayCamActive(false),
+      m_dayCamFovText("N/A"), m_dayCamZoomText("N/A"), m_dayCamFocusText("N/A"),
+      m_dayCamAutofocus(false), m_dayCamError(false), m_nightCamConnected(false),
+      m_nightCamActive(false), m_nightCamFovText("N/A"), m_nightCamZoomText("N/A"),
+      m_nightCamTempText("N/A"), m_nightCamFfcInProgress(false), m_nightCamError(false),
+      m_plc21Connected(false), m_plc42Connected(false), m_stationEnabled(false), m_gunArmed(false),
+      m_actuatorConnected(false), m_actuatorPositionText("N/A"), m_actuatorVelocityText("N/A"),
+      m_actuatorTempText("N/A"), m_actuatorVoltageText("N/A"), m_actuatorTorqueText("N/A"),
+      m_actuatorMotorOff(false), m_actuatorFault(false), m_actuatorStatusText("N/A"),
+      m_hasAlarms(false), m_visible(false), m_accentColor(QColor(70, 226, 165)) {}
 
-void SystemStatusViewModel::setVisible(bool visible)
-{
+void SystemStatusViewModel::setVisible(bool visible) {
     if (m_visible != visible) {
         m_visible = visible;
         emit visibleChanged();
     }
 }
 
-void SystemStatusViewModel::setAccentColor(const QColor& color)
-{
+void SystemStatusViewModel::setAccentColor(const QColor& color) {
     if (m_accentColor != color) {
         m_accentColor = color;
         emit accentColorChanged();
@@ -82,9 +38,8 @@ void SystemStatusViewModel::setAccentColor(const QColor& color)
 // AZIMUTH SERVO
 // ============================================================================
 void SystemStatusViewModel::updateAzimuthServo(bool connected, float position, float rpm,
-                                               float torque, float motorTemp,
-                                               float driverTemp, bool fault)
-{
+                                               float torque, float motorTemp, float driverTemp,
+                                               bool fault) {
     if (m_azConnected != connected) {
         m_azConnected = connected;
         emit azConnectedChanged();
@@ -137,9 +92,8 @@ void SystemStatusViewModel::updateAzimuthServo(bool connected, float position, f
 // ELEVATION SERVO
 // ============================================================================
 void SystemStatusViewModel::updateElevationServo(bool connected, float position, float rpm,
-                                                 float torque, float motorTemp,
-                                                 float driverTemp, bool fault)
-{
+                                                 float torque, float motorTemp, float driverTemp,
+                                                 bool fault) {
     if (m_elConnected != connected) {
         m_elConnected = connected;
         emit elConnectedChanged();
@@ -191,9 +145,8 @@ void SystemStatusViewModel::updateElevationServo(bool connected, float position,
 // ============================================================================
 // IMU
 // ============================================================================
-void SystemStatusViewModel::updateImu(bool connected, double roll, double pitch,
-                                      double yaw, double temp)
-{
+void SystemStatusViewModel::updateImu(bool connected, double roll, double pitch, double yaw,
+                                      double temp) {
     if (m_imuConnected != connected) {
         m_imuConnected = connected;
         emit imuConnectedChanged();
@@ -235,9 +188,8 @@ void SystemStatusViewModel::updateImu(bool connected, double roll, double pitch,
 // LRF
 // ============================================================================
 void SystemStatusViewModel::updateLrf(bool connected, float distance, float temp,
-                                      quint32 laserCount, quint8 rawStatusByte, bool fault, bool noEcho,
-                                      bool laserNotOut, bool overTemp)
-{
+                                      quint32 laserCount, quint8 rawStatusByte, bool fault,
+                                      bool noEcho, bool laserNotOut, bool overTemp) {
     if (m_lrfConnected != connected) {
         m_lrfConnected = connected;
         emit lrfConnectedChanged();
@@ -279,10 +231,14 @@ void SystemStatusViewModel::updateLrf(bool connected, float distance, float temp
             newFaultText = "✓ OK";
         } else {
             QStringList faults;
-            if (fault) faults.append("General Fault");
-            if (noEcho) faults.append("No Echo");
-            if (laserNotOut) faults.append("Laser Not Out");
-            if (overTemp) faults.append("Over Temp");
+            if (fault)
+                faults.append("General Fault");
+            if (noEcho)
+                faults.append("No Echo");
+            if (laserNotOut)
+                faults.append("Laser Not Out");
+            if (overTemp)
+                faults.append("Over Temp");
             newFaultText = "⚠ " + faults.join(", ");
         }
     } else {
@@ -298,10 +254,9 @@ void SystemStatusViewModel::updateLrf(bool connected, float distance, float temp
 // ============================================================================
 // DAY CAMERA
 // ============================================================================
-void SystemStatusViewModel::updateDayCamera(bool connected, bool isActive, float fov,
-                                            quint16 zoom, quint16 focus,
-                                            bool autofocus, bool error, quint8 errorCode)
-{
+void SystemStatusViewModel::updateDayCamera(bool connected, bool isActive, float fov, quint16 zoom,
+                                            quint16 focus, bool autofocus, bool error,
+                                            quint8 errorCode) {
     if (m_dayCamConnected != connected) {
         m_dayCamConnected = connected;
         emit dayCamConnectedChanged();
@@ -344,7 +299,8 @@ void SystemStatusViewModel::updateDayCamera(bool connected, bool isActive, float
         m_dayCamError = error;
         emit dayCamErrorChanged();
     }
-    QString newStatusText = connected ? (error ? getDayCameraErrorDescription(errorCode) : "✓ OK") : "N/A";
+    QString newStatusText =
+        connected ? (error ? getDayCameraErrorDescription(errorCode) : "✓ OK") : "N/A";
     if (m_dayCamStatusText != newStatusText) {
         m_dayCamStatusText = newStatusText;
         emit dayCamStatusTextChanged();
@@ -355,9 +311,8 @@ void SystemStatusViewModel::updateDayCamera(bool connected, bool isActive, float
 // NIGHT CAMERA
 // ============================================================================
 void SystemStatusViewModel::updateNightCamera(bool connected, bool isActive, float fov,
-                                              quint8 digitalZoom, bool ffcInProgress,
-                                              bool error, quint8 errorCode, quint16 videoMode, qint16 fpaTemp)
-{
+                                              quint8 digitalZoom, bool ffcInProgress, bool error,
+                                              quint8 errorCode, quint16 videoMode, qint16 fpaTemp) {
     if (m_nightCamConnected != connected) {
         m_nightCamConnected = connected;
         emit nightCamConnectedChanged();
@@ -403,7 +358,8 @@ void SystemStatusViewModel::updateNightCamera(bool connected, bool isActive, flo
         emit nightCamErrorChanged();
     }
 
-    QString newStatusText = connected ? (error ? getNightCameraErrorDescription(errorCode) : "✓ OK") : "N/A";
+    QString newStatusText =
+        connected ? (error ? getNightCameraErrorDescription(errorCode) : "✓ OK") : "N/A";
     if (m_nightCamStatusText != newStatusText) {
         m_nightCamStatusText = newStatusText;
         emit nightCamStatusTextChanged();
@@ -413,9 +369,8 @@ void SystemStatusViewModel::updateNightCamera(bool connected, bool isActive, flo
 // ============================================================================
 // PLC
 // ============================================================================
-void SystemStatusViewModel::updatePlcStatus(bool plc21Conn, bool plc42Conn,
-                                            bool stationEn, bool gunArm)
-{
+void SystemStatusViewModel::updatePlcStatus(bool plc21Conn, bool plc42Conn, bool stationEn,
+                                            bool gunArm) {
     if (m_plc21Connected != plc21Conn) {
         m_plc21Connected = plc21Conn;
         emit plc21ConnectedChanged();
@@ -447,7 +402,6 @@ void SystemStatusViewModel::updatePlcStatus(bool plc21Conn, bool plc42Conn,
         m_plc42StatusText = plc42Status;
         emit plc42StatusTextChanged();
     }
-
 }
 
 // ============================================================================
@@ -455,8 +409,7 @@ void SystemStatusViewModel::updatePlcStatus(bool plc21Conn, bool plc42Conn,
 // ============================================================================
 void SystemStatusViewModel::updateServoActuator(bool connected, double position, double velocity,
                                                 double temp, double voltage, double torque,
-                                                bool motorOff, bool fault)
-{
+                                                bool motorOff, bool fault) {
     if (m_actuatorConnected != connected) {
         m_actuatorConnected = connected;
         emit actuatorConnectedChanged();
@@ -504,9 +457,12 @@ void SystemStatusViewModel::updateServoActuator(bool connected, double position,
 
     QString statusText;
     if (connected) {
-        if (motorOff) statusText = "⚠ MOTOR OFF";
-        else if (fault) statusText = "⚠ FAULT";
-        else statusText = "✓ OK";
+        if (motorOff)
+            statusText = "⚠ MOTOR OFF";
+        else if (fault)
+            statusText = "⚠ FAULT";
+        else
+            statusText = "✓ OK";
     } else {
         statusText = "N/A";
     }
@@ -520,8 +476,7 @@ void SystemStatusViewModel::updateServoActuator(bool connected, double position,
 // ============================================================================
 // ALARMS
 // ============================================================================
-void SystemStatusViewModel::updateAlarms(const QStringList& alarms)
-{
+void SystemStatusViewModel::updateAlarms(const QStringList& alarms) {
     if (m_alarmsList != alarms) {
         m_alarmsList = alarms;
         emit alarmsListChanged();
@@ -535,32 +490,47 @@ void SystemStatusViewModel::updateAlarms(const QStringList& alarms)
 }
 
 
-QString SystemStatusViewModel::getNightCameraErrorDescription(quint8 errorCode) const
-{
+QString SystemStatusViewModel::getNightCameraErrorDescription(quint8 errorCode) const {
     switch (errorCode) {
-    case 0x01: return "⚠ Camera Busy";
-    case 0x02: return "⚠ Not Ready";
-    case 0x03: return "⚠ Data Out of Range";
-    case 0x04: return "⚠ Checksum Error";
-    case 0x05: return "⚠ Undefined Process";
-    case 0x06: return "⚠ Undefined Function";
-    case 0x07: return "⚠ Timeout";
-    case 0x09: return "⚠ Byte Count Mismatch";
-    case 0x0A: return "⚠ Feature Not Enabled";
-    default: return QString("⚠ Error 0x%1").arg(errorCode, 2, 16, QChar('0')).toUpper();
+    case 0x01:
+        return "⚠ Camera Busy";
+    case 0x02:
+        return "⚠ Not Ready";
+    case 0x03:
+        return "⚠ Data Out of Range";
+    case 0x04:
+        return "⚠ Checksum Error";
+    case 0x05:
+        return "⚠ Undefined Process";
+    case 0x06:
+        return "⚠ Undefined Function";
+    case 0x07:
+        return "⚠ Timeout";
+    case 0x09:
+        return "⚠ Byte Count Mismatch";
+    case 0x0A:
+        return "⚠ Feature Not Enabled";
+    default:
+        return QString("⚠ Error 0x%1").arg(errorCode, 2, 16, QChar('0')).toUpper();
     }
 }
 
-QString SystemStatusViewModel::getDayCameraErrorDescription(quint8 errorCode) const
-{
+QString SystemStatusViewModel::getDayCameraErrorDescription(quint8 errorCode) const {
     // Add VISCA-specific error codes
     switch (errorCode) {
-    case 0x01: return "⚠ Message Length Error";
-    case 0x02: return "⚠ Syntax Error";
-    case 0x03: return "⚠ Command Buffer Full";
-    case 0x04: return "⚠ Command Canceled";
-    case 0x05: return "⚠ No Socket";
-    case 0x41: return "⚠ Command Not Executable";
-    default: return QString("⚠ Error 0x%1").arg(errorCode, 2, 16, QChar('0')).toUpper();
+    case 0x01:
+        return "⚠ Message Length Error";
+    case 0x02:
+        return "⚠ Syntax Error";
+    case 0x03:
+        return "⚠ Command Buffer Full";
+    case 0x04:
+        return "⚠ Command Canceled";
+    case 0x05:
+        return "⚠ No Socket";
+    case 0x41:
+        return "⚠ Command Not Executable";
+    default:
+        return QString("⚠ Error 0x%1").arg(errorCode, 2, 16, QChar('0')).toUpper();
     }
 }

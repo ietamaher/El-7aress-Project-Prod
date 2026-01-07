@@ -4,8 +4,7 @@
 #include <QObject>
 #include <QColor>
 
-class ZeroingViewModel : public QObject
-{
+class ZeroingViewModel : public QObject {
     Q_OBJECT
     Q_PROPERTY(bool visible READ visible NOTIFY visibleChanged)
     Q_PROPERTY(QString title READ title NOTIFY titleChanged)
@@ -16,15 +15,29 @@ class ZeroingViewModel : public QObject
     Q_PROPERTY(float elevationOffset READ elevationOffset NOTIFY elevationOffsetChanged)
 
 public:
-    explicit ZeroingViewModel(QObject *parent = nullptr);
+    explicit ZeroingViewModel(QObject* parent = nullptr);
 
-    bool visible() const { return m_visible; }
-    QString title() const { return m_title; }
-    QString instruction() const { return m_instruction; }
-    QString status() const { return m_status; }
-    bool showOffsets() const { return m_showOffsets; }
-    float azimuthOffset() const { return m_azimuthOffset; }
-    float elevationOffset() const { return m_elevationOffset; }
+    bool visible() const {
+        return m_visible;
+    }
+    QString title() const {
+        return m_title;
+    }
+    QString instruction() const {
+        return m_instruction;
+    }
+    QString status() const {
+        return m_status;
+    }
+    bool showOffsets() const {
+        return m_showOffsets;
+    }
+    float azimuthOffset() const {
+        return m_azimuthOffset;
+    }
+    float elevationOffset() const {
+        return m_elevationOffset;
+    }
 
 public slots:
     void setVisible(bool visible);
@@ -54,7 +67,7 @@ private:
     bool m_showOffsets;
     float m_azimuthOffset;
     float m_elevationOffset;
-    QColor m_accentColor = QColor(70, 226, 165); // Default green
+    QColor m_accentColor = QColor(70, 226, 165);  // Default green
 };
 
-#endif // ZEROINGVIEWMODEL_H
+#endif  // ZEROINGVIEWMODEL_H

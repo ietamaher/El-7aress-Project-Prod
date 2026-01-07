@@ -12,17 +12,17 @@
  * @brief Register addresses for servo driver Modbus communication
  */
 namespace ServoDriverRegisters {
-    constexpr int POSITION_START_ADDR = 204;
-    constexpr int POSITION_REG_COUNT = 12;
-    constexpr int TEMPERATURE_START_ADDR = 248;
-    constexpr int TEMPERATURE_REG_COUNT = 4;
-    constexpr int ALARM_STATUS_ADDR = 172;
-    constexpr int ALARM_STATUS_REG_COUNT = 20;
-    constexpr int ALARM_HISTORY_ADDR = 130;
-    constexpr int ALARM_HISTORY_REG_COUNT = 20;
-    constexpr int ALARM_RESET_ADDR = 388;
-    constexpr int ALARM_HISTORY_CLEAR_ADDR = 386;
-}
+constexpr int POSITION_START_ADDR = 204;
+constexpr int POSITION_REG_COUNT = 12;
+constexpr int TEMPERATURE_START_ADDR = 248;
+constexpr int TEMPERATURE_REG_COUNT = 4;
+constexpr int ALARM_STATUS_ADDR = 172;
+constexpr int ALARM_STATUS_REG_COUNT = 20;
+constexpr int ALARM_HISTORY_ADDR = 130;
+constexpr int ALARM_HISTORY_REG_COUNT = 20;
+constexpr int ALARM_RESET_ADDR = 388;
+constexpr int ALARM_HISTORY_CLEAR_ADDR = 386;
+}  // namespace ServoDriverRegisters
 
 /**
  * @brief Parser for Modbus RTU servo driver protocol
@@ -35,12 +35,15 @@ namespace ServoDriverRegisters {
  */
 class ServoDriverProtocolParser : public ProtocolParser {
     Q_OBJECT
+
 public:
     explicit ServoDriverProtocolParser(QObject* parent = nullptr);
     ~ServoDriverProtocolParser() override = default;
 
     // This parser does not use raw byte streaming
-    std::vector<MessagePtr> parse(const QByteArray& /*rawData*/) override { return {}; }
+    std::vector<MessagePtr> parse(const QByteArray& /*rawData*/) override {
+        return {};
+    }
 
     // Primary parsing method for Modbus replies
     std::vector<MessagePtr> parse(QModbusReply* reply) override;

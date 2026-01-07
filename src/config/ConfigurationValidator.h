@@ -14,8 +14,7 @@ class DeviceConfiguration;
  * are within acceptable ranges and meet system requirements before
  * the system starts.
  */
-class ConfigurationValidator
-{
+class ConfigurationValidator {
 public:
     /**
      * @brief Validates all configuration sections
@@ -27,13 +26,17 @@ public:
      * @brief Gets list of validation errors
      * @return List of error messages from last validation
      */
-    static const QStringList& errors() { return m_errors; }
+    static const QStringList& errors() {
+        return m_errors;
+    }
 
     /**
      * @brief Gets list of validation warnings
      * @return List of warning messages from last validation
      */
-    static const QStringList& warnings() { return m_warnings; }
+    static const QStringList& warnings() {
+        return m_warnings;
+    }
 
 private:
     // Individual validation methods
@@ -54,11 +57,12 @@ private:
 
     static bool validateRange(float value, float min, float max, const QString& fieldName);
     static bool validateRange(int value, int min, int max, const QString& fieldName);
-    static bool validateFileExists(const QString& path, const QString& fieldName, bool required = true);
+    static bool validateFileExists(const QString& path, const QString& fieldName,
+                                   bool required = true);
     static bool validatePortPath(const QString& port, const QString& fieldName);
 
     static QStringList m_errors;
     static QStringList m_warnings;
 };
 
-#endif // CONFIGURATIONVALIDATOR_H
+#endif  // CONFIGURATIONVALIDATOR_H

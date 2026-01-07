@@ -46,8 +46,8 @@ enum class SafetyDenialReason {
     InNoFireZone,
     InNoTraverseZone,
     ChargingInProgress,
-    ChargeLockoutActive,       ///< 4-second lockout after charge completion (CROWS M153)
-    ChargeFaultActive,         ///< Charging in fault state
+    ChargeLockoutActive,  ///< 4-second lockout after charge completion (CROWS M153)
+    ChargeFaultActive,    ///< Charging in fault state
     HomingInProgress,
     ElevationLimitReached,
     PlcCommunicationLost,
@@ -84,8 +84,7 @@ enum class SafetyDenialReason {
  * }
  * @endcode
  */
-class SafetyInterlock : public QObject
-{
+class SafetyInterlock : public QObject {
     Q_OBJECT
 
 public:
@@ -247,8 +246,7 @@ private:
     // ============================================================================
     // AUDIT LOGGING HELPERS
     // ============================================================================
-    void logAuditEvent(const QString& operation, bool permitted,
-                       SafetyDenialReason reason) const;
+    void logAuditEvent(const QString& operation, bool permitted, SafetyDenialReason reason) const;
 
     SystemStateModel* m_stateModel = nullptr;
     mutable QMutex m_mutex;
@@ -270,4 +268,4 @@ private:
     mutable SafetyDenialReason m_lastMoveDenialReason = SafetyDenialReason::None;
 };
 
-#endif // SAFETYINTERLOCK_H
+#endif  // SAFETYINTERLOCK_H

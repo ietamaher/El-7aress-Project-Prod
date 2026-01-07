@@ -3,9 +3,9 @@
 
 #include "gimbalmotionmodebase.h"
 
-class ManualMotionMode : public GimbalMotionModeBase
-{
+class ManualMotionMode : public GimbalMotionModeBase {
     Q_OBJECT
+
 public:
     explicit ManualMotionMode(QObject* parent = nullptr);
 
@@ -35,7 +35,7 @@ private:
     // This value controls how quickly the gimbal ramps up to speed.
     // A lower value gives a smoother, gentler response.
     // A higher value gives a more responsive, "tighter" feel.
-    static constexpr double MAX_MANUAL_ACCEL_DEGS2 = 100.0; // Tune this value!
+    static constexpr double MAX_MANUAL_ACCEL_DEGS2 = 100.0;  // Tune this value!
     static constexpr float SPEED_MULTIPLIER = 1.0f;
     // NOTE: UPDATE_INTERVAL_S() is now a function in base class (runtime-configurable)
 
@@ -46,7 +46,6 @@ private:
     // Filter state variables
     double m_filteredAzJoystick = 0.0;
     double m_filteredElJoystick = 0.0;
-
 };
 
-#endif // MANUALMOTIONMODE_H
+#endif  // MANUALMOTIONMODE_H

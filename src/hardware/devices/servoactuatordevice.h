@@ -44,21 +44,25 @@ class Message;
  */
 class ServoActuatorDevice : public TemplatedDevice<ServoActuatorData> {
     Q_OBJECT
+
 public:
     explicit ServoActuatorDevice(const QString& identifier, QObject* parent = nullptr);
     ~ServoActuatorDevice() override;
 
     // Device identification
-    QString identifier() const { return m_identifier; }
+    QString identifier() const {
+        return m_identifier;
+    }
 
     // Dependency injection (called before initialize)
-    Q_INVOKABLE void setDependencies(Transport* transport,
-                                      ServoActuatorProtocolParser* parser);
+    Q_INVOKABLE void setDependencies(Transport* transport, ServoActuatorProtocolParser* parser);
 
     // IDevice interface (device lifecycle)
     Q_INVOKABLE bool initialize() override;
     void shutdown() override;
-    DeviceType type() const override { return DeviceType::ServoActuator; }
+    DeviceType type() const override {
+        return DeviceType::ServoActuator;
+    }
 
     // Public API - Motion Control
     Q_INVOKABLE void moveToPosition(double position_mm);
@@ -115,8 +119,8 @@ private:
 
     static constexpr int COMMAND_TIMEOUT_MS = 1000;
     static constexpr int INTER_COMMAND_DELAY_MS = 10;
-    static constexpr int STATUS_CHECK_INTERVAL_MS = 50;  // Check status every 50 mseconds
+    static constexpr int STATUS_CHECK_INTERVAL_MS = 50;     // Check status every 50 mseconds
     static constexpr int COMMUNICATION_TIMEOUT_MS = 10000;  // 3 seconds without data = disconnected
 };
 
-#endif // SERVOACTUATORDEVICE_H
+#endif  // SERVOACTUATORDEVICE_H

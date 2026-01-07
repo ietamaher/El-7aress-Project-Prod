@@ -5,6 +5,7 @@
 
 class Transport : public QObject {
     Q_OBJECT
+
 public:
     explicit Transport(QObject* parent = nullptr) : QObject(parent) {}
     virtual bool open(const QJsonObject& config) = 0;

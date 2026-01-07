@@ -11,10 +11,10 @@
  * @brief Physical constants for servo actuator
  */
 namespace ServoActuatorConstants {
-    constexpr double SCREW_LEAD_MM = 3.175;
-    constexpr int COUNTS_PER_REVOLUTION = 1024;
-    constexpr int RETRACTED_ENDSTOP_OFFSET = 1024;
-}
+constexpr double SCREW_LEAD_MM = 3.175;
+constexpr int COUNTS_PER_REVOLUTION = 1024;
+constexpr int RETRACTED_ENDSTOP_OFFSET = 1024;
+}  // namespace ServoActuatorConstants
 
 /**
  * @brief Parser for serial ASCII-based servo actuator protocol
@@ -27,6 +27,7 @@ namespace ServoActuatorConstants {
  */
 class ServoActuatorProtocolParser : public ProtocolParser {
     Q_OBJECT
+
 public:
     explicit ServoActuatorProtocolParser(QObject* parent = nullptr);
     ~ServoActuatorProtocolParser() override = default;

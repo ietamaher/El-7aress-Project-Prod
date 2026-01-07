@@ -113,8 +113,8 @@ struct FrameData {
 
     // Charging Status (for OSD display)
     ChargingState chargingState = ChargingState::Idle;  // Current FSM state
-    bool chargeCycleInProgress = false;  // FSM is running (for GUI animation)
-    bool weaponCharged = false;           // Round chambered (inferred from successful charge cycle)
+    bool chargeCycleInProgress = false;                 // FSM is running (for GUI animation)
+    bool weaponCharged = false;  // Round chambered (inferred from successful charge cycle)
 
     // Ballistics - Zeroing
     bool zeroingModeActive = false;
@@ -130,8 +130,8 @@ struct FrameData {
     float calculatedCrosswindMS = 0.0f;
 
     // Ballistics - Lead Angle Compensation
-    bool leadAngleActive = false;       // LAC is engaged (lead applied to CCIP)
-    bool lacArmed = false;              // LAC is armed (rates latched, waiting for fire trigger)
+    bool leadAngleActive = false;  // LAC is engaged (lead applied to CCIP)
+    bool lacArmed = false;         // LAC is armed (rates latched, waiting for fire trigger)
     LeadAngleStatus leadAngleStatus;
     float leadAngleOffsetAz_deg;
     float leadAngleOffsetEl_deg;
@@ -201,8 +201,7 @@ struct FrameData {
  * @endcode
  * This reduces 4-8 ms per frame on Jetson Xavier NX.
  */
-class CameraVideoStreamDevice : public QThread
-{
+class CameraVideoStreamDevice : public QThread {
     Q_OBJECT
 
 public:
@@ -210,12 +209,9 @@ public:
     // PUBLIC INTERFACE
     // ============================================================================
 
-    explicit CameraVideoStreamDevice(int cameraIndex,
-                                     const QString &deviceName,
-                                     int sourceWidth,
-                                     int sourceHeight,
-                                     SystemStateModel* stateModel,
-                                     QObject *parent = nullptr);
+    explicit CameraVideoStreamDevice(int cameraIndex, const QString& deviceName, int sourceWidth,
+                                     int sourceHeight, SystemStateModel* stateModel,
+                                     QObject* parent = nullptr);
     ~CameraVideoStreamDevice() override;
 
     void stop();
@@ -223,12 +219,12 @@ public:
 public slots:
     void setTrackingEnabled(bool enabled);
     void setDetectionEnabled(bool enabled);
-    void onSystemStateChanged(const SystemStateData &newState);
+    void onSystemStateChanged(const SystemStateData& newState);
 
 signals:
-    void frameDataReady(const FrameData &data);
-    void processingError(int cameraIndex, const QString &errorMessage);
-    void statusUpdate(int cameraIndex, const QString &statusMessage);
+    void frameDataReady(const FrameData& data);
+    void processingError(int cameraIndex, const QString& errorMessage);
+    void statusUpdate(int cameraIndex, const QString& statusMessage);
 
 protected:
     // ============================================================================
@@ -245,19 +241,20 @@ private:
     // GStreamer Pipeline
     bool initializeGStreamer();
     void cleanupGStreamer();
-    static GstFlowReturn on_new_sample_from_sink(GstAppSink *sink, gpointer user_data);
-    GstFlowReturn handleNewSample(GstAppSink *sink);
+    static GstFlowReturn on_new_sample_from_sink(GstAppSink* sink, gpointer user_data);
+    GstFlowReturn handleNewSample(GstAppSink* sink);
     void frameProcessingConsumer();  // ✅ Non-blocking frame consumer loop (latency fix)
 
     // VPI Processing
     bool initializeVPI();
     void cleanupVPI();
-    bool processFrame(GstBuffer *buffer);
-    bool initializeFirstTarget(VPIImage vpiFrameInput, float boxX, float boxY, float boxW, float boxH);
+    bool processFrame(GstBuffer* buffer);
+    bool initializeFirstTarget(VPIImage vpiFrameInput, float boxX, float boxY, float boxW,
+                               float boxH);
     bool runTrackingCycle(VPIImage vpiFrameInput);
 
     // Utilities
-    QImage cvMatToQImage(const cv::Mat &inMat);
+    QImage cvMatToQImage(const cv::Mat& inMat);
 
     // ============================================================================
     // MEMBER VARIABLES
@@ -275,9 +272,9 @@ private:
     std::atomic<bool> m_abortRequest;
 
     // --- GStreamer Components ---
-    GstElement *m_pipeline;
-    GstElement *m_appSink;
-    GMainLoop *m_gstLoop;
+    GstElement* m_pipeline;
+    GstElement* m_appSink;
+    GMainLoop* m_gstLoop;
 
     // --- Non-blocking Frame Queue (Latency Fix) ---
     // Expert recommendation: Drop old frames, keep only latest frame
@@ -319,7 +316,8 @@ private:
     QElapsedTimer m_lastDetectionTime;
     bool m_detectionInProgress;
     cv::Mat m_detectionFrame;
-    QFuture<void> m_detectionFuture;  // ✅ MEMORY LEAK FIX: Track async task to prevent accumulation
+    QFuture<void>
+        m_detectionFuture;  // ✅ MEMORY LEAK FIX: Track async task to prevent accumulation
 
     // --- OpenCV Buffers ---
     cv::Mat m_yuy2_host_buffer;
@@ -382,8 +380,8 @@ private:
     float m_currentCalculatedCrosswind;
 
     // Ballistics - Lead Angle
-    bool m_isLacActiveForReticle;       // LAC is engaged (lead applied to CCIP)
-    bool m_isLacArmed;                  // LAC is armed (rates latched, waiting for fire trigger)
+    bool m_isLacActiveForReticle;  // LAC is engaged (lead applied to CCIP)
+    bool m_isLacArmed;             // LAC is armed (rates latched, waiting for fire trigger)
     LeadAngleStatus m_currentLeadAngleStatus;
     float m_currentLeadAngleOffsetAz;
     float m_currentLeadAngleOffsetEl;
@@ -421,4 +419,4 @@ private:
     int m_frameCount;
 };
 
-#endif // CAMERAVIDEOSTREAMDEVICE_H
+#endif  // CAMERAVIDEOSTREAMDEVICE_H

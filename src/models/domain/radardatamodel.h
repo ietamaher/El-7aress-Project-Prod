@@ -5,23 +5,22 @@
 #include "hardware/devices/radardevice.h"
 #include <QVector>
 
-class RadarDataModel : public QObject
-{
+class RadarDataModel : public QObject {
     Q_OBJECT
-public:
-    explicit RadarDataModel(QObject *parent = nullptr)
-        : QObject(parent)
-    {}
 
-    QVector<RadarData> data() const { return m_data; }
+public:
+    explicit RadarDataModel(QObject* parent = nullptr) : QObject(parent) {}
+
+    QVector<RadarData> data() const {
+        return m_data;
+    }
 
 signals:
-    void dataChanged(const QVector<RadarData> &newData);
+    void dataChanged(const QVector<RadarData>& newData);
 
 public slots:
     // Called whenever the device has new data
-    void updateData(const QVector<RadarData> &newData)
-    {
+    void updateData(const QVector<RadarData>& newData) {
         if (newData != m_data) {
             m_data = newData;
             emit dataChanged(m_data);
@@ -32,4 +31,4 @@ private:
     QVector<RadarData> m_data;
 };
 
-#endif // RADARDATAMODEL_H
+#endif  // RADARDATAMODEL_H

@@ -36,12 +36,12 @@ private:
     enum DeviceCode : quint8 { LRF = 0x07 };
 
     // Protocol logic
-    quint8 calculateChecksum(const QByteArray &body) const;
-    bool verifyChecksum(const QByteArray &packet) const;
-    MessagePtr handleResponse(const QByteArray &response);
+    quint8 calculateChecksum(const QByteArray& body) const;
+    bool verifyChecksum(const QByteArray& packet) const;
+    MessagePtr handleResponse(const QByteArray& response);
 
     // Read buffer for partial packets
     QByteArray m_readBuffer;
 };
 
-#endif // LRFPROTOCOLPARSER_H
+#endif  // LRFPROTOCOLPARSER_H

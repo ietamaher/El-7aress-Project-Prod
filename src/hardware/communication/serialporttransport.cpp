@@ -1,9 +1,7 @@
 #include "serialporttransport.h"
 #include <QDebug>
 
-SerialPortTransport::SerialPortTransport(QObject* parent)
-    : Transport(parent)
-{
+SerialPortTransport::SerialPortTransport(QObject* parent) : Transport(parent) {
     m_reconnectTimer.setSingleShot(true);
     connect(&m_reconnectTimer, &QTimer::timeout, this, &SerialPortTransport::attemptReconnect);
 }
@@ -40,13 +38,15 @@ bool SerialPortTransport::open(const QJsonObject& config) {
 }
 
 void SerialPortTransport::close() {
-    if (m_port.isOpen()) m_port.close();
+    if (m_port.isOpen())
+        m_port.close();
     m_reconnectTimer.stop();
     emit connectionStateChanged(false);
 }
 
 void SerialPortTransport::sendFrame(const QByteArray& frame) {
-    if (m_port.isOpen()) m_port.write(frame);
+    if (m_port.isOpen())
+        m_port.write(frame);
 }
 
 void SerialPortTransport::onReadyRead() {
@@ -55,7 +55,8 @@ void SerialPortTransport::onReadyRead() {
 }
 
 void SerialPortTransport::onError(QSerialPort::SerialPortError error) {
-    if (error == QSerialPort::NoError) return;
+    if (error == QSerialPort::NoError)
+        return;
     QString err = m_port.errorString();
     emit linkError(err);
 
@@ -69,7 +70,8 @@ void SerialPortTransport::onError(QSerialPort::SerialPortError error) {
 }
 
 void SerialPortTransport::attemptReconnect() {
-    if (m_port.isOpen()) m_port.close();
+    if (m_port.isOpen())
+        m_port.close();
     // Try reopen with stored config
     open(m_config);
 }

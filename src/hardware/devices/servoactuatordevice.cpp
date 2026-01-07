@@ -5,23 +5,19 @@
 #include <QDebug>
 
 ServoActuatorDevice::ServoActuatorDevice(const QString& identifier, QObject* parent)
-    : TemplatedDevice<ServoActuatorData>(parent),
-      m_identifier(identifier),
-      m_commandTimeoutTimer(new QTimer(this)),
-      m_statusCheckTimer(new QTimer(this)),
-      m_communicationWatchdog(new QTimer(this))
-{
+    : TemplatedDevice<ServoActuatorData>(parent), m_identifier(identifier),
+      m_commandTimeoutTimer(new QTimer(this)), m_statusCheckTimer(new QTimer(this)),
+      m_communicationWatchdog(new QTimer(this)) {
     m_commandTimeoutTimer->setSingleShot(true);
-    connect(m_commandTimeoutTimer, &QTimer::timeout,
-            this, &ServoActuatorDevice::handleCommandTimeout);
+    connect(m_commandTimeoutTimer, &QTimer::timeout, this,
+            &ServoActuatorDevice::handleCommandTimeout);
 
-    connect(m_statusCheckTimer, &QTimer::timeout,
-            this, &ServoActuatorDevice::checkActuatorStatus);
+    connect(m_statusCheckTimer, &QTimer::timeout, this, &ServoActuatorDevice::checkActuatorStatus);
 
     m_communicationWatchdog->setSingleShot(true);
     m_communicationWatchdog->setInterval(COMMUNICATION_TIMEOUT_MS);
-    connect(m_communicationWatchdog, &QTimer::timeout,
-            this, &ServoActuatorDevice::onCommunicationWatchdogTimeout);
+    connect(m_communicationWatchdog, &QTimer::timeout, this,
+            &ServoActuatorDevice::onCommunicationWatchdogTimeout);
 }
 
 ServoActuatorDevice::~ServoActuatorDevice() {
@@ -31,7 +27,7 @@ ServoActuatorDevice::~ServoActuatorDevice() {
 }
 
 void ServoActuatorDevice::setDependencies(Transport* transport,
-                                           ServoActuatorProtocolParser* parser) {
+                                          ServoActuatorProtocolParser* parser) {
     m_transport = transport;
     m_parser = parser;
 
@@ -40,12 +36,10 @@ void ServoActuatorDevice::setDependencies(Transport* transport,
     m_parser->setParent(this);
 
     // Connect transport signals
-    connect(m_transport, &Transport::frameReceived,
-            this, &ServoActuatorDevice::onFrameReceived);
+    connect(m_transport, &Transport::frameReceived, this, &ServoActuatorDevice::onFrameReceived);
 
     // Handle transport disconnect (but not connect - we only show connected when we receive valid data)
-    connect(m_transport, &Transport::connectionStateChanged,
-            this, [this](bool connected) {
+    connect(m_transport, &Transport::connectionStateChanged, this, [this](bool connected) {
         if (!connected) {
             onTransportDisconnected();
         }
@@ -99,7 +93,8 @@ void ServoActuatorDevice::shutdown() {
 }
 
 void ServoActuatorDevice::onFrameReceived(const QByteArray& frame) {
-    if (!m_parser) return;
+    if (!m_parser)
+        return;
 
     // Parse frame into messages
     auto messages = m_parser->parse(frame);
@@ -140,8 +135,8 @@ void ServoActuatorDevice::processMessage(const Message& message) {
         m_pendingCommand.clear();
         m_parser->setPendingCommand("");  // Clear parser's pending command
 
-        emit commandError(QString("Command '%1' rejected: %2")
-                          .arg(nackMsg->command(), nackMsg->errorDetails()));
+        emit commandError(
+            QString("Command '%1' rejected: %2").arg(nackMsg->command(), nackMsg->errorDetails()));
 
         // Process next command if any
         if (!m_commandQueue.isEmpty()) {
@@ -240,8 +235,7 @@ void ServoActuatorDevice::handleCommandTimeout() {
 
     // Try next command if any
     if (!m_commandQueue.isEmpty()) {
-        QTimer::singleShot(INTER_COMMAND_DELAY_MS, this,
-                           &ServoActuatorDevice::processNextCommand);
+        QTimer::singleShot(INTER_COMMAND_DELAY_MS, this, &ServoActuatorDevice::processNextCommand);
     }
 }
 
@@ -374,6 +368,6 @@ void ServoActuatorDevice::onTransportDisconnected() {
 
 void ServoActuatorDevice::onCommunicationWatchdogTimeout() {
     //qWarning() << m_identifier << "Communication timeout - no data received for"
-   //            << COMMUNICATION_TIMEOUT_MS << "ms";
+    //            << COMMUNICATION_TIMEOUT_MS << "ms";
     setConnectionState(false);
 }

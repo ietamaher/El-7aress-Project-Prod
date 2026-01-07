@@ -11,13 +11,13 @@
  * @brief Register addresses for PLC21 Modbus communication
  */
 namespace Plc21Registers {
-    constexpr int DIGITAL_INPUTS_START_ADDR = 0;
-    constexpr int DIGITAL_INPUTS_COUNT = 13;
-    constexpr int ANALOG_INPUTS_START_ADDR = 0;
-    constexpr int ANALOG_INPUTS_COUNT = 6;
-    constexpr int DIGITAL_OUTPUTS_START_ADDR = 0;
-    constexpr int DIGITAL_OUTPUTS_COUNT = 8;
-}
+constexpr int DIGITAL_INPUTS_START_ADDR = 0;
+constexpr int DIGITAL_INPUTS_COUNT = 13;
+constexpr int ANALOG_INPUTS_START_ADDR = 0;
+constexpr int ANALOG_INPUTS_COUNT = 6;
+constexpr int DIGITAL_OUTPUTS_START_ADDR = 0;
+constexpr int DIGITAL_OUTPUTS_COUNT = 8;
+}  // namespace Plc21Registers
 
 /**
  * @brief Parser for Modbus RTU PLC21 protocol
@@ -30,12 +30,15 @@ namespace Plc21Registers {
  */
 class Plc21ProtocolParser : public ProtocolParser {
     Q_OBJECT
+
 public:
     explicit Plc21ProtocolParser(QObject* parent = nullptr);
     ~Plc21ProtocolParser() override = default;
 
     // This parser does not use raw byte streaming
-    std::vector<MessagePtr> parse(const QByteArray& /*rawData*/) override { return {}; }
+    std::vector<MessagePtr> parse(const QByteArray& /*rawData*/) override {
+        return {};
+    }
 
     // Primary parsing method for Modbus replies
     std::vector<MessagePtr> parse(QModbusReply* reply) override;

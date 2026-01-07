@@ -6,8 +6,7 @@
 /**
  * @brief ViewModel for TRP parameter panel
  */
-class TRPParameterViewModel : public QObject
-{
+class TRPParameterViewModel : public QObject {
     Q_OBJECT
 
     Q_PROPERTY(int locationPage READ locationPage NOTIFY locationPageChanged)
@@ -27,13 +26,23 @@ public:
     };
     Q_ENUM(Field)
 
-    explicit TRPParameterViewModel(QObject *parent = nullptr);
+    explicit TRPParameterViewModel(QObject* parent = nullptr);
 
-    int locationPage() const { return m_locationPage; }
-    int trpInPage() const { return m_trpInPage; }
-    float haltTime() const { return m_haltTime; }
-    int activeField() const { return m_activeField; }
-    bool isEditingValue() const { return m_isEditingValue; }
+    int locationPage() const {
+        return m_locationPage;
+    }
+    int trpInPage() const {
+        return m_trpInPage;
+    }
+    float haltTime() const {
+        return m_haltTime;
+    }
+    int activeField() const {
+        return m_activeField;
+    }
+    bool isEditingValue() const {
+        return m_isEditingValue;
+    }
 
 public slots:
     void setLocationPage(int page);
@@ -57,4 +66,4 @@ private:
     bool m_isEditingValue = false;
 };
 
-#endif // TRPPARAMETERVIEWMODEL_H
+#endif  // TRPPARAMETERVIEWMODEL_H

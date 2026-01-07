@@ -10,25 +10,24 @@
  * It provides a simple interface to update the data and notifies observers
  * when the data has changed.
  */
-class Plc42DataModel : public QObject
-{
+class Plc42DataModel : public QObject {
     Q_OBJECT
+
 public:
-    explicit Plc42DataModel(QObject *parent = nullptr)
-        : QObject(parent)
-    {}
+    explicit Plc42DataModel(QObject* parent = nullptr) : QObject(parent) {}
 
     // Return the current PLC42 panel data.
-    Plc42Data data() const { return m_data; }
+    Plc42Data data() const {
+        return m_data;
+    }
 
 signals:
     /// Emitted whenever the panel data is updated.
-    void dataChanged(const  Plc42Data &updatedData);
+    void dataChanged(const Plc42Data& updatedData);
 
 public slots:
     /// Update the panel data; if the data has changed, emit dataChanged.
-    void updateData(const  Plc42Data &newData)
-    {
+    void updateData(const Plc42Data& newData) {
         if (newData != m_data) {
             m_data = newData;
             emit dataChanged(m_data);
@@ -39,5 +38,4 @@ private:
     Plc42Data m_data;
 };
 
-#endif // PLC42DATAMODEL_H
-
+#endif  // PLC42DATAMODEL_H

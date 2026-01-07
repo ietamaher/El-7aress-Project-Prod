@@ -9,8 +9,7 @@
 MotionTuningConfig MotionTuningConfig::m_instance;
 bool MotionTuningConfig::m_loaded = false;
 
-bool MotionTuningConfig::load(const QString& path)
-{
+bool MotionTuningConfig::load(const QString& path) {
     qInfo() << "[MotionTuningConfig] Loading from:" << path;
 
     if (loadFromFile(path)) {
@@ -24,8 +23,7 @@ bool MotionTuningConfig::load(const QString& path)
     return false;
 }
 
-const MotionTuningConfig& MotionTuningConfig::instance()
-{
+const MotionTuningConfig& MotionTuningConfig::instance() {
     if (!m_loaded) {
         qWarning() << "[MotionTuningConfig] Configuration not loaded! Using defaults.";
         qWarning() << "[MotionTuningConfig] Call load() before instance()";
@@ -33,13 +31,11 @@ const MotionTuningConfig& MotionTuningConfig::instance()
     return m_instance;
 }
 
-bool MotionTuningConfig::isLoaded()
-{
+bool MotionTuningConfig::isLoaded() {
     return m_loaded;
 }
 
-bool MotionTuningConfig::loadFromFile(const QString& filePath)
-{
+bool MotionTuningConfig::loadFromFile(const QString& filePath) {
     QFile file(filePath);
     if (!file.open(QIODevice::ReadOnly)) {
         qCritical() << "[MotionTuningConfig] Cannot open file:" << filePath;
@@ -94,10 +90,12 @@ bool MotionTuningConfig::loadFromFile(const QString& filePath)
     // ============================================================================
     if (root.contains("motion") && root["motion"].isObject()) {
         QJsonObject motion = root["motion"].toObject();
-        m_instance.motion.maxAccelerationDegS2 = motion.value("maxAccelerationDegS2").toDouble(50.0);
+        m_instance.motion.maxAccelerationDegS2 =
+            motion.value("maxAccelerationDegS2").toDouble(50.0);
         m_instance.motion.scanMaxAccelDegS2 = motion.value("scanMaxAccelDegS2").toDouble(20.0);
         m_instance.motion.trpMaxAccelDegS2 = motion.value("trpMaxAccelDegS2").toDouble(50.0);
-        m_instance.motion.trpDefaultTravelSpeed = motion.value("trpDefaultTravelSpeed").toDouble(15.0);
+        m_instance.motion.trpDefaultTravelSpeed =
+            motion.value("trpDefaultTravelSpeed").toDouble(15.0);
         m_instance.motion.maxVelocityDegS = motion.value("maxVelocityDegS").toDouble(30.0);
         m_instance.motion.arrivalThresholdDeg = motion.value("arrivalThresholdDeg").toDouble(0.5);
         m_instance.motion.updateIntervalS = motion.value("updateIntervalS").toDouble(0.05);
@@ -198,8 +196,7 @@ bool MotionTuningConfig::loadFromFile(const QString& filePath)
                 static_cast<quint32>(az.value("decelHz").toDouble(100000));
             m_instance.axisServo.azimuth.currentPercent =
                 static_cast<quint32>(az.value("currentPercent").toDouble(1000));
-            m_instance.axisServo.azimuth.maxSpeedScale =
-                az.value("maxSpeedScale").toDouble(1.0);
+            m_instance.axisServo.azimuth.maxSpeedScale = az.value("maxSpeedScale").toDouble(1.0);
         }
 
         if (axisServo.contains("elevation") && axisServo["elevation"].isObject()) {
@@ -219,8 +216,7 @@ bool MotionTuningConfig::loadFromFile(const QString& filePath)
     qInfo() << "  Gyro filter cutoff:" << m_instance.filters.gyroCutoffFreqHz << "Hz";
     qInfo() << "  Max acceleration:" << m_instance.motion.maxAccelerationDegS2 << "deg/s²";
     qInfo() << "  Tracking Az PID: Kp=" << m_instance.trackingAz.kp
-            << "Ki=" << m_instance.trackingAz.ki
-            << "Kd=" << m_instance.trackingAz.kd;
+            << "Ki=" << m_instance.trackingAz.ki << "Kd=" << m_instance.trackingAz.kd;
     qInfo() << "  TRP travel speed:" << m_instance.motion.trpDefaultTravelSpeed << "deg/s";
     qInfo() << "  Axis Servo - Azimuth: accel=" << m_instance.axisServo.azimuth.accelHz
             << "Hz/s, decel=" << m_instance.axisServo.azimuth.decelHz
@@ -234,8 +230,7 @@ bool MotionTuningConfig::loadFromFile(const QString& filePath)
     return true;
 }
 
-MotionTuningConfig::PIDGains MotionTuningConfig::parsePIDGains(const QJsonObject& obj)
-{
+MotionTuningConfig::PIDGains MotionTuningConfig::parsePIDGains(const QJsonObject& obj) {
     PIDGains gains;
     gains.kp = obj.value("kp").toDouble(1.0);
     gains.ki = obj.value("ki").toDouble(0.01);

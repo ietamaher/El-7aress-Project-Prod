@@ -3,9 +3,7 @@
 #include <QModbusDataUnit>
 #include <QDebug>
 
-Plc21ProtocolParser::Plc21ProtocolParser(QObject* parent)
-    : ProtocolParser(parent)
-{
+Plc21ProtocolParser::Plc21ProtocolParser(QObject* parent) : ProtocolParser(parent) {
     // Initialize m_data with defaults (connection will be set when data arrives)
     m_data.isConnected = false;
 }
@@ -23,9 +21,8 @@ std::vector<MessagePtr> Plc21ProtocolParser::parse(QModbusReply* reply) {
     if (unit.registerType() == QModbusDataUnit::DiscreteInputs &&
         unit.startAddress() == Plc21Registers::DIGITAL_INPUTS_START_ADDR) {
         messages.push_back(parseDigitalInputsReply(unit));
-    }
-    else if (unit.registerType() == QModbusDataUnit::HoldingRegisters &&
-             unit.startAddress() == Plc21Registers::ANALOG_INPUTS_START_ADDR) {
+    } else if (unit.registerType() == QModbusDataUnit::HoldingRegisters &&
+               unit.startAddress() == Plc21Registers::ANALOG_INPUTS_START_ADDR) {
         messages.push_back(parseAnalogInputsReply(unit));
     }
 

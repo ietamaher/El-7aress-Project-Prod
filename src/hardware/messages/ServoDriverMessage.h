@@ -14,8 +14,12 @@ class ServoDriverDataMessage : public Message {
 public:
     explicit ServoDriverDataMessage(const ServoDriverData& data) : m_data(data) {}
 
-    Type typeId() const override { return Type::ServoDriverDataType; }
-    const ServoDriverData& data() const { return m_data; }
+    Type typeId() const override {
+        return Type::ServoDriverDataType;
+    }
+    const ServoDriverData& data() const {
+        return m_data;
+    }
 
 private:
     ServoDriverData m_data;
@@ -29,9 +33,15 @@ public:
     explicit ServoDriverAlarmMessage(uint16_t code, const QString& desc)
         : m_alarmCode(code), m_description(desc) {}
 
-    Type typeId() const override { return Type::ServoDriverAlarmType; }
-    uint16_t alarmCode() const { return m_alarmCode; }
-    const QString& description() const { return m_description; }
+    Type typeId() const override {
+        return Type::ServoDriverAlarmType;
+    }
+    uint16_t alarmCode() const {
+        return m_alarmCode;
+    }
+    const QString& description() const {
+        return m_description;
+    }
 
 private:
     uint16_t m_alarmCode;
@@ -46,8 +56,12 @@ public:
     explicit ServoDriverAlarmHistoryMessage(const QList<uint16_t>& history)
         : m_alarmHistory(history) {}
 
-    Type typeId() const override { return Type::ServoDriverAlarmHistoryType; }
-    const QList<uint16_t>& alarmHistory() const { return m_alarmHistory; }
+    Type typeId() const override {
+        return Type::ServoDriverAlarmHistoryType;
+    }
+    const QList<uint16_t>& alarmHistory() const {
+        return m_alarmHistory;
+    }
 
 private:
     QList<uint16_t> m_alarmHistory;

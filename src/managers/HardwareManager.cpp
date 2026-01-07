@@ -48,16 +48,13 @@
 #include <QSerialPort>
 
 HardwareManager::HardwareManager(SystemStateModel* systemStateModel, QObject* parent)
-    : QObject(parent),
-      m_systemStateModel(systemStateModel)
-{
+    : QObject(parent), m_systemStateModel(systemStateModel) {
     if (!m_systemStateModel) {
         qCritical() << "HardwareManager: SystemStateModel is null!";
     }
 }
 
-HardwareManager::~HardwareManager()
-{
+HardwareManager::~HardwareManager() {
     qInfo() << "HardwareManager: Shutting down...";
 
     // CRITICAL FIX: Handle thread cleanup with proper timeout recovery
@@ -124,8 +121,7 @@ HardwareManager::~HardwareManager()
 // PUBLIC INITIALIZATION METHODS
 // ============================================================================
 
-bool HardwareManager::createHardware()
-{
+bool HardwareManager::createHardware() {
     qInfo() << "=== HardwareManager: Creating Hardware ===";
 
     try {
@@ -146,26 +142,24 @@ bool HardwareManager::createHardware()
     }
 }
 
-bool HardwareManager::connectDevicesToModels()
-{
+bool HardwareManager::connectDevicesToModels() {
     qInfo() << "=== HardwareManager: Connecting Devices to Models ===";
 
-    connect(m_dayCamControl, &DayCameraControlDevice::dayCameraDataChanged,
-            m_dayCamControlModel, &DayCameraDataModel::updateData);
+    connect(m_dayCamControl, &DayCameraControlDevice::dayCameraDataChanged, m_dayCamControlModel,
+            &DayCameraDataModel::updateData);
 
-    connect(m_gyroDevice, &ImuDevice::imuDataChanged,
-            m_gyroModel, &GyroDataModel::updateData);
+    connect(m_gyroDevice, &ImuDevice::imuDataChanged, m_gyroModel, &GyroDataModel::updateData);
 
-    connect(m_joystickDevice, &JoystickDevice::axisMoved,
-            m_joystickModel, &JoystickDataModel::onRawAxisMoved);
-    connect(m_joystickDevice, &JoystickDevice::buttonPressed,
-            m_joystickModel, &JoystickDataModel::onRawButtonChanged);
-    connect(m_joystickDevice, &JoystickDevice::hatMoved,
-            m_joystickModel, &JoystickDataModel::onRawHatMoved);
+    connect(m_joystickDevice, &JoystickDevice::axisMoved, m_joystickModel,
+            &JoystickDataModel::onRawAxisMoved);
+    connect(m_joystickDevice, &JoystickDevice::buttonPressed, m_joystickModel,
+            &JoystickDataModel::onRawButtonChanged);
+    connect(m_joystickDevice, &JoystickDevice::hatMoved, m_joystickModel,
+            &JoystickDataModel::onRawHatMoved);
 
     // LRFDevice uses shared_ptr
-    connect(m_lrfDevice, &LRFDevice::lrfDataChanged,
-            m_lrfModel, [this](std::shared_ptr<const LrfData> data) {
+    connect(m_lrfDevice, &LRFDevice::lrfDataChanged, m_lrfModel,
+            [this](std::shared_ptr<const LrfData> data) {
                 if (data) {
                     m_lrfModel->updateData(*data);
                 }
@@ -174,27 +168,26 @@ bool HardwareManager::connectDevicesToModels()
     connect(m_nightCamControl, &NightCameraControlDevice::nightCameraDataChanged,
             m_nightCamControlModel, &NightCameraDataModel::updateData);
 
-    connect(m_plc21Device, &Plc21Device::panelDataChanged,
-            m_plc21Model, &Plc21DataModel::updateData);
+    connect(m_plc21Device, &Plc21Device::panelDataChanged, m_plc21Model,
+            &Plc21DataModel::updateData);
 
-    connect(m_plc42Device, &Plc42Device::plc42DataChanged,
-            m_plc42Model, &Plc42DataModel::updateData);
+    connect(m_plc42Device, &Plc42Device::plc42DataChanged, m_plc42Model,
+            &Plc42DataModel::updateData);
 
-    connect(m_servoActuatorDevice, &ServoActuatorDevice::actuatorDataChanged,
-            m_servoActuatorModel, &ServoActuatorDataModel::updateData);
+    connect(m_servoActuatorDevice, &ServoActuatorDevice::actuatorDataChanged, m_servoActuatorModel,
+            &ServoActuatorDataModel::updateData);
 
-    connect(m_servoAzDevice, &ServoDriverDevice::servoDataChanged,
-            m_servoAzModel, &ServoDriverDataModel::updateData);
+    connect(m_servoAzDevice, &ServoDriverDevice::servoDataChanged, m_servoAzModel,
+            &ServoDriverDataModel::updateData);
 
-    connect(m_servoElDevice, &ServoDriverDevice::servoDataChanged,
-            m_servoElModel, &ServoDriverDataModel::updateData);
+    connect(m_servoElDevice, &ServoDriverDevice::servoDataChanged, m_servoElModel,
+            &ServoDriverDataModel::updateData);
 
     qInfo() << "  ✓ Devices connected to models";
     return true;
 }
 
-bool HardwareManager::connectModelsToSystemState()
-{
+bool HardwareManager::connectModelsToSystemState() {
     qInfo() << "=== HardwareManager: Connecting Models to SystemState ===";
 
     if (!m_systemStateModel) {
@@ -202,63 +195,60 @@ bool HardwareManager::connectModelsToSystemState()
         return false;
     }
 
-    connect(m_dayCamControlModel, &DayCameraDataModel::dataChanged,
-            m_systemStateModel, &SystemStateModel::onDayCameraDataChanged);
+    connect(m_dayCamControlModel, &DayCameraDataModel::dataChanged, m_systemStateModel,
+            &SystemStateModel::onDayCameraDataChanged);
 
-    connect(m_gyroModel, &GyroDataModel::dataChanged,
-            m_systemStateModel, &SystemStateModel::onGyroDataChanged);
+    connect(m_gyroModel, &GyroDataModel::dataChanged, m_systemStateModel,
+            &SystemStateModel::onGyroDataChanged);
 
-    connect(m_joystickModel, &JoystickDataModel::axisMoved,
-            m_systemStateModel, &SystemStateModel::onJoystickAxisChanged);
-    connect(m_joystickModel, &JoystickDataModel::buttonPressed,
-            m_systemStateModel, &SystemStateModel::onJoystickButtonChanged);
-    connect(m_joystickModel, &JoystickDataModel::hatMoved,
-            m_systemStateModel, &SystemStateModel::onJoystickHatChanged);
+    connect(m_joystickModel, &JoystickDataModel::axisMoved, m_systemStateModel,
+            &SystemStateModel::onJoystickAxisChanged);
+    connect(m_joystickModel, &JoystickDataModel::buttonPressed, m_systemStateModel,
+            &SystemStateModel::onJoystickButtonChanged);
+    connect(m_joystickModel, &JoystickDataModel::hatMoved, m_systemStateModel,
+            &SystemStateModel::onJoystickHatChanged);
 
     // Connect joystick device data directly for connection status
-    connect(m_joystickDevice, &JoystickDevice::dataChanged,
-            m_systemStateModel, &SystemStateModel::onJoystickDataChanged);
+    connect(m_joystickDevice, &JoystickDevice::dataChanged, m_systemStateModel,
+            &SystemStateModel::onJoystickDataChanged);
 
-    connect(m_lrfModel, &LrfDataModel::dataChanged,
-            m_systemStateModel, &SystemStateModel::onLrfDataChanged);
+    connect(m_lrfModel, &LrfDataModel::dataChanged, m_systemStateModel,
+            &SystemStateModel::onLrfDataChanged);
 
-    connect(m_nightCamControlModel, &NightCameraDataModel::dataChanged,
-            m_systemStateModel, &SystemStateModel::onNightCameraDataChanged);
+    connect(m_nightCamControlModel, &NightCameraDataModel::dataChanged, m_systemStateModel,
+            &SystemStateModel::onNightCameraDataChanged);
 
-    connect(m_plc21Model, &Plc21DataModel::dataChanged,
-            m_systemStateModel, &SystemStateModel::onPlc21DataChanged);
+    connect(m_plc21Model, &Plc21DataModel::dataChanged, m_systemStateModel,
+            &SystemStateModel::onPlc21DataChanged);
 
-    connect(m_plc42Model, &Plc42DataModel::dataChanged,
-            m_systemStateModel, &SystemStateModel::onPlc42DataChanged);
+    connect(m_plc42Model, &Plc42DataModel::dataChanged, m_systemStateModel,
+            &SystemStateModel::onPlc42DataChanged);
 
-    connect(m_servoActuatorModel, &ServoActuatorDataModel::dataChanged,
-            m_systemStateModel, &SystemStateModel::onServoActuatorDataChanged);
+    connect(m_servoActuatorModel, &ServoActuatorDataModel::dataChanged, m_systemStateModel,
+            &SystemStateModel::onServoActuatorDataChanged);
 
-    connect(m_servoAzModel, &ServoDriverDataModel::dataChanged,
-            m_systemStateModel, &SystemStateModel::onServoAzDataChanged);
+    connect(m_servoAzModel, &ServoDriverDataModel::dataChanged, m_systemStateModel,
+            &SystemStateModel::onServoAzDataChanged);
 
-    connect(m_servoElModel, &ServoDriverDataModel::dataChanged,
-            m_systemStateModel, &SystemStateModel::onServoElDataChanged);
+    connect(m_servoElModel, &ServoDriverDataModel::dataChanged, m_systemStateModel,
+            &SystemStateModel::onServoElDataChanged);
 
     // Connect SystemStateModel back to cameras
     if (m_dayVideoProcessor) {
-        connect(m_systemStateModel, &SystemStateModel::dataChanged,
-                m_dayVideoProcessor, &CameraVideoStreamDevice::onSystemStateChanged,
-                Qt::QueuedConnection);
+        connect(m_systemStateModel, &SystemStateModel::dataChanged, m_dayVideoProcessor,
+                &CameraVideoStreamDevice::onSystemStateChanged, Qt::QueuedConnection);
     }
 
     if (m_nightVideoProcessor) {
-        connect(m_systemStateModel, &SystemStateModel::dataChanged,
-                m_nightVideoProcessor, &CameraVideoStreamDevice::onSystemStateChanged,
-                Qt::QueuedConnection);
+        connect(m_systemStateModel, &SystemStateModel::dataChanged, m_nightVideoProcessor,
+                &CameraVideoStreamDevice::onSystemStateChanged, Qt::QueuedConnection);
     }
 
     qInfo() << "  ✓ Models connected to SystemStateModel";
     return true;
 }
 
-bool HardwareManager::startHardware()
-{
+bool HardwareManager::startHardware() {
     qInfo() << "=== HardwareManager: Starting Hardware ===";
 
     try {
@@ -293,8 +283,7 @@ bool HardwareManager::startHardware()
 // PRIVATE HELPER METHODS
 // ============================================================================
 
-void HardwareManager::createTransportLayer()
-{
+void HardwareManager::createTransportLayer() {
     qInfo() << "  Creating transport layer...";
 
     m_imuTransport = new SerialPortTransport(this);  // 3DM-GX3-25 uses serial binary, not Modbus
@@ -311,8 +300,7 @@ void HardwareManager::createTransportLayer()
     qInfo() << "    ✓ Transport layer created";
 }
 
-void HardwareManager::createProtocolParsers()
-{
+void HardwareManager::createProtocolParsers() {
     qInfo() << "  Creating protocol parsers...";
 
     m_imuParser = new Imu3DMGX3ProtocolParser(this);
@@ -330,8 +318,7 @@ void HardwareManager::createProtocolParsers()
     qInfo() << "    ✓ Protocol parsers created";
 }
 
-void HardwareManager::createDevices()
-{
+void HardwareManager::createDevices() {
     qInfo() << "  Creating devices...";
 
     const auto& videoConf = DeviceConfiguration::video();
@@ -351,7 +338,8 @@ void HardwareManager::createDevices()
     QJsonObject imuConfig;
     imuConfig["samplingRateHz"] = imuConf.samplingRateHz;
     imuConfig["tiltWarningThreshold"] = imuConf.tiltWarningThreshold;
-    qInfo() << "  [IMU Config] samplingRateHz =" << imuConf.samplingRateHz << "Hz, tiltWarningThreshold =" << imuConf.tiltWarningThreshold << "deg";
+    qInfo() << "  [IMU Config] samplingRateHz =" << imuConf.samplingRateHz
+            << "Hz, tiltWarningThreshold =" << imuConf.tiltWarningThreshold << "deg";
     m_gyroDevice->setProperty("config", imuConfig);
 
     // Joystick (SDL2 - no transport needed)
@@ -392,19 +380,18 @@ void HardwareManager::createDevices()
     m_servoElDevice->setDependencies(m_servoElTransport, m_servoElParser);
 
     // Video processors with configuration
-    m_dayVideoProcessor = new CameraVideoStreamDevice(
-        0, videoConf.dayDevicePath, videoConf.sourceWidth,
-        videoConf.sourceHeight, m_systemStateModel, nullptr);
+    m_dayVideoProcessor =
+        new CameraVideoStreamDevice(0, videoConf.dayDevicePath, videoConf.sourceWidth,
+                                    videoConf.sourceHeight, m_systemStateModel, nullptr);
 
-    m_nightVideoProcessor = new CameraVideoStreamDevice(
-        1, videoConf.nightDevicePath, videoConf.sourceWidth,
-        videoConf.sourceHeight, m_systemStateModel, nullptr);
+    m_nightVideoProcessor =
+        new CameraVideoStreamDevice(1, videoConf.nightDevicePath, videoConf.sourceWidth,
+                                    videoConf.sourceHeight, m_systemStateModel, nullptr);
 
     qInfo() << "    ✓ Devices created with dependency injection";
 }
 
-void HardwareManager::createDataModels()
-{
+void HardwareManager::createDataModels() {
     qInfo() << "  Creating data models...";
 
     m_dayCamControlModel = new DayCameraDataModel(this);
@@ -422,8 +409,7 @@ void HardwareManager::createDataModels()
     qInfo() << "    ✓ Data models created";
 }
 
-void HardwareManager::openTransports()
-{
+void HardwareManager::openTransports() {
     qInfo() << "  Opening transport connections...";
 
     const auto& videoConf = DeviceConfiguration::video();
@@ -506,8 +492,7 @@ void HardwareManager::openTransports()
     qInfo() << "    ✓ Transport connections opened";
 }
 
-void HardwareManager::initializeDevices()
-{
+void HardwareManager::initializeDevices() {
     qInfo() << "  Initializing devices...";
 
     m_dayCamControl->initialize();
@@ -517,17 +502,18 @@ void HardwareManager::initializeDevices()
     m_plc21Device->initialize();
     m_plc42Device->initialize();
     m_lrfDevice->initialize();
-   // m_radarDevice->initialize();
+    // m_radarDevice->initialize();
     m_servoActuatorDevice->initialize();
 
-    if (m_servoAzDevice) m_servoAzDevice->initialize();
-    if (m_servoElDevice) m_servoElDevice->initialize();
+    if (m_servoAzDevice)
+        m_servoAzDevice->initialize();
+    if (m_servoElDevice)
+        m_servoElDevice->initialize();
 
     qInfo() << "    ✓ All devices initialized";
 }
 
-void HardwareManager::configureCameraDefaults()
-{
+void HardwareManager::configureCameraDefaults() {
     qInfo() << "  Configuring camera defaults...";
 
     m_dayCamControl->zoomOut();

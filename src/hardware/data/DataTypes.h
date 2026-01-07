@@ -20,7 +20,7 @@ struct DayCameraData {
     // Zoom control
     bool zoomMovingIn = false;
     bool zoomMovingOut = false;
-    quint16 zoomPosition = 65535;   // 14-bit max for VISCA
+    quint16 zoomPosition = 65535;  // 14-bit max for VISCA
 
     // Focus control
     bool autofocusEnabled = true;
@@ -30,13 +30,10 @@ struct DayCameraData {
     float currentHFOV = 11.0;  // Horizontal FOV (2.3° - 63.7° zoom range)
     float currentVFOV = 11.0;  // Vertical FOV (calculated from HFOV and aspect ratio)
 
-    bool operator!=(const DayCameraData &other) const {
-        return (isConnected != other.isConnected ||
-                errorState != other.errorState ||
-                cameraStatus != other.cameraStatus ||
-                zoomMovingIn != other.zoomMovingIn ||
-                zoomMovingOut != other.zoomMovingOut ||
-                zoomPosition != other.zoomPosition ||
+    bool operator!=(const DayCameraData& other) const {
+        return (isConnected != other.isConnected || errorState != other.errorState ||
+                cameraStatus != other.cameraStatus || zoomMovingIn != other.zoomMovingIn ||
+                zoomMovingOut != other.zoomMovingOut || zoomPosition != other.zoomPosition ||
                 autofocusEnabled != other.autofocusEnabled ||
                 focusPosition != other.focusPosition ||
                 !qFuzzyCompare(currentHFOV, other.currentHFOV) ||
@@ -66,19 +63,15 @@ struct NightCameraData {
     qint16 panPosition = 0;   // -82 to +82
     qint16 tiltPosition = 0;  // -68 to +68
 
-    bool operator!=(const NightCameraData &other) const {
-        return (isConnected != other.isConnected ||
-                errorState != other.errorState ||
+    bool operator!=(const NightCameraData& other) const {
+        return (isConnected != other.isConnected || errorState != other.errorState ||
                 ffcInProgress != other.ffcInProgress ||
                 digitalZoomEnabled != other.digitalZoomEnabled ||
                 digitalZoomLevel != other.digitalZoomLevel ||
                 !qFuzzyCompare(currentHFOV, other.currentHFOV) ||
-                !qFuzzyCompare(currentVFOV, other.currentVFOV) ||
-                videoMode != other.videoMode ||
-                cameraStatus != other.cameraStatus ||
-                fpaTemperature != other.fpaTemperature ||
-                panPosition != other.panPosition ||
-                tiltPosition != other.tiltPosition);
+                !qFuzzyCompare(currentVFOV, other.currentVFOV) || videoMode != other.videoMode ||
+                cameraStatus != other.cameraStatus || fpaTemperature != other.fpaTemperature ||
+                panPosition != other.panPosition || tiltPosition != other.tiltPosition);
     }
 };
 
@@ -97,16 +90,15 @@ struct RadarData {
     float relativeCourseDegrees = 0.0f;
     float relativeSpeedMPS = 0.0f;
 
-    bool operator==(const RadarData &other) const {
-        return (isConnected == other.isConnected &&
-                id == other.id &&
+    bool operator==(const RadarData& other) const {
+        return (isConnected == other.isConnected && id == other.id &&
                 qFuzzyCompare(azimuthDegrees, other.azimuthDegrees) &&
                 qFuzzyCompare(rangeMeters, other.rangeMeters) &&
                 qFuzzyCompare(relativeCourseDegrees, other.relativeCourseDegrees) &&
                 qFuzzyCompare(relativeSpeedMPS, other.relativeSpeedMPS));
     }
 
-    bool operator!=(const RadarData &other) const {
+    bool operator!=(const RadarData& other) const {
         return !(*this == other);
     }
 };
@@ -129,19 +121,13 @@ struct LrfData {
     qint8 temperature = 0;
     quint32 laserCount = 0;
 
-    bool operator!=(const LrfData &other) const {
-        return (isConnected != other.isConnected ||
-                lastDistance != other.lastDistance ||
-                isLastRangingValid != other.isLastRangingValid ||
-                pulseCount != other.pulseCount ||
-                rawStatusByte != other.rawStatusByte ||
-                isFault != other.isFault ||
-                noEcho != other.noEcho ||
-                laserNotOut != other.laserNotOut ||
-                isOverTemperature != other.isOverTemperature ||
-                isTempValid != other.isTempValid ||
-                temperature != other.temperature ||
-                laserCount != other.laserCount);
+    bool operator!=(const LrfData& other) const {
+        return (isConnected != other.isConnected || lastDistance != other.lastDistance ||
+                isLastRangingValid != other.isLastRangingValid || pulseCount != other.pulseCount ||
+                rawStatusByte != other.rawStatusByte || isFault != other.isFault ||
+                noEcho != other.noEcho || laserNotOut != other.laserNotOut ||
+                isOverTemperature != other.isOverTemperature || isTempValid != other.isTempValid ||
+                temperature != other.temperature || laserCount != other.laserCount);
     }
 };
 
@@ -167,13 +153,13 @@ struct ImuData {
     double angRateY_dps = 0.0;
     double angRateZ_dps = 0.0;
 
-    bool operator!=(const ImuData &other) const {
+    bool operator!=(const ImuData& other) const {
         // Use epsilon-based comparison for floating-point values to avoid signal flooding
         // due to insignificant precision differences
-        const double ANGLE_EPSILON = 0.01;      // 0.01° = 36 arcseconds (very precise)
-        const double TEMP_EPSILON = 0.1;        // 0.1°C
-        const double ACCEL_EPSILON = 0.001;     // 0.001g (very sensitive)
-        const double GYRO_EPSILON = 0.01;       // 0.01 deg/s
+        const double ANGLE_EPSILON = 0.01;   // 0.01° = 36 arcseconds (very precise)
+        const double TEMP_EPSILON = 0.1;     // 0.1°C
+        const double ACCEL_EPSILON = 0.001;  // 0.001g (very sensitive)
+        const double GYRO_EPSILON = 0.01;    // 0.01 deg/s
 
         return (isConnected != other.isConnected ||
                 std::abs(rollDeg - other.rollDeg) > ANGLE_EPSILON ||
@@ -206,21 +192,20 @@ struct ServoDriverData {
     bool fault = false;
 
 
-    bool operator!=(const ServoDriverData &other) const {
+    bool operator!=(const ServoDriverData& other) const {
         // Use epsilon-based comparison for floating-point values to avoid signal flooding
         // due to insignificant precision differences
-        const float POSITION_EPSILON = 1.0f;    // 1 encoder count (≈0.0016°, very precise)
-        const float RPM_EPSILON = 1.0f;         // 1 RPM
-        const float TORQUE_EPSILON = 0.1f;      // 0.1% torque
-        const float TEMP_EPSILON = 0.1f;        // 0.1°C
+        const float POSITION_EPSILON = 1.0f;  // 1 encoder count (≈0.0016°, very precise)
+        const float RPM_EPSILON = 1.0f;       // 1 RPM
+        const float TORQUE_EPSILON = 0.1f;    // 0.1% torque
+        const float TEMP_EPSILON = 0.1f;      // 0.1°C
 
         return (isConnected != other.isConnected ||
                 std::abs(position - other.position) > POSITION_EPSILON ||
                 std::abs(rpm - other.rpm) > RPM_EPSILON ||
                 std::abs(torque - other.torque) > TORQUE_EPSILON ||
                 std::abs(motorTemp - other.motorTemp) > TEMP_EPSILON ||
-                std::abs(driverTemp - other.driverTemp) > TEMP_EPSILON ||
-                fault != other.fault);
+                std::abs(driverTemp - other.driverTemp) > TEMP_EPSILON || fault != other.fault);
     }
 };
 
@@ -233,7 +218,7 @@ struct ActuatorStatus {
     QStringList activeStatusMessages;
     //quint32 ActuatorStatus = 0;
 
-    bool operator!=(const ActuatorStatus &other) const {
+    bool operator!=(const ActuatorStatus& other) const {
         return (isMotorOff != other.isMotorOff ||
                 isLatchingFaultActive != other.isLatchingFaultActive ||
                 activeStatusMessages != other.activeStatusMessages);
@@ -252,14 +237,13 @@ struct ServoActuatorData {
     double torque_percent = 0.0;
     ActuatorStatus status;
 
-    bool operator!=(const ServoActuatorData &other) const {
+    bool operator!=(const ServoActuatorData& other) const {
         return (isConnected != other.isConnected ||
                 !qFuzzyCompare(position_mm, other.position_mm) ||
                 !qFuzzyCompare(velocity_mm_s, other.velocity_mm_s) ||
                 !qFuzzyCompare(temperature_c, other.temperature_c) ||
                 !qFuzzyCompare(busVoltage_v, other.busVoltage_v) ||
-                !qFuzzyCompare(torque_percent, other.torque_percent) ||
-                status != other.status);
+                !qFuzzyCompare(torque_percent, other.torque_percent) || status != other.status);
     }
 };
 
@@ -287,24 +271,19 @@ struct Plc21PanelData {
 
     // Analog inputs
     int speedSW = 50;
-    int fireMode = 99; // To force update on first read
+    int fireMode = 99;  // To force update on first read
     int panelTemperature = 0;
 
-    bool operator!=(const Plc21PanelData &other) const {
-        return (isConnected != other.isConnected ||
-                armGunSW != other.armGunSW ||
+    bool operator!=(const Plc21PanelData& other) const {
+        return (isConnected != other.isConnected || armGunSW != other.armGunSW ||
                 loadAmmunitionSW != other.loadAmmunitionSW ||
                 enableStationSW != other.enableStationSW ||
                 homePositionSW != other.homePositionSW ||
                 enableStabilizationSW != other.enableStabilizationSW ||
-                authorizeSw != other.authorizeSw ||
-                switchCameraSW != other.switchCameraSW ||
-                menuUpSW != other.menuUpSW ||
-                menuDownSW != other.menuDownSW ||
-                menuValSw != other.menuValSw ||
-                speedSW != other.speedSW ||
-                fireMode != other.fireMode ||
-                panelTemperature != other.panelTemperature);
+                authorizeSw != other.authorizeSw || switchCameraSW != other.switchCameraSW ||
+                menuUpSW != other.menuUpSW || menuDownSW != other.menuDownSW ||
+                menuValSw != other.menuValSw || speedSW != other.speedSW ||
+                fireMode != other.fireMode || panelTemperature != other.panelTemperature);
     }
 };
 
@@ -339,52 +318,46 @@ struct Plc42Data {
     // ============================================================================
     // DISCRETE INPUTS (8 inputs)
     // ============================================================================
-    bool stationUpperSensor = false;       ///< DI0: Upper limit sensor
-    bool stationLowerSensor = false;       ///< DI1: Lower limit sensor
-    bool hatchState = false;               ///< DI2: Hatch state
-    bool freeGimbalState = false;          ///< DI3: FREE mode toggle (LOCAL)
-    bool ammunitionLevel = false;          ///< DI4: Ammunition level
+    bool stationUpperSensor = false;  ///< DI0: Upper limit sensor
+    bool stationLowerSensor = false;  ///< DI1: Lower limit sensor
+    bool hatchState = false;          ///< DI2: Hatch state
+    bool freeGimbalState = false;     ///< DI3: FREE mode toggle (LOCAL)
+    bool ammunitionLevel = false;     ///< DI4: Ammunition level
     // DI5: Reserved (future E-STOP button)
-    bool azimuthHomeComplete = false;      ///< DI6: Az HOME-END signal ⭐ NEW
-    bool elevationHomeComplete = false;    ///< DI7: El HOME-END signal ⭐ NEW
+    bool azimuthHomeComplete = false;    ///< DI6: Az HOME-END signal ⭐ NEW
+    bool elevationHomeComplete = false;  ///< DI7: El HOME-END signal ⭐ NEW
 
     // Derived values (computed in parser)
-    bool emergencyStopActive = false;      ///< Derived: gimbalOpMode == 1
-    bool solenoidActive = false;           ///< Derived: solenoidState != 0
+    bool emergencyStopActive = false;  ///< Derived: gimbalOpMode == 1
+    bool solenoidActive = false;       ///< Derived: solenoidState != 0
 
     // ============================================================================
     // HOLDING REGISTERS (11 registers)
     // ============================================================================
-    uint16_t solenoidMode = 0;          ///< HR0: Fire mode
-    uint16_t gimbalOpMode = 0;          ///< HR1: Gimbal operation mode
-    uint32_t azimuthSpeed = 0;          ///< HR2-3: Azimuth speed (32-bit)
-    uint32_t elevationSpeed = 0;        ///< HR4-5: Elevation speed (32-bit)
-    uint16_t azimuthDirection = 0;      ///< HR6: Azimuth direction
-    uint16_t elevationDirection = 0;    ///< HR7: Elevation direction
-    uint16_t solenoidState = 0;         ///< HR8: Trigger command
-    uint16_t resetAlarm = 0;            ///< HR9: Error reset
-    uint16_t azimuthReset = 0;          ///< HR10: Azimuth reset (0=Normal, 1=Set Preset Home)
+    uint16_t solenoidMode = 0;        ///< HR0: Fire mode
+    uint16_t gimbalOpMode = 0;        ///< HR1: Gimbal operation mode
+    uint32_t azimuthSpeed = 0;        ///< HR2-3: Azimuth speed (32-bit)
+    uint32_t elevationSpeed = 0;      ///< HR4-5: Elevation speed (32-bit)
+    uint16_t azimuthDirection = 0;    ///< HR6: Azimuth direction
+    uint16_t elevationDirection = 0;  ///< HR7: Elevation direction
+    uint16_t solenoidState = 0;       ///< HR8: Trigger command
+    uint16_t resetAlarm = 0;          ///< HR9: Error reset
+    uint16_t azimuthReset = 0;        ///< HR10: Azimuth reset (0=Normal, 1=Set Preset Home)
 
-    bool operator!=(const Plc42Data &other) const {
-        return (isConnected != other.isConnected ||
-                stationUpperSensor != other.stationUpperSensor ||
-                stationLowerSensor != other.stationLowerSensor ||
-                hatchState != other.hatchState ||
-                freeGimbalState != other.freeGimbalState ||
-                ammunitionLevel != other.ammunitionLevel ||
-                azimuthHomeComplete != other.azimuthHomeComplete ||
-                elevationHomeComplete != other.elevationHomeComplete ||
-                emergencyStopActive != other.emergencyStopActive ||
-                solenoidActive != other.solenoidActive ||
-                solenoidMode != other.solenoidMode ||
-                gimbalOpMode != other.gimbalOpMode ||
-                azimuthSpeed != other.azimuthSpeed ||
-                elevationSpeed != other.elevationSpeed ||
-                azimuthDirection != other.azimuthDirection ||
-                elevationDirection != other.elevationDirection ||
-                solenoidState != other.solenoidState ||
-                resetAlarm != other.resetAlarm ||
-                azimuthReset != other.azimuthReset);
+    bool operator!=(const Plc42Data& other) const {
+        return (
+            isConnected != other.isConnected || stationUpperSensor != other.stationUpperSensor ||
+            stationLowerSensor != other.stationLowerSensor || hatchState != other.hatchState ||
+            freeGimbalState != other.freeGimbalState || ammunitionLevel != other.ammunitionLevel ||
+            azimuthHomeComplete != other.azimuthHomeComplete ||
+            elevationHomeComplete != other.elevationHomeComplete ||
+            emergencyStopActive != other.emergencyStopActive ||
+            solenoidActive != other.solenoidActive || solenoidMode != other.solenoidMode ||
+            gimbalOpMode != other.gimbalOpMode || azimuthSpeed != other.azimuthSpeed ||
+            elevationSpeed != other.elevationSpeed || azimuthDirection != other.azimuthDirection ||
+            elevationDirection != other.elevationDirection ||
+            solenoidState != other.solenoidState || resetAlarm != other.resetAlarm ||
+            azimuthReset != other.azimuthReset);
     }
 };
 
@@ -407,13 +380,11 @@ struct JoystickData {
 
     // Button states (up to 16 buttons)
     static const int MAX_BUTTONS = 16;
-    bool buttons[MAX_BUTTONS] = { false };
+    bool buttons[MAX_BUTTONS] = {false};
 
-    bool operator!=(const JoystickData &other) const {
-        if (isConnected != other.isConnected ||
-            !qFuzzyCompare(axisX + 1.0f, other.axisX + 1.0f) ||
-            !qFuzzyCompare(axisY + 1.0f, other.axisY + 1.0f) ||
-            hatState != other.hatState) {
+    bool operator!=(const JoystickData& other) const {
+        if (isConnected != other.isConnected || !qFuzzyCompare(axisX + 1.0f, other.axisX + 1.0f) ||
+            !qFuzzyCompare(axisY + 1.0f, other.axisY + 1.0f) || hatState != other.hatState) {
             return true;
         }
         for (int i = 0; i < MAX_BUTTONS; i++) {
@@ -425,4 +396,4 @@ struct JoystickData {
     }
 };
 
-#endif // DATATYPES_H
+#endif  // DATATYPES_H

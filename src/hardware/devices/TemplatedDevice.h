@@ -13,7 +13,7 @@
  *
  * @tparam TData Device-specific data structure type
  */
-template<typename TData>
+template <typename TData>
 class TemplatedDevice : public IDevice {
 public:
     using DataPtr = std::shared_ptr<const TData>;
@@ -48,4 +48,4 @@ private:
     DataPtr m_data;
 };
 
-#endif // TEMPLATEDDEVICE_H
+#endif  // TEMPLATEDDEVICE_H

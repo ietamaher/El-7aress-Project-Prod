@@ -6,14 +6,12 @@
 #include <QDebug>
 
 RadarDevice::RadarDevice(const QString& identifier, QObject* parent)
-    : TemplatedDevice<RadarData>(parent),
-      m_identifier(identifier),
-      m_communicationWatchdog(new QTimer(this))
-{
+    : TemplatedDevice<RadarData>(parent), m_identifier(identifier),
+      m_communicationWatchdog(new QTimer(this)) {
     m_communicationWatchdog->setSingleShot(false);
     m_communicationWatchdog->setInterval(COMMUNICATION_TIMEOUT_MS);
-    connect(m_communicationWatchdog, &QTimer::timeout,
-            this, &RadarDevice::onCommunicationWatchdogTimeout);
+    connect(m_communicationWatchdog, &QTimer::timeout, this,
+            &RadarDevice::onCommunicationWatchdogTimeout);
 }
 
 RadarDevice::~RadarDevice() {
@@ -21,8 +19,7 @@ RadarDevice::~RadarDevice() {
     shutdown();
 }
 
-void RadarDevice::setDependencies(Transport* transport,
-                                   RadarProtocolParser* parser) {
+void RadarDevice::setDependencies(Transport* transport, RadarProtocolParser* parser) {
     m_transport = transport;
     m_parser = parser;
 
@@ -31,8 +28,7 @@ void RadarDevice::setDependencies(Transport* transport,
     m_parser->setParent(this);
 
     // Connect transport signals
-    connect(m_transport, &Transport::frameReceived,
-            this, &RadarDevice::processFrame);
+    connect(m_transport, &Transport::frameReceived, this, &RadarDevice::processFrame);
 
     // Don't listen to transport connectionStateChanged - we manage connection via watchdog
 }
@@ -66,7 +62,8 @@ void RadarDevice::shutdown() {
 }
 
 void RadarDevice::processFrame(const QByteArray& frame) {
-    if (!m_parser) return;
+    if (!m_parser)
+        return;
 
     // Parse frame into messages
     auto messages = m_parser->parse(frame);

@@ -1,9 +1,6 @@
 #include "sectorscanparameterviewmodel.h"
 
-SectorScanParameterViewModel::SectorScanParameterViewModel(QObject *parent)
-    : QObject(parent)
-{
-}
+SectorScanParameterViewModel::SectorScanParameterViewModel(QObject* parent) : QObject(parent) {}
 
 void SectorScanParameterViewModel::setIsEnabled(bool enabled) {
     if (m_isEnabled != enabled) {

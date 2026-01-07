@@ -30,8 +30,7 @@ class QQmlContext;
  * creation and lifecycle management. It also handles registration
  * of ViewModels with the QML context.
  */
-class ViewModelRegistry : public QObject
-{
+class ViewModelRegistry : public QObject {
     Q_OBJECT
 
 public:
@@ -60,33 +59,65 @@ public:
     // ============================================================================
 
     // Core UI ViewModels
-    OsdViewModel* osdViewModel() const { return m_osdViewModel; }
+    OsdViewModel* osdViewModel() const {
+        return m_osdViewModel;
+    }
 
     // Menu ViewModels (separate instances for each menu)
-    MenuViewModel* mainMenuViewModel() const { return m_mainMenuViewModel; }
-    MenuViewModel* reticleMenuViewModel() const { return m_reticleMenuViewModel; }
-    MenuViewModel* colorMenuViewModel() const { return m_colorMenuViewModel; }
+    MenuViewModel* mainMenuViewModel() const {
+        return m_mainMenuViewModel;
+    }
+    MenuViewModel* reticleMenuViewModel() const {
+        return m_reticleMenuViewModel;
+    }
+    MenuViewModel* colorMenuViewModel() const {
+        return m_colorMenuViewModel;
+    }
 
     // Zone Management ViewModels
-    ZoneDefinitionViewModel* zoneDefinitionViewModel() const { return m_zoneDefinitionViewModel; }
-    ZoneMapViewModel* zoneMapViewModel() const { return m_zoneMapViewModel; }
-    AreaZoneParameterViewModel* areaZoneParameterViewModel() const { return m_areaZoneParameterViewModel; }
-    SectorScanParameterViewModel* sectorScanParameterViewModel() const { return m_sectorScanParameterViewModel; }
-    TRPParameterViewModel* trpParameterViewModel() const { return m_trpParameterViewModel; }
+    ZoneDefinitionViewModel* zoneDefinitionViewModel() const {
+        return m_zoneDefinitionViewModel;
+    }
+    ZoneMapViewModel* zoneMapViewModel() const {
+        return m_zoneMapViewModel;
+    }
+    AreaZoneParameterViewModel* areaZoneParameterViewModel() const {
+        return m_areaZoneParameterViewModel;
+    }
+    SectorScanParameterViewModel* sectorScanParameterViewModel() const {
+        return m_sectorScanParameterViewModel;
+    }
+    TRPParameterViewModel* trpParameterViewModel() const {
+        return m_trpParameterViewModel;
+    }
 
     // Ballistics ViewModels
-    ZeroingViewModel* zeroingViewModel() const { return m_zeroingViewModel; }
-    WindageViewModel* windageViewModel() const { return m_windageViewModel; }
-    EnvironmentalViewModel* environmentalViewModel() const { return m_environmentalViewModel; }
-    BrightnessViewModel* brightnessViewModel() const { return m_brightnessViewModel; }
+    ZeroingViewModel* zeroingViewModel() const {
+        return m_zeroingViewModel;
+    }
+    WindageViewModel* windageViewModel() const {
+        return m_windageViewModel;
+    }
+    EnvironmentalViewModel* environmentalViewModel() const {
+        return m_environmentalViewModel;
+    }
+    BrightnessViewModel* brightnessViewModel() const {
+        return m_brightnessViewModel;
+    }
 
     // Calibration ViewModels
-    PresetHomePositionViewModel* presetHomePositionViewModel() const { return m_presetHomePositionViewModel; }
+    PresetHomePositionViewModel* presetHomePositionViewModel() const {
+        return m_presetHomePositionViewModel;
+    }
 
     // System Info ViewModels
     // SystemStatusViewModel* systemStatusViewModel() const { return m_systemStatusViewModel; }  // DISABLED
-    AboutViewModel* aboutViewModel() const { return m_aboutViewModel; }
-    ShutdownConfirmationViewModel* shutdownConfirmationViewModel() const { return m_shutdownConfirmationViewModel; }
+    AboutViewModel* aboutViewModel() const {
+        return m_aboutViewModel;
+    }
+    ShutdownConfirmationViewModel* shutdownConfirmationViewModel() const {
+        return m_shutdownConfirmationViewModel;
+    }
 
 signals:
     void viewModelsCreated();
@@ -127,4 +158,4 @@ private:
     ShutdownConfirmationViewModel* m_shutdownConfirmationViewModel = nullptr;
 };
 
-#endif // VIEWMODELREGISTRY_H
+#endif  // VIEWMODELREGISTRY_H

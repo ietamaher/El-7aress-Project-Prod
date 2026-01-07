@@ -12,9 +12,7 @@
 // CONSTRUCTOR
 // ============================================================================
 
-ZoneEnforcementService::ZoneEnforcementService(QObject* parent)
-    : QObject(parent)
-{
+ZoneEnforcementService::ZoneEnforcementService(QObject* parent) : QObject(parent) {
     qDebug() << "[ZoneEnforcementService] Initialized";
 }
 
@@ -22,23 +20,22 @@ ZoneEnforcementService::ZoneEnforcementService(QObject* parent)
 // ZONE CONFIGURATION
 // ============================================================================
 
-void ZoneEnforcementService::updateZones(const std::vector<AreaZone>& zones)
-{
+void ZoneEnforcementService::updateZones(const std::vector<AreaZone>& zones) {
     m_zones = zones;
 
     // Count enabled zones by type for logging
     int nfzCount = 0, ntzCount = 0;
     for (const auto& zone : m_zones) {
         if (zone.isEnabled) {
-            if (zone.type == ZoneType::NoFire) nfzCount++;
-            if (zone.type == ZoneType::NoTraverse) ntzCount++;
+            if (zone.type == ZoneType::NoFire)
+                nfzCount++;
+            if (zone.type == ZoneType::NoTraverse)
+                ntzCount++;
         }
     }
 
-    qDebug() << "[ZoneEnforcementService] Zones updated:"
-             << m_zones.size() << "total,"
-             << nfzCount << "NFZ enabled,"
-             << ntzCount << "NTZ enabled";
+    qDebug() << "[ZoneEnforcementService] Zones updated:" << m_zones.size() << "total," << nfzCount
+             << "NFZ enabled," << ntzCount << "NTZ enabled";
 
     emit zonesUpdated();
 }
@@ -48,8 +45,7 @@ void ZoneEnforcementService::updateZones(const std::vector<AreaZone>& zones)
 // ============================================================================
 
 ZoneCheckResult ZoneEnforcementService::checkNoFireZone(float azimuth, float elevation,
-                                                          float range) const
-{
+                                                        float range) const {
     ZoneCheckResult result;
 
     for (const auto& zone : m_zones) {
@@ -82,8 +78,7 @@ ZoneCheckResult ZoneEnforcementService::checkNoFireZone(float azimuth, float ele
     return result;
 }
 
-bool ZoneEnforcementService::isInNoFireZone(float azimuth, float elevation, float range) const
-{
+bool ZoneEnforcementService::isInNoFireZone(float azimuth, float elevation, float range) const {
     return checkNoFireZone(azimuth, elevation, range).isInZone;
 }
 
@@ -91,8 +86,7 @@ bool ZoneEnforcementService::isInNoFireZone(float azimuth, float elevation, floa
 // NO-TRAVERSE ZONE CHECKING
 // ============================================================================
 
-ZoneCheckResult ZoneEnforcementService::checkNoTraverseZone(float azimuth, float elevation) const
-{
+ZoneCheckResult ZoneEnforcementService::checkNoTraverseZone(float azimuth, float elevation) const {
     ZoneCheckResult result;
 
     for (const auto& zone : m_zones) {
@@ -122,14 +116,13 @@ ZoneCheckResult ZoneEnforcementService::checkNoTraverseZone(float azimuth, float
     return result;
 }
 
-bool ZoneEnforcementService::isInNoTraverseZone(float azimuth, float elevation) const
-{
+bool ZoneEnforcementService::isInNoTraverseZone(float azimuth, float elevation) const {
     return checkNoTraverseZone(azimuth, elevation).isInZone;
 }
 
-CollisionCheckResult ZoneEnforcementService::checkMovementCollision(float currentAz, float currentEl,
-                                                                      float deltaAz, float deltaEl) const
-{
+CollisionCheckResult ZoneEnforcementService::checkMovementCollision(float currentAz,
+                                                                    float currentEl, float deltaAz,
+                                                                    float deltaEl) const {
     CollisionCheckResult result;
     result.allowedFraction = 1.0;
 
@@ -151,18 +144,20 @@ CollisionCheckResult ZoneEnforcementService::checkMovementCollision(float curren
         if (currentEl < zone.minElevation || currentEl > zone.maxElevation) {
             // If we're not in the elevation band, check if movement would take us there
             if (deltaEl != 0.0f) {
-                bool wouldEnterElBand = (nextEl >= zone.minElevation && nextEl <= zone.maxElevation);
-                if (!wouldEnterElBand) continue;
+                bool wouldEnterElBand =
+                    (nextEl >= zone.minElevation && nextEl <= zone.maxElevation);
+                if (!wouldEnterElBand)
+                    continue;
             } else {
                 continue;
             }
         }
 
         // Check azimuth crossing
-        bool curInside = isAzimuthInRange(static_cast<float>(curAz),
-                                           zone.startAzimuth, zone.endAzimuth);
-        bool nextInside = isAzimuthInRange(static_cast<float>(nextAz),
-                                            zone.startAzimuth, zone.endAzimuth);
+        bool curInside =
+            isAzimuthInRange(static_cast<float>(curAz), zone.startAzimuth, zone.endAzimuth);
+        bool nextInside =
+            isAzimuthInRange(static_cast<float>(nextAz), zone.startAzimuth, zone.endAzimuth);
 
         // Collision: moving from outside to inside
         if (!curInside && nextInside) {
@@ -176,12 +171,15 @@ CollisionCheckResult ZoneEnforcementService::checkMovementCollision(float curren
 
             // Take the minimum positive fraction
             double minFrac = 1.0;
-            if (fracStart >= 0 && fracStart < minFrac) minFrac = fracStart;
-            if (fracEnd >= 0 && fracEnd < minFrac) minFrac = fracEnd;
+            if (fracStart >= 0 && fracStart < minFrac)
+                minFrac = fracStart;
+            if (fracEnd >= 0 && fracEnd < minFrac)
+                minFrac = fracEnd;
 
             if (minFrac < result.allowedFraction) {
                 result.allowedFraction = std::max(0.0, minFrac - ZONE_BOUNDARY_EPS);
-                result.collisionAzimuth = normalizeAzimuth(curAz + deltaAz * result.allowedFraction);
+                result.collisionAzimuth =
+                    normalizeAzimuth(curAz + deltaAz * result.allowedFraction);
                 result.collisionElevation = currentEl + deltaEl * result.allowedFraction;
             }
         }
@@ -190,8 +188,8 @@ CollisionCheckResult ZoneEnforcementService::checkMovementCollision(float curren
     return result;
 }
 
-bool ZoneEnforcementService::wouldCrossIntoNTZ(float currentAz, float currentEl, float deltaAz) const
-{
+bool ZoneEnforcementService::wouldCrossIntoNTZ(float currentAz, float currentEl,
+                                               float deltaAz) const {
     return checkMovementCollision(currentAz, currentEl, deltaAz, 0.0f).wouldCollide;
 }
 
@@ -200,8 +198,7 @@ bool ZoneEnforcementService::wouldCrossIntoNTZ(float currentAz, float currentEl,
 // ============================================================================
 
 ZoneCheckResult ZoneEnforcementService::checkAllZones(float azimuth, float elevation,
-                                                        float range) const
-{
+                                                      float range) const {
     // Check No-Fire first (more restrictive for firing)
     ZoneCheckResult nfzResult = checkNoFireZone(azimuth, elevation, range);
     if (nfzResult.isInZone) {
@@ -213,12 +210,13 @@ ZoneCheckResult ZoneEnforcementService::checkAllZones(float azimuth, float eleva
     return ntzResult;
 }
 
-std::vector<int> ZoneEnforcementService::getZonesContainingPoint(float azimuth, float elevation) const
-{
+std::vector<int> ZoneEnforcementService::getZonesContainingPoint(float azimuth,
+                                                                 float elevation) const {
     std::vector<int> result;
 
     for (const auto& zone : m_zones) {
-        if (!zone.isEnabled) continue;
+        if (!zone.isEnabled)
+            continue;
 
         if (isPointInZone(zone, azimuth, elevation)) {
             result.push_back(zone.id);
@@ -232,8 +230,7 @@ std::vector<int> ZoneEnforcementService::getZonesContainingPoint(float azimuth, 
 // UTILITY FUNCTIONS (static)
 // ============================================================================
 
-double ZoneEnforcementService::normalizeAzimuth(double azimuth)
-{
+double ZoneEnforcementService::normalizeAzimuth(double azimuth) {
     double result = std::fmod(azimuth, 360.0);
     if (result < 0) {
         result += 360.0;
@@ -241,8 +238,7 @@ double ZoneEnforcementService::normalizeAzimuth(double azimuth)
     return result;
 }
 
-bool ZoneEnforcementService::isAzimuthInRange(float azimuth, float startAz, float endAz)
-{
+bool ZoneEnforcementService::isAzimuthInRange(float azimuth, float startAz, float endAz) {
     // Normalize all values to 0-360
     float targetAz = static_cast<float>(normalizeAzimuth(azimuth));
     float start = static_cast<float>(normalizeAzimuth(startAz));
@@ -257,8 +253,7 @@ bool ZoneEnforcementService::isAzimuthInRange(float azimuth, float startAz, floa
     }
 }
 
-double ZoneEnforcementService::shortestSignedDelta(double from, double to)
-{
+double ZoneEnforcementService::shortestSignedDelta(double from, double to) {
     double fromNorm = normalizeAzimuth(from);
     double toNorm = normalizeAzimuth(to);
 
@@ -278,30 +273,31 @@ double ZoneEnforcementService::shortestSignedDelta(double from, double to)
 // INTERNAL HELPERS
 // ============================================================================
 
-bool ZoneEnforcementService::isPointInZone(const AreaZone& zone, float azimuth,
-                                            float elevation, float range) const
-{
+bool ZoneEnforcementService::isPointInZone(const AreaZone& zone, float azimuth, float elevation,
+                                           float range) const {
     // Check azimuth
     bool azMatch = isAzimuthInRange(azimuth, zone.startAzimuth, zone.endAzimuth);
-    if (!azMatch) return false;
+    if (!azMatch)
+        return false;
 
     // Check elevation
     bool elMatch = (elevation >= zone.minElevation && elevation <= zone.maxElevation);
-    if (!elMatch) return false;
+    if (!elMatch)
+        return false;
 
     // Check range (if specified)
     if (range >= 0.0f && (zone.minRange > 0 || zone.maxRange > 0)) {
-        bool rangeMatch = (range >= zone.minRange &&
-                          (zone.maxRange == 0 || range <= zone.maxRange));
-        if (!rangeMatch) return false;
+        bool rangeMatch =
+            (range >= zone.minRange && (zone.maxRange == 0 || range <= zone.maxRange));
+        if (!rangeMatch)
+            return false;
     }
 
     return true;
 }
 
-double ZoneEnforcementService::getCollisionFraction(double current, double boundary,
-                                                     double delta, bool isAzimuth)
-{
+double ZoneEnforcementService::getCollisionFraction(double current, double boundary, double delta,
+                                                    bool isAzimuth) {
     if (std::abs(delta) < 1e-6) {
         return 2.0;  // No movement, no collision
     }

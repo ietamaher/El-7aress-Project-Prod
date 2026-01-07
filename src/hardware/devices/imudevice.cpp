@@ -5,24 +5,19 @@
 #include <QDebug>
 
 ImuDevice::ImuDevice(const QString& identifier, QObject* parent)
-    : TemplatedDevice<ImuData>(parent),
-      m_identifier(identifier),
-      m_pollTimer(new QTimer(this)),
-      m_communicationWatchdog(new QTimer(this)),
-      m_gyroBiasTimer(new QTimer(this))
-{
+    : TemplatedDevice<ImuData>(parent), m_identifier(identifier), m_pollTimer(new QTimer(this)),
+      m_communicationWatchdog(new QTimer(this)), m_gyroBiasTimer(new QTimer(this)) {
     connect(m_pollTimer, &QTimer::timeout, this, &ImuDevice::pollTimerTimeout);
 
     // FIXED: Changed from false to true - watchdog should be single-shot
     m_communicationWatchdog->setSingleShot(true);
     m_communicationWatchdog->setInterval(COMMUNICATION_TIMEOUT_MS);
-    connect(m_communicationWatchdog, &QTimer::timeout,
-            this, &ImuDevice::onCommunicationWatchdogTimeout);
+    connect(m_communicationWatchdog, &QTimer::timeout, this,
+            &ImuDevice::onCommunicationWatchdogTimeout);
 
     m_gyroBiasTimer->setSingleShot(true);
     m_gyroBiasTimer->setInterval(GYRO_BIAS_TIMEOUT_MS);
-    connect(m_gyroBiasTimer, &QTimer::timeout,
-            this, &ImuDevice::onGyroBiasTimeout);
+    connect(m_gyroBiasTimer, &QTimer::timeout, this, &ImuDevice::onGyroBiasTimeout);
 }
 
 ImuDevice::~ImuDevice() {
@@ -31,8 +26,7 @@ ImuDevice::~ImuDevice() {
     m_gyroBiasTimer->stop();
 }
 
-void ImuDevice::setDependencies(Transport* transport,
-                                 Imu3DMGX3ProtocolParser* parser) {
+void ImuDevice::setDependencies(Transport* transport, Imu3DMGX3ProtocolParser* parser) {
     m_transport = transport;
     m_parser = parser;
 
@@ -40,8 +34,7 @@ void ImuDevice::setDependencies(Transport* transport,
     m_parser->setParent(this);
 
     // Connect to transport's frameReceived signal
-    connect(m_transport, &Transport::frameReceived,
-            this, &ImuDevice::processFrame);
+    connect(m_transport, &Transport::frameReceived, this, &ImuDevice::processFrame);
 }
 
 bool ImuDevice::initialize() {
@@ -120,7 +113,8 @@ void ImuDevice::pollTimerTimeout() {
 }
 
 void ImuDevice::sendReadRequest() {
-    if (state() != DeviceState::Online || !m_transport) return;
+    if (state() != DeviceState::Online || !m_transport)
+        return;
 
     // Send 0xCF command (single-shot query for Euler angles + rates)
     QByteArray cmd;
@@ -130,7 +124,8 @@ void ImuDevice::sendReadRequest() {
 }
 
 void ImuDevice::processFrame(const QByteArray& frame) {
-    if (!m_parser) return;
+    if (!m_parser)
+        return;
 
     // Parse the response
     auto messages = m_parser->parse(frame);
@@ -171,14 +166,12 @@ void ImuDevice::processMessage(const Message& message) {
 
         // Compare with threshold (IMU data changes frequently, so emit more often)
         // But still avoid emitting identical data (reduces QML signal overhead)
-        bool dataChanged = (
-            std::abs(newData->rollDeg - currentData->rollDeg) > 0.01 ||
-            std::abs(newData->pitchDeg - currentData->pitchDeg) > 0.01 ||
-            std::abs(newData->yawDeg - currentData->yawDeg) > 0.01 ||
-            std::abs(newData->angRateX_dps - currentData->angRateX_dps) > 0.1 ||
-            std::abs(newData->angRateY_dps - currentData->angRateY_dps) > 0.1 ||
-            std::abs(newData->angRateZ_dps - currentData->angRateZ_dps) > 0.1
-        );
+        bool dataChanged = (std::abs(newData->rollDeg - currentData->rollDeg) > 0.01 ||
+                            std::abs(newData->pitchDeg - currentData->pitchDeg) > 0.01 ||
+                            std::abs(newData->yawDeg - currentData->yawDeg) > 0.01 ||
+                            std::abs(newData->angRateX_dps - currentData->angRateX_dps) > 0.1 ||
+                            std::abs(newData->angRateY_dps - currentData->angRateY_dps) > 0.1 ||
+                            std::abs(newData->angRateZ_dps - currentData->angRateZ_dps) > 0.1);
 
         updateData(newData);
 
@@ -215,6 +208,6 @@ void ImuDevice::setConnectionState(bool connected) {
 
 void ImuDevice::onCommunicationWatchdogTimeout() {
     //qWarning() << m_identifier << "Communication timeout - no data received for"
-     //          << COMMUNICATION_TIMEOUT_MS << "ms";
+    //          << COMMUNICATION_TIMEOUT_MS << "ms";
     setConnectionState(false);
 }

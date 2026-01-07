@@ -14,6 +14,7 @@
  */
 class RadarProtocolParser : public ProtocolParser {
     Q_OBJECT
+
 public:
     explicit RadarProtocolParser(QObject* parent = nullptr);
     ~RadarProtocolParser() override = default;
@@ -22,12 +23,14 @@ public:
     std::vector<MessagePtr> parse(const QByteArray& rawData) override;
 
     // Modbus not used for radar
-    std::vector<MessagePtr> parse(QModbusReply* /*reply*/) override { return {}; }
+    std::vector<MessagePtr> parse(QModbusReply* /*reply*/) override {
+        return {};
+    }
 
 private:
     // Helper methods
     bool validateChecksum(const QByteArray& sentence);
     MessagePtr parseRATTM(const QByteArray& sentence);
 
-    QByteArray m_buffer; // Buffer for incomplete NMEA sentences
+    QByteArray m_buffer;  // Buffer for incomplete NMEA sentences
 };
