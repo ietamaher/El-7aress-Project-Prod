@@ -142,13 +142,20 @@ void ShutdownConfirmationController::performShutdown()
 {
     qInfo() << "ShutdownConfirmationController: Performing system shutdown...";
 
-    // Hide the dialog
     hide();
     emit dialogFinished();
 
-    // Quit the Qt application
-    QCoreApplication::quit();
+    // Sync filesystem first
+    QProcess::execute("sync");
 
-    // Execute system shutdown command (Linux)
-    QProcess::startDetached("sudo shutdown", QStringList() << "-h" << "now");
+    // Use systemctl for service-based deployment
+    bool started = QProcess::startDetached("systemctl", QStringList() << "poweroff");
+    
+    if (!started) {
+        qCritical() << "Failed to initiate system poweroff via systemctl!";
+        // Fallback
+        QProcess::startDetached("sudo", QStringList() << "shutdown" << "-h" << "now");
+    }
+
+    QCoreApplication::quit();
 }
