@@ -256,7 +256,7 @@ void OsdViewModel::updateImuData(bool connected, double yaw, double pitch, doubl
         }
 
         if (changed) {
- 
+
         }
     }
 
@@ -504,15 +504,15 @@ void OsdViewModel::updateReticleOffset(float screen_x_px, float screen_y_px)
 
 void OsdViewModel::updateCcipPipper(float screen_x_px, float screen_y_px, bool visible, const QString& status)
 {
-    // ========================================================================
+    // ============================================================================
     // CCIP PIPPER UPDATE
-    // ========================================================================
+    // ============================================================================
     // Updates CCIP (Continuously Computed Impact Point) pipper position
     // This shows where bullets will impact with lead angle compensation
     //
     // Position is absolute screen coordinates (same as reticle input)
     // We store them directly for QML positioning
-    // ========================================================================
+    // ============================================================================
 
     bool positionChanged = (m_ccipX != screen_x_px || m_ccipY != screen_y_px);
     bool visibilityChanged = (m_ccipVisible != visible);

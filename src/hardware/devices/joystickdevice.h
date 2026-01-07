@@ -10,17 +10,17 @@ class JoystickProtocolParser;
 
 /**
  * @brief SDL2-based joystick input device
- * 
+ *
  * This device handles joystick input using the SDL2 library.
  * It specifically targets the Thrustmaster HOTAS Warthog joystick
  * by GUID, but can be adapted for other joysticks.
- * 
+ *
  * Architecture:
  * - Inherits from TemplatedDevice<JoystickData> for thread-safe data access
  * - Uses SDL2 for joystick communication (SDL is the "transport" layer)
  * - JoystickProtocolParser interprets SDL events into JoystickData
  * - Polls at ~60Hz for responsive input
- * 
+ *
  * Usage:
  * 1. Create device instance
  * 2. Set parser via setParser()
@@ -42,7 +42,7 @@ public:
     /**
      * @brief Set the protocol parser dependency
      * @param parser The parser to use for interpreting SDL events
-     * 
+     *
      * Must be called before initialize()
      */
     void setParser(JoystickProtocolParser* parser);
@@ -50,7 +50,7 @@ public:
     /**
      * @brief Set the target joystick GUID
      * @param guid The SDL joystick GUID string (32 hex characters)
-     * 
+     *
      * Default is Thrustmaster HOTAS Warthog: "030000004f0400000204000011010000"
      * Must be called before initialize()
      */
@@ -64,7 +64,7 @@ public:
 
     /**
      * @brief Print all connected joystick GUIDs to debug log
-     * 
+     *
      * Useful for identifying the GUID of a connected joystick
      */
     static void printJoystickGUIDs();

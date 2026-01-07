@@ -24,14 +24,11 @@
 #include <QQmlApplicationEngine>
 #include <QDebug>
 
-SystemController::SystemController(QObject *parent)
-    : QObject(parent)
-{
+SystemController::SystemController(QObject* parent) : QObject(parent) {
     qInfo() << "SystemController: Created";
 }
 
-SystemController::~SystemController()
-{
+SystemController::~SystemController() {
     qInfo() << "SystemController: Shutting down...";
 
     // Managers handle their own cleanup
@@ -44,8 +41,7 @@ SystemController::~SystemController()
 // PHASE 1: INITIALIZE HARDWARE
 // ============================================================================
 
-void SystemController::initializeHardware()
-{
+void SystemController::initializeHardware() {
     qInfo() << "=== PHASE 1: Hardware Initialization ===";
 
     // 1. Create SystemStateModel (central data hub)
@@ -86,8 +82,7 @@ void SystemController::initializeHardware()
 // PHASE 2: INITIALIZE QML SYSTEM
 // ============================================================================
 
-void SystemController::initializeQmlSystem(QQmlApplicationEngine* engine)
-{
+void SystemController::initializeQmlSystem(QQmlApplicationEngine* engine) {
     qInfo() << "=== PHASE 2: QML System Initialization ===";
 
     if (!engine) {
@@ -149,8 +144,7 @@ void SystemController::initializeQmlSystem(QQmlApplicationEngine* engine)
 // PHASE 3: START SYSTEM
 // ============================================================================
 
-void SystemController::startSystem()
-{
+void SystemController::startSystem() {
     qInfo() << "=== PHASE 3: System Startup ===";
 
     // 1. Start the OSD startup sequence (shows professional startup messages)
@@ -178,8 +172,7 @@ void SystemController::startSystem()
 // HELPER METHODS
 // ============================================================================
 
-void SystemController::createManagers()
-{
+void SystemController::createManagers() {
     qInfo() << "  Creating managers...";
 
     // Create HardwareManager
@@ -189,18 +182,13 @@ void SystemController::createManagers()
     m_viewModelRegistry = new ViewModelRegistry(this);
 
     // Create ControllerRegistry
-    m_controllerRegistry = new ControllerRegistry(
-        m_hardwareManager,
-        m_viewModelRegistry,
-        m_systemStateModel,
-        this
-    );
+    m_controllerRegistry =
+        new ControllerRegistry(m_hardwareManager, m_viewModelRegistry, m_systemStateModel, this);
 
     qInfo() << "    ✓ All managers created";
 }
 
-void SystemController::connectVideoToProvider()
-{
+void SystemController::connectVideoToProvider() {
     if (!m_videoProvider || !m_hardwareManager) {
         qWarning() << "Cannot connect video: missing components";
         return;
@@ -215,29 +203,36 @@ void SystemController::connectVideoToProvider()
 
     // Day camera
     if (m_hardwareManager->dayVideoProcessor()) {
-        connect(m_hardwareManager->dayVideoProcessor(), &CameraVideoStreamDevice::frameDataReady,
-                this, [this](const FrameData& data) {
-                    // Extract only the image we need (still 3.1 MB but only when camera is active)
-                    if (data.cameraIndex == 0 && m_systemStateModel->data().activeCameraIsDay) {
-                        // QImage uses implicit sharing - assignment is cheap, copy-on-write
-                        m_videoProvider->updateImage(data.baseImage);
-                    }
-                    // ✅ FrameData goes out of scope here, releasing the QImage reference
-                }, Qt::QueuedConnection);  // Explicit connection type for clarity
-        qInfo() << "    ✓ Day camera connected to video provider (queued connection for thread safety)";
+        connect(
+            m_hardwareManager->dayVideoProcessor(), &CameraVideoStreamDevice::frameDataReady, this,
+            [this](const FrameData& data) {
+                // Extract only the image we need (still 3.1 MB but only when camera is active)
+                if (data.cameraIndex == 0 && m_systemStateModel->data().activeCameraIsDay) {
+                    // QImage uses implicit sharing - assignment is cheap, copy-on-write
+                    m_videoProvider->updateImage(data.baseImage);
+                }
+                // ✅ FrameData goes out of scope here, releasing the QImage reference
+            },
+            Qt::QueuedConnection);  // Explicit connection type for clarity
+        qInfo()
+            << "    ✓ Day camera connected to video provider (queued connection for thread safety)";
     }
 
     // Night camera
     if (m_hardwareManager->nightVideoProcessor()) {
-        connect(m_hardwareManager->nightVideoProcessor(), &CameraVideoStreamDevice::frameDataReady,
-                this, [this](const FrameData& data) {
-                    // Extract only the image we need (still 3.1 MB but only when camera is active)
-                    if (data.cameraIndex == 1 && !m_systemStateModel->data().activeCameraIsDay) {
-                        // QImage uses implicit sharing - assignment is cheap, copy-on-write
-                        m_videoProvider->updateImage(data.baseImage);
-                    }
-                    // ✅ FrameData goes out of scope here, releasing the QImage reference
-                }, Qt::QueuedConnection);  // Explicit connection type for clarity
-        qInfo() << "    ✓ Night camera connected to video provider (queued connection for thread safety)";
+        connect(
+            m_hardwareManager->nightVideoProcessor(), &CameraVideoStreamDevice::frameDataReady,
+            this,
+            [this](const FrameData& data) {
+                // Extract only the image we need (still 3.1 MB but only when camera is active)
+                if (data.cameraIndex == 1 && !m_systemStateModel->data().activeCameraIsDay) {
+                    // QImage uses implicit sharing - assignment is cheap, copy-on-write
+                    m_videoProvider->updateImage(data.baseImage);
+                }
+                // ✅ FrameData goes out of scope here, releasing the QImage reference
+            },
+            Qt::QueuedConnection);  // Explicit connection type for clarity
+        qInfo() << "    ✓ Night camera connected to video provider (queued connection for thread "
+                   "safety)";
     }
 }

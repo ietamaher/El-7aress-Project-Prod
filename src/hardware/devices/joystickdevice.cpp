@@ -175,7 +175,7 @@ void JoystickDevice::pollJoystick()
 bool JoystickDevice::initializeSDL()
 {
     if (SDL_Init(SDL_INIT_JOYSTICK) < 0) {
-        qCritical() << "JoystickDevice: Failed to initialize SDL joystick subsystem:" 
+        qCritical() << "JoystickDevice: Failed to initialize SDL joystick subsystem:"
                     << SDL_GetError();
         emit deviceError(QString("SDL initialization failed: %1").arg(SDL_GetError()));
         return false;
@@ -205,7 +205,7 @@ bool JoystickDevice::openJoystick()
         SDL_JoystickGUID guid = SDL_JoystickGetDeviceGUID(i);
         char guidStr[33];  // 32 hex characters + null terminator
         SDL_JoystickGetGUIDString(guid, guidStr, sizeof(guidStr));
-        
+
         qDebug() << "JoystickDevice: Index" << i << "GUID:" << guidStr;
 
         // Compare with target GUID
@@ -241,7 +241,7 @@ void JoystickDevice::emitEventSignals(const SDL_Event& event)
 
         case SDL_JOYBUTTONDOWN:
         case SDL_JOYBUTTONUP:
-            emit buttonPressed(event.jbutton.button, 
+            emit buttonPressed(event.jbutton.button,
                              event.type == SDL_JOYBUTTONDOWN);
             break;
 
@@ -268,7 +268,7 @@ void JoystickDevice::printJoystickGUIDs()
         SDL_JoystickGUID guid = SDL_JoystickGetDeviceGUID(i);
         char guidStr[33];
         SDL_JoystickGetGUIDString(guid, guidStr, sizeof(guidStr));
-        
+
         SDL_Joystick* joy = SDL_JoystickOpen(i);
         if (joy) {
             qDebug() << "Index:" << i;

@@ -41,14 +41,14 @@ CameraVideoStreamDevice::CameraVideoStreamDevice(int cameraIndex,
     m_stateModel(stateModel),
     m_maxTrackedTargets(1),     // const int - declared early
     m_abortRequest(false),      // atomic<bool> - declared after maxTrackedTargets
-    
+
     // State variables in declaration order
     m_stabEnabled(false),
     m_currentAzimuth(0.0f),
     m_currentElevation(0.0f),
     m_cameraFOV(10.4f),
     m_lrfDistance(0.0f),
-    
+
     m_sysCharged(true),
     m_sysArmed(false),
     m_sysReady(true),           // bool - declared before other atomics
@@ -56,12 +56,12 @@ CameraVideoStreamDevice::CameraVideoStreamDevice(int cameraIndex,
     m_trackingEnabled(false),   // atomic<bool> - declared after m_sysReady
     m_trackerInitialized(false),
     m_detectionEnabled(false),  // atomic<bool> - declared last among detection flags
-    
+
     // GStreamer Components
     m_pipeline(nullptr),
     m_appSink(nullptr),
     m_gstLoop(nullptr),
-    
+
     // VPI Components & State (in declaration order)
     m_vpiBackend(VPI_BACKEND_CUDA),
     m_vpiStream(nullptr),
@@ -84,7 +84,7 @@ CameraVideoStreamDevice::CameraVideoStreamDevice(int cameraIndex,
 
     // OpenCV Buffers
     m_yuy2_host_buffer(),       // cv::Mat
-    
+
     // State Variables (in declaration order from header)
     m_currentMode(OperationalMode::Surveillance),
     m_motionMode(MotionMode::Manual),
@@ -92,7 +92,7 @@ CameraVideoStreamDevice::CameraVideoStreamDevice(int cameraIndex,
     m_currentZeroingApplied(false),
     m_currentZeroingAzOffset(0.0f),
     m_currentZeroingElOffset(0.0f),
-    
+
     m_currentWindageModeActive(false),
     m_currentWindageApplied(false),
     m_currentWindageSpeed(0.0f),
@@ -116,7 +116,7 @@ CameraVideoStreamDevice::CameraVideoStreamDevice(int cameraIndex,
     m_colorStyle(70, 226, 165),
     m_isLacActiveForReticle(false),
     m_ballDropActive(false),
-    
+
     // YoloInference Engine (last member)
     // CUDA is always enabled for GPU acceleration
     // Inference runs only on day camera (controlled by runtime check at line 614)
@@ -252,11 +252,11 @@ void CameraVideoStreamDevice::run()
 
         m_yuy2_host_buffer.create(m_sourceHeight, m_sourceWidth, CV_8UC2);
 
-        // =====================================================================
+        // ============================================================================
         // LATENCY FIX #2: Start frame processing consumer thread
         // The consumer thread runs independently, processing frames from the queue
         // This decouples GStreamer streaming from heavy VPI/YOLO processing
-        // =====================================================================
+        // ============================================================================
         m_processingThreadRunning.store(true);
         consumerFuture = QtConcurrent::run([this]() {
             frameProcessingConsumer();
@@ -283,9 +283,9 @@ void CameraVideoStreamDevice::run()
         qCritical() << "Cam" << m_cameraIndex << ": Unknown exception in run()";
     }
 
-    // =========================================================================
+    // ============================================================================
     // CLEANUP SEQUENCE: Stop consumer thread, then clean up resources
-    // =========================================================================
+    // ============================================================================
     emit statusUpdate(m_cameraIndex, "Stopping pipeline and cleaning up...");
     qInfo() << "Cam" << m_cameraIndex << ": Starting cleanup sequence...";
 
@@ -355,17 +355,17 @@ void CameraVideoStreamDevice::onSystemStateChanged(const SystemStateData &newSta
     m_fireMode = newState.fireMode; // Assuming fireMode is the rate mode
     m_reticleType = newState.reticleType; // Assuming reticleType is the type
     m_colorStyle = newState.colorStyle; // Assuming colorStyle is the color style
-     m_currentZeroingModeActive  = newState.zeroingModeActive  ;  
+     m_currentZeroingModeActive  = newState.zeroingModeActive  ;
      m_currentZeroingApplied = newState.zeroingAppliedToBallistics;
      m_currentZeroingAzOffset = newState.zeroingAzimuthOffset;
-     m_currentZeroingElOffset = newState.zeroingElevationOffset;   
+     m_currentZeroingElOffset = newState.zeroingElevationOffset;
 
      m_currentWindageModeActive  = newState.windageModeActive;
      m_currentWindageApplied = newState.windageAppliedToBallistics;
     m_currentWindageSpeed = newState.windageSpeedKnots; // Assuming this is the windage speed in knots
     m_currentWindageDirection = newState.windageDirectionDegrees;
-    m_currentCalculatedCrosswind = newState.calculatedCrosswindMS;  
- 
+    m_currentCalculatedCrosswind = newState.calculatedCrosswindMS;
+
     m_currentIsReticleInNoFireZone  = newState.isReticleInNoFireZone; // Assuming this is the no-fire zone status
     // Update the gimbal stopped at NTZ limit status
     m_currentGimbalStoppedAtNTZLimit = newState.isReticleInNoTraverseZone; // Assuming this is the NTZ limit status
@@ -414,14 +414,14 @@ bool CameraVideoStreamDevice::initializeGStreamer()
     }
     gst_init(nullptr, nullptr);
 
-    // =========================================================================
+    // ============================================================================
     // LATENCY FIX #3: Pipeline tuning for minimal latency
     // Expert recommendations for real-time military EO/IR systems:
     // - max-lateness=0: GStreamer discards anything older than NOW
     // - qos=true: upstream elements adapt their rate (critical for backpressure)
     // - processing-deadline=0: forces no tolerance for long processing
     // - method=nearest-neighbour: fastest scaling (bilinear disabled for raw preview)
-    // =========================================================================
+    // ============================================================================
     QString pipelineStr = QString("v4l2src device=%1 do-timestamp=true ! "
         "video/x-raw,format=YUY2,width=%2,height=%3,framerate=30/1 ! "
         "videocrop top=%4 left=%6 bottom=%5 right=%7 ! "
@@ -498,11 +498,11 @@ GstFlowReturn CameraVideoStreamDevice::on_new_sample_from_sink(GstAppSink *sink,
 
 GstFlowReturn CameraVideoStreamDevice::handleNewSample(GstAppSink *sink)
 {
-    // =========================================================================
+    // ============================================================================
     // NON-BLOCKING APPSINK CALLBACK (Latency Fix #2)
     // Expert recommendation: Keep only the latest frame, drop all old frames
     // This ensures real-time correct behavior: gimbal stops instantly visually
-    // =========================================================================
+    // ============================================================================
 
     GstSample *sample = gst_app_sink_pull_sample(sink);
     if (!sample) {
@@ -559,10 +559,10 @@ GstFlowReturn CameraVideoStreamDevice::handleNewSample(GstAppSink *sink)
     return GST_FLOW_OK;
 }
 
-// =============================================================================
+// ============================================================================
 // FRAME PROCESSING CONSUMER (Latency Fix #2 - continued)
 // This runs in a separate thread from the GStreamer streaming thread
-// =============================================================================
+// ============================================================================
 void CameraVideoStreamDevice::frameProcessingConsumer()
 {
     qInfo() << "Cam" << m_cameraIndex << ": Frame processing consumer started";
@@ -755,9 +755,9 @@ bool CameraVideoStreamDevice::processFrame(GstBuffer *buffer)
         cv::cvtColor(m_yuy2_host_buffer, cvFrameBGRA, cv::COLOR_YUV2BGRA_YUY2);
         if (cvFrameBGRA.empty()) throw std::runtime_error("cv::cvtColor failed YUY2->BGRA.");
 
-        // ====================================================================
+        // ============================================================================
         // ASYNC OBJECT DETECTION - Non-blocking inference
-        // ====================================================================
+        // ============================================================================
         std::vector<YoloDetection> detections;
         bool detection_enabled = m_detectionEnabled.load(std::memory_order_relaxed);
 
@@ -925,9 +925,9 @@ bool CameraVideoStreamDevice::processFrame(GstBuffer *buffer)
             }
         }
 
-        // ========================================================================
+        // ============================================================================
         // CCIP STABILITY FIX: Velocity filtering with dead-band and EMA
-        // ========================================================================
+        // ============================================================================
         // Raw frame-to-frame velocity is extremely noisy due to sub-pixel tracker
         // jitter (±0.3px creates ±10px/s velocity spikes at 30Hz).
         // This causes CCIP to jump around even for stationary targets.
@@ -935,7 +935,7 @@ bool CameraVideoStreamDevice::processFrame(GstBuffer *buffer)
         // Solution: Apply EMA filter + dead-band BEFORE storing velocity.
         // - EMA with tau=300ms provides strong smoothing
         // - Dead-band of 3 px/s ignores noise from stationary targets
-        // ========================================================================
+        // ============================================================================
         if (m_stateModel) {
             bool trackerIsValidThisFrame = (m_trackerInitialized && m_currentTarget.state == VPI_TRACKING_STATE_TRACKED);
             float cX_px = 0.0f, cY_px = 0.0f, tW_px = 0.0f, tH_px = 0.0f;
@@ -1077,9 +1077,9 @@ bool CameraVideoStreamDevice::processFrame(GstBuffer *buffer)
         data.chargeCycleInProgress = m_chargeCycleInProgress;
         data.weaponCharged = m_weaponCharged;
 
-        // ====================================================================
+        // ============================================================================
         // LATENCY MEASUREMENT: Calculate glass-to-glass latency
-        // ====================================================================
+        // ============================================================================
         /*qint64 frameCompleteTime = m_latencyTimer.elapsed();
         qint64 frameLatency_ms = frameCompleteTime - m_frameArrivalTime;
         m_totalLatency_ms += frameLatency_ms;
@@ -1169,7 +1169,7 @@ bool CameraVideoStreamDevice::runTrackingCycle(VPIImage vpiFrameInput)
         VPIArrayData confidenceData;
         CHECK_VPI_STATUS(vpiArrayLockData(m_vpiOutTargets, VPI_LOCK_READ, VPI_ARRAY_BUFFER_HOST_AOS, &outTargetsData));
         CHECK_VPI_STATUS(vpiArrayLockData(m_vpiConfidenceScores, VPI_LOCK_READ, VPI_ARRAY_BUFFER_HOST_AOS, &confidenceData));
-        
+
         //qDebug() << "[CAM" << m_cameraIndex << "] runTrackingCycle: After localize, outTargetsData size:" << *outTargetsData.buffer.aos.sizePointer;
 
         bool target_found = false;

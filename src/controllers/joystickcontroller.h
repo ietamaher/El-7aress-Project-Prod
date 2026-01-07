@@ -9,17 +9,13 @@
 #include "controllers/cameracontroller.h"
 #include "controllers/weaponcontroller.h"
 
-class JoystickController : public QObject
-{
+class JoystickController : public QObject {
     Q_OBJECT
 
 public:
-    explicit JoystickController(JoystickDataModel *joystickModel,
-                                SystemStateModel *stateModel,
-                                GimbalController *gimbalCtrl,
-                                CameraController *cameraCtrl,
-                                WeaponController *weaponCtrl,
-                                QObject *parent = nullptr);
+    explicit JoystickController(JoystickDataModel* joystickModel, SystemStateModel* stateModel,
+                                GimbalController* gimbalCtrl, CameraController* cameraCtrl,
+                                WeaponController* weaponCtrl, QObject* parent = nullptr);
     ~JoystickController() = default;
 
 signals:
@@ -31,37 +27,37 @@ public slots:
     void onHatChanged(int hat, int value);
 
 private:
-    // ==========================================================================
+    // ============================================================================
     // Constants
-    // ==========================================================================
+    // ============================================================================
     static constexpr int DOUBLE_CLICK_INTERVAL_MS = 1000;
 
-    // ==========================================================================
+    // ============================================================================
     // Dependencies (injected controllers and models)
-    // ==========================================================================
-    JoystickDataModel *m_joystickModel = nullptr;
-    SystemStateModel  *m_stateModel = nullptr;
-    GimbalController  *m_gimbalController = nullptr;
-    CameraController  *m_cameraController = nullptr;
-    WeaponController  *m_weaponController = nullptr;
+    // ============================================================================
+    JoystickDataModel* m_joystickModel = nullptr;
+    SystemStateModel* m_stateModel = nullptr;
+    GimbalController* m_gimbalController = nullptr;
+    CameraController* m_cameraController = nullptr;
+    WeaponController* m_weaponController = nullptr;
 
-    // ==========================================================================
+    // ============================================================================
     // Camera State
-    // ==========================================================================
+    // ============================================================================
     int m_activeCameraIndex = 0;
     int m_videoLUT = 0;
 
-    // ==========================================================================
+    // ============================================================================
     // Track Button State (double-click detection)
-    // ==========================================================================
+    // ============================================================================
     qint64 m_lastTrackButtonPressTime = 0;
 
-    // ==========================================================================
+    // ============================================================================
     // LRF State
     // PDF: Single press = single measurement, Double press = toggle continuous mode
-    // ==========================================================================
+    // ============================================================================
     qint64 m_lastLrfButtonPressTime = 0;
-    bool   m_continuousLrfActive = false;
+    bool m_continuousLrfActive = false;
 };
 
-#endif // JOYSTICKCONTROLLER_H
+#endif  // JOYSTICKCONTROLLER_H

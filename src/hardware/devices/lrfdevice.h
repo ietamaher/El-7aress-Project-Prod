@@ -12,14 +12,14 @@ class Message;
 
 /**
  * @brief Laser Range Finder device implementation
- * 
+ *
  * Manages communication with Jioptics LRF using dependency-injected
  * transport and protocol parser. Provides ranging, temperature reading,
  * and device status monitoring capabilities.
  */
 class LRFDevice : public TemplatedDevice<LrfData> {
     Q_OBJECT
-    
+
 public:
     explicit LRFDevice(QObject* parent = nullptr);
     ~LRFDevice() override;
@@ -28,7 +28,7 @@ public:
     DeviceType type() const override;
     Q_INVOKABLE bool initialize() override;
     void shutdown() override;
-    
+
     // Dependency injection
     Q_INVOKABLE void setDependencies(Transport* transport, LrfProtocolParser* parser);
 
@@ -39,7 +39,7 @@ public:
     Q_INVOKABLE void sendContinuousRanging5Hz();
     Q_INVOKABLE void sendContinuousRanging10Hz();
     Q_INVOKABLE void stopRanging();
-    
+
     // Public API - Status queries
     Q_INVOKABLE void queryAccumulatedLaserCount();
     Q_INVOKABLE void queryProductInfo();

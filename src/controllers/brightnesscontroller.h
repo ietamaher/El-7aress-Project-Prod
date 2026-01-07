@@ -15,12 +15,11 @@ class SystemStateModel;
  * Brightness values range from 10% to 100% in 10% steps.
  * Default value is 70%.
  */
-class BrightnessController : public QObject
-{
+class BrightnessController : public QObject {
     Q_OBJECT
 
 public:
-    explicit BrightnessController(QObject *parent = nullptr);
+    explicit BrightnessController(QObject* parent = nullptr);
     void initialize();
     void setViewModel(BrightnessViewModel* viewModel);
     void setStateModel(SystemStateModel* stateModel);
@@ -41,11 +40,7 @@ private slots:
     void onColorStyleChanged(const QColor& color);
 
 private:
-    enum class BrightnessState {
-        Idle,
-        Adjusting,
-        Applied
-    };
+    enum class BrightnessState { Idle, Adjusting, Applied };
 
     void updateUI();
     void transitionToState(BrightnessState newState);
@@ -65,4 +60,4 @@ private:
     static constexpr int DEFAULT_BRIGHTNESS = 70;
 };
 
-#endif // BRIGHTNESSCONTROLLER_H
+#endif  // BRIGHTNESSCONTROLLER_H

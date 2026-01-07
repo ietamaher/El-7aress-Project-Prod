@@ -121,7 +121,7 @@ signals:
      * @param avgTemperature Average temperature across all sensors (°C)
      */
     void temperatureReceived(double avgTemperature);
-        
+
 private:
     /**
      * @brief Parses a complete 0xCF packet (31 bytes)

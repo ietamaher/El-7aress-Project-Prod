@@ -18,12 +18,11 @@ struct SystemStateData;
  * PHASE 1 (Active NOW): Updates from SystemStateModel
  * PHASE 2 (Later): Can also update from CameraVideoStreamDevice FrameData
  */
-class OsdController : public QObject
-{
+class OsdController : public QObject {
     Q_OBJECT
 
 public:
-    explicit OsdController(QObject *parent = nullptr);
+    explicit OsdController(QObject* parent = nullptr);
 
     // Dependency injection (called by SystemController)
     void setViewModel(OsdViewModel* viewModel);
@@ -88,4 +87,4 @@ private:
     bool m_staticDetectionComplete;
 };
 
-#endif // OSDCONTROLLER_H
+#endif  // OSDCONTROLLER_H

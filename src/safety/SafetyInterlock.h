@@ -97,9 +97,9 @@ public:
     explicit SafetyInterlock(SystemStateModel* stateModel, QObject* parent = nullptr);
     ~SafetyInterlock() override;
 
-    // ========================================================================
+    // ============================================================================
     // CORE SAFETY QUERIES - Primary interface for safety decisions
-    // ========================================================================
+    // ============================================================================
 
     /**
      * @brief Check if weapon fire is permitted
@@ -162,9 +162,9 @@ public:
      */
     bool canHome(SafetyDenialReason* outReason = nullptr) const;
 
-    // ========================================================================
+    // ============================================================================
     // STATE ACCESSORS (read-only)
-    // ========================================================================
+    // ============================================================================
 
     /**
      * @brief Check if emergency stop is active
@@ -244,9 +244,9 @@ signals:
     void motionPermissionChanged(bool permitted, SafetyDenialReason reason);
 
 private:
-    // ========================================================================
+    // ============================================================================
     // AUDIT LOGGING HELPERS
-    // ========================================================================
+    // ============================================================================
     void logAuditEvent(const QString& operation, bool permitted,
                        SafetyDenialReason reason) const;
 
@@ -259,9 +259,9 @@ private:
     bool m_lastCanCharge = false;
     bool m_lastCanMove = false;
 
-    // ========================================================================
+    // ============================================================================
     // AUDIT LOGGING STATE (Rate-limited to prevent log spam)
-    // ========================================================================
+    // ============================================================================
     mutable qint64 m_lastFireLogTime = 0;
     mutable qint64 m_lastChargeLogTime = 0;
     mutable qint64 m_lastMoveLogTime = 0;

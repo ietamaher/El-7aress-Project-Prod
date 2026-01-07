@@ -25,12 +25,11 @@ class SystemStateModel;
  * This controller manages the lifecycle and transitions between different
  * menu screens and procedures in the application.
  */
-class ApplicationController : public QObject
-{
+class ApplicationController : public QObject {
     Q_OBJECT
 
 public:
-    explicit ApplicationController(QObject *parent = nullptr);
+    explicit ApplicationController(QObject* parent = nullptr);
 
     // Dependency injection - called by SystemController
     void setMainMenuController(MainMenuController* controller);
@@ -148,4 +147,4 @@ private:
     SystemStateModel* m_systemStateModel;
 };
 
-#endif // APPLICATIONCONTROLLER_H
+#endif  // APPLICATIONCONTROLLER_H

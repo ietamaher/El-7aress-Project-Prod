@@ -18,13 +18,13 @@ LRFDevice::LRFDevice(QObject* parent)
      connect(m_statusCheckTimer, &QTimer::timeout, this, &LRFDevice::checkLrfStatus);
 
     m_commandResponseTimer->setSingleShot(true);
-    connect(m_commandResponseTimer, &QTimer::timeout, 
+    connect(m_commandResponseTimer, &QTimer::timeout,
             this, &LRFDevice::handleCommandResponseTimeout);
 
     m_communicationWatchdog->setInterval(COMMUNICATION_TIMEOUT_MS);
     m_communicationWatchdog->setSingleShot(true); // It only fires once per interval
     connect(m_communicationWatchdog, &QTimer::timeout,
-            this, &LRFDevice::onCommunicationWatchdogTimeout);            
+            this, &LRFDevice::onCommunicationWatchdogTimeout);
 
 }
 
@@ -32,8 +32,8 @@ LRFDevice::~LRFDevice() {
     shutdown();
 }
 
-IDevice::DeviceType LRFDevice::type() const { 
-    return DeviceType::LRF; 
+IDevice::DeviceType LRFDevice::type() const {
+    return DeviceType::LRF;
 }
 
 void LRFDevice::setDependencies(Transport* transport, LrfProtocolParser* parser) {
@@ -45,7 +45,7 @@ void LRFDevice::setDependencies(Transport* transport, LrfProtocolParser* parser)
     m_parser->setParent(this);
 
     // Connect transport signals
-    connect(m_transport, &Transport::frameReceived, 
+    connect(m_transport, &Transport::frameReceived,
             this, &LRFDevice::processFrame);
 }
 
@@ -71,7 +71,7 @@ bool LRFDevice::initialize() {
 
 void LRFDevice::shutdown() {
     m_statusCheckTimer->stop();
-    m_communicationWatchdog->stop();    
+    m_communicationWatchdog->stop();
     if (m_transport) {
         QMetaObject::invokeMethod(m_transport, "close", Qt::QueuedConnection);
     }
@@ -79,40 +79,40 @@ void LRFDevice::shutdown() {
 }
 
 // Command API implementations
-void LRFDevice::sendSelfCheck() { 
-    sendCommand(0x01); 
+void LRFDevice::sendSelfCheck() {
+    sendCommand(0x01);
 }
 
-void LRFDevice::sendSingleRanging() { 
-    sendCommand(0x0B); 
+void LRFDevice::sendSingleRanging() {
+    sendCommand(0x0B);
 }
 
-void LRFDevice::sendContinuousRanging1Hz() { 
-    sendCommand(0x0C); 
+void LRFDevice::sendContinuousRanging1Hz() {
+    sendCommand(0x0C);
 }
 
-void LRFDevice::sendContinuousRanging5Hz() { 
-    sendCommand(0x02); 
+void LRFDevice::sendContinuousRanging5Hz() {
+    sendCommand(0x02);
 }
 
-void LRFDevice::sendContinuousRanging10Hz() { 
-    sendCommand(0x04); 
+void LRFDevice::sendContinuousRanging10Hz() {
+    sendCommand(0x04);
 }
 
-void LRFDevice::stopRanging() { 
-    sendCommand(0x05); 
+void LRFDevice::stopRanging() {
+    sendCommand(0x05);
 }
 
-void LRFDevice::queryAccumulatedLaserCount() { 
-    sendCommand(0x0A); 
+void LRFDevice::queryAccumulatedLaserCount() {
+    sendCommand(0x0A);
 }
 
-void LRFDevice::queryProductInfo() { 
-    sendCommand(0x10); 
+void LRFDevice::queryProductInfo() {
+    sendCommand(0x10);
 }
 
-void LRFDevice::queryTemperature() { 
-    sendCommand(0x06); 
+void LRFDevice::queryTemperature() {
+    sendCommand(0x06);
 }
 
 void LRFDevice::sendCommand(quint8 commandCode) {
@@ -129,7 +129,7 @@ void LRFDevice::processFrame(const QByteArray& frame) {
 
     setConnectionState(true);
     resetCommunicationWatchdog();
-    
+
     const auto messages = m_parser->parse(frame);
     if (!messages.empty()) {
         m_commandResponseTimer->stop();
@@ -149,7 +149,7 @@ void LRFDevice::processMessage(const Message& message) {
         newData->isConnected = true;
         updateData(newData);
         emit lrfDataChanged(newData);
-    } 
+    }
     else if (message.typeId() == Message::Type::LrfInfoType) {
         auto const* info = static_cast<const LrfInfoMessage*>(&message);
         emit productInfoReceived(info->productId(), info->softwareVersion());

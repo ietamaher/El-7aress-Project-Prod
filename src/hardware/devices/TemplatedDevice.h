@@ -7,10 +7,10 @@
 
 /**
  * @brief Template base class providing thread-safe data access for devices
- * 
+ *
  * This template wraps device-specific data (TData) with thread-safe
  * read/write access using shared pointers and read-write locks.
- * 
+ *
  * @tparam TData Device-specific data structure type
  */
 template<typename TData>

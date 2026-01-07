@@ -60,9 +60,9 @@ public:
                                 QObject* parent = nullptr);
     ~ControllerRegistry();
 
-    // ========================================================================
+    // ============================================================================
     // INITIALIZATION PHASES
-    // ========================================================================
+    // ============================================================================
 
     /**
      * @brief Creates all hardware controllers
@@ -95,9 +95,9 @@ public:
      */
     bool registerWithQml(QQmlContext* context);
 
-    // ========================================================================
+    // ============================================================================
     // CONTROLLER ACCESSORS
-    // ========================================================================
+    // ============================================================================
 
     // Safety Authority
     SafetyInterlock* safetyInterlock() const { return m_safetyInterlock; }
@@ -131,22 +131,22 @@ signals:
     void controllersInitialized();
 
 private:
-    // ========================================================================
+    // ============================================================================
     // SAFETY AUTHORITY (created first, destroyed last)
-    // ========================================================================
+    // ============================================================================
     SafetyInterlock* m_safetyInterlock = nullptr;
 
-    // ========================================================================
+    // ============================================================================
     // HARDWARE CONTROLLERS
-    // ========================================================================
+    // ============================================================================
     GimbalController* m_gimbalController = nullptr;
     WeaponController* m_weaponController = nullptr;
     CameraController* m_cameraController = nullptr;
     JoystickController* m_joystickController = nullptr;
 
-    // ========================================================================
+    // ============================================================================
     // QML CONTROLLERS
-    // ========================================================================
+    // ============================================================================
     OsdController* m_osdController = nullptr;
     ZoneDefinitionController* m_zoneDefinitionController = nullptr;
     MainMenuController* m_mainMenuController = nullptr;
@@ -163,9 +163,9 @@ private:
     ApplicationController* m_appController = nullptr;
     LedController* m_ledController = nullptr;
 
-    // ========================================================================
+    // ============================================================================
     // DEPENDENCIES (not owned)
-    // ========================================================================
+    // ============================================================================
     HardwareManager* m_hardwareManager = nullptr;
     ViewModelRegistry* m_viewModelRegistry = nullptr;
     SystemStateModel* m_systemStateModel = nullptr;

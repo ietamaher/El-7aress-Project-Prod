@@ -13,7 +13,7 @@ ServoDriverProtocolParser::ServoDriverProtocolParser(QObject* parent)
 
 std::vector<MessagePtr> ServoDriverProtocolParser::parse(QModbusReply* reply) {
     std::vector<MessagePtr> messages;
-    
+
     if (!reply || reply->error() != QModbusDevice::NoError) {
         return messages;
     }
@@ -27,27 +27,27 @@ std::vector<MessagePtr> ServoDriverProtocolParser::parse(QModbusReply* reply) {
             messages.push_back(std::move(msg));
         }
         break;
-        
+
     case ServoDriverRegisters::TEMPERATURE_START_ADDR:
         if (auto msg = parseTemperatureReply(unit)) {
             messages.push_back(std::move(msg));
         }
         break;
-        
+
     case ServoDriverRegisters::ALARM_STATUS_ADDR:
         if (auto msg = parseAlarmReply(unit)) {
             messages.push_back(std::move(msg));
         }
         break;
-        
+
     case ServoDriverRegisters::ALARM_HISTORY_ADDR:
         if (auto msg = parseAlarmHistoryReply(unit)) {
             messages.push_back(std::move(msg));
         }
         break;
-        
+
     default:
-        qWarning() << "ServoDriverProtocolParser: Unknown register address" 
+        qWarning() << "ServoDriverProtocolParser: Unknown register address"
                    << unit.startAddress();
         break;
     }
@@ -97,7 +97,7 @@ MessagePtr ServoDriverProtocolParser::parseTemperatureReply(const QModbusDataUni
         qWarning() << "ServoDriverProtocolParser: Insufficient  registers";
         return nullptr;
     }
-    
+
     int32_t driverTempRaw = (static_cast<int32_t>(unit.value(0)) << 16) | unit.value(1);
     m_data.driverTemp = static_cast<float>(driverTempRaw) * 0.1f;
 
@@ -117,18 +117,18 @@ MessagePtr ServoDriverProtocolParser::parseAlarmReply(const QModbusDataUnit& uni
 
     // Combine upper and lower registers for alarm code
     uint16_t alarmCode = (unit.value(0) << 16) | unit.value(1);
-    
+
     if (alarmCode != 0) {
         QString desc = getAlarmDescription(alarmCode);
         return std::make_unique<ServoDriverAlarmMessage>(alarmCode, desc);
     }
-    
+
     return nullptr;
 }
 
 MessagePtr ServoDriverProtocolParser::parseAlarmHistoryReply(const QModbusDataUnit& unit) {
     QList<uint16_t> alarmHistory;
-    
+
     // Process alarm history (2 registers per entry)
     for (int i = 0; i < unit.valueCount(); i += 2) {
         if (i + 1 < unit.valueCount()) {
@@ -138,12 +138,12 @@ MessagePtr ServoDriverProtocolParser::parseAlarmHistoryReply(const QModbusDataUn
             }
         }
     }
-    
+
     return std::make_unique<ServoDriverAlarmHistoryMessage>(alarmHistory);
 }
 
 QString ServoDriverProtocolParser::getAlarmDescription(uint16_t alarmCode) {
-    return m_alarmMap.value(alarmCode, 
+    return m_alarmMap.value(alarmCode,
         QString("Unknown Alarm: 0x%1").arg(alarmCode, 4, 16, QChar('0')));
 }
 

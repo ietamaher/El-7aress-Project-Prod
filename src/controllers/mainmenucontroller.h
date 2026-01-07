@@ -7,11 +7,11 @@ class MenuViewModel;
 class SystemStateModel;
 struct SystemStateData;
 
-class MainMenuController : public QObject
-{
+class MainMenuController : public QObject {
     Q_OBJECT
+
 public:
-    explicit MainMenuController(QObject *parent = nullptr);
+    explicit MainMenuController(QObject* parent = nullptr);
     void initialize();
     void setViewModel(MenuViewModel* viewModel);
     void setStateModel(SystemStateModel* stateModel);
@@ -65,4 +65,4 @@ private:
     QStringList buildMainMenuOptions() const;
 };
 
-#endif // MAINMENUCONTROLLER_H
+#endif  // MAINMENUCONTROLLER_H

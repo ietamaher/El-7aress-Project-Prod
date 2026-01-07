@@ -9,28 +9,15 @@
 #include <QCoreApplication>
 #include <algorithm>
 
-ZoneDefinitionController::ZoneDefinitionController(QObject *parent)
-    : QObject(parent)
-    , m_currentState(State::Idle_MainMenu)
-    , m_viewModel(nullptr)
-    , m_mapViewModel(nullptr)
-    , m_areaZoneParamViewModel(nullptr)
-    , m_sectorScanParamViewModel(nullptr)
-    , m_trpParamViewModel(nullptr)
-    , m_stateModel(nullptr)
-    , m_editingZoneId(-1)
-    , m_wipZoneType(ZoneType::None)
-    , m_deleteZoneType(ZoneType::None)
-    , m_corner1Defined(false)
-    , m_wipAz1(0.0f), m_wipEl1(0.0f), m_wipAz2(0.0f), m_wipEl2(0.0f)
-    , m_currentGimbalAz(0.0f)
-    , m_currentGimbalEl(0.0f)
-    , m_currentMenuIndex(0)
-{
-}
+ZoneDefinitionController::ZoneDefinitionController(QObject* parent)
+    : QObject(parent), m_currentState(State::Idle_MainMenu), m_viewModel(nullptr),
+      m_mapViewModel(nullptr), m_areaZoneParamViewModel(nullptr),
+      m_sectorScanParamViewModel(nullptr), m_trpParamViewModel(nullptr), m_stateModel(nullptr),
+      m_editingZoneId(-1), m_wipZoneType(ZoneType::None), m_deleteZoneType(ZoneType::None),
+      m_corner1Defined(false), m_wipAz1(0.0f), m_wipEl1(0.0f), m_wipAz2(0.0f), m_wipEl2(0.0f),
+      m_currentGimbalAz(0.0f), m_currentGimbalEl(0.0f), m_currentMenuIndex(0) {}
 
-void ZoneDefinitionController::initialize()
-{
+void ZoneDefinitionController::initialize() {
     // Get ViewModels from ServiceManager
     /*m_viewModel = ServiceManager::instance()->get<ZoneDefinitionViewModel>();
     m_mapViewModel = ServiceManager::instance()->get<ZoneMapViewModel>();
@@ -49,21 +36,20 @@ void ZoneDefinitionController::initialize()
     Q_ASSERT(m_stateModel);
 
     // Connect to model signals
-    connect(m_stateModel, &SystemStateModel::gimbalPositionChanged,
-            this, &ZoneDefinitionController::onGimbalPositionChanged);
-    connect(m_stateModel, &SystemStateModel::zonesChanged,
-            this, &ZoneDefinitionController::onZonesChanged);
-    connect(m_stateModel, &SystemStateModel::colorStyleChanged,
-            this, &ZoneDefinitionController::onColorStyleChanged);
-    connect(m_stateModel, &SystemStateModel::colorStyleChanged,
-            this, &ZoneDefinitionController::onColorStyleChanged);
+    connect(m_stateModel, &SystemStateModel::gimbalPositionChanged, this,
+            &ZoneDefinitionController::onGimbalPositionChanged);
+    connect(m_stateModel, &SystemStateModel::zonesChanged, this,
+            &ZoneDefinitionController::onZonesChanged);
+    connect(m_stateModel, &SystemStateModel::colorStyleChanged, this,
+            &ZoneDefinitionController::onColorStyleChanged);
+    connect(m_stateModel, &SystemStateModel::colorStyleChanged, this,
+            &ZoneDefinitionController::onColorStyleChanged);
     const auto& data = m_stateModel->data();
-    m_viewModel->setAccentColor(data.colorStyle);      
+    m_viewModel->setAccentColor(data.colorStyle);
     qDebug() << "ZoneDefinitionController initialized";
 }
 
-void ZoneDefinitionController::show()
-{
+void ZoneDefinitionController::show() {
     qDebug() << "ZoneDefinitionController: show() called";
     m_currentState = State::Idle_MainMenu;
     resetWipData();
@@ -82,15 +68,13 @@ void ZoneDefinitionController::show()
     updateUI();
 }
 
-void ZoneDefinitionController::hide()
-{
+void ZoneDefinitionController::hide() {
     qDebug() << "ZoneDefinitionController: hide() called";
     m_viewModel->setVisible(false);
     m_mapViewModel->clearWipZone();
 }
 
-void ZoneDefinitionController::resetWipData()
-{
+void ZoneDefinitionController::resetWipData() {
     m_wipZoneType = ZoneType::None;
     m_wipAreaZone = AreaZone{};
     m_wipSectorScan = AutoSectorScanZone{};
@@ -108,8 +92,7 @@ void ZoneDefinitionController::resetWipData()
 // INPUT HANDLING
 // ============================================================================
 
-void ZoneDefinitionController::onUpButtonPressed()
-{
+void ZoneDefinitionController::onUpButtonPressed() {
     switch (m_currentState) {
     case State::Idle_MainMenu:
     case State::Select_ZoneType_ForNew:
@@ -141,8 +124,7 @@ void ZoneDefinitionController::onUpButtonPressed()
     }
 }
 
-void ZoneDefinitionController::onDownButtonPressed()
-{
+void ZoneDefinitionController::onDownButtonPressed() {
     switch (m_currentState) {
     case State::Idle_MainMenu:
     case State::Select_ZoneType_ForNew:
@@ -174,9 +156,9 @@ void ZoneDefinitionController::onDownButtonPressed()
     }
 }
 
-void ZoneDefinitionController::onMenuValButtonPressed()
-{
-    qDebug() << "ZoneDefinitionController: MENU/VAL pressed in state" << static_cast<int>(m_currentState);
+void ZoneDefinitionController::onMenuValButtonPressed() {
+    qDebug() << "ZoneDefinitionController: MENU/VAL pressed in state"
+             << static_cast<int>(m_currentState);
 
     switch (m_currentState) {
     case State::Idle_MainMenu:
@@ -228,7 +210,8 @@ void ZoneDefinitionController::onMenuValButtonPressed()
         break;
 
     default:
-        qWarning() << "Unhandled state in onMenuValButtonPressed:" << static_cast<int>(m_currentState);
+        qWarning() << "Unhandled state in onMenuValButtonPressed:"
+                   << static_cast<int>(m_currentState);
         break;
     }
 }
@@ -237,8 +220,7 @@ void ZoneDefinitionController::onMenuValButtonPressed()
 // MODEL SIGNAL HANDLERS
 // ============================================================================
 
-void ZoneDefinitionController::onGimbalPositionChanged(float az, float el)
-{
+void ZoneDefinitionController::onGimbalPositionChanged(float az, float el) {
     m_currentGimbalAz = az;
     m_currentGimbalEl = el;
     m_viewModel->setGimbalPosition(az, el);
@@ -258,8 +240,7 @@ void ZoneDefinitionController::onGimbalPositionChanged(float az, float el)
     }
 }
 
-void ZoneDefinitionController::onZonesChanged()
-{
+void ZoneDefinitionController::onZonesChanged() {
     qDebug() << "ZoneDefinitionController: Received zonesChanged signal";
 
     // Refresh zone data in map
@@ -290,8 +271,7 @@ void ZoneDefinitionController::onZonesChanged()
     }
 }
 
-void ZoneDefinitionController::onColorStyleChanged(const QColor& color)
-{
+void ZoneDefinitionController::onColorStyleChanged(const QColor& color) {
     qDebug() << "ZoneDefinitionController: Color changed to" << color;
     m_viewModel->setAccentColor(color);
 }
@@ -300,16 +280,14 @@ void ZoneDefinitionController::onColorStyleChanged(const QColor& color)
 // STATE TRANSITIONS & UI UPDATES
 // ============================================================================
 
-void ZoneDefinitionController::transitionToState(State newState)
-{
+void ZoneDefinitionController::transitionToState(State newState) {
     qDebug() << "ZoneDefinitionController: Transitioning from" << static_cast<int>(m_currentState)
-    << "to" << static_cast<int>(newState);
+             << "to" << static_cast<int>(newState);
     m_currentState = newState;
     updateUI();
 }
 
-void ZoneDefinitionController::updateUI()
-{
+void ZoneDefinitionController::updateUI() {
     switch (m_currentState) {
     case State::Idle_MainMenu:
         setupIdleMainMenuUI();
@@ -384,8 +362,7 @@ void ZoneDefinitionController::updateUI()
 // UI SETUP METHODS
 // ============================================================================
 
-void ZoneDefinitionController::setupIdleMainMenuUI()
-{
+void ZoneDefinitionController::setupIdleMainMenuUI() {
     m_viewModel->setTitle("Zone Definition Menu");
     m_viewModel->setInstruction("Select option using UP/DOWN, confirm with MENU/VAL.");
 
@@ -401,8 +378,7 @@ void ZoneDefinitionController::setupIdleMainMenuUI()
     m_viewModel->setShowMap(true);
 }
 
-void ZoneDefinitionController::setupSelectZoneTypeUI()
-{
+void ZoneDefinitionController::setupSelectZoneTypeUI() {
     m_viewModel->setTitle("Select Zone Type");
     m_viewModel->setInstruction("Choose type to create.");
 
@@ -419,8 +395,7 @@ void ZoneDefinitionController::setupSelectZoneTypeUI()
     m_viewModel->setShowMap(true);
 }
 
-void ZoneDefinitionController::setupSelectZoneTypeForModifyDeleteUI(const QString& action)
-{
+void ZoneDefinitionController::setupSelectZoneTypeForModifyDeleteUI(const QString& action) {
     m_viewModel->setTitle(QString("%1 Zone - Select Type").arg(action));
     m_viewModel->setInstruction("Select zone type using UP/DOWN, confirm with MENU/VAL.");
 
@@ -436,8 +411,8 @@ void ZoneDefinitionController::setupSelectZoneTypeForModifyDeleteUI(const QStrin
     m_viewModel->setShowMap(true);
 }
 
-void ZoneDefinitionController::setupSelectExistingZoneUI(ZoneType typeToSelect, const QString& title)
-{
+void ZoneDefinitionController::setupSelectExistingZoneUI(ZoneType typeToSelect,
+                                                         const QString& title) {
     m_viewModel->setTitle(title);
     m_viewModel->setInstruction("Select zone using UP/DOWN, confirm with MENU/VAL.");
 
@@ -452,11 +427,19 @@ void ZoneDefinitionController::setupSelectExistingZoneUI(ZoneType typeToSelect, 
 
         for (const auto& zone : zones) {
             QString zoneTypeName;
-            switch(zone.type) {
-            case ZoneType::Safety: zoneTypeName = "Safety"; break;
-            case ZoneType::NoTraverse: zoneTypeName = "No-Traverse"; break;
-            case ZoneType::NoFire: zoneTypeName = "No-Fire"; break;
-            default: zoneTypeName = "Unknown"; break;
+            switch (zone.type) {
+            case ZoneType::Safety:
+                zoneTypeName = "Safety";
+                break;
+            case ZoneType::NoTraverse:
+                zoneTypeName = "No-Traverse";
+                break;
+            case ZoneType::NoFire:
+                zoneTypeName = "No-Fire";
+                break;
+            default:
+                zoneTypeName = "Unknown";
+                break;
             }
 
             QString itemText = QString("ID: %1 (%2) %3")
@@ -472,8 +455,8 @@ void ZoneDefinitionController::setupSelectExistingZoneUI(ZoneType typeToSelect, 
 
         for (const auto& zone : zones) {
             QString itemText = QString("ID: %1 (Sector Scan) %2")
-            .arg(zone.id)
-                .arg(zone.isEnabled ? "Enabled" : "Disabled");
+                                   .arg(zone.id)
+                                   .arg(zone.isEnabled ? "Enabled" : "Disabled");
             displayItems.append(itemText);
             m_currentMenuItems.append(QString::number(zone.id));
         }
@@ -483,9 +466,9 @@ void ZoneDefinitionController::setupSelectExistingZoneUI(ZoneType typeToSelect, 
 
         for (const auto& zone : zones) {
             QString itemText = QString("ID: %1 (TRP) Page:%2 Idx:%3")
-            .arg(zone.id)
-                .arg(zone.locationPage)
-                .arg(zone.trpInPage);
+                                   .arg(zone.id)
+                                   .arg(zone.locationPage)
+                                   .arg(zone.trpInPage);
             displayItems.append(itemText);
             m_currentMenuItems.append(QString::number(zone.id));
         }
@@ -496,7 +479,7 @@ void ZoneDefinitionController::setupSelectExistingZoneUI(ZoneType typeToSelect, 
     m_currentMenuItems.append("Back");
 
     // If no zones found, add informative message
-    if (m_currentMenuItems.size() == 1) { // Only "Back"
+    if (m_currentMenuItems.size() == 1) {  // Only "Back"
         QString noZoneMessage;
         if (typeToSelect == ZoneType::AutoSectorScan) {
             noZoneMessage = "No Sector Scan zones defined";
@@ -520,8 +503,7 @@ void ZoneDefinitionController::setupSelectExistingZoneUI(ZoneType typeToSelect, 
     m_viewModel->setShowMap(true);
 }
 
-void ZoneDefinitionController::setupAimPointUI(const QString& instructionText)
-{
+void ZoneDefinitionController::setupAimPointUI(const QString& instructionText) {
     m_viewModel->setTitle("Define Zone Geometry");
     m_viewModel->setInstruction(instructionText);
 
@@ -532,13 +514,13 @@ void ZoneDefinitionController::setupAimPointUI(const QString& instructionText)
     m_viewModel->setShowMap(true);
 }
 
-void ZoneDefinitionController::setupAreaZoneParametersUI(bool isNew)
-{
+void ZoneDefinitionController::setupAreaZoneParametersUI(bool isNew) {
     qDebug() << "Setting up AreaZone parameters UI";
 
     QString title = isNew ? "Set New Area Zone Parameters" : "Modify Area Zone Parameters";
     m_viewModel->setTitle(title);
-    m_viewModel->setInstruction("Configure area zone parameters using UP/DOWN to navigate, MENU/VAL to toggle/confirm");
+    m_viewModel->setInstruction(
+        "Configure area zone parameters using UP/DOWN to navigate, MENU/VAL to toggle/confirm");
 
     // Set up parameter ViewModel with current WIP data
     m_areaZoneParamViewModel->setIsEnabled(m_wipAreaZone.isEnabled);
@@ -555,9 +537,9 @@ void ZoneDefinitionController::setupAreaZoneParametersUI(bool isNew)
     updateMapWipZone();
 }
 
-void ZoneDefinitionController::setupSectorScanParametersUI(bool isNew)
-{
-    QString title = isNew ? "New Sector Scan Zone - Parameters" : "Modify Sector Scan Zone - Parameters";
+void ZoneDefinitionController::setupSectorScanParametersUI(bool isNew) {
+    QString title =
+        isNew ? "New Sector Scan Zone - Parameters" : "Modify Sector Scan Zone - Parameters";
     m_viewModel->setTitle(title);
     m_viewModel->setInstruction("Configure parameters using UP/DOWN, MENU/VAL to edit values.");
 
@@ -577,8 +559,7 @@ void ZoneDefinitionController::setupSectorScanParametersUI(bool isNew)
     updateMapWipZone();
 }
 
-void ZoneDefinitionController::setupTRPParametersUI(bool isNew)
-{
+void ZoneDefinitionController::setupTRPParametersUI(bool isNew) {
     QString title = isNew ? "New TRP - Parameters" : "Modify TRP - Parameters";
     m_viewModel->setTitle(title);
     m_viewModel->setInstruction("Configure parameters using UP/DOWN, MENU/VAL to edit values.");
@@ -600,14 +581,13 @@ void ZoneDefinitionController::setupTRPParametersUI(bool isNew)
     updateMapWipZone();
 }
 
-void ZoneDefinitionController::setupConfirmUI(const QString& title, const QString& question)
-{
+void ZoneDefinitionController::setupConfirmUI(const QString& title, const QString& question) {
     m_viewModel->setTitle(title);
     m_viewModel->setInstruction(question);
 
     m_currentMenuItems = {"Yes", "No"};
     m_viewModel->setMenuOptions(m_currentMenuItems);
-    m_currentMenuIndex = 0; // Default to Yes
+    m_currentMenuIndex = 0;  // Default to Yes
     m_viewModel->setCurrentIndex(m_currentMenuIndex);
 
     m_viewModel->setShowMainMenu(false);
@@ -617,8 +597,7 @@ void ZoneDefinitionController::setupConfirmUI(const QString& title, const QStrin
     m_viewModel->setShowMap(true);
 }
 
-void ZoneDefinitionController::setupShowMessageUI(const QString& message)
-{
+void ZoneDefinitionController::setupShowMessageUI(const QString& message) {
     m_viewModel->setTitle("Information");
     m_viewModel->setInstruction(message + "\nPress MENU/VAL to return.");
 
@@ -633,8 +612,7 @@ void ZoneDefinitionController::setupShowMessageUI(const QString& message)
 // ACTION PROCESSORS
 // ============================================================================
 
-void ZoneDefinitionController::processMainMenuSelect()
-{
+void ZoneDefinitionController::processMainMenuSelect() {
     QString selectedOption = m_currentMenuItems.value(m_currentMenuIndex);
     qDebug() << "processMainMenuSelect:" << selectedOption;
 
@@ -650,8 +628,7 @@ void ZoneDefinitionController::processMainMenuSelect()
     }
 }
 
-void ZoneDefinitionController::processSelectZoneTypeSelect()
-{
+void ZoneDefinitionController::processSelectZoneTypeSelect() {
     QString selectedType = m_currentMenuItems.value(m_currentMenuIndex);
     qDebug() << "processSelectZoneTypeSelect:" << selectedType;
 
@@ -681,8 +658,7 @@ void ZoneDefinitionController::processSelectZoneTypeSelect()
     }
 }
 
-void ZoneDefinitionController::processSelectZoneTypeForModifyDeleteSelect()
-{
+void ZoneDefinitionController::processSelectZoneTypeForModifyDeleteSelect() {
     if (m_currentMenuIndex >= 0 && m_currentMenuIndex < m_currentMenuItems.size()) {
         QString selectedType = m_currentMenuItems[m_currentMenuIndex];
         qDebug() << "processSelectZoneTypeForModifyDeleteSelect:" << selectedType;
@@ -711,8 +687,7 @@ void ZoneDefinitionController::processSelectZoneTypeForModifyDeleteSelect()
     }
 }
 
-void ZoneDefinitionController::processSelectExistingZoneSelect()
-{
+void ZoneDefinitionController::processSelectExistingZoneSelect() {
     if (m_currentMenuIndex >= 0 && m_currentMenuIndex < m_currentMenuItems.size()) {
         QString selectedItem = m_currentMenuItems[m_currentMenuIndex];
         qDebug() << "processSelectExistingZoneSelect:" << selectedItem;
@@ -800,8 +775,7 @@ void ZoneDefinitionController::processSelectExistingZoneSelect()
     }
 }
 
-void ZoneDefinitionController::processAimPointConfirm()
-{
+void ZoneDefinitionController::processAimPointConfirm() {
     qDebug() << "processAimPointConfirm in state" << static_cast<int>(m_currentState);
 
     switch (m_currentState) {
@@ -829,14 +803,16 @@ void ZoneDefinitionController::processAimPointConfirm()
     case State::SectorScan_Aim_Point1:
         m_wipSectorScan.az1 = m_currentGimbalAz;
         m_wipSectorScan.el1 = m_currentGimbalEl;
-        qDebug() << "SectorScan Point 1 captured: Az=" << m_wipSectorScan.az1 << "El=" << m_wipSectorScan.el1;
+        qDebug() << "SectorScan Point 1 captured: Az=" << m_wipSectorScan.az1
+                 << "El=" << m_wipSectorScan.el1;
         transitionToState(State::SectorScan_Aim_Point2);
         break;
 
     case State::SectorScan_Aim_Point2:
         m_wipSectorScan.az2 = m_currentGimbalAz;
         m_wipSectorScan.el2 = m_currentGimbalEl;
-        qDebug() << "SectorScan Point 2 captured: Az=" << m_wipSectorScan.az2 << "El=" << m_wipSectorScan.el2;
+        qDebug() << "SectorScan Point 2 captured: Az=" << m_wipSectorScan.az2
+                 << "El=" << m_wipSectorScan.el2;
         transitionToState(State::SectorScan_Edit_Parameters);
         break;
 
@@ -853,8 +829,7 @@ void ZoneDefinitionController::processAimPointConfirm()
     }
 }
 
-void ZoneDefinitionController::processEditParametersConfirm()
-{
+void ZoneDefinitionController::processEditParametersConfirm() {
     qDebug() << "processEditParametersConfirm in state" << static_cast<int>(m_currentState);
 
     switch (m_currentState) {
@@ -886,8 +861,7 @@ void ZoneDefinitionController::processEditParametersConfirm()
     }
 }
 
-void ZoneDefinitionController::processConfirmSaveSelect()
-{
+void ZoneDefinitionController::processConfirmSaveSelect() {
     QString selectedOption = m_currentMenuItems.value(m_currentMenuIndex);
     qDebug() << "processConfirmSaveSelect:" << selectedOption;
 
@@ -959,8 +933,7 @@ void ZoneDefinitionController::processConfirmSaveSelect()
     }
 }
 
-void ZoneDefinitionController::processConfirmDeleteSelect()
-{
+void ZoneDefinitionController::processConfirmDeleteSelect() {
     if (m_currentMenuIndex >= 0 && m_currentMenuIndex < m_currentMenuItems.size()) {
         QString selectedItem = m_currentMenuItems[m_currentMenuIndex];
         qDebug() << "processConfirmDeleteSelect:" << selectedItem;
@@ -970,8 +943,7 @@ void ZoneDefinitionController::processConfirmDeleteSelect()
             QString zoneTypeName;
 
             // Determine type and delete
-            if (m_deleteZoneType == ZoneType::Safety ||
-                m_deleteZoneType == ZoneType::NoTraverse ||
+            if (m_deleteZoneType == ZoneType::Safety || m_deleteZoneType == ZoneType::NoTraverse ||
                 m_deleteZoneType == ZoneType::NoFire) {
                 success = m_stateModel->deleteAreaZone(m_editingZoneId);
                 zoneTypeName = "Area Zone";
@@ -982,7 +954,8 @@ void ZoneDefinitionController::processConfirmDeleteSelect()
                 success = m_stateModel->deleteTRP(m_editingZoneId);
                 zoneTypeName = "TRP";
             } else {
-                qWarning() << "Unknown zone type for deletion:" << static_cast<int>(m_deleteZoneType);
+                qWarning() << "Unknown zone type for deletion:"
+                           << static_cast<int>(m_deleteZoneType);
                 success = false;
                 zoneTypeName = "Unknown";
             }
@@ -993,19 +966,21 @@ void ZoneDefinitionController::processConfirmDeleteSelect()
                 bool saveSuccess = m_stateModel->saveZonesToFile(zonesPath);
 
                 if (saveSuccess) {
-                    setupShowMessageUI(QString("%1 deleted and saved successfully!").arg(zoneTypeName));
-                    qDebug() << "Successfully deleted and saved" << zoneTypeName << "ID:" << m_editingZoneId << "to" << zonesPath;
+                    setupShowMessageUI(
+                        QString("%1 deleted and saved successfully!").arg(zoneTypeName));
+                    qDebug() << "Successfully deleted and saved" << zoneTypeName
+                             << "ID:" << m_editingZoneId << "to" << zonesPath;
                 } else {
-                    setupShowMessageUI(QString("%1 deleted but failed to save to file!").arg(zoneTypeName));
+                    setupShowMessageUI(
+                        QString("%1 deleted but failed to save to file!").arg(zoneTypeName));
                     qWarning() << "Deleted" << zoneTypeName << "but failed to save to JSON";
                 }
 
                 transitionToState(State::Show_Message);
 
                 // Auto-return to main menu after 2 seconds
-                QTimer::singleShot(2000, this, [this]() {
-                    transitionToState(State::Idle_MainMenu);
-                });
+                QTimer::singleShot(2000, this,
+                                   [this]() { transitionToState(State::Idle_MainMenu); });
             } else {
                 setupShowMessageUI(QString("Failed to delete %1!").arg(zoneTypeName));
                 transitionToState(State::Show_Message);
@@ -1022,8 +997,7 @@ void ZoneDefinitionController::processConfirmDeleteSelect()
 // PARAMETER PANEL INPUT ROUTING
 // ============================================================================
 
-void ZoneDefinitionController::routeUpToParameterPanel()
-{
+void ZoneDefinitionController::routeUpToParameterPanel() {
     switch (m_currentState) {
     case State::AreaZone_Edit_Parameters: {
         int currentField = m_areaZoneParamViewModel->activeField();
@@ -1054,7 +1028,8 @@ void ZoneDefinitionController::routeUpToParameterPanel()
     case State::SectorScan_Edit_Parameters: {
         bool isEditing = m_sectorScanParamViewModel->isEditingValue();
 
-        if (isEditing && m_sectorScanParamViewModel->activeField() == SectorScanParameterViewModel::Field::ScanSpeed) {
+        if (isEditing && m_sectorScanParamViewModel->activeField() ==
+                             SectorScanParameterViewModel::Field::ScanSpeed) {
             // Increase scan speed
             int speed = m_sectorScanParamViewModel->scanSpeed();
             if (speed < 10) {
@@ -1097,17 +1072,20 @@ void ZoneDefinitionController::routeUpToParameterPanel()
             switch (currentField) {
             case TRPParameterViewModel::Field::LocationPage: {
                 int page = m_trpParamViewModel->locationPage();
-                if (page < 200) m_trpParamViewModel->setLocationPage(page + 1);
+                if (page < 200)
+                    m_trpParamViewModel->setLocationPage(page + 1);
                 break;
             }
             case TRPParameterViewModel::Field::TrpInPage: {
                 int trp = m_trpParamViewModel->trpInPage();
-                if (trp < 50) m_trpParamViewModel->setTrpInPage(trp + 1);
+                if (trp < 50)
+                    m_trpParamViewModel->setTrpInPage(trp + 1);
                 break;
             }
             case TRPParameterViewModel::Field::HaltTime: {
                 float time = m_trpParamViewModel->haltTime();
-                if (time < 60.0f) m_trpParamViewModel->setHaltTime(time + 1.0f);
+                if (time < 60.0f)
+                    m_trpParamViewModel->setHaltTime(time + 1.0f);
                 break;
             }
             default:
@@ -1148,8 +1126,7 @@ void ZoneDefinitionController::routeUpToParameterPanel()
     }
 }
 
-void ZoneDefinitionController::routeDownToParameterPanel()
-{
+void ZoneDefinitionController::routeDownToParameterPanel() {
     switch (m_currentState) {
     case State::AreaZone_Edit_Parameters: {
         int currentField = m_areaZoneParamViewModel->activeField();
@@ -1180,7 +1157,8 @@ void ZoneDefinitionController::routeDownToParameterPanel()
     case State::SectorScan_Edit_Parameters: {
         bool isEditing = m_sectorScanParamViewModel->isEditingValue();
 
-        if (isEditing && m_sectorScanParamViewModel->activeField() == SectorScanParameterViewModel::Field::ScanSpeed) {
+        if (isEditing && m_sectorScanParamViewModel->activeField() ==
+                             SectorScanParameterViewModel::Field::ScanSpeed) {
             // Decrease scan speed
             int speed = m_sectorScanParamViewModel->scanSpeed();
             if (speed > 1) {
@@ -1223,17 +1201,20 @@ void ZoneDefinitionController::routeDownToParameterPanel()
             switch (currentField) {
             case TRPParameterViewModel::Field::LocationPage: {
                 int page = m_trpParamViewModel->locationPage();
-                if (page > 1) m_trpParamViewModel->setLocationPage(page - 1);
+                if (page > 1)
+                    m_trpParamViewModel->setLocationPage(page - 1);
                 break;
             }
             case TRPParameterViewModel::Field::TrpInPage: {
                 int trp = m_trpParamViewModel->trpInPage();
-                if (trp > 1) m_trpParamViewModel->setTrpInPage(trp - 1);
+                if (trp > 1)
+                    m_trpParamViewModel->setTrpInPage(trp - 1);
                 break;
             }
             case TRPParameterViewModel::Field::HaltTime: {
                 float time = m_trpParamViewModel->haltTime();
-                if (time > 1.0f) m_trpParamViewModel->setHaltTime(time - 1.0f);
+                if (time > 1.0f)
+                    m_trpParamViewModel->setHaltTime(time - 1.0f);
                 break;
             }
             default:
@@ -1274,8 +1255,7 @@ void ZoneDefinitionController::routeDownToParameterPanel()
     }
 }
 
-void ZoneDefinitionController::routeSelectToParameterPanel()
-{
+void ZoneDefinitionController::routeSelectToParameterPanel() {
     switch (m_currentState) {
     case State::AreaZone_Edit_Parameters: {
         int currentField = m_areaZoneParamViewModel->activeField();
@@ -1394,8 +1374,7 @@ void ZoneDefinitionController::routeSelectToParameterPanel()
 // GEOMETRY CALCULATION & MAP UPDATE
 // ============================================================================
 
-float ZoneDefinitionController::normalizeAzimuthTo360(float az) const
-{
+float ZoneDefinitionController::normalizeAzimuthTo360(float az) const {
     float normalized = fmod(az, 360.0f);
     if (normalized < 0) {
         normalized += 360.0f;
@@ -1403,12 +1382,10 @@ float ZoneDefinitionController::normalizeAzimuthTo360(float az) const
     return normalized;
 }
 
-void ZoneDefinitionController::calculateAreaZoneGeometry()
-{
+void ZoneDefinitionController::calculateAreaZoneGeometry() {
     float az1_norm = normalizeAzimuthTo360(m_wipAz1);
     float az2_norm = normalizeAzimuthTo360(
-        (m_currentState == State::AreaZone_Aim_Corner2) ? m_currentGimbalAz : m_wipAz2
-        );
+        (m_currentState == State::AreaZone_Aim_Corner2) ? m_currentGimbalAz : m_wipAz2);
     float el1 = m_wipEl1;
     float el2 = (m_currentState == State::AreaZone_Aim_Corner2) ? m_currentGimbalEl : m_wipEl2;
 
@@ -1437,13 +1414,11 @@ void ZoneDefinitionController::calculateAreaZoneGeometry()
     }
 
     qDebug() << "Calculated AreaZone Geometry: StartAz=" << m_wipAreaZone.startAzimuth
-             << "EndAz=" << m_wipAreaZone.endAzimuth
-             << "MinEl=" << m_wipAreaZone.minElevation
+             << "EndAz=" << m_wipAreaZone.endAzimuth << "MinEl=" << m_wipAreaZone.minElevation
              << "MaxEl=" << m_wipAreaZone.maxElevation;
 }
 
-void ZoneDefinitionController::updateMapWipZone()
-{
+void ZoneDefinitionController::updateMapWipZone() {
     QVariantMap wipData;
     bool isDefiningStart = false;
     bool isDefiningEnd = false;
@@ -1456,7 +1431,7 @@ void ZoneDefinitionController::updateMapWipZone()
         wipData["endAzimuth"] = m_currentGimbalAz;
         wipData["minElevation"] = m_currentGimbalEl;
         wipData["maxElevation"] = m_currentGimbalEl;
-        wipType = 1; // AreaZone
+        wipType = 1;  // AreaZone
         isDefiningStart = true;
         isDefiningEnd = false;
         break;
@@ -1489,7 +1464,7 @@ void ZoneDefinitionController::updateMapWipZone()
         wipData["el1"] = m_currentGimbalEl;
         wipData["az2"] = m_currentGimbalAz;
         wipData["el2"] = m_currentGimbalEl;
-        wipType = 2; // SectorScan
+        wipType = 2;  // SectorScan
         isDefiningStart = true;
         isDefiningEnd = false;
         break;
@@ -1517,7 +1492,7 @@ void ZoneDefinitionController::updateMapWipZone()
     case State::TRP_Aim_Point:
         wipData["azimuth"] = m_currentGimbalAz;
         wipData["elevation"] = m_currentGimbalEl;
-        wipType = 3; // TRP
+        wipType = 3;  // TRP
         isDefiningStart = true;
         isDefiningEnd = false;
         break;
@@ -1541,24 +1516,20 @@ void ZoneDefinitionController::updateMapWipZone()
 
 // ============================================================================
 // DEPENDENCY INJECTION SETTERS
-// ============================================================================ 
-void ZoneDefinitionController::setViewModel(ZoneDefinitionViewModel* viewModel)
-{
+// ============================================================================
+void ZoneDefinitionController::setViewModel(ZoneDefinitionViewModel* viewModel) {
     m_viewModel = viewModel;
 }
 void ZoneDefinitionController::setParameterViewModels(AreaZoneParameterViewModel* areaVM,
                                                       SectorScanParameterViewModel* sectorVM,
-                                                      TRPParameterViewModel* trpVM)
-{
+                                                      TRPParameterViewModel* trpVM) {
     m_areaZoneParamViewModel = areaVM;
     m_sectorScanParamViewModel = sectorVM;
     m_trpParamViewModel = trpVM;
 }
-void ZoneDefinitionController::setMapViewModel(ZoneMapViewModel* mapViewModel)
-{
+void ZoneDefinitionController::setMapViewModel(ZoneMapViewModel* mapViewModel) {
     m_mapViewModel = mapViewModel;
 }
-void ZoneDefinitionController::setStateModel(SystemStateModel* stateModel)
-{
+void ZoneDefinitionController::setStateModel(SystemStateModel* stateModel) {
     m_stateModel = stateModel;
 }

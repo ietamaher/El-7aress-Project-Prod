@@ -12,12 +12,11 @@ class SystemStateModel;
  * Manages the Help/About information screen, displaying application
  * version, credits, copyright, and system information.
  */
-class AboutController : public QObject
-{
+class AboutController : public QObject {
     Q_OBJECT
 
 public:
-    explicit AboutController(QObject *parent = nullptr);
+    explicit AboutController(QObject* parent = nullptr);
     ~AboutController();
 
     // Dependency injection
@@ -56,4 +55,4 @@ private:
     SystemStateModel* m_stateModel;
 };
 
-#endif // ABOUTCONTROLLER_H
+#endif  // ABOUTCONTROLLER_H

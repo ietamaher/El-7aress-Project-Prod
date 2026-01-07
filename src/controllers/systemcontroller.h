@@ -27,17 +27,16 @@ class QQmlApplicationEngine;
  * - Provide API server
  * - Manage data logger
  */
-class SystemController : public QObject
-{
+class SystemController : public QObject {
     Q_OBJECT
 
 public:
-    explicit SystemController(QObject *parent = nullptr);
+    explicit SystemController(QObject* parent = nullptr);
     ~SystemController();
 
-    // ========================================================================
+    // ============================================================================
     // THREE-PHASE INITIALIZATION
-    // ========================================================================
+    // ============================================================================
 
     /**
      * @brief Phase 1: Initialize hardware layer
@@ -63,9 +62,9 @@ private:
     void createManagers();
     void connectVideoToProvider();
 
-    // ========================================================================
+    // ============================================================================
     // CORE COMPONENTS
-    // ========================================================================
+    // ============================================================================
 
     // Central data model
     SystemStateModel* m_systemStateModel = nullptr;
@@ -79,4 +78,4 @@ private:
     VideoImageProvider* m_videoProvider = nullptr;
 };
 
-#endif // SYSTEMCONTROLLER_H
+#endif  // SYSTEMCONTROLLER_H

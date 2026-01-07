@@ -71,7 +71,7 @@ bool ImuDevice::initialize() {
 
 void ImuDevice::captureGyroBias() {
     qDebug() << m_identifier << "Capturing gyro bias (10 seconds)...";
-    
+
     m_waitingForGyroBias = true;
 
     // Send 0xCD command: [0xCD, 0xC1, 0x29, TimeH, TimeL]
@@ -92,7 +92,7 @@ void ImuDevice::onGyroBiasTimeout() {
 
 void ImuDevice::startPolling() {
     qDebug() << m_identifier << "Starting polling mode at" << (1000.0 / m_pollIntervalMs) << "Hz";
-    
+
     setState(DeviceState::Online);
 
     // Start polling timer and watchdog
@@ -125,7 +125,7 @@ void ImuDevice::sendReadRequest() {
     // Send 0xCF command (single-shot query for Euler angles + rates)
     QByteArray cmd;
     cmd.append(static_cast<char>(0xCF));  // Single byte command
-    
+
     m_transport->sendFrame(cmd);
 }
 

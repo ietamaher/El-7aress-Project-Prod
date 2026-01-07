@@ -76,9 +76,9 @@ LeadCalculationResult BallisticsProcessorLUT::calculateLeadAngle(
         return result;
     }
 
-    // ========================================================================
+    // ============================================================================
     // STEP 1: Get ballistic solution from LUT with environmental corrections
-    // ========================================================================
+    // ============================================================================
 
     BallisticSolution sol = m_lut.getSolution(
         targetRangeMeters,
@@ -93,16 +93,16 @@ LeadCalculationResult BallisticsProcessorLUT::calculateLeadAngle(
         return result;
     }
 
-    // ========================================================================
+    // ============================================================================
     // STEP 2: Calculate MOVING TARGET lead angle
-    // ========================================================================
+    // ============================================================================
     // The LUT gives us elevation for a STATIONARY target.
     // For moving targets, we need to add additional lead based on:
     //   - Target angular rate (from tracker)
     //   - Time of flight (from LUT)
     //
     // Lead_angle = angular_rate × TOF
-    // ========================================================================
+    // ============================================================================
 
     float tof_s = sol.tof_s;
 
@@ -118,9 +118,9 @@ LeadCalculationResult BallisticsProcessorLUT::calculateLeadAngle(
     float motionLeadAzDeg = motionLeadAzRad * (180.0f / M_PI);
     float motionLeadElDeg = motionLeadElRad * (180.0f / M_PI);
 
-    // ========================================================================
+    // ============================================================================
     // STEP 3: Combine ballistic drop + motion lead + wind
-    // ========================================================================
+    // ============================================================================
 
     // ELEVATION = Ballistic drop compensation (from LUT) + Target motion lead
     result.leadElevationDegrees = sol.elevation_deg + motionLeadElDeg;
@@ -130,9 +130,9 @@ LeadCalculationResult BallisticsProcessorLUT::calculateLeadAngle(
     float windCorrectionDeg = sol.azimuth_correction_mils * 0.05625f;
     result.leadAzimuthDegrees = motionLeadAzDeg + windCorrectionDeg;
 
-    // ========================================================================
+    // ============================================================================
     // STEP 4: Apply limits and determine status
-    // ========================================================================
+    // ============================================================================
 
     result.status = LeadAngleStatus::On;  // Default to On
 
@@ -147,13 +147,13 @@ LeadCalculationResult BallisticsProcessorLUT::calculateLeadAngle(
         lag = true;
     }
 
-    // ========================================================================
+    // ============================================================================
     // STATUS DETERMINATION - Priority order matters!
-    // ========================================================================
+    // ============================================================================
     // 1. ZOOM OUT (highest priority) - Lead exceeds FOV, CCIP off-screen
     // 2. LAG (medium priority) - Lead at max limit but still on-screen
     // 3. ON (default) - Normal operation
-    // ========================================================================
+    // ============================================================================
 
     // PRIORITY 1: Check ZOOM OUT condition first (lead exceeds FOV)
     // Use actual VFOV - cameras are NOT square (day: 1280×720→1024×768, night: 640×512)
@@ -220,9 +220,9 @@ LeadCalculationResult BallisticsProcessorLUT::calculateBallisticDrop(float targe
         return result;
     }
 
-    // ========================================================================
+    // ============================================================================
     // BALLISTIC DROP ONLY (no motion lead)
-    // ========================================================================
+    // ============================================================================
     // ELEVATION: Gravity drop compensation from LUT
     result.leadElevationDegrees = sol.elevation_deg;
 
@@ -276,12 +276,12 @@ LeadCalculationResult BallisticsProcessorLUT::calculateMotionLead(
         return result;
     }
 
-    // ========================================================================
+    // ============================================================================
     // MOTION LEAD ONLY (no ballistic drop)
-    // ========================================================================
+    // ============================================================================
     // Calculate motion lead based on target angular rates and bullet TOF
     // Lead_angle = angular_rate × time_of_flight
-    // ========================================================================
+    // ============================================================================
 
     float tof_s = sol.tof_s;
 
@@ -292,9 +292,9 @@ LeadCalculationResult BallisticsProcessorLUT::calculateMotionLead(
     result.leadAzimuthDegrees = motionLeadAzDeg;
     result.leadElevationDegrees = motionLeadElDeg;
 
-    // ========================================================================
+    // ============================================================================
     // Apply limits and determine status
-    // ========================================================================
+    // ============================================================================
 
     bool lag = false;
     if (std::abs(result.leadAzimuthDegrees) > MAX_LEAD_ANGLE_DEGREES) {

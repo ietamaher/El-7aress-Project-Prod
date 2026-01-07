@@ -8,33 +8,24 @@
 // Constructor
 // ============================================================================
 
-JoystickController::JoystickController(JoystickDataModel *joystickModel,
-                                       SystemStateModel *stateModel,
-                                       GimbalController *gimbalCtrl,
-                                       CameraController *cameraCtrl,
-                                       WeaponController *weaponCtrl,
-                                       QObject *parent)
-    : QObject(parent)
-    , m_joystickModel(joystickModel)
-    , m_stateModel(stateModel)
-    , m_gimbalController(gimbalCtrl)
-    , m_cameraController(cameraCtrl)
-    , m_weaponController(weaponCtrl)
-{
-    connect(joystickModel, &JoystickDataModel::axisMoved,
-            this, &JoystickController::onAxisChanged);
-    connect(joystickModel, &JoystickDataModel::buttonPressed,
-            this, &JoystickController::onButtonChanged);
-    connect(joystickModel, &JoystickDataModel::hatMoved,
-            this, &JoystickController::onHatChanged);
+JoystickController::JoystickController(JoystickDataModel* joystickModel,
+                                       SystemStateModel* stateModel, GimbalController* gimbalCtrl,
+                                       CameraController* cameraCtrl, WeaponController* weaponCtrl,
+                                       QObject* parent)
+    : QObject(parent), m_joystickModel(joystickModel), m_stateModel(stateModel),
+      m_gimbalController(gimbalCtrl), m_cameraController(cameraCtrl),
+      m_weaponController(weaponCtrl) {
+    connect(joystickModel, &JoystickDataModel::axisMoved, this, &JoystickController::onAxisChanged);
+    connect(joystickModel, &JoystickDataModel::buttonPressed, this,
+            &JoystickController::onButtonChanged);
+    connect(joystickModel, &JoystickDataModel::hatMoved, this, &JoystickController::onHatChanged);
 }
 
 // ============================================================================
 // Axis Handler
 // ============================================================================
 
-void JoystickController::onAxisChanged(int axis, float value)
-{
+void JoystickController::onAxisChanged(int axis, float value) {
     if (!m_gimbalController)
         return;
 
@@ -52,16 +43,15 @@ void JoystickController::onAxisChanged(int axis, float value)
 // Hat Switch Handler
 // ============================================================================
 
-void JoystickController::onHatChanged(int hat, int value)
-{
+void JoystickController::onHatChanged(int hat, int value) {
     if (!m_stateModel)
         return;
 
     // Resize tracking gate during Acquisition phase
     if (m_stateModel->data().currentTrackingPhase == TrackingPhase::Acquisition) {
-        const float sizeStep = 4.0f; // Pixels to change size per hat press
+        const float sizeStep = 4.0f;  // Pixels to change size per hat press
 
-        if (hat == 0) { // Hat 0 = D-pad
+        if (hat == 0) {  // Hat 0 = D-pad
             if (value == SDL_HAT_UP) {
                 m_stateModel->adjustAcquisitionBoxSize(0, -sizeStep);
             } else if (value == SDL_HAT_DOWN) {
@@ -79,15 +69,14 @@ void JoystickController::onHatChanged(int hat, int value)
 // Button Handler
 // ============================================================================
 
-void JoystickController::onButtonChanged(int button, bool pressed)
-{
+void JoystickController::onButtonChanged(int button, bool pressed) {
     qDebug() << "Joystick button" << button << "=>" << pressed;
 
     SystemStateData curr = m_stateModel->data();
 
-    // ==========================================================================
+    // ============================================================================
     // BUTTON 4: TRACK (single press = cycle phase, double press = abort)
-    // ==========================================================================
+    // ============================================================================
     if (button == 4 && pressed) {
         if (!curr.deadManSwitchActive) {
             qDebug() << "Joystick: TRACK button ignored, Deadman Switch not active.";
@@ -132,9 +121,9 @@ void JoystickController::onButtonChanged(int button, bool pressed)
         return;
     }
 
-    // ==========================================================================
+    // ============================================================================
     // BUTTONS 11/13: MOTION MODE CYCLING
-    // ==========================================================================
+    // ============================================================================
     if (button == 11 || button == 13) {
         if (pressed) {
             if (!curr.stationEnabled) {
@@ -147,7 +136,8 @@ void JoystickController::onButtonChanged(int button, bool pressed)
             if (curr.currentTrackingPhase != TrackingPhase::Off) {
                 qWarning() << "[BUG FIX] Cannot cycle motion modes during tracking (phase:"
                            << static_cast<int>(curr.currentTrackingPhase) << ")";
-                qWarning() << "[BUG FIX] Operator must stop tracking first (double-press Track button)";
+                qWarning()
+                    << "[BUG FIX] Operator must stop tracking first (double-press Track button)";
                 return;
             }
 
@@ -168,16 +158,16 @@ void JoystickController::onButtonChanged(int button, bool pressed)
         return;
     }
 
-    // ==========================================================================
+    // ============================================================================
     // Individual Button Handlers
-    // ==========================================================================
+    // ============================================================================
     switch (button) {
 
-    // ==========================================================================
+    // ============================================================================
     // BUTTON 0: ENGAGEMENT MODE (Momentary Switch - CROWS Style)
     // PDF: Press = Enter Engagement mode (stores previous mode)
     //      Release = Return to previous mode (Surveillance/Tracking/etc)
-    // ==========================================================================
+    // ============================================================================
     /*case 0:
         if (pressed) {
             if (!curr.stationEnabled) {
@@ -196,49 +186,48 @@ void JoystickController::onButtonChanged(int button, bool pressed)
     case 0:
         if (pressed) {
             if (curr.lacArmed && !curr.leadAngleCompensationActive) {
-                m_stateModel->engageLAC();     // ✅ engage lead early
+                m_stateModel->engageLAC();  // ✅ engage lead early
             }
 
             if (curr.currentTrackingPhase == TrackingPhase::Tracking_ActiveLock ||
                 curr.currentTrackingPhase == TrackingPhase::Tracking_Coast) {
-                m_stateModel->enterDeadReckoning(
-                    curr.currentTargetAngularRateAz,
-                    curr.currentTargetAngularRateEl
-                );
+                m_stateModel->enterDeadReckoning(curr.currentTargetAngularRateAz,
+                                                 curr.currentTargetAngularRateEl);
             }
             m_stateModel->commandEngagement(true);
 
         } else {
             // Release half-press → remove lead, keep LAC armed
-        // =========================================================================
-        // CROWS/SARP LAC WORKFLOW - DISENGAGE LAC ON TRIGGER RELEASE
-        // =========================================================================
-        // Per CROWS doctrine: Lead is only applied during firing.
-        // When fire trigger is released, disengage LAC (but keep it armed).
-        // =========================================================================
-        if (curr.lacArmed && curr.leadAngleCompensationActive) {
-            qInfo() << "[CROWS] TRIGGER RELEASED - Disengaging LAC (lead removed, LAC still armed)";
-            m_stateModel->disengageLAC();
-        }
+            // ============================================================================
+            // CROWS/SARP LAC WORKFLOW - DISENGAGE LAC ON TRIGGER RELEASE
+            // ============================================================================
+            // Per CROWS doctrine: Lead is only applied during firing.
+            // When fire trigger is released, disengage LAC (but keep it armed).
+            // ============================================================================
+            if (curr.lacArmed && curr.leadAngleCompensationActive) {
+                qInfo()
+                    << "[CROWS] TRIGGER RELEASED - Disengaging LAC (lead removed, LAC still armed)";
+                m_stateModel->disengageLAC();
+            }
 
-        // =========================================================================
-        // CROWS: Exit dead reckoning when firing stops
-        // =========================================================================
-        // Per CROWS doctrine: Firing terminates tracking completely.
-        // After firing, operator must re-acquire target to resume tracking.
-        // =========================================================================
-        if (curr.deadReckoningActive) {
-            m_stateModel->exitDeadReckoning();
-        }            
+            // ============================================================================
+            // CROWS: Exit dead reckoning when firing stops
+            // ============================================================================
+            // Per CROWS doctrine: Firing terminates tracking completely.
+            // After firing, operator must re-acquire target to resume tracking.
+            // ============================================================================
+            if (curr.deadReckoningActive) {
+                m_stateModel->exitDeadReckoning();
+            }
             m_stateModel->commandEngagement(false);
         }
         break;
-    // ==========================================================================
+    // ============================================================================
     // BUTTON 1: LRF TRIGGER (Laser Range Finder)
     // PDF: Single press = single LRF measurement
     //      Double press (within 1 second) = toggle continuous LRF mode
     //      Continuous modes: 1Hz, 5Hz, or 10Hz (configurable)
-    // ==========================================================================
+    // ============================================================================
     case 1:
         if (pressed) {
             if (!curr.stationEnabled) {
@@ -283,14 +272,14 @@ void JoystickController::onButtonChanged(int button, bool pressed)
         }
         break;
 
-    // ==========================================================================
+    // ============================================================================
     // BUTTON 2: LEAD ANGLE COMPENSATION (CROWS-Style Latching)
-    // ==========================================================================
+    // ============================================================================
     // Per TM 9-1090-225-10-2:
     // "Hold the Palm Switch (2) and press the LEAD button (1)"
     // "A minimum of 2 seconds must be waited before reuse of lead angle
     //  compensation feature."
-    // ==========================================================================
+    // ============================================================================
     case 2:
         if (pressed) {
             bool isDeadManActive = curr.deadManSwitchActive;
@@ -313,10 +302,10 @@ void JoystickController::onButtonChanged(int button, bool pressed)
                 float azRate_dps = curr.azRpm * 6.0f;
                 float elRate_dps = curr.elRpm * 6.0f;
 
- 
+
                 // Latch current tracking rate
                 m_stateModel->armLAC(-azRate_dps, -elRate_dps);
- 
+
 
                 // Trigger initial fire control calculation with new LAC state
                 if (m_weaponController) {
@@ -334,16 +323,16 @@ void JoystickController::onButtonChanged(int button, bool pressed)
         }
         break;
 
-    // ==========================================================================
+    // ============================================================================
     // BUTTON 3: DEAD MAN SWITCH
-    // ==========================================================================
+    // ============================================================================
     case 3:
         m_stateModel->setDeadManSwitch(pressed);
         break;
 
-    // ==========================================================================
+    // ============================================================================
     // BUTTON 5: FIRE WEAPON
-    // ==========================================================================
+    // ============================================================================
     case 5:
         if (!curr.stationEnabled) {
             qDebug() << "Cannot fire, station is off.";
@@ -356,9 +345,9 @@ void JoystickController::onButtonChanged(int button, bool pressed)
         }
         break;
 
-    // ==========================================================================
+    // ============================================================================
     // BUTTON 6: CAMERA ZOOM IN
-    // ==========================================================================
+    // ============================================================================
     case 6:
         if (pressed) {
             m_cameraController->zoomIn();
@@ -367,9 +356,9 @@ void JoystickController::onButtonChanged(int button, bool pressed)
         }
         break;
 
-    // ==========================================================================
+    // ============================================================================
     // BUTTON 7: VIDEO LUT NEXT (Thermal camera only)
-    // ==========================================================================
+    // ============================================================================
     case 7:
         if (pressed && !curr.activeCameraIsDay) {
             m_videoLUT = qMin(m_videoLUT + 1, 12);
@@ -377,9 +366,9 @@ void JoystickController::onButtonChanged(int button, bool pressed)
         }
         break;
 
-    // ==========================================================================
+    // ============================================================================
     // BUTTON 8: CAMERA ZOOM OUT
-    // ==========================================================================
+    // ============================================================================
     case 8:
         if (pressed) {
             m_cameraController->zoomOut();
@@ -388,9 +377,9 @@ void JoystickController::onButtonChanged(int button, bool pressed)
         }
         break;
 
-    // ==========================================================================
+    // ============================================================================
     // BUTTON 9: VIDEO LUT PREVIOUS (Thermal camera only)
-    // ==========================================================================
+    // ============================================================================
     case 9:
         if (pressed && !curr.activeCameraIsDay) {
             m_videoLUT = qMax(m_videoLUT - 1, 0);
@@ -398,10 +387,10 @@ void JoystickController::onButtonChanged(int button, bool pressed)
         }
         break;
 
-    // ==========================================================================
+    // ============================================================================
     // BUTTON 10: LRF CLEAR
     // NOTE: Does NOT affect zeroing (separate clear function for that)
-    // ==========================================================================
+    // ============================================================================
     case 10:
         if (pressed) {
             qInfo() << "[Joystick] Button 10 (LRF CLEAR) pressed";
@@ -410,9 +399,9 @@ void JoystickController::onButtonChanged(int button, bool pressed)
         }
         break;
 
-    // ==========================================================================
+    // ============================================================================
     // BUTTON 12: Exit to manual Mode from any motion mode
-    // ==========================================================================
+    // ============================================================================
     case 12:
         if (pressed) {
             if (!curr.stationEnabled) {
@@ -425,7 +414,8 @@ void JoystickController::onButtonChanged(int button, bool pressed)
             if (curr.currentTrackingPhase != TrackingPhase::Off) {
                 qWarning() << "[BUG FIX] Cannot change to manual mode during tracking (phase:"
                            << static_cast<int>(curr.currentTrackingPhase) << ")";
-                qWarning() << "[BUG FIX] Operator must stop tracking first (double-press Track button)";
+                qWarning()
+                    << "[BUG FIX] Operator must stop tracking first (double-press Track button)";
                 return;
             }
 
@@ -433,9 +423,9 @@ void JoystickController::onButtonChanged(int button, bool pressed)
         }
         break;
 
-    // ==========================================================================
+    // ============================================================================
     // BUTTON 14: UP / NEXT ZONE
-    // ==========================================================================
+    // ============================================================================
     case 14:
         if (pressed) {
             if (curr.opMode == OperationalMode::Idle) {
@@ -456,9 +446,9 @@ void JoystickController::onButtonChanged(int button, bool pressed)
         }
         break;
 
-    // ==========================================================================
+    // ============================================================================
     // BUTTON 16: DOWN / PREVIOUS ZONE
-    // ==========================================================================
+    // ============================================================================
     case 16:
         if (pressed) {
             if (curr.opMode == OperationalMode::Idle) {
@@ -472,8 +462,9 @@ void JoystickController::onButtonChanged(int button, bool pressed)
                              << m_stateModel->data().activeAutoSectorScanZoneId;
                 } else if (curr.motionMode == MotionMode::AutoSectorScan) {
                     m_stateModel->selectPreviousAutoSectorScanZone();
-                    qDebug() << "Joystick: Previous Sector Scan Zone selected via button 16. Now ID:"
-                             << m_stateModel->data().activeAutoSectorScanZoneId;
+                    qDebug()
+                        << "Joystick: Previous Sector Scan Zone selected via button 16. Now ID:"
+                        << m_stateModel->data().activeAutoSectorScanZoneId;
                 }
             }
         }

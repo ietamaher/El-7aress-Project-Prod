@@ -4,40 +4,32 @@
 #include "hardware/devices/cameravideostreamdevice.h"
 #include <QDebug>
 
-OsdController::OsdController(QObject *parent)
-    : QObject(parent)
-    , m_viewModel(nullptr)
-    , m_stateModel(nullptr)
-    , m_startupTimer(new QTimer(this))
-    , m_staticDetectionTimer(new QTimer(this))
-    , m_startupState(StartupState::Idle)
-    , m_startupSequenceActive(false)
-    , m_imuConnected(false)
-    , m_staticDetectionComplete(false)
-{
+OsdController::OsdController(QObject* parent)
+    : QObject(parent), m_viewModel(nullptr), m_stateModel(nullptr),
+      m_startupTimer(new QTimer(this)), m_staticDetectionTimer(new QTimer(this)),
+      m_startupState(StartupState::Idle), m_startupSequenceActive(false), m_imuConnected(false),
+      m_staticDetectionComplete(false) {
     // Connect startup timer
     connect(m_startupTimer, &QTimer::timeout, this, &OsdController::advanceStartupSequence);
     m_startupTimer->setSingleShot(true);
 
     // Connect static detection timer (10 seconds minimum for IMU gyro bias capture)
-    connect(m_staticDetectionTimer, &QTimer::timeout, this, &OsdController::onStaticDetectionTimerExpired);
+    connect(m_staticDetectionTimer, &QTimer::timeout, this,
+            &OsdController::onStaticDetectionTimerExpired);
     m_staticDetectionTimer->setSingleShot(true);
 }
 
-void OsdController::setViewModel(OsdViewModel* viewModel)
-{
+void OsdController::setViewModel(OsdViewModel* viewModel) {
     m_viewModel = viewModel;
     qDebug() << "OsdController: ViewModel set:" << m_viewModel;
 }
 
-void OsdController::setStateModel(SystemStateModel* stateModel)
-{
+void OsdController::setStateModel(SystemStateModel* stateModel) {
     m_stateModel = stateModel;
     qDebug() << "OsdController: StateModel set:" << m_stateModel;
 }
 
-void OsdController::initialize()
-{
+void OsdController::initialize() {
     qDebug() << "OsdController::initialize()";
 
     if (!m_viewModel) {
@@ -56,22 +48,22 @@ void OsdController::initialize()
 
     // Connect to state changes to track camera switching
     // ✅ LATENCY FIX: Queued connection prevents OSD updates from blocking device I/O
-    connect(m_stateModel, &SystemStateModel::dataChanged,
-            this, &OsdController::onSystemStateChanged,
+    connect(m_stateModel, &SystemStateModel::dataChanged, this,
+            &OsdController::onSystemStateChanged,
             Qt::QueuedConnection);  // Non-blocking signal delivery
 
     // Connect to color changes
-    connect(m_stateModel, &SystemStateModel::colorStyleChanged,
-            this, &OsdController::onColorStyleChanged);
+    connect(m_stateModel, &SystemStateModel::colorStyleChanged, this,
+            &OsdController::onColorStyleChanged);
 
     // Set initial state
     m_viewModel->setAccentColor(initialData.colorStyle);
 
     qDebug() << "OsdController initialized successfully";
 
-    // =========================================================================
+    // ============================================================================
     // PHASE 2: Connect to CameraVideoStreamDevice (Add LATER)
-    // =========================================================================
+    // ============================================================================
     // When you want frame-synchronized OSD updates, uncomment this:
     /*
     CameraVideoStreamDevice* dayCamera = ...; // Get from SystemController
@@ -89,8 +81,7 @@ void OsdController::initialize()
 }
 
 
-void OsdController::onSystemStateChanged(const SystemStateData& data)
-{
+void OsdController::onSystemStateChanged(const SystemStateData& data) {
     // Update active camera index when it changes
     int newActiveCameraIndex = data.activeCameraIsDay ? 0 : 1;
 
@@ -108,51 +99,33 @@ void OsdController::onSystemStateChanged(const SystemStateData& data)
     // Update device health status for warning displays
     if (m_viewModel) {
         m_viewModel->updateDeviceHealth(
-            data.dayCameraConnected,
-            data.dayCameraError,
-            data.nightCameraConnected,
-            data.nightCameraError,
-            data.azServoConnected,
-            data.azFault,
-            data.elServoConnected,
-            data.elFault,
-            data.lrfConnected,
-            data.lrfFault,
-            data.lrfOverTemp,
-            data.actuatorConnected,
-            data.actuatorFault,
-            data.imuConnected,
-            data.plc21Connected,
-            data.plc42Connected,
-            data.joystickConnected
-        );
+            data.dayCameraConnected, data.dayCameraError, data.nightCameraConnected,
+            data.nightCameraError, data.azServoConnected, data.azFault, data.elServoConnected,
+            data.elFault, data.lrfConnected, data.lrfFault, data.lrfOverTemp,
+            data.actuatorConnected, data.actuatorFault, data.imuConnected, data.plc21Connected,
+            data.plc42Connected, data.joystickConnected);
 
         // Update environment display (not in FrameData, so updated here)
-        m_viewModel->updateEnvironmentDisplay(
-            data.environmentalTemperatureCelsius,
-            data.environmentalAltitudeMeters
-        );
+        m_viewModel->updateEnvironmentDisplay(data.environmentalTemperatureCelsius,
+                                              data.environmentalAltitudeMeters);
 
         // Update charging status (also updated via FrameData path for synchronization)
-        m_viewModel->updateAmmoFeedStatus(
-            static_cast<int>(data.chargingState),
-            data.chargeCycleInProgress,
-            data.weaponCharged
-        );
+        m_viewModel->updateAmmoFeedStatus(static_cast<int>(data.chargingState),
+                                          data.chargeCycleInProgress, data.weaponCharged);
 
         // Update gyrostabilization debug data for OSD diagnostics
         m_viewModel->updateStabDebug(data);
 
-        // ========================================================================
+        // ============================================================================
         // GIMBAL POSITION UPDATE - Direct from SystemStateData
-        // ========================================================================
+        // ============================================================================
         // BUG FIX: Gimbal Az/El was only updated via FrameData path, which depends
         // on camera frames. During zeroing or when camera frame rate is low, the
         // gimbal position display would be stale or show 0°.
         //
         // This direct update ensures immediate response to servo data changes,
         // providing real-time gimbal position feedback on the OSD.
-        // ========================================================================
+        // ============================================================================
         m_viewModel->updateAzimuth(data.gimbalAz);
         m_viewModel->updateElevation(data.gimbalEl);
 
@@ -161,9 +134,9 @@ void OsdController::onSystemStateChanged(const SystemStateData& data)
     }
 }
 
-void OsdController::checkForCriticalErrors(const SystemStateData& data)
-{
-    if (!m_viewModel) return;
+void OsdController::checkForCriticalErrors(const SystemStateData& data) {
+    if (!m_viewModel)
+        return;
 
     // Priority 1: Critical device disconnections
     if (!data.imuConnected) {
@@ -203,9 +176,9 @@ void OsdController::checkForCriticalErrors(const SystemStateData& data)
 }
 
 
-void OsdController::onFrameDataReady(const FrameData& frmdata)
-{
-    if (!m_viewModel) return;
+void OsdController::onFrameDataReady(const FrameData& frmdata) {
+    if (!m_viewModel)
+        return;
 
     // ⭐ CRITICAL FIX: Only process frames from the ACTIVE camera!
     if (frmdata.cameraIndex != m_activeCameraIndex) {
@@ -226,13 +199,9 @@ void OsdController::onFrameDataReady(const FrameData& frmdata)
     m_viewModel->updateStabilization(frmdata.stabEnabled);
     m_viewModel->updateAzimuth(frmdata.azimuth);
     m_viewModel->updateElevation(frmdata.elevation);
-    m_viewModel->updateImuData(
-        frmdata.imuConnected,
-        frmdata.imuYawDeg,      // Vehicle heading
-        frmdata.imuPitchDeg,
-        frmdata.imuRollDeg,
-        frmdata.imuTemp
-    );
+    m_viewModel->updateImuData(frmdata.imuConnected,
+                               frmdata.imuYawDeg,  // Vehicle heading
+                               frmdata.imuPitchDeg, frmdata.imuRollDeg, frmdata.imuTemp);
     m_viewModel->updateSpeed(frmdata.speed);
     m_viewModel->updateFov(frmdata.cameraFOV);
 
@@ -245,9 +214,9 @@ void OsdController::onFrameDataReady(const FrameData& frmdata)
     m_viewModel->updateFiringMode(frmdata.fireMode);
     m_viewModel->updateLrfDistance(frmdata.lrfDistance);
 
-    // ========================================================================
+    // ============================================================================
     // === RETICLE   ===
-    // ========================================================================
+    // ============================================================================
     m_viewModel->updateReticleType(frmdata.reticleType);
     // ⭐ CRITICAL: Verify that pixel position is correct based on LAC status!
     // SystemStateModel SHOULD have already calculated correct position,
@@ -276,21 +245,21 @@ void OsdController::onFrameDataReady(const FrameData& frmdata)
 
     m_viewModel->updateReticleOffset(finalReticleX, finalReticleY);
 
-    // ========================================================================
+    // ============================================================================
     // === CCIP PIPPER UPDATE (Ballistic Impact Prediction) ===
-    // ========================================================================
+    // ============================================================================
     // CCIP shows where bullets will hit with lead angle compensation
     // Visible only when LAC is active
     // Position comes from reticleAimpointImageX/Y which includes lead offsets
-    // ========================================================================
+    // ============================================================================
 
     // Determine CCIP status string
     //QString ccipStatus = "Off";
     //bool ccipVisible = false;
 
-    // ========================================================================
+    // ============================================================================
     // CROWS/SARP CCIP STATUS LOGIC
-    // ========================================================================
+    // ============================================================================
     // CCIP is visible when ballistic drop is active (LRF valid)
     // Status can be:
     //   - "On": Valid firing solution (ballistic-only or LAC active)
@@ -300,7 +269,7 @@ void OsdController::onFrameDataReady(const FrameData& frmdata)
     //
     // CRITICAL: Check ZoomOut FIRST - it can occur from ballistic drop alone
     // (extreme range) or from LAC (fast target), regardless of LAC state
-    // ========================================================================
+    // ============================================================================
     QString ccipStatus;
     bool ccipVisible = frmdata.ballDropActive;
 
@@ -314,19 +283,25 @@ void OsdController::onFrameDataReady(const FrameData& frmdata)
         // Ballistic-only mode (no LAC) - status based on drop calculation
         ccipStatus = "On";
         // check ccipImpactImageX_px and ccipImpactImageY_px  are in center of screen (currentImageWidthPx / 2.0f, currentImageHeightPx / 2.0f)
-        if (frmdata.ccipImpactImageX_px == 512 && frmdata.ccipImpactImageY_px ==384){
+        if (frmdata.ccipImpactImageX_px == 512 && frmdata.ccipImpactImageY_px == 384) {
             ccipStatus = "ZoomOut";
-        }  
+        }
     } else {
         // LAC is active - status based on lead calculation
         switch (frmdata.leadAngleStatus) {
-            case LeadAngleStatus::On:  ccipStatus = "On";  break;
-            case LeadAngleStatus::Lag: ccipStatus = "Lag"; break;
-            default:                   ccipStatus = "On";  break;
+        case LeadAngleStatus::On:
+            ccipStatus = "On";
+            break;
+        case LeadAngleStatus::Lag:
+            ccipStatus = "Lag";
+            break;
+        default:
+            ccipStatus = "On";
+            break;
         }
     }
-        //if (frmdata.leadAngleActive) {
-   /*if (frmdata.ballDropActive){
+    //if (frmdata.leadAngleActive) {
+    /*if (frmdata.ballDropActive){
         ccipVisible = true;
         switch (frmdata.leadAngleStatus) {
             case LeadAngleStatus::On:
@@ -344,9 +319,9 @@ void OsdController::onFrameDataReady(const FrameData& frmdata)
         }
     }*/
 
-    // ========================================================================
+    // ============================================================================
     // CCIP PIPPER POSITION - PROPER ARCHITECTURAL FIX
-    // ========================================================================
+    // ============================================================================
     // ✅ FIXED: Now reading from FrameData (camera thread) for frame synchronization
     // Previously read from SystemStateData which caused data source mismatch:
     //   - Reticle: from FrameData ✅
@@ -354,28 +329,26 @@ void OsdController::onFrameDataReady(const FrameData& frmdata)
     //   - Acquisition: from FrameData ✅
     //
     // Now all OSD elements are synchronized to the same frame!
-    // ========================================================================
+    // ============================================================================
 
     m_viewModel->updateCcipPipper(
-        frmdata.ccipImpactImageX_px,    // ✅ PROPER FIX: Read from FrameData (frame-synchronized)
-        frmdata.ccipImpactImageY_px,    // ✅ PROPER FIX: Read from FrameData (frame-synchronized)
-        ccipVisible,
-        ccipStatus
-    );
+        frmdata.ccipImpactImageX_px,  // ✅ PROPER FIX: Read from FrameData (frame-synchronized)
+        frmdata.ccipImpactImageY_px,  // ✅ PROPER FIX: Read from FrameData (frame-synchronized)
+        ccipVisible, ccipStatus);
 
-    // ========================================================================
+    // ============================================================================
     // === LAC VISUAL INDICATORS (for display elements) ===
-    // ========================================================================
+    // ============================================================================
     // CROWS/SARP LAC STATES:
     // 1. LAC OFF: lacArmed=false, leadAngleActive=false
     // 2. LAC ARMED: lacArmed=true, leadAngleActive=false (waiting for fire)
     // 3. LAC ENGAGED: lacArmed=true, leadAngleActive=true (lead applied)
-    // ========================================================================
+    // ============================================================================
 
     // Determine if LAC is "effectively active" (engaged with On or Lag status)
-    bool lacEffectivelyActive = frmdata.leadAngleActive &&
-                                (frmdata.leadAngleStatus == LeadAngleStatus::On ||
-                                 frmdata.leadAngleStatus == LeadAngleStatus::Lag);
+    bool lacEffectivelyActive =
+        frmdata.leadAngleActive && (frmdata.leadAngleStatus == LeadAngleStatus::On ||
+                                    frmdata.leadAngleStatus == LeadAngleStatus::Lag);
 
     // Also consider "armed but not engaged" as a visual state (for UI highlighting)
     bool lacArmedOrActive = frmdata.lacArmed || frmdata.leadAngleActive;
@@ -410,54 +383,40 @@ void OsdController::onFrameDataReady(const FrameData& frmdata)
     m_viewModel->updateTrackingConfidence(frmdata.trackingConfidence);
 
     // === TRACKING BOX ===
-    m_viewModel->updateTrackingBox(
-        frmdata.trackingBbox.x(), frmdata.trackingBbox.y(),
-        frmdata.trackingBbox.width(), frmdata.trackingBbox.height()
-        );
+    m_viewModel->updateTrackingBox(frmdata.trackingBbox.x(), frmdata.trackingBbox.y(),
+                                   frmdata.trackingBbox.width(), frmdata.trackingBbox.height());
     m_viewModel->updateTrackingState(frmdata.trackingState);
 
     // === TRACKING PHASE ===
-    m_viewModel->updateTrackingPhase(
-        frmdata.currentTrackingPhase,
-        frmdata.trackerHasValidTarget,
-        QRectF(frmdata.acquisitionBoxX_px, frmdata.acquisitionBoxY_px,
-               frmdata.acquisitionBoxW_px, frmdata.acquisitionBoxH_px)
-        );
+    m_viewModel->updateTrackingPhase(frmdata.currentTrackingPhase, frmdata.trackerHasValidTarget,
+                                     QRectF(frmdata.acquisitionBoxX_px, frmdata.acquisitionBoxY_px,
+                                            frmdata.acquisitionBoxW_px,
+                                            frmdata.acquisitionBoxH_px));
 
     // === ZEROING ===
-    m_viewModel->updateZeroingDisplay(
-        frmdata.zeroingModeActive,
-        frmdata.zeroingAppliedToBallistics,
-        frmdata.zeroingAzimuthOffset,
-        frmdata.zeroingElevationOffset
-        );
+    m_viewModel->updateZeroingDisplay(frmdata.zeroingModeActive, frmdata.zeroingAppliedToBallistics,
+                                      frmdata.zeroingAzimuthOffset, frmdata.zeroingElevationOffset);
 
     // === WINDAGE ===
-    m_viewModel->updateWindageDisplay(
-        frmdata.windageAppliedToBallistics,
-        frmdata.windageSpeedKnots,
-        frmdata.windageDirectionDegrees,
-        frmdata.calculatedCrosswindMS
-        );
+    m_viewModel->updateWindageDisplay(frmdata.windageAppliedToBallistics, frmdata.windageSpeedKnots,
+                                      frmdata.windageDirectionDegrees,
+                                      frmdata.calculatedCrosswindMS);
 
     // === DETECTION ===
     m_viewModel->updateDetectionDisplay(frmdata.detectionEnabled);
     m_viewModel->updateDetectionBoxes(frmdata.detections);
 
     // === ZONE WARNINGS ===
-    m_viewModel->updateZoneWarning(
-        frmdata.isReticleInNoFireZone,
-        frmdata.gimbalStoppedAtNTZLimit
-        );
+    m_viewModel->updateZoneWarning(frmdata.isReticleInNoFireZone, frmdata.gimbalStoppedAtNTZLimit);
 
     // === LEAD ANGLE STATUS TEXT ===
-    // ========================================================================
+    // ============================================================================
     // CROWS/SARP LAC STATUS DISPLAY
-    // ========================================================================
+    // ============================================================================
     // - "LAC ARMED": lacArmed=true, leadAngleActive=false (waiting for fire)
     // - "LEAD ANGLE ON/LAG/ZOOM OUT": leadAngleActive=true (lead applied)
     // - "": Neither armed nor active
-    // ========================================================================
+    // ============================================================================
     QString lacStatusText = frmdata.leadStatusText;
     if (frmdata.lacArmed && !frmdata.leadAngleActive) {
         // LAC is armed but not engaged - show "LAC ARMED"
@@ -470,11 +429,8 @@ void OsdController::onFrameDataReady(const FrameData& frmdata)
     m_viewModel->updateAmmunitionLevel(frmdata.stationAmmunitionLevel);
 
     // === CHARGING STATUS ===
-    m_viewModel->updateAmmoFeedStatus(
-        static_cast<int>(frmdata.chargingState),
-        frmdata.chargeCycleInProgress,
-        frmdata.weaponCharged
-    );
+    m_viewModel->updateAmmoFeedStatus(static_cast<int>(frmdata.chargingState),
+                                      frmdata.chargeCycleInProgress, frmdata.weaponCharged);
 }
 // ============================================================================
 // SHARED UPDATE LOGIC
@@ -579,8 +535,7 @@ void OsdController::onFrameDataReady(const FrameData& frmdata)
         );
 }*/
 
-void OsdController::onColorStyleChanged(const QColor& color)
-{
+void OsdController::onColorStyleChanged(const QColor& color) {
     qDebug() << "OsdController: Color changed to" << color;
     if (m_viewModel) {
         m_viewModel->setAccentColor(color);
@@ -591,10 +546,10 @@ void OsdController::onColorStyleChanged(const QColor& color)
 // STARTUP SEQUENCE CONTROL (EVENT-DRIVEN, REALISTIC TIMING)
 // ============================================================================
 
-void OsdController::startStartupSequence()
-{
+void OsdController::startStartupSequence() {
     if (!m_viewModel || !m_stateModel) {
-        qWarning() << "[OsdController] Cannot start startup sequence - ViewModel or StateModel is null";
+        qWarning()
+            << "[OsdController] Cannot start startup sequence - ViewModel or StateModel is null";
         return;
     }
 
@@ -610,16 +565,16 @@ void OsdController::startStartupSequence()
     updateStartupMessage(m_startupState);
 
     // Connect to SystemStateModel to monitor device connections
-    connect(m_stateModel, &SystemStateModel::dataChanged,
-            this, &OsdController::onStartupSystemStateChanged, Qt::UniqueConnection);
+    connect(m_stateModel, &SystemStateModel::dataChanged, this,
+            &OsdController::onStartupSystemStateChanged, Qt::UniqueConnection);
 
     // After 2 seconds of initialization message, hardware init starts
     m_startupTimer->start(2000);
 }
 
-void OsdController::advanceStartupSequence()
-{
-    if (!m_viewModel || !m_startupSequenceActive) return;
+void OsdController::advanceStartupSequence() {
+    if (!m_viewModel || !m_startupSequenceActive)
+        return;
 
     // Transition from SystemInit to DetectingStatic
     // This happens when hardware initialization begins (IMU sends 0xCD command)
@@ -633,16 +588,16 @@ void OsdController::advanceStartupSequence()
     }
 }
 
-void OsdController::onStartupSystemStateChanged(const SystemStateData& data)
-{
-    if (!m_startupSequenceActive) return;
+void OsdController::onStartupSystemStateChanged(const SystemStateData& data) {
+    if (!m_startupSequenceActive)
+        return;
 
     checkDevicesAndAdvance(data);
 }
 
-void OsdController::checkDevicesAndAdvance(const SystemStateData& data)
-{
-    if (!m_viewModel || !m_startupSequenceActive) return;
+void OsdController::checkDevicesAndAdvance(const SystemStateData& data) {
+    if (!m_viewModel || !m_startupSequenceActive)
+        return;
 
     // Track IMU connection
     // IMU becomes connected AFTER gyro bias capture completes and data starts flowing
@@ -652,7 +607,8 @@ void OsdController::checkDevicesAndAdvance(const SystemStateData& data)
     }
 
     // After static detection timer completes AND IMU is connected, move to AHRS calibration
-    if (m_staticDetectionComplete && m_imuConnected && m_startupState == StartupState::DetectingStatic) {
+    if (m_staticDetectionComplete && m_imuConnected &&
+        m_startupState == StartupState::DetectingStatic) {
         m_startupState = StartupState::CalibratingAHRS;
         updateStartupMessage(m_startupState);
         m_startupTimer->start(2000);  // 2 seconds for AHRS calibration message
@@ -688,16 +644,16 @@ void OsdController::checkDevicesAndAdvance(const SystemStateData& data)
         m_viewModel->updateStartupMessage("", false);  // Hide message
 
         // Disconnect from state changes
-        disconnect(m_stateModel, &SystemStateModel::dataChanged,
-                   this, &OsdController::onStartupSystemStateChanged);
+        disconnect(m_stateModel, &SystemStateModel::dataChanged, this,
+                   &OsdController::onStartupSystemStateChanged);
 
         qDebug() << "[OsdController] Startup sequence complete";
     }
 }
 
-void OsdController::onStaticDetectionTimerExpired()
-{
-    qDebug() << "[OsdController] Static detection period complete (10 seconds - gyro bias capture time)";
+void OsdController::onStaticDetectionTimerExpired() {
+    qDebug()
+        << "[OsdController] Static detection period complete (10 seconds - gyro bias capture time)";
     m_staticDetectionComplete = true;
 
     // Check if we should advance (need both timer complete AND IMU connected)
@@ -706,13 +662,12 @@ void OsdController::onStaticDetectionTimerExpired()
     }
 }
 
-bool OsdController::areCriticalDevicesConnected(const SystemStateData& data) const
-{
+bool OsdController::areCriticalDevicesConnected(const SystemStateData& data) const {
     // Critical devices: IMU, Azimuth servo, Elevation servo
     // Cameras are not critical for basic operation
-    bool critical = data.imuConnected; // &&
-                 //  data.azServoConnected &&
-                  // data.elServoConnected;
+    bool critical = data.imuConnected;  // &&
+                                        //  data.azServoConnected &&
+                                        // data.elServoConnected;
 
     if (critical) {
         qDebug() << "[OsdController] All critical devices connected";
@@ -721,43 +676,43 @@ bool OsdController::areCriticalDevicesConnected(const SystemStateData& data) con
     return critical;
 }
 
-void OsdController::updateStartupMessage(StartupState state)
-{
-    if (!m_viewModel) return;
+void OsdController::updateStartupMessage(StartupState state) {
+    if (!m_viewModel)
+        return;
 
     QString message;
     bool visible = true;
 
     switch (state) {
-        case StartupState::SystemInit:
-            message = "SYSTEM INITIALIZATION...";
-            break;
+    case StartupState::SystemInit:
+        message = "SYSTEM INITIALIZATION...";
+        break;
 
-        case StartupState::WaitingForIMU:
-            message = "WAITING FOR IMU CONNECTION...";
-            break;
+    case StartupState::WaitingForIMU:
+        message = "WAITING FOR IMU CONNECTION...";
+        break;
 
-        case StartupState::DetectingStatic:
-            message = "DETECTING STATIC CONDITION...";
-            break;
+    case StartupState::DetectingStatic:
+        message = "DETECTING STATIC CONDITION...";
+        break;
 
-        case StartupState::CalibratingAHRS:
-            message = "CALIBRATING AHRS...";
-            break;
+    case StartupState::CalibratingAHRS:
+        message = "CALIBRATING AHRS...";
+        break;
 
-        case StartupState::WaitingForCriticalDevices:
-            message = "WAITING FOR CRITICAL DEVICES...";
-            visible = true;  // Show message while waiting
-            break;
+    case StartupState::WaitingForCriticalDevices:
+        message = "WAITING FOR CRITICAL DEVICES...";
+        visible = true;  // Show message while waiting
+        break;
 
-        case StartupState::SystemReady:
-            message = "SYSTEM READY";
-            break;
+    case StartupState::SystemReady:
+        message = "SYSTEM READY";
+        break;
 
-        default:
-            message = "";
-            visible = false;
-            break;
+    default:
+        message = "";
+        visible = false;
+        break;
     }
 
     if (!message.isEmpty()) {
@@ -766,8 +721,7 @@ void OsdController::updateStartupMessage(StartupState state)
     m_viewModel->updateStartupMessage(message, visible);
 }
 
-void OsdController::showErrorMessage(const QString& errorText)
-{
+void OsdController::showErrorMessage(const QString& errorText) {
     if (!m_viewModel) {
         qWarning() << "[OsdController] Cannot show error - ViewModel is null";
         return;
@@ -777,10 +731,10 @@ void OsdController::showErrorMessage(const QString& errorText)
     m_viewModel->updateErrorMessage(errorText, true);
 }
 
-void OsdController::hideErrorMessage()
-{
-    if (!m_viewModel) return;
+void OsdController::hideErrorMessage() {
+    if (!m_viewModel)
+        return;
 
-   // qDebug() << "[OsdController] Hiding error message";
+    // qDebug() << "[OsdController] Hiding error message";
     m_viewModel->updateErrorMessage("", false);
 }

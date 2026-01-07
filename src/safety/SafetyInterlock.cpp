@@ -452,9 +452,9 @@ QString SafetyInterlock::denialReasonToString(SafetyDenialReason reason)
 void SafetyInterlock::logAuditEvent(const QString& operation, bool permitted,
                                      SafetyDenialReason reason) const
 {
-    // ========================================================================
+    // ============================================================================
     // RATE-LIMITED AUDIT LOGGING FOR CERTIFICATION TRACEABILITY
-    // ========================================================================
+    // ============================================================================
     // This function logs safety decisions with timestamps for audit trail.
     // Rate limiting prevents log spam while ensuring state changes are captured.
     //
@@ -462,7 +462,7 @@ void SafetyInterlock::logAuditEvent(const QString& operation, bool permitted,
     // 1. Always log permission changes (GRANTED <-> DENIED)
     // 2. Always log denial reason changes (different failure mode)
     // 3. Rate-limit repeated denials with same reason to 1 per 5 seconds
-    // ========================================================================
+    // ============================================================================
 
     qint64 currentTime = QDateTime::currentMSecsSinceEpoch();
     qint64* lastLogTime = nullptr;

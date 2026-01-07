@@ -126,7 +126,7 @@ void SystemStatusViewModel::updateAzimuthServo(bool connected, float position, f
     }
 
     QString statusText = connected ? (fault ? "⚠ FAULT" : "✓ OK") : "N/A";
-    
+
     if (m_azStatusText != statusText) {
         m_azStatusText = statusText;
         emit azStatusTextChanged();
@@ -181,7 +181,7 @@ void SystemStatusViewModel::updateElevationServo(bool connected, float position,
     }
 
     QString statusText = connected ? (fault ? "⚠ FAULT" : "✓ OK") : "N/A";
-    
+
     if (m_azStatusText != statusText) {
         m_azStatusText = statusText;
         emit azStatusTextChanged();
@@ -224,7 +224,7 @@ void SystemStatusViewModel::updateImu(bool connected, double roll, double pitch,
     }
 
     QString statusText = connected ? "✓ OK" : "N/A";
-    
+
     if (m_imuStatusText != statusText) {
         m_imuStatusText = statusText;
         emit imuStatusTextChanged();
@@ -437,22 +437,22 @@ void SystemStatusViewModel::updatePlcStatus(bool plc21Conn, bool plc42Conn,
     }
     QString plc21Status = plc21Conn ? "✓ OK" : "N/A";
     QString plc42Status = plc42Conn ? "✓ OK" : "N/A";
-    
+
     if (m_plc21StatusText != plc21Status) {
         m_plc21StatusText = plc21Status;
         emit plc21StatusTextChanged();
     }
-    
+
     if (m_plc42StatusText != plc42Status) {
         m_plc42StatusText = plc42Status;
         emit plc42StatusTextChanged();
     }
-        
+
 }
 
-// ===========================================================================
+// ============================================================================
 // Servo Actuator
-// ============================================================================ 
+// ============================================================================
 void SystemStatusViewModel::updateServoActuator(bool connected, double position, double velocity,
                                                 double temp, double voltage, double torque,
                                                 bool motorOff, bool fault)
@@ -510,7 +510,7 @@ void SystemStatusViewModel::updateServoActuator(bool connected, double position,
     } else {
         statusText = "N/A";
     }
-    
+
     if (m_actuatorStatusText != statusText) {
         m_actuatorStatusText = statusText;
         emit actuatorStatusTextChanged();

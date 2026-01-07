@@ -47,16 +47,16 @@ QPointF ReticleAimpointCalculator::convertSingleAngularToPixelShift(
         return QPointF(0, 0);
     }
 
-    // ========================================================================
+    // ============================================================================
     // STEP 1: Calculate camera intrinsics (focal lengths in pixels)
-    // ========================================================================
+    // ============================================================================
     // For a pinhole camera model:
     //   fx = (imageWidth / 2) / tan(HFOV / 2)
     //   fy = (imageHeight / 2) / tan(VFOV / 2)
     //
     // VFOV is derived from HFOV using the aspect ratio:
     //   tan(VFOV/2) = tan(HFOV/2) / aspectRatio
-    // ========================================================================
+    // ============================================================================
 
     double hfov_rad = cameraHfovDeg * M_PI / 180.0;
     double aspectRatio = static_cast<double>(imageWidthPx) / static_cast<double>(imageHeightPx);
@@ -68,9 +68,9 @@ QPointF ReticleAimpointCalculator::convertSingleAngularToPixelShift(
     double fx = (imageWidthPx / 2.0) / std::tan(hfov_rad / 2.0);
     double fy = (imageHeightPx / 2.0) / std::tan(vfov_rad / 2.0);
 
-    // ========================================================================
+    // ============================================================================
     // STEP 2: Convert angular offset to pixel displacement using TAN projection
-    // ========================================================================
+    // ============================================================================
     // Pinhole model: pixel_offset = focal_length × tan(angle)
     //
     // Sign convention (consistent with Qt coordinate system):
@@ -88,7 +88,7 @@ QPointF ReticleAimpointCalculator::convertSingleAngularToPixelShift(
     //   - We want reticle to shift UP to show where bullets hit
     //   - In Qt coords, UP is negative Y
     //   - So: shiftY = -fy × tan(el)
-    // ========================================================================
+    // ============================================================================
 
     double az_rad = angularOffsetAzDeg * M_PI / 180.0;
     double el_rad = angularOffsetElDeg * M_PI / 180.0;
@@ -128,9 +128,9 @@ QPointF ReticleAimpointCalculator::calculateReticleImagePositionPx(
     float leadAzDeg, float leadElDeg, bool leadActive, LeadAngleStatus leadStatus,
     float cameraHfovDeg, int imageWidthPx, int imageHeightPx)
 {
-    // ========================================================================
+    // ============================================================================
     // ACCUMULATE TOTAL ANGULAR OFFSET
-    // ========================================================================
+    // ============================================================================
     // We sum all angular offsets FIRST, then project to pixels ONCE.
     // This is more accurate than projecting each offset separately and summing
     // pixels, because tan(a+b) ≠ tan(a) + tan(b).
@@ -138,20 +138,20 @@ QPointF ReticleAimpointCalculator::calculateReticleImagePositionPx(
     // However, for small angles (<5°), the difference is negligible.
     // For simplicity and to maintain separate control over zeroing vs lead,
     // we project each component separately and sum the pixel shifts.
-    // ========================================================================
+    // ============================================================================
 
     QPointF totalPixelShift(0.0, 0.0);
 
-    // ========================================================================
+    // ============================================================================
     // ZEROING OFFSET
-    // ========================================================================
+    // ============================================================================
     // Zeroing offset represents the angular difference between camera LOS
     // and gun bore. Positive offset means impact is RIGHT/UP of aim point.
     //
     // Sign convention: Input zeroingAzDeg/zeroingElDeg are stored as
     // (impact_position - aim_position), so positive = impact to the right/up.
     // We want reticle to show where bullets HIT, so we apply the offset directly.
-    // ========================================================================
+    // ============================================================================
     if (zeroingActive) {
         totalPixelShift += ReticleAimpointCalculator::convertSingleAngularToPixelShift(
             zeroingAzDeg,   // Positive = impact right → reticle shifts right
@@ -159,9 +159,9 @@ QPointF ReticleAimpointCalculator::calculateReticleImagePositionPx(
             cameraHfovDeg, imageWidthPx, imageHeightPx);
     }
 
-    // ========================================================================
+    // ============================================================================
     // BALLISTIC/LEAD OFFSET (for CCIP)
-    // ========================================================================
+    // ============================================================================
     // This offset combines:
     // 1. Ballistic drop (gravity + wind) - auto-applied when LRF valid
     // 2. Motion lead (target velocity compensation) - when LAC active
@@ -173,7 +173,7 @@ QPointF ReticleAimpointCalculator::calculateReticleImagePositionPx(
     // - ZoomOut detection is handled by SystemStateModel after position calc
     //
     // Previous bug: leadStatus == Off blocked ballistic-only CCIP display
-    // ========================================================================
+    // ============================================================================
     if (leadActive) {
         totalPixelShift += ReticleAimpointCalculator::convertSingleAngularToPixelShift(
             leadAzDeg,      // Combined ballistic + lead in azimuth direction
@@ -181,9 +181,9 @@ QPointF ReticleAimpointCalculator::calculateReticleImagePositionPx(
             cameraHfovDeg, imageWidthPx, imageHeightPx);
     }
 
-    // ========================================================================
+    // ============================================================================
     // FINAL POSITION = IMAGE CENTER + TOTAL SHIFT
-    // ========================================================================
+    // ============================================================================
     qreal screenCenterX_px = static_cast<qreal>(imageWidthPx) / 2.0;
     qreal screenCenterY_px = static_cast<qreal>(imageHeightPx) / 2.0;
 

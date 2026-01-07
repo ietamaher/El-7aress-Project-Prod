@@ -4,35 +4,30 @@
 #include "models/domain/systemstatemodel.h"
 #include <QDebug>
 
-MainMenuController::MainMenuController(QObject *parent)
-    : QObject(parent)
-    , m_viewModel(nullptr)
-    , m_stateModel(nullptr)
-{
-}
+MainMenuController::MainMenuController(QObject* parent)
+    : QObject(parent), m_viewModel(nullptr), m_stateModel(nullptr) {}
 
-void MainMenuController::initialize()
-{
+void MainMenuController::initialize() {
     //m_viewModel = ServiceManager::instance()->get<MenuViewModel>(QString("MainMenuViewModel"));
     Q_ASSERT(m_viewModel);
     Q_ASSERT(m_stateModel);
 
-    connect(m_viewModel, &MenuViewModel::optionSelected,
-            this, &MainMenuController::handleMenuOptionSelected);
+    connect(m_viewModel, &MenuViewModel::optionSelected, this,
+            &MainMenuController::handleMenuOptionSelected);
     //SystemStateModel* stateModel = ServiceManager::instance()->get<SystemStateModel>();
     if (m_stateModel) {
-        connect(m_stateModel, &SystemStateModel::colorStyleChanged,
-                this, &MainMenuController::onColorStyleChanged);
+        connect(m_stateModel, &SystemStateModel::colorStyleChanged, this,
+                &MainMenuController::onColorStyleChanged);
 
         // ✅ LATENCY FIX: Use dedicated signals to reduce event queue load
         // Only processes events when camera/detection actually changes (2-5 times per session)
         // instead of 1,200 events/min from dataChanged signal
-        connect(m_stateModel, &SystemStateModel::activeCameraChanged,
-                this, &MainMenuController::onCameraChanged,
+        connect(m_stateModel, &SystemStateModel::activeCameraChanged, this,
+                &MainMenuController::onCameraChanged,
                 Qt::QueuedConnection);  // Non-blocking signal delivery
 
-        connect(m_stateModel, &SystemStateModel::detectionStateChanged,
-                this, &MainMenuController::onDetectionChanged,
+        connect(m_stateModel, &SystemStateModel::detectionStateChanged, this,
+                &MainMenuController::onDetectionChanged,
                 Qt::QueuedConnection);  // Non-blocking signal delivery
 
         // Set initial color
@@ -41,8 +36,7 @@ void MainMenuController::initialize()
     }
 }
 
-QStringList MainMenuController::buildMainMenuOptions() const
-{
+QStringList MainMenuController::buildMainMenuOptions() const {
     const auto& data = m_stateModel->data();
 
     // Build detection option with dynamic state display
@@ -50,32 +44,18 @@ QStringList MainMenuController::buildMainMenuOptions() const
     if (!data.activeCameraIsDay) {
         detectionOption = "Detection (Night - Unavailable)";
     } else {
-        detectionOption = data.detectionEnabled
-            ? "Detection: ENABLED"
-            : "Detection: DISABLED";
+        detectionOption = data.detectionEnabled ? "Detection: ENABLED" : "Detection: DISABLED";
     }
 
     QStringList options;
-    options << "--- RETICLE & DISPLAY ---"
-            << "Personalize Reticle"
-            << "Personalize Colors"
-            << "Display Brightness"
-            << "--- BALLISTICS ---"
-            << "Zeroing"
-            << "Clear Active Zero"
-            << "Windage"
-            << "Clear Active Windage"
-            << "Environmental Settings"
-            << "Clear Environmental Settings"
-            << "--- CALIBRATION ---"
-            << "Preset Home Position"
+    options << "--- RETICLE & DISPLAY ---" << "Personalize Reticle" << "Personalize Colors"
+            << "Display Brightness" << "--- BALLISTICS ---" << "Zeroing" << "Clear Active Zero"
+            << "Windage" << "Clear Active Windage" << "Environmental Settings"
+            << "Clear Environmental Settings" << "--- CALIBRATION ---" << "Preset Home Position"
             << "--- SYSTEM ---"
             << "Zone Definitions"
             // << "System Status"  // DISABLED
-            << detectionOption
-            << "Shutdown System"
-            << "--- INFO ---"
-            << "Help/About"
+            << detectionOption << "Shutdown System" << "--- INFO ---" << "Help/About"
             << "Return ...";
 
     // NO "Return ..." option since pressing MENU/VAL again will close the menu
@@ -83,8 +63,7 @@ QStringList MainMenuController::buildMainMenuOptions() const
     return options;
 }
 
-void MainMenuController::show()
-{
+void MainMenuController::show() {
     // Save initial state for change detection
     const auto& data = m_stateModel->data();
     m_previousCameraIsDay = data.activeCameraIsDay;
@@ -94,75 +73,60 @@ void MainMenuController::show()
     m_viewModel->showMenu("Main Menu", "Navigate with UP/DOWN, Select with MENU/VAL", menuOptions);
 }
 
-void MainMenuController::hide()
-{
+void MainMenuController::hide() {
     m_viewModel->hideMenu();
 }
 
-void MainMenuController::onUpButtonPressed()
-{
+void MainMenuController::onUpButtonPressed() {
     m_viewModel->moveSelectionUp();
 }
 
-void MainMenuController::onDownButtonPressed()
-{
+void MainMenuController::onDownButtonPressed() {
     m_viewModel->moveSelectionDown();
 }
 
-void MainMenuController::onSelectButtonPressed()
-{
+void MainMenuController::onSelectButtonPressed() {
     // This is called when MENU/VAL is pressed while in the main menu
     m_viewModel->selectCurrentItem();
 }
 
-void MainMenuController::handleMenuOptionSelected(const QString& option)
-{
+void MainMenuController::handleMenuOptionSelected(const QString& option) {
     qDebug() << "MainMenuController: Option selected:" << option;
 
-    hide(); // Always hide the menu after selection
+    hide();  // Always hide the menu after selection
 
     // Route to appropriate handler based on selection
     if (option == "Personalize Reticle") {
         emit personalizeReticleRequested();
-        emit menuFinished(); // ✅ Emit after each action
-    }
-    else if (option == "Personalize Colors") {
+        emit menuFinished();  // ✅ Emit after each action
+    } else if (option == "Personalize Colors") {
         emit personalizeColorsRequested();
         emit menuFinished();
-    }
-    else if (option == "Display Brightness") {
+    } else if (option == "Display Brightness") {
         emit brightnessRequested();
         // DON'T emit menuFinished() - brightness is a procedure
-    }
-    else if (option == "Zeroing") {
+    } else if (option == "Zeroing") {
         emit zeroingRequested();
         // ❌ DON'T emit menuFinished() - zeroing is a procedure
-    }
-    else if (option == "Clear Active Zero") {
+    } else if (option == "Clear Active Zero") {
         emit clearZeroRequested();
         emit menuFinished();
-    }
-    else if (option == "Windage") {
+    } else if (option == "Windage") {
         emit windageRequested();
         // ❌ DON'T emit menuFinished() - windage is a procedure
-    }
-    else if (option == "Clear Active Windage") {
+    } else if (option == "Clear Active Windage") {
         emit clearWindageRequested();
         emit menuFinished();
-    }
-    else if (option == "Environmental Settings") {
+    } else if (option == "Environmental Settings") {
         emit environmentalRequested();
         // ❌ DON'T emit menuFinished() - environmental is a procedure
-    }
-    else if (option == "Clear Environmental Settings") {
+    } else if (option == "Clear Environmental Settings") {
         emit clearEnvironmentalRequested();
         emit menuFinished();
-    }
-    else if (option == "Preset Home Position") {
+    } else if (option == "Preset Home Position") {
         emit presetHomePositionRequested();
         // DON'T emit menuFinished() - preset home position is a procedure
-    }
-    else if (option == "Zone Definitions") {
+    } else if (option == "Zone Definitions") {
         emit zoneDefinitionsRequested();
         // ❌ DON'T emit menuFinished() - zone definition is a procedure
     }
@@ -178,38 +142,32 @@ void MainMenuController::handleMenuOptionSelected(const QString& option)
             emit toggleDetectionRequested();
             emit menuFinished();
         }
-    }
-    else if (option == "Shutdown System") {
+    } else if (option == "Shutdown System") {
         emit shutdownSystemRequested();
         emit menuFinished();
-    }
-    else if (option == "Radar Target List") {
+    } else if (option == "Radar Target List") {
         emit radarTargetListRequested();
         //emit menuFinished();
-    }
-    else if (option == "Help/About") {
+    } else if (option == "Help/About") {
         emit helpAboutRequested();
         // menuFinished();
-    }
-    else if (option == "Return ...") {
+    } else if (option == "Return ...") {
         qDebug() << "MainMenuController: Return option selected - closing menu";
         emit menuFinished();
-    }
-    else {
+    } else {
         qWarning() << "MainMenuController: Unknown option:" << option;
     }
 }
 
-void MainMenuController::onColorStyleChanged(const QColor& color)
-{
+void MainMenuController::onColorStyleChanged(const QColor& color) {
     qDebug() << "MainMenuController: Color changed to" << color;
     m_viewModel->setAccentColor(color);
 }
 
-void MainMenuController::onCameraChanged(bool isDayCamera)
-{
+void MainMenuController::onCameraChanged(bool isDayCamera) {
     // Only update if menu is visible
-    if (!m_viewModel->visible()) return;
+    if (!m_viewModel->visible())
+        return;
 
     qDebug() << "MainMenuController: Camera changed while menu open - rebuilding options";
     m_previousCameraIsDay = isDayCamera;
@@ -227,10 +185,10 @@ void MainMenuController::onCameraChanged(bool isDayCamera)
     }
 }
 
-void MainMenuController::onDetectionChanged(bool enabled)
-{
+void MainMenuController::onDetectionChanged(bool enabled) {
     // Only update if menu is visible
-    if (!m_viewModel->visible()) return;
+    if (!m_viewModel->visible())
+        return;
 
     m_previousDetectionEnabled = enabled;
 
@@ -247,13 +205,10 @@ void MainMenuController::onDetectionChanged(bool enabled)
     }
 }
 
-void MainMenuController::setViewModel(MenuViewModel* viewModel)
-{
+void MainMenuController::setViewModel(MenuViewModel* viewModel) {
     m_viewModel = viewModel;
 }
 
-void MainMenuController::setStateModel(SystemStateModel* stateModel)
-{
+void MainMenuController::setStateModel(SystemStateModel* stateModel) {
     m_stateModel = stateModel;
 }
-

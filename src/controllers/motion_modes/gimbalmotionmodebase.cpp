@@ -6,23 +6,23 @@
 #include <QDebug>
 #include <algorithm>
 
-// =========================================================================
+// ============================================================================
 // STATIC MEMBER DEFINITIONS
-// =========================================================================
+// ============================================================================
 GimbalStabilizer GimbalMotionModeBase::s_stabilizer;
 
-// =========================================================================
+// ============================================================================
 // STATIC PACKET TEMPLATES (SINGLE MODBUS WRITE OPTIMIZATION)
-// =========================================================================
+// ============================================================================
 // Pre-built 10-register packets for axis-specific velocity commands.
 // Only speed (registers 0-1) changes at runtime; accel/decel/current/trigger are fixed.
 QVector<quint16> GimbalMotionModeBase::s_azVelocityPacketTemplate;
 QVector<quint16> GimbalMotionModeBase::s_elVelocityPacketTemplate;
 bool GimbalMotionModeBase::s_packetsInitialized = false;
 
-// =========================================================================
+// ============================================================================
 // REGISTER DEFINITIONS for AZD-KX Direct Data Operation (from your manual)
-// =========================================================================
+// ============================================================================
 namespace AzdReg {
     constexpr quint16 OpType      = 0x005A; // Operation Type (2 registers)
     constexpr quint16 OpPosition  = 0x005C; // Position (2 registers)
@@ -31,12 +31,12 @@ namespace AzdReg {
     constexpr quint16 OpDecel     = 0x0062; // Decel rate (2 registers)
     constexpr quint16 OpCurrent   = 0x0064; // Operating current (2 registers)
     constexpr quint16 OpTrigger   = 0x0066; // Trigger (2 registers)
-    
+
     // Trigger values
     constexpr qint32 TRIGGER_UPDATE_SPEED = -4;  // 0xFFFFFFFC
     constexpr qint32 TRIGGER_UPDATE_ALL   = 1;
 }
- 
+
 
 void GimbalMotionModeBase::configureVelocityMode(ServoDriverDevice* driverInterface)
 {
@@ -59,9 +59,9 @@ void GimbalMotionModeBase::configureVelocityMode(ServoDriverDevice* driverInterf
     // The initial write will set all parameters correctly.
 }
 
-// =========================================================================
+// ============================================================================
 // PACKET TEMPLATE INITIALIZATION (call once at startup)
-// =========================================================================
+// ============================================================================
 void GimbalMotionModeBase::initAxisPacketTemplates()
 {
     if (s_packetsInitialized) {
@@ -71,10 +71,10 @@ void GimbalMotionModeBase::initAxisPacketTemplates()
     const auto& cfg = MotionTuningConfig::instance();
     constexpr qint32 trigger = AzdReg::TRIGGER_UPDATE_SPEED;  // -4
 
-    // =========================================================================
+    // ============================================================================
     // BUILD AZIMUTH PACKET TEMPLATE
     // Heavy turret load: SLOW decel (100kHz/s) to prevent overvoltage
-    // =========================================================================
+    // ============================================================================
     quint32 azAccel = cfg.axisServo.azimuth.accelHz;
     quint32 azDecel = cfg.axisServo.azimuth.decelHz;
     quint32 azCurrent = cfg.axisServo.azimuth.currentPercent;
@@ -91,10 +91,10 @@ void GimbalMotionModeBase::initAxisPacketTemplates()
     s_azVelocityPacketTemplate << static_cast<quint16>((trigger >> 16) & 0xFFFF)
                                << static_cast<quint16>(trigger & 0xFFFF);
 
-    // =========================================================================
+    // ============================================================================
     // BUILD ELEVATION PACKET TEMPLATE
     // Lighter gun load: FAST decel (300kHz/s) for crisp stops, 70% current
-    // =========================================================================
+    // ============================================================================
     quint32 elAccel = cfg.axisServo.elevation.accelHz;
     quint32 elDecel = cfg.axisServo.elevation.decelHz;
     quint32 elCurrent = cfg.axisServo.elevation.currentPercent;
@@ -120,9 +120,9 @@ void GimbalMotionModeBase::initAxisPacketTemplates()
             << "Hz/s, current=" << elCurrent / 10.0 << "%";
 }
 
-// =========================================================================
+// ============================================================================
 // OPTIMIZED VELOCITY COMMAND (SINGLE MODBUS WRITE)
-// =========================================================================
+// ============================================================================
 void GimbalMotionModeBase::writeVelocityCommandOptimized(
     ServoDriverDevice* driverInterface,
     GimbalAxis axis,
@@ -166,9 +166,9 @@ void GimbalMotionModeBase::writeVelocityCommandOptimized(
     }
 }
 
-// =========================================================================
+// ============================================================================
 // LEGACY VELOCITY COMMAND (for backward compatibility - uses AZ template)
-// =========================================================================
+// ============================================================================
 void GimbalMotionModeBase::writeVelocityCommand(ServoDriverDevice* driverInterface,
                                                 double finalVelocity,
                                                 double scalingFactor,
@@ -189,23 +189,23 @@ void GimbalMotionModeBase::updateGyroBias(const SystemStateData& systemState)
 
     // Only estimate bias if the vehicle is stationary
     if (systemState.isVehicleStationary) {
-        sumX += systemState.GyroX;   
-        sumY += systemState.GyroY;   
+        sumX += systemState.GyroX;
+        sumY += systemState.GyroY;
         sumZ += systemState.GyroZ;
         count++;
 
         if (count >= 50) {
-            m_gyroBiasX = sumX / count;   
-            m_gyroBiasY = sumY / count;   
+            m_gyroBiasX = sumX / count;
+            m_gyroBiasY = sumY / count;
             m_gyroBiasZ = sumZ / count;
-            sumX = sumY = sumZ = 0;       
+            sumX = sumY = sumZ = 0;
             count = 0;
             lastResetTime = QDateTime::currentDateTime();
-            /*qDebug() << "[Gimbal] New Gyro Bias - X:" << m_gyroBiasX 
+            /*qDebug() << "[Gimbal] New Gyro Bias - X:" << m_gyroBiasX
                      << "Y:" << m_gyroBiasY << "Z:" << m_gyroBiasZ;   */
         }
     } else {
-        sumX = sumY = sumZ = 0;   
+        sumX = sumY = sumZ = 0;
         count = 0;
         lastResetTime = QDateTime::currentDateTime();
     }
@@ -385,7 +385,7 @@ double GimbalMotionModeBase::pidCompute(PIDController& pid, double error, double
     return pidCompute(pid, error, 0.0, 0.0, false, dt);
 }
 
- 
+
 void GimbalMotionModeBase::stopServos(GimbalController* controller)
 {
     // Shutdown safety: check both controller and systemStateModel
@@ -419,7 +419,7 @@ void GimbalMotionModeBase::writeServoCommands(ServoDriverDevice* driverInterface
     // Calculate speed (magnitude of velocity) scaled to servo units
     quint32 speedCommand = static_cast<quint32>(std::abs(finalVelocity) * scalingFactor);
     quint32 clampedSpeed = std::min(speedCommand, MAX_SPEED);
-    
+
     // Split speed into two 16-bit registers
     quint16 upperBits = static_cast<quint16>((clampedSpeed >> 16) & 0xFFFF);
     quint16 lowerBits = static_cast<quint16>(clampedSpeed & 0xFFFF);
@@ -429,7 +429,7 @@ void GimbalMotionModeBase::writeServoCommands(ServoDriverDevice* driverInterface
 }
 
 
-void GimbalMotionModeBase::writeTargetPosition(ServoDriverDevice* driverInterface, 
+void GimbalMotionModeBase::writeTargetPosition(ServoDriverDevice* driverInterface,
                                              long targetPositionInSteps)
 {
     if (!driverInterface) return;
@@ -438,7 +438,7 @@ void GimbalMotionModeBase::writeTargetPosition(ServoDriverDevice* driverInterfac
     // We need to split it into two 16-bit registers.
     quint16 upperSteps = static_cast<quint16>((targetPositionInSteps >> 16) & 0xFFFF);
     quint16 lowerSteps = static_cast<quint16>(targetPositionInSteps & 0xFFFF);
-    
+
     // PSEUDO-CODE: Register addresses would come from the AZD-KX manual.
     static constexpr quint16 TARGET_POS_UPPER_REG = 0x0100;
     static constexpr quint16 TARGET_POS_LOWER_REG = 0x0102;
@@ -447,22 +447,22 @@ void GimbalMotionModeBase::writeTargetPosition(ServoDriverDevice* driverInterfac
     // Write the new target position
     driverInterface->writeData(TARGET_POS_UPPER_REG, {upperSteps});
     driverInterface->writeData(TARGET_POS_LOWER_REG, {lowerSteps});
-    
+
     // Trigger the move
     driverInterface->writeData(EXECUTE_MOVE_REG, {0x0001}); // "Start Move" command
 }
- 
+
 
 void GimbalMotionModeBase::setAcceleration(ServoDriverDevice* driverInterface, quint32 acceleration)
 {
     if (!driverInterface) return;
-    
+
     quint32 clamped = std::min(acceleration, MAX_ACCELERATION);
     quint16 upper = static_cast<quint16>((clamped >> 16) & 0xFFFF);
     quint16 lower = static_cast<quint16>(clamped & 0xFFFF);
 
     QVector<quint16> accelData = {upper, lower};
-    
+
     // Write to all acceleration registers
     for (quint16 reg : ACCEL_REGISTERS) {
         driverInterface->writeData(reg, accelData);
@@ -475,16 +475,16 @@ bool GimbalMotionModeBase::checkSafetyConditions(GimbalController* controller)
         return false;
     }
 
-    // ========================================================================
+    // ============================================================================
     // SAFETY INTERLOCK INTEGRATION (Template Method Pattern)
-    // ========================================================================
+    // ============================================================================
     // Delegate safety decision to centralized SafetyInterlock authority.
     // This ensures all safety checks are in one place and auditable.
     // The SafetyInterlock.canMove() checks:
     //   - E-Stop status
     //   - Station enabled
     //   - Dead man switch (for Manual/AutoTrack modes)
-    // ========================================================================
+    // ============================================================================
     if (controller->safetyInterlock()) {
         SafetyDenialReason reason;
         int motionMode = static_cast<int>(controller->currentMotionModeType());
@@ -499,9 +499,9 @@ bool GimbalMotionModeBase::checkSafetyConditions(GimbalController* controller)
         return allowed;
     }
 
-    // ========================================================================
+    // ============================================================================
     // LEGACY FALLBACK (if SafetyInterlock not available)
-    // ========================================================================
+    // ============================================================================
     if (!controller->systemStateModel()) {
         return false;
     }
@@ -521,9 +521,9 @@ bool GimbalMotionModeBase::checkSafetyConditions(GimbalController* controller)
            !data.emergencyStopActive && deadManSwitchOk;
 }
 
-// =============================================================================
+// ============================================================================
 // TEMPLATE METHOD PATTERN IMPLEMENTATION
-// =============================================================================
+// ============================================================================
 // These methods enforce safety checks before any motion update.
 // The pattern guarantees that all motion passes through SafetyInterlock.
 
@@ -560,22 +560,22 @@ bool GimbalMotionModeBase::checkElevationLimits(double currentEl, double targetV
     if ((currentEl >= MAX_ELEVATION_ANGLE || upperLimit) && (targetVelocity > 0)) {
         return false;
     }
-    
+
     // Check lower limits
     if ((currentEl <= MIN_ELEVATION_ANGLE || lowerLimit) && (targetVelocity < 0)) {
         return false;
     }
-    
+
     return true;
 }
 
-// =========================================================================
+// ============================================================================
 // DEPRECATED FUNCTIONS REMOVED (2025-12-27)
 // The following functions were removed as they are replaced by GimbalStabilizer:
 //   - calculateStabilizationCorrection()
 //   - calculateRequiredGimbalAngles()
 // Production code should use GimbalStabilizer::computeStabilizedVelocity()
-// =========================================================================
+// ============================================================================
 
 
 void GimbalMotionModeBase::convertGimbalToWorldFrame(
@@ -641,13 +641,13 @@ void GimbalMotionModeBase::convertGimbalToWorldFrame(
     Eigen::Vector3d& linVel_world_mps,
     Eigen::Vector3d& angVel_world_dps)
 {
-    // ======================================================
+    // ============================================================================
     // 1. Convert angles to radians
-    // ======================================================
+    // ============================================================================
     const double azRad = degToRad(azDeg);   // [rad]
     const double elRad = degToRad(elDeg);   // [rad]
 
-    // ======================================================
+    // ============================================================================
     // 2. Rotation matrix: Gimbal → World
     //
     // Azimuth-over-Elevation gimbal:
@@ -656,23 +656,23 @@ void GimbalMotionModeBase::convertGimbalToWorldFrame(
     // Rotation order:
     //   1. R_el: Rotate around Y-axis (elevation) - INNER gimbal
     //   2. R_az: Rotate around Z-axis (azimuth) - OUTER gimbal
-    // ======================================================
+    // ============================================================================
     const Eigen::Matrix3d R_az = Eigen::AngleAxisd(azRad, Eigen::Vector3d::UnitZ()).toRotationMatrix();
     const Eigen::Matrix3d R_el = Eigen::AngleAxisd(elRad, Eigen::Vector3d::UnitY()).toRotationMatrix();
     const Eigen::Matrix3d R_g2w = R_az * R_el;  // Gimbal-to-World rotation
 
-    // ======================================================
+    // ============================================================================
     // 3. Linear Velocity Transform
     // v_world = R_g2w * v_gimbal
     // Units: m/s → m/s (unchanged)
-    // ======================================================
+    // ============================================================================
     linVel_world_mps = R_g2w * linVel_gimbal_mps;
 
-    // ======================================================
+    // ============================================================================
     // 4. Angular Velocity Transform
     // ω_world = R_g2w * ω_gimbal
     // Units: deg/s → rad/s → rotate → deg/s
-    // ======================================================
+    // ============================================================================
     const Eigen::Vector3d angVel_gimbal_radps = degToRad(angVel_gimbal_dps);  // deg/s → rad/s
     const Eigen::Vector3d angVel_world_radps = R_g2w * angVel_gimbal_radps;   // Rotate (rad/s)
     angVel_world_dps = radToDeg(angVel_world_radps);                          // rad/s → deg/s

@@ -15,51 +15,43 @@
 // CONSTRUCTOR
 // ============================================================================
 
-ReticleMenuController::ReticleMenuController(QObject* parent)
-    : QObject(parent)
-{
-}
+ReticleMenuController::ReticleMenuController(QObject* parent) : QObject(parent) {}
 
 // ============================================================================
 // INITIALIZATION
 // ============================================================================
 
-void ReticleMenuController::initialize()
-{
+void ReticleMenuController::initialize() {
     Q_ASSERT(m_viewModel);
     Q_ASSERT(m_osdViewModel);
     Q_ASSERT(m_stateModel);
 
-    connect(m_viewModel, &MenuViewModel::optionSelected,
-            this, &ReticleMenuController::handleMenuOptionSelected);
+    connect(m_viewModel, &MenuViewModel::optionSelected, this,
+            &ReticleMenuController::handleMenuOptionSelected);
 
     // Connect to currentIndexChanged to update preview as user navigates
     // Use Qt::QueuedConnection to prevent re-entrant calls during hardware button processing
-    connect(m_viewModel, &MenuViewModel::currentIndexChanged,
-            this, [this]() {
-                handleCurrentItemChanged(m_viewModel->currentIndex());
-            }, Qt::QueuedConnection);
+    connect(
+        m_viewModel, &MenuViewModel::currentIndexChanged, this,
+        [this]() { handleCurrentItemChanged(m_viewModel->currentIndex()); }, Qt::QueuedConnection);
 
-    connect(m_stateModel, &SystemStateModel::colorStyleChanged,
-            this, &ReticleMenuController::onColorStyleChanged);
+    connect(m_stateModel, &SystemStateModel::colorStyleChanged, this,
+            &ReticleMenuController::onColorStyleChanged);
 
     // Set initial color
     const auto& data = m_stateModel->data();
     m_viewModel->setAccentColor(data.colorStyle);
 }
 
-void ReticleMenuController::setViewModel(MenuViewModel* viewModel)
-{
+void ReticleMenuController::setViewModel(MenuViewModel* viewModel) {
     m_viewModel = viewModel;
 }
 
-void ReticleMenuController::setOsdViewModel(OsdViewModel* osdViewModel)
-{
+void ReticleMenuController::setOsdViewModel(OsdViewModel* osdViewModel) {
     m_osdViewModel = osdViewModel;
 }
 
-void ReticleMenuController::setStateModel(SystemStateModel* stateModel)
-{
+void ReticleMenuController::setStateModel(SystemStateModel* stateModel) {
     m_stateModel = stateModel;
 }
 
@@ -67,8 +59,7 @@ void ReticleMenuController::setStateModel(SystemStateModel* stateModel)
 // CONVERSION HELPERS
 // ============================================================================
 
-QStringList ReticleMenuController::buildReticleOptions() const
-{
+QStringList ReticleMenuController::buildReticleOptions() const {
     QStringList options;
 
     for (int i = 0; i < static_cast<int>(ReticleType::COUNT); ++i) {
@@ -79,25 +70,34 @@ QStringList ReticleMenuController::buildReticleOptions() const
     return options;
 }
 
-QString ReticleMenuController::reticleTypeToString(ReticleType type) const
-{
+QString ReticleMenuController::reticleTypeToString(ReticleType type) const {
     switch (type) {
-    case ReticleType::BoxCrosshair:    return "Box Crosshair";
-    case ReticleType::BracketsReticle: return "Brackets Reticle";
-    case ReticleType::DuplexCrosshair: return "Duplex Crosshair";
-    case ReticleType::FineCrosshair:   return "Fine Crosshair";
-    case ReticleType::ChevronReticle:  return "Chevron Reticle";
-    default:                           return "Unknown";
+    case ReticleType::BoxCrosshair:
+        return "Box Crosshair";
+    case ReticleType::BracketsReticle:
+        return "Brackets Reticle";
+    case ReticleType::DuplexCrosshair:
+        return "Duplex Crosshair";
+    case ReticleType::FineCrosshair:
+        return "Fine Crosshair";
+    case ReticleType::ChevronReticle:
+        return "Chevron Reticle";
+    default:
+        return "Unknown";
     }
 }
 
-ReticleType ReticleMenuController::stringToReticleType(const QString& str) const
-{
-    if (str == "Box Crosshair")    return ReticleType::BoxCrosshair;
-    if (str == "Brackets Reticle") return ReticleType::BracketsReticle;
-    if (str == "Duplex Crosshair") return ReticleType::DuplexCrosshair;
-    if (str == "Fine Crosshair")   return ReticleType::FineCrosshair;
-    if (str == "Chevron Reticle")  return ReticleType::ChevronReticle;
+ReticleType ReticleMenuController::stringToReticleType(const QString& str) const {
+    if (str == "Box Crosshair")
+        return ReticleType::BoxCrosshair;
+    if (str == "Brackets Reticle")
+        return ReticleType::BracketsReticle;
+    if (str == "Duplex Crosshair")
+        return ReticleType::DuplexCrosshair;
+    if (str == "Fine Crosshair")
+        return ReticleType::FineCrosshair;
+    if (str == "Chevron Reticle")
+        return ReticleType::ChevronReticle;
     return ReticleType::BoxCrosshair;
 }
 
@@ -105,8 +105,7 @@ ReticleType ReticleMenuController::stringToReticleType(const QString& str) const
 // UI CONTROL
 // ============================================================================
 
-void ReticleMenuController::show()
-{
+void ReticleMenuController::show() {
     // Save current reticle type from system state
     const auto& data = m_stateModel->data();
     m_originalReticleType = data.reticleType;
@@ -122,8 +121,7 @@ void ReticleMenuController::show()
     }
 }
 
-void ReticleMenuController::hide()
-{
+void ReticleMenuController::hide() {
     m_viewModel->hideMenu();
 }
 
@@ -131,23 +129,19 @@ void ReticleMenuController::hide()
 // BUTTON HANDLERS
 // ============================================================================
 
-void ReticleMenuController::onUpButtonPressed()
-{
+void ReticleMenuController::onUpButtonPressed() {
     m_viewModel->moveSelectionUp();
 }
 
-void ReticleMenuController::onDownButtonPressed()
-{
+void ReticleMenuController::onDownButtonPressed() {
     m_viewModel->moveSelectionDown();
 }
 
-void ReticleMenuController::onSelectButtonPressed()
-{
+void ReticleMenuController::onSelectButtonPressed() {
     m_viewModel->selectCurrentItem();
 }
 
-void ReticleMenuController::onBackButtonPressed()
-{
+void ReticleMenuController::onBackButtonPressed() {
     hide();
     emit returnToMainMenu();
     emit menuFinished();
@@ -157,8 +151,7 @@ void ReticleMenuController::onBackButtonPressed()
 // MENU HANDLERS
 // ============================================================================
 
-void ReticleMenuController::handleCurrentItemChanged(int index)
-{
+void ReticleMenuController::handleCurrentItemChanged(int index) {
     QStringList options = buildReticleOptions();
 
     // Exclude "Return ..." option from preview
@@ -172,8 +165,7 @@ void ReticleMenuController::handleCurrentItemChanged(int index)
     }
 }
 
-void ReticleMenuController::handleMenuOptionSelected(const QString& option)
-{
+void ReticleMenuController::handleMenuOptionSelected(const QString& option) {
     qDebug() << "[ReticleMenuController] Selected" << option;
 
     hide();
@@ -198,8 +190,7 @@ void ReticleMenuController::handleMenuOptionSelected(const QString& option)
 // COLOR STYLE HANDLER
 // ============================================================================
 
-void ReticleMenuController::onColorStyleChanged(const QColor& color)
-{
+void ReticleMenuController::onColorStyleChanged(const QColor& color) {
     qDebug() << "[ReticleMenuController] Color changed to" << color;
 
     if (m_viewModel) {

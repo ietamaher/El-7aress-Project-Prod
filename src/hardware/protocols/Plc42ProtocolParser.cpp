@@ -46,7 +46,7 @@ MessagePtr Plc42ProtocolParser::parseDigitalInputsReply(const QModbusDataUnit& u
     // I0_5 (DI5) → Reserved (future E-STOP button)
     // I0_6 (DI6) → azimuthHomeComplete (Az HOME-END from Oriental Motor) ⭐ NEW
     // I0_7 (DI7) → elevationHomeComplete (El HOME-END from Oriental Motor) ⭐ NEW
-    
+
     if (unit.valueCount() >= 8) {
         m_data.stationUpperSensor     = (unit.value(0) != 0);  // I0_0
         m_data.stationLowerSensor     = (unit.value(1) != 0);  // I0_1
@@ -56,11 +56,11 @@ MessagePtr Plc42ProtocolParser::parseDigitalInputsReply(const QModbusDataUnit& u
         // unit.value(5) - Reserved for future E-STOP button
         m_data.azimuthHomeComplete    = (unit.value(6) != 0);  // I0_6 ⭐ NEW (Az HOME-END)
         m_data.elevationHomeComplete  = (unit.value(5) != 0);  // I0_7 ⭐ NEW (El HOME-END)
-        
+
         // Note: emergencyStopActive is NOT a physical input - it's derived from
         // gimbalOpMode (set to true when gimbalOpMode == 1)
         // This will be set in parseHoldingRegistersReply()
-        
+
         // Note: solenoidActive is NOT a physical input - it's the output state
         // of the solenoid (Q1_0). Can be set based on solenoidState if needed.
         m_data.solenoidActive = (m_data.solenoidState != 0);

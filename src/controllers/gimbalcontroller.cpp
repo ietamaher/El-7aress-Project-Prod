@@ -47,59 +47,51 @@ namespace GimbalUtils {
  * - Positive elevation offset = gimbal should move UP
  * - Positive Y pixel error = target is BELOW center (needs DOWN correction)
  */
-QPointF calculateAngularOffsetFromPixelError(
-    double errorPxX, double errorPxY,
-    int imageWidthPx, int imageHeightPx,
-    float cameraHfovDegrees)
-{
+QPointF calculateAngularOffsetFromPixelError(double errorPxX, double errorPxY, int imageWidthPx,
+                                             int imageHeightPx, float cameraHfovDegrees) {
     double angularOffsetXDeg = 0.0;
     double angularOffsetYDeg = 0.0;
 
     // Calculate azimuth offset
     if (cameraHfovDegrees > 0.01f && imageWidthPx > 0) {
         double degreesPerPixelAz = cameraHfovDegrees / static_cast<double>(imageWidthPx);
-        angularOffsetXDeg =  errorPxX * degreesPerPixelAz;
+        angularOffsetXDeg = errorPxX * degreesPerPixelAz;
     }
 
     // Calculate elevation offset
     if (cameraHfovDegrees > 0.01f && imageWidthPx > 0 && imageHeightPx > 0) {
         double aspectRatio = static_cast<double>(imageWidthPx) / static_cast<double>(imageHeightPx);
-        double vfov_rad_approx = 2.0 * std::atan(std::tan((cameraHfovDegrees * M_PI / 180.0) / 2.0) / aspectRatio);
+        double vfov_rad_approx =
+            2.0 * std::atan(std::tan((cameraHfovDegrees * M_PI / 180.0) / 2.0) / aspectRatio);
         double vfov_deg_approx = vfov_rad_approx * 180.0 / M_PI;
 
         if (vfov_deg_approx > 0.01f) {
             double degreesPerPixelEl = vfov_deg_approx / static_cast<double>(imageHeightPx);
-            angularOffsetYDeg = - errorPxY * degreesPerPixelEl;
+            angularOffsetYDeg = -errorPxY * degreesPerPixelEl;
         }
     }
 
     return QPointF(angularOffsetXDeg, angularOffsetYDeg);
 }
 
-} // namespace GimbalUtils
+}  // namespace GimbalUtils
 
 // ============================================================================
 // CONSTRUCTOR & DESTRUCTOR
 // ============================================================================
 
-GimbalController::GimbalController(ServoDriverDevice* azServo,
-                                   ServoDriverDevice* elServo,
-                                   Plc42Device* plc42,
-                                   SystemStateModel* stateModel,
-                                   SafetyInterlock* safetyInterlock,
-                                   QObject* parent)
-    : QObject(parent)
-    , m_azServo(azServo)
-    , m_elServo(elServo)
-    , m_plc42(plc42)
-    , m_stateModel(stateModel)
-    , m_safetyInterlock(safetyInterlock)
-{
+GimbalController::GimbalController(ServoDriverDevice* azServo, ServoDriverDevice* elServo,
+                                   Plc42Device* plc42, SystemStateModel* stateModel,
+                                   SafetyInterlock* safetyInterlock, QObject* parent)
+    : QObject(parent), m_azServo(azServo), m_elServo(elServo), m_plc42(plc42),
+      m_stateModel(stateModel), m_safetyInterlock(safetyInterlock) {
     // Log SafetyInterlock status
     if (m_safetyInterlock) {
-        qInfo() << "[GimbalController] SafetyInterlock connected - motion safety via central authority";
+        qInfo()
+            << "[GimbalController] SafetyInterlock connected - motion safety via central authority";
     } else {
-        qWarning() << "[GimbalController] WARNING: SafetyInterlock is null - using legacy safety checks";
+        qWarning()
+            << "[GimbalController] WARNING: SafetyInterlock is null - using legacy safety checks";
     }
     // Initialize default motion mode
     setMotionMode(MotionMode::Idle);
@@ -108,19 +100,17 @@ GimbalController::GimbalController(ServoDriverDevice* azServo,
     // Direct connection (Qt::AutoConnection) - all components in main thread due to QModbus
     // Previous Qt::QueuedConnection was causing event queue saturation and latency issues
     if (m_stateModel) {
-        connect(m_stateModel, &SystemStateModel::dataChanged,
-                this, &GimbalController::onSystemStateChanged);
+        connect(m_stateModel, &SystemStateModel::dataChanged, this,
+                &GimbalController::onSystemStateChanged);
     }
 
     // Connect alarm signals
-    connect(m_azServo, &ServoDriverDevice::alarmDetected,
-            this, &GimbalController::onAzAlarmDetected);
-    connect(m_azServo, &ServoDriverDevice::alarmCleared,
-            this, &GimbalController::onAzAlarmCleared);
-    connect(m_elServo, &ServoDriverDevice::alarmDetected,
-            this, &GimbalController::onElAlarmDetected);
-    connect(m_elServo, &ServoDriverDevice::alarmCleared,
-            this, &GimbalController::onElAlarmCleared);
+    connect(m_azServo, &ServoDriverDevice::alarmDetected, this,
+            &GimbalController::onAzAlarmDetected);
+    connect(m_azServo, &ServoDriverDevice::alarmCleared, this, &GimbalController::onAzAlarmCleared);
+    connect(m_elServo, &ServoDriverDevice::alarmDetected, this,
+            &GimbalController::onElAlarmDetected);
+    connect(m_elServo, &ServoDriverDevice::alarmCleared, this, &GimbalController::onElAlarmCleared);
 
     // Start periodic update timer (20Hz)
     m_updateTimer = new QTimer(this);
@@ -132,18 +122,17 @@ GimbalController::GimbalController(ServoDriverDevice* azServo,
 
     // Initialize HomingController (extracted FSM)
     m_homingController = new HomingController(m_plc42, this);
-    connect(m_homingController, &HomingController::homingCompleted,
-            this, &GimbalController::onHomingCompleted);
-    connect(m_homingController, &HomingController::homingFailed,
-            this, &GimbalController::onHomingFailed);
-    connect(m_homingController, &HomingController::homingAborted,
-            this, &GimbalController::onHomingAborted);
+    connect(m_homingController, &HomingController::homingCompleted, this,
+            &GimbalController::onHomingCompleted);
+    connect(m_homingController, &HomingController::homingFailed, this,
+            &GimbalController::onHomingFailed);
+    connect(m_homingController, &HomingController::homingAborted, this,
+            &GimbalController::onHomingAborted);
 
     qDebug() << "[GimbalController] Initialized with HomingController";
 }
 
-GimbalController::~GimbalController()
-{
+GimbalController::~GimbalController() {
     shutdown();
 }
 
@@ -151,8 +140,7 @@ GimbalController::~GimbalController()
 // SHUTDOWN
 // ============================================================================
 
-void GimbalController::shutdown()
-{
+void GimbalController::shutdown() {
     // Stop the update timer FIRST to prevent any more updates
     if (m_updateTimer) {
         m_updateTimer->stop();
@@ -175,19 +163,18 @@ void GimbalController::shutdown()
 // UPDATE LOOP
 // ============================================================================
 
-void GimbalController::update()
-{
-    // ========================================================================
+void GimbalController::update() {
+    // ============================================================================
     // Shutdown Safety Check
     // Timer may fire after shutdown() stops it if event was already queued
-    // ========================================================================
+    // ============================================================================
     if (!m_stateModel) {
         return;  // SystemStateModel destroyed, skip update
     }
 
-    // ========================================================================
+    // ============================================================================
     // Startup Sanity Checks (run once on first update)
-    // ========================================================================
+    // ============================================================================
     static bool sanityChecksPerformed = false;
     if (!sanityChecksPerformed) {
         SystemStateData state = m_stateModel->data();
@@ -199,18 +186,15 @@ void GimbalController::update()
         const double MAX_REASONABLE_GYRO_RADS = 10.0;   // rad/s (~573 deg/s, clearly wrong)
 
         if (state.imuConnected) {
-            double gyroMag = std::sqrt(state.GyroX * state.GyroX +
-                                       state.GyroY * state.GyroY +
+            double gyroMag = std::sqrt(state.GyroX * state.GyroX + state.GyroY * state.GyroY +
                                        state.GyroZ * state.GyroZ);
 
             if (gyroMag > MAX_REASONABLE_GYRO_DEGS) {
-                qWarning() << "[GimbalController] IMU gyro rates suspiciously high:"
-                           << "mag =" << gyroMag << "deg/s"
-                           << "- Check units (should be deg/s, not rad/s)";
+                qWarning() << "[GimbalController] IMU gyro rates suspiciously high:" << "mag ="
+                           << gyroMag << "deg/s" << "- Check units (should be deg/s, not rad/s)";
             } else if (gyroMag > 0.001 && gyroMag < MAX_REASONABLE_GYRO_RADS) {
-                qWarning() << "[GimbalController] IMU gyro rates suspiciously low:"
-                           << "mag =" << gyroMag
-                           << "- Check units (should be deg/s, not rad/s)";
+                qWarning() << "[GimbalController] IMU gyro rates suspiciously low:" << "mag ="
+                           << gyroMag << "- Check units (should be deg/s, not rad/s)";
             }
         }
 
@@ -218,25 +202,24 @@ void GimbalController::update()
         const auto& stabCfg = MotionTuningConfig::instance().stabilizer;
         double componentSum = stabCfg.maxPositionVel + stabCfg.maxVelocityCorr;
         if (stabCfg.maxTotalVel < componentSum) {
-            qWarning() << "[GimbalController] Stabilizer limit mismatch:"
-                       << "maxTotalVel (" << stabCfg.maxTotalVel << ") < "
-                       << "maxPositionVel + maxVelocityCorr (" << componentSum << ")"
-                       << "- Position correction will saturate early";
+            qWarning() << "[GimbalController] Stabilizer limit mismatch:" << "maxTotalVel ("
+                       << stabCfg.maxTotalVel << ") < " << "maxPositionVel + maxVelocityCorr ("
+                       << componentSum << ")" << "- Position correction will saturate early";
         }
 
         sanityChecksPerformed = true;
         qDebug() << "[GimbalController] Startup sanity checks completed";
     }
 
-    // ========================================================================
+    // ============================================================================
     // Centralized dt Computation (Expert Review Fix)
-    // ========================================================================
+    // ============================================================================
     double dt = m_velocityTimer.restart() / 1000.0;  // Convert ms to seconds
     dt = std::clamp(dt, 0.001, 0.050);               // Clamp between 1-50 ms
 
-    // ========================================================================
+    // ============================================================================
     // MANUAL MODE LAC SUPPORT (CROWS-like behavior)
-    // ========================================================================
+    // ============================================================================
     // Per CROWS TM 9-1090-225-10-2, page 2-26:
     // "The computer is constantly monitoring the change in rotation of the
     //  elevation and azimuth axes and measuring the speed."
@@ -248,7 +231,7 @@ void GimbalController::update()
     // This allows LAC to work in BOTH modes:
     // - AutoTrack: Uses tracker-measured target angular velocity
     // - Manual:    Uses gimbal angular velocity (operator tracking speed)
-    // ========================================================================
+    // ============================================================================
     SystemStateData currentState = m_stateModel->data();
 
     if (m_gimbalVelocityInitialized && dt > 0.001) {
@@ -268,20 +251,19 @@ void GimbalController::update()
         // 1. In Manual motion mode (not AutoTrack)
         // 2. LAC toggle is active
         // 3. Not in any scan modes or other automated modes
-        if ((currentState.motionMode == MotionMode::Manual || currentState.motionMode == MotionMode::AutoTrack)  &&             currentState.leadAngleCompensationActive)   {
+        if ((currentState.motionMode == MotionMode::Manual ||
+             currentState.motionMode == MotionMode::AutoTrack) &&
+            currentState.leadAngleCompensationActive) {
             // Use gimbal angular velocity as "target angular rate" for LAC
             // This matches CROWS behavior where operator tracking speed is used
-            m_stateModel->updateTargetAngularRates(
-                static_cast<float>(filteredGimbalVelAz),
-                static_cast<float>(filteredGimbalVelEl)
-            );
+            m_stateModel->updateTargetAngularRates(static_cast<float>(filteredGimbalVelAz),
+                                                   static_cast<float>(filteredGimbalVelEl));
 
             // Debug output (throttled)
             static int manualLacLogCounter = 0;
             if (++manualLacLogCounter % 40 == 0) {  // Every 2 seconds @ 20Hz
-                qDebug() << "[GimbalController] MANUAL MODE LAC:"
-                         << "Gimbal velocity Az:" << filteredGimbalVelAz << "°/s"
-                         << "El:" << filteredGimbalVelEl << "°/s";
+                qDebug() << "[GimbalController] MANUAL MODE LAC:" << "Gimbal velocity Az:"
+                         << filteredGimbalVelAz << "°/s" << "El:" << filteredGimbalVelEl << "°/s";
             }
         }
     }
@@ -291,15 +273,16 @@ void GimbalController::update()
     m_prevGimbalEl = currentState.gimbalEl;
     m_gimbalVelocityInitialized = true;
 
-    // ========================================================================
+    // ============================================================================
     // Update Loop Timing Diagnostics
-    // ========================================================================
+    // ============================================================================
     static auto lastUpdateTime = std::chrono::high_resolution_clock::now();
     static std::vector<long long> updateIntervals;
     static int updateCount = 0;
 
     auto now = std::chrono::high_resolution_clock::now();
-    auto interval = std::chrono::duration_cast<std::chrono::microseconds>(now - lastUpdateTime).count();
+    auto interval =
+        std::chrono::duration_cast<std::chrono::microseconds>(now - lastUpdateTime).count();
 
     updateIntervals.push_back(interval);
     if (updateIntervals.size() > 100) {
@@ -309,8 +292,9 @@ void GimbalController::update()
     if (++updateCount % 50 == 0) {
         long long minInterval = *std::min_element(updateIntervals.begin(), updateIntervals.end());
         long long maxInterval = *std::max_element(updateIntervals.begin(), updateIntervals.end());
-        long long avgInterval = std::accumulate(updateIntervals.begin(), updateIntervals.end(), 0LL)
-                                / static_cast<long long>(updateIntervals.size());
+        long long avgInterval =
+            std::accumulate(updateIntervals.begin(), updateIntervals.end(), 0LL) /
+            static_cast<long long>(updateIntervals.size());
         double jitter = (maxInterval - minInterval) / 1000.0;
 
         /*qDebug() << "[UPDATE LOOP] 50 cycles |"
@@ -324,9 +308,9 @@ void GimbalController::update()
 
     lastUpdateTime = now;
 
-    // ========================================================================
+    // ============================================================================
     // Motion Mode Update
-    // ========================================================================
+    // ============================================================================
     if (!m_currentMode) {
         return;
     }
@@ -348,13 +332,12 @@ void GimbalController::update()
 // STATE CHANGE HANDLER
 // ============================================================================
 
-void GimbalController::onSystemStateChanged(const SystemStateData& newData)
-{
-    // ========================================================================
+void GimbalController::onSystemStateChanged(const SystemStateData& newData) {
+    // ============================================================================
     // Performance Optimization: Early exit checks
     // Only process expensive operations if relevant state has changed
     // This prevents wasting CPU on servo position updates (110 Hz!)
-    // ========================================================================
+    // ============================================================================
 
     // PRIORITY 1: EMERGENCY STOP (highest priority!)
     if (newData.emergencyStopActive != m_oldState.emergencyStopActive) {
@@ -388,9 +371,9 @@ void GimbalController::onSystemStateChanged(const SystemStateData& newData)
         processFreeMode(newData);
     }
 
-    // ========================================================================
+    // ============================================================================
     // Motion Mode Change Detection
-    // ========================================================================
+    // ============================================================================
     bool motionModeTypeChanged = (m_oldState.motionMode != newData.motionMode);
     bool scanParametersChanged = false;
 
@@ -409,18 +392,17 @@ void GimbalController::onSystemStateChanged(const SystemStateData& newData)
         }
     }
 
-    // ========================================================================
+    // ============================================================================
     // Tracking Target Updates (Performance: only when tracking data changed)
-    // ========================================================================
+    // ============================================================================
     if (newData.motionMode == MotionMode::AutoTrack && m_currentMode) {
         if (dynamic_cast<TrackingMotionMode*>(m_currentMode.get())) {
-            bool trackingDataChanged = (
-                newData.trackerHasValidTarget != m_oldState.trackerHasValidTarget ||
-                newData.trackedTargetCenterX_px != m_oldState.trackedTargetCenterX_px ||
-                newData.trackedTargetCenterY_px != m_oldState.trackedTargetCenterY_px ||
-                newData.trackedTargetVelocityX_px_s != m_oldState.trackedTargetVelocityX_px_s ||
-                newData.trackedTargetVelocityY_px_s != m_oldState.trackedTargetVelocityY_px_s
-            );
+            bool trackingDataChanged =
+                (newData.trackerHasValidTarget != m_oldState.trackerHasValidTarget ||
+                 newData.trackedTargetCenterX_px != m_oldState.trackedTargetCenterX_px ||
+                 newData.trackedTargetCenterY_px != m_oldState.trackedTargetCenterY_px ||
+                 newData.trackedTargetVelocityX_px_s != m_oldState.trackedTargetVelocityX_px_s ||
+                 newData.trackedTargetVelocityY_px_s != m_oldState.trackedTargetVelocityY_px_s);
 
             if (trackingDataChanged) {
                 if (newData.trackerHasValidTarget) {
@@ -432,44 +414,32 @@ void GimbalController::onSystemStateChanged(const SystemStateData& newData)
 
                     // Get active camera FOV
                     float activeHfov = newData.activeCameraIsDay
-                                       ? static_cast<float>(newData.dayCurrentHFOV)
-                                       : static_cast<float>(newData.nightCurrentHFOV);
+                                           ? static_cast<float>(newData.dayCurrentHFOV)
+                                           : static_cast<float>(newData.nightCurrentHFOV);
 
                     QPointF angularOffset = GimbalUtils::calculateAngularOffsetFromPixelError(
-                        errorPxX, errorPxY,
-                        newData.currentImageWidthPx, newData.currentImageHeightPx, activeHfov
-                    );
+                        errorPxX, errorPxY, newData.currentImageWidthPx,
+                        newData.currentImageHeightPx, activeHfov);
 
-                     errorPxX = newData.trackedTargetCenterX_px - screenCenterX_px;
-                     errorPxY = newData.trackedTargetCenterY_px - screenCenterY_px;
+                    errorPxX = newData.trackedTargetCenterX_px - screenCenterX_px;
+                    errorPxY = newData.trackedTargetCenterY_px - screenCenterY_px;
 
                     // Convert pixel error → angular error (deg)
-                    QPointF angularError =
-                        GimbalUtils::calculateAngularOffsetFromPixelError(
-                            errorPxX, errorPxY,
-                            newData.currentImageWidthPx,
-                            newData.currentImageHeightPx,
-                            activeHfov
-                        );
+                    QPointF angularError = GimbalUtils::calculateAngularOffsetFromPixelError(
+                        errorPxX, errorPxY, newData.currentImageWidthPx,
+                        newData.currentImageHeightPx, activeHfov);
 
                     // Convert pixel velocity → angular velocity (deg/s)
-                    QPointF angularVelocity =
-                        GimbalUtils::calculateAngularOffsetFromPixelError(
-                            newData.trackedTargetVelocityX_px_s,
-                            newData.trackedTargetVelocityY_px_s,
-                            newData.currentImageWidthPx,
-                            newData.currentImageHeightPx,
-                            activeHfov
-                        );
+                    QPointF angularVelocity = GimbalUtils::calculateAngularOffsetFromPixelError(
+                        newData.trackedTargetVelocityX_px_s, newData.trackedTargetVelocityY_px_s,
+                        newData.currentImageWidthPx, newData.currentImageHeightPx, activeHfov);
 
                     // ✔ EMIT IMAGE-SPACE DATA ONLY
                     emit trackingTargetUpdated(
-                        angularError.x(),          // image-based angular error (deg)
+                        angularError.x(),  // image-based angular error (deg)
                         angularError.y(),
-                        angularVelocity.x(),       // target angular velocity (deg/s)
-                        angularVelocity.y(),
-                        true
-                    ) ;
+                        angularVelocity.x(),  // target angular velocity (deg/s)
+                        angularVelocity.y(), true);
                 } else {
                     // Target lost - clear angular rates and emit invalid signal
                     m_stateModel->updateTargetAngularRates(0.0f, 0.0f);
@@ -479,23 +449,23 @@ void GimbalController::onSystemStateChanged(const SystemStateData& newData)
         }
     } else if (m_oldState.motionMode == MotionMode::AutoTrack &&
                newData.motionMode != MotionMode::AutoTrack) {
-        // ================================================================
+        // ============================================================================
         // BUG FIX #1: Clear angular rates when exiting tracking mode
-        // ================================================================
+        // ============================================================================
         // Ensures rates are zeroed when tracking stops, so LAC doesn't
         // continue using stale velocity data.
-        // ================================================================
+        // ============================================================================
         m_stateModel->updateTargetAngularRates(0.0f, 0.0f);
     }
 
-    // ========================================================================
+    // ============================================================================
     // MANUAL MODE LAC: Clear angular rates when exiting Manual mode or
     // when LAC is deactivated while in Manual mode
-    // ========================================================================
-    bool wasManualWithLAC = (m_oldState.motionMode == MotionMode::Manual &&
-                             m_oldState.leadAngleCompensationActive);
-    bool isManualWithLAC = (newData.motionMode == MotionMode::Manual &&
-                            newData.leadAngleCompensationActive);
+    // ============================================================================
+    bool wasManualWithLAC =
+        (m_oldState.motionMode == MotionMode::Manual && m_oldState.leadAngleCompensationActive);
+    bool isManualWithLAC =
+        (newData.motionMode == MotionMode::Manual && newData.leadAngleCompensationActive);
 
     if (wasManualWithLAC && !isManualWithLAC) {
         // Exited Manual mode or LAC was deactivated - clear angular rates
@@ -524,8 +494,7 @@ void GimbalController::onSystemStateChanged(const SystemStateData& newData)
 // MOTION MODE MANAGEMENT
 // ============================================================================
 
-void GimbalController::setMotionMode(MotionMode newMode)
-{
+void GimbalController::setMotionMode(MotionMode newMode) {
     // Exit old mode
     if (m_currentMode) {
         m_currentMode->exitMode(this);
@@ -538,12 +507,11 @@ void GimbalController::setMotionMode(MotionMode newMode)
         break;
 
     case MotionMode::AutoTrack:
-    case MotionMode::ManualTrack:
-    {
+    case MotionMode::ManualTrack: {
         auto trackingMode = std::make_unique<TrackingMotionMode>();
         // Direct connection - motion mode runs in same thread as GimbalController
-        connect(this, &GimbalController::trackingTargetUpdated,
-                trackingMode.get(), &TrackingMotionMode::onTargetPositionUpdated);
+        connect(this, &GimbalController::trackingTargetUpdated, trackingMode.get(),
+                &TrackingMotionMode::onTargetPositionUpdated);
         m_currentMode = std::move(trackingMode);
         break;
     }
@@ -552,16 +520,14 @@ void GimbalController::setMotionMode(MotionMode newMode)
         m_currentMode = std::make_unique<RadarSlewMotionMode>();
         break;
 
-    case MotionMode::AutoSectorScan:
-    {
+    case MotionMode::AutoSectorScan: {
         auto scanMode = std::make_unique<AutoSectorScanMotionMode>();
         const auto& scanZones = m_stateModel->data().sectorScanZones;
         int activeId = m_stateModel->data().activeAutoSectorScanZoneId;
 
-        auto it = std::find_if(scanZones.begin(), scanZones.end(),
-                               [activeId](const AutoSectorScanZone& z) {
-                                   return z.id == activeId && z.isEnabled;
-                               });
+        auto it = std::find_if(
+            scanZones.begin(), scanZones.end(),
+            [activeId](const AutoSectorScanZone& z) { return z.id == activeId && z.isEnabled; });
 
         if (it != scanZones.end()) {
             scanMode->setActiveScanZone(*it);
@@ -575,8 +541,7 @@ void GimbalController::setMotionMode(MotionMode newMode)
         break;
     }
 
-    case MotionMode::TRPScan:
-    {
+    case MotionMode::TRPScan: {
         auto trpMode = std::make_unique<TRPScanMotionMode>();
         const auto& allTrps = m_stateModel->data().targetReferencePoints;
         int activePageNum = m_stateModel->data().activeTRPLocationPage;
@@ -620,15 +585,15 @@ void GimbalController::setMotionMode(MotionMode newMode)
         m_currentMode->enterMode(this);
     }
 
-    qDebug() << "[GimbalController] Motion mode set to" << static_cast<int>(m_currentMotionModeType);
+    qDebug() << "[GimbalController] Motion mode set to"
+             << static_cast<int>(m_currentMotionModeType);
 }
 
 // ============================================================================
 // ALARM MANAGEMENT
 // ============================================================================
 
-void GimbalController::readAlarms()
-{
+void GimbalController::readAlarms() {
     if (m_azServo) {
         m_azServo->readAlarmStatus();
     }
@@ -637,34 +602,27 @@ void GimbalController::readAlarms()
     }
 }
 
-void GimbalController::clearAlarms()
-{
+void GimbalController::clearAlarms() {
     // Clear PLC42 alarm state with two-step reset sequence
     m_plc42->setResetAlarm(0);
 
     // Second reset command after 1 second delay
-    QTimer::singleShot(1000, this, [this]() {
-        m_plc42->setResetAlarm(1);
-    });
+    QTimer::singleShot(1000, this, [this]() { m_plc42->setResetAlarm(1); });
 }
 
-void GimbalController::onAzAlarmDetected(uint16_t alarmCode, const QString& description)
-{
+void GimbalController::onAzAlarmDetected(uint16_t alarmCode, const QString& description) {
     emit azAlarmDetected(alarmCode, description);
 }
 
-void GimbalController::onAzAlarmCleared()
-{
+void GimbalController::onAzAlarmCleared() {
     emit azAlarmCleared();
 }
 
-void GimbalController::onElAlarmDetected(uint16_t alarmCode, const QString& description)
-{
+void GimbalController::onElAlarmDetected(uint16_t alarmCode, const QString& description) {
     emit elAlarmDetected(alarmCode, description);
 }
 
-void GimbalController::onElAlarmCleared()
-{
+void GimbalController::onElAlarmCleared() {
     emit elAlarmCleared();
 }
 
@@ -675,8 +633,7 @@ void GimbalController::onElAlarmCleared()
 // These handlers respond to HomingController signals.
 // ============================================================================
 
-void GimbalController::onHomingCompleted()
-{
+void GimbalController::onHomingCompleted() {
     qInfo() << "[GimbalController] Homing completed - will restore motion mode:"
             << static_cast<int>(m_homingController->modeBeforeHoming());
 
@@ -686,16 +643,14 @@ void GimbalController::onHomingCompleted()
     // 3. Clearing gotoHomePosition and homePositionReached flags
 }
 
-void GimbalController::onHomingFailed(const QString& reason)
-{
+void GimbalController::onHomingFailed(const QString& reason) {
     qCritical() << "[GimbalController] Homing failed:" << reason;
     qWarning() << "[GimbalController] Gimbal position may be uncertain";
 
     // SystemStateModel will be notified of failure state
 }
 
-void GimbalController::onHomingAborted(const QString& reason)
-{
+void GimbalController::onHomingAborted(const QString& reason) {
     qWarning() << "[GimbalController] Homing aborted:" << reason;
     qWarning() << "[GimbalController] Will restore motion mode:"
                << static_cast<int>(m_homingController->modeBeforeHoming());
@@ -707,8 +662,7 @@ void GimbalController::onHomingAborted(const QString& reason)
 // EMERGENCY STOP HANDLER
 // ============================================================================
 
-void GimbalController::processEmergencyStop(const SystemStateData& data)
-{
+void GimbalController::processEmergencyStop(const SystemStateData& data) {
     bool emergencyActive = data.emergencyStopActive;
 
     // Detect rising edge (emergency stop activation)
@@ -768,8 +722,7 @@ void GimbalController::processEmergencyStop(const SystemStateData& data)
 // FREE MODE HANDLER
 // ============================================================================
 
-void GimbalController::processFreeMode(const SystemStateData& data)
-{
+void GimbalController::processFreeMode(const SystemStateData& data) {
     bool freeActive = data.freeGimbalState;
 
     // Detect rising edge (FREE mode activation)

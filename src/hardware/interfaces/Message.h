@@ -34,7 +34,7 @@ public:
         LrfInfoType
 
     };
-    
+
     virtual ~Message() = default;
     virtual Type typeId() const { return Type::Generic; }
 };

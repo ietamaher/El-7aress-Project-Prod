@@ -66,9 +66,9 @@ public:
     explicit HardwareManager(SystemStateModel* systemStateModel, QObject* parent = nullptr);
     ~HardwareManager();
 
-    // ========================================================================
+    // ============================================================================
     // INITIALIZATION PHASES
-    // ========================================================================
+    // ============================================================================
 
     /**
      * @brief Phase 1: Create all transport, parser, and device objects
@@ -94,9 +94,9 @@ public:
      */
     bool startHardware();
 
-    // ========================================================================
+    // ============================================================================
     // DEVICE ACCESSORS (for controllers to access hardware)
-    // ========================================================================
+    // ============================================================================
 
     // Camera devices
     DayCameraControlDevice* dayCameraControl() const { return m_dayCamControl; }
@@ -138,9 +138,9 @@ private:
     void initializeDevices();
     void configureCameraDefaults();
 
-    // ========================================================================
+    // ============================================================================
     // TRANSPORT LAYER
-    // ========================================================================
+    // ============================================================================
     SerialPortTransport* m_imuTransport = nullptr;  // 3DM-GX3-25 uses serial binary
     SerialPortTransport* m_dayCameraTransport = nullptr;
     SerialPortTransport* m_nightCameraTransport = nullptr;
@@ -152,9 +152,9 @@ private:
     ModbusTransport* m_servoElTransport = nullptr;
     SerialPortTransport* m_servoActuatorTransport = nullptr;
 
-    // ========================================================================
+    // ============================================================================
     // PROTOCOL PARSERS
-    // ========================================================================
+    // ============================================================================
     Imu3DMGX3ProtocolParser* m_imuParser = nullptr;
     DayCameraProtocolParser* m_dayCameraParser = nullptr;
     NightCameraProtocolParser* m_nightCameraParser = nullptr;
@@ -167,9 +167,9 @@ private:
     ServoDriverProtocolParser* m_servoElParser = nullptr;
     ServoActuatorProtocolParser* m_servoActuatorParser = nullptr;
 
-    // ========================================================================
+    // ============================================================================
     // HARDWARE DEVICES
-    // ========================================================================
+    // ============================================================================
     DayCameraControlDevice* m_dayCamControl = nullptr;
     CameraVideoStreamDevice* m_dayVideoProcessor = nullptr;
     ImuDevice* m_gyroDevice = nullptr;
@@ -185,15 +185,15 @@ private:
     ServoDriverDevice* m_servoAzDevice = nullptr;
     ServoDriverDevice* m_servoElDevice = nullptr;
 
-    // ========================================================================
+    // ============================================================================
     // DEVICE THREADS
-    // ========================================================================
+    // ============================================================================
     QThread* m_servoAzThread = nullptr;
     QThread* m_servoElThread = nullptr;
 
-    // ========================================================================
+    // ============================================================================
     // DATA MODELS
-    // ========================================================================
+    // ============================================================================
     DayCameraDataModel* m_dayCamControlModel = nullptr;
     GyroDataModel* m_gyroModel = nullptr;
     JoystickDataModel* m_joystickModel = nullptr;

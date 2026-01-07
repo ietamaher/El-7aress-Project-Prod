@@ -6,11 +6,12 @@
 
 class Plc21Device;
 
-class LedController : public QObject
-{
+class LedController : public QObject {
     Q_OBJECT
+
 public:
-    explicit LedController(SystemStateModel* systemStateModel, Plc21Device* plc21Device, QObject *parent = nullptr);
+    explicit LedController(SystemStateModel* systemStateModel, Plc21Device* plc21Device,
+                           QObject* parent = nullptr);
 
 private slots:
     void onSystemStateChanged(const SystemStateData& data);
@@ -26,5 +27,4 @@ private:
     bool m_cachedPanelBacklight = false;
 };
 
-#endif // LEDCONTROLLER_H
-
+#endif  // LEDCONTROLLER_H

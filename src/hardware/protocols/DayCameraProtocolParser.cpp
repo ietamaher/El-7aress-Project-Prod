@@ -108,15 +108,15 @@ double DayCameraProtocolParser::computeHFOVfromZoom(quint16 zoomPos) const
         {0x4000, 30.0}
     };
     static const int N = sizeof(sonyTable) / sizeof(sonyTable[0]);
-    
+
     int pos = qBound(0, (int)zoomPos, 0x4000);
-    
+
     double mag = 1.0;
     for (int i = 1; i < N; i++) {
         if (pos <= sonyTable[i].first) {
-            double t = (double)(pos - sonyTable[i-1].first) / 
+            double t = (double)(pos - sonyTable[i-1].first) /
                        (sonyTable[i].first - sonyTable[i-1].first);
-            
+
             // Log interpolation for smooth exponential curve
             double logMag0 = std::log(sonyTable[i-1].second);
             double logMag1 = std::log(sonyTable[i].second);
@@ -124,9 +124,9 @@ double DayCameraProtocolParser::computeHFOVfromZoom(quint16 zoomPos) const
             break;
         }
     }
-    
+
     const double hfovWideRad = 46.8 * M_PI / 180.0;
     double hfovRad = 2.0 * std::atan(std::tan(hfovWideRad / 2.0) / mag);
-    
+
     return hfovRad * 180.0 / M_PI;
 }

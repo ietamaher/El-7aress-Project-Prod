@@ -16,7 +16,7 @@ public:
 
     // Command building
     QByteArray buildCommand(quint8 cmd1, quint8 cmd2, quint8 data1 = 0, quint8 data2 = 0);
-    
+
     // HFOV calculation
     double computeHFOVfromZoom(quint16 zoomPos) const;
 

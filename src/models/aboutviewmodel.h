@@ -34,7 +34,7 @@ public:
     QString copyright() const { return m_copyright; }
     QString license() const { return m_license; }
     QColor accentColor() const { return m_accentColor; }
-    
+
     bool visible() const { return m_visible; }
     void setVisible(bool visible);
 

@@ -31,49 +31,49 @@ class BallisticsProcessorLUT;
  * Extracted from SystemStateData to allow unit testing without full state model.
  */
 struct FireControlInput {
-    // ========================================================================
+    // ============================================================================
     // RANGE DATA
-    // ========================================================================
+    // ============================================================================
     float currentTargetRange = 0.0f;        ///< LRF range in meters (0 = no lock)
 
-    // ========================================================================
+    // ============================================================================
     // ANGULAR RATE DATA (for motion lead)
-    // ========================================================================
+    // ============================================================================
     float currentTargetAngularRateAz = 0.0f;  ///< Target angular rate azimuth (deg/s)
     float currentTargetAngularRateEl = 0.0f;  ///< Target angular rate elevation (deg/s)
 
-    // ========================================================================
+    // ============================================================================
     // CAMERA DATA (for FOV checks)
-    // ========================================================================
+    // ============================================================================
     bool activeCameraIsDay = true;          ///< True if day camera active
     float dayCurrentHFOV = 20.0f;           ///< Day camera horizontal FOV (deg)
     float dayCurrentVFOV = 15.0f;           ///< Day camera vertical FOV (deg)
     float nightCurrentHFOV = 20.0f;         ///< Night camera horizontal FOV (deg)
     float nightCurrentVFOV = 15.0f;         ///< Night camera vertical FOV (deg)
 
-    // ========================================================================
+    // ============================================================================
     // WINDAGE DATA
-    // ========================================================================
+    // ============================================================================
     bool windageAppliedToBallistics = false;  ///< Whether windage should be applied
     float windageSpeedKnots = 0.0f;           ///< Wind speed in knots
     float windageDirectionDegrees = 0.0f;     ///< Wind direction (from, deg true)
 
-    // ========================================================================
+    // ============================================================================
     // GIMBAL / VEHICLE DATA (for crosswind calculation)
-    // ========================================================================
+    // ============================================================================
     float imuYawDeg = 0.0f;                 ///< Vehicle heading (deg true)
     float azimuthDirection = 0.0f;          ///< Gimbal azimuth relative to vehicle (deg)
 
-    // ========================================================================
+    // ============================================================================
     // ENVIRONMENTAL DATA
-    // ========================================================================
+    // ============================================================================
     bool environmentalAppliedToBallistics = false;  ///< Whether env corrections applied
     float environmentalTemperatureCelsius = 15.0f;  ///< Air temperature (Celsius)
     float environmentalAltitudeMeters = 0.0f;       ///< Altitude above sea level (m)
 
-    // ========================================================================
+    // ============================================================================
     // LAC (Lead Angle Compensation) STATE
-    // ========================================================================
+    // ============================================================================
     bool leadAngleCompensationActive = false;  ///< Whether LAC toggle is active
 };
 
@@ -84,37 +84,37 @@ struct FireControlInput {
  * WeaponController applies these to SystemStateData.
  */
 struct FireControlResult {
-    // ========================================================================
+    // ============================================================================
     // CROSSWIND
-    // ========================================================================
+    // ============================================================================
     float calculatedCrosswindMS = 0.0f;     ///< Computed crosswind component (m/s)
     bool crosswindChanged = false;          ///< True if crosswind value changed
 
-    // ========================================================================
+    // ============================================================================
     // BALLISTIC DROP (auto-applied when range valid)
-    // ========================================================================
+    // ============================================================================
     float ballisticDropOffsetAz = 0.0f;     ///< Drop offset azimuth (deg, wind component)
     float ballisticDropOffsetEl = 0.0f;     ///< Drop offset elevation (deg, gravity)
     bool ballisticDropActive = false;       ///< True if drop is being applied
     bool dropChanged = false;               ///< True if drop values changed
 
-    // ========================================================================
+    // ============================================================================
     // MOTION LEAD (only when LAC active)
-    // ========================================================================
+    // ============================================================================
     float motionLeadOffsetAz = 0.0f;        ///< Motion lead azimuth (deg)
     float motionLeadOffsetEl = 0.0f;        ///< Motion lead elevation (deg)
     LeadAngleStatus currentLeadAngleStatus = LeadAngleStatus::Off;  ///< LAC status
     bool leadChanged = false;               ///< True if lead values changed
 
-    // ========================================================================
+    // ============================================================================
     // BACKWARD COMPATIBILITY (deprecated fields)
-    // ========================================================================
+    // ============================================================================
     float leadAngleOffsetAz = 0.0f;         ///< Deprecated: use motionLeadOffsetAz
     float leadAngleOffsetEl = 0.0f;         ///< Deprecated: use motionLeadOffsetEl
 
-    // ========================================================================
+    // ============================================================================
     // PREVIOUS VALUES (for change detection)
-    // ========================================================================
+    // ============================================================================
     float previousCrosswindMS = 0.0f;       ///< Previous crosswind for change detection
     bool previousDropActive = false;        ///< Previous drop state for change detection
     LeadAngleStatus previousLeadStatus = LeadAngleStatus::Off;  ///< Previous lead status
@@ -138,9 +138,9 @@ struct FireControlResult {
 class FireControlComputation
 {
 public:
-    // ========================================================================
+    // ============================================================================
     // CONFIGURATION CONSTANTS
-    // ========================================================================
+    // ============================================================================
 
     /**
      * @brief Default range for motion lead when LRF is cleared
@@ -161,9 +161,9 @@ public:
      */
     static constexpr float CROSSWIND_CHANGE_THRESHOLD = 0.01f;  // m/s
 
-    // ========================================================================
+    // ============================================================================
     // CONVERSION CONSTANTS
-    // ========================================================================
+    // ============================================================================
 
     /**
      * @brief Knots to meters per second conversion factor
@@ -175,9 +175,9 @@ public:
      */
     static constexpr float DEG_TO_RAD = static_cast<float>(M_PI) / 180.0f;
 
-    // ========================================================================
+    // ============================================================================
     // PUBLIC METHODS
-    // ========================================================================
+    // ============================================================================
 
     /**
      * @brief Compute complete fire control solution

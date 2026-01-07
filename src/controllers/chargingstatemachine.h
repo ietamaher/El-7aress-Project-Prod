@@ -78,14 +78,13 @@ struct ServoActuatorData;
  * charging.processActuatorFeedback(data);
  * @endcode
  */
-class ChargingStateMachine : public QObject
-{
+class ChargingStateMachine : public QObject {
     Q_OBJECT
 
 public:
-    // ========================================================================
+    // ============================================================================
     // CONFIGURATION CONSTANTS
-    // ========================================================================
+    // ============================================================================
 
     /**
      * @brief Cocking actuator positions (in millimeters)
@@ -100,25 +99,25 @@ public:
     /**
      * @brief Timeout configuration
      */
-    static constexpr int COCKING_TIMEOUT_MS = 6000;             ///< Watchdog timeout per motion (ms)
-    static constexpr int CHARGE_LOCKOUT_MS = 4000;              ///< CROWS post-charge lockout (ms)
+    static constexpr int COCKING_TIMEOUT_MS = 6000;  ///< Watchdog timeout per motion (ms)
+    static constexpr int CHARGE_LOCKOUT_MS = 4000;   ///< CROWS post-charge lockout (ms)
 
     /**
      * @brief Jam detection parameters
      */
-    static constexpr double JAM_TORQUE_THRESHOLD_PERCENT = 65.0; ///< Trigger level (% of max)
-    static constexpr double POSITION_STALL_TOLERANCE_MM = 1.0;   ///< Expected movement per sample
-    static constexpr int JAM_CONFIRM_SAMPLES = 3;                ///< Consecutive samples to confirm
-    static constexpr int BACKOFF_STABILIZE_MS = 150;             ///< Wait before backoff command
+    static constexpr double JAM_TORQUE_THRESHOLD_PERCENT = 65.0;  ///< Trigger level (% of max)
+    static constexpr double POSITION_STALL_TOLERANCE_MM = 1.0;    ///< Expected movement per sample
+    static constexpr int JAM_CONFIRM_SAMPLES = 3;     ///< Consecutive samples to confirm
+    static constexpr int BACKOFF_STABILIZE_MS = 150;  ///< Wait before backoff command
 
     /**
      * @brief Startup configuration
      */
     static constexpr double ACTUATOR_RETRACTED_THRESHOLD = 5.0;  ///< Threshold for "retracted" (mm)
 
-    // ========================================================================
+    // ============================================================================
     // CONSTRUCTOR / DESTRUCTOR
-    // ========================================================================
+    // ============================================================================
 
     /**
      * @brief Construct ChargingStateMachine
@@ -126,14 +125,13 @@ public:
      * @param safetyInterlock SafetyInterlock for charge authorization
      * @param parent Parent QObject
      */
-    explicit ChargingStateMachine(ServoActuatorDevice* actuator,
-                                   SafetyInterlock* safetyInterlock,
-                                   QObject* parent = nullptr);
+    explicit ChargingStateMachine(ServoActuatorDevice* actuator, SafetyInterlock* safetyInterlock,
+                                  QObject* parent = nullptr);
     ~ChargingStateMachine();
 
-    // ========================================================================
+    // ============================================================================
     // PUBLIC INTERFACE
-    // ========================================================================
+    // ============================================================================
 
     /**
      * @brief Request charge cycle (operator CHG button press)
@@ -189,15 +187,17 @@ public:
      */
     void performStartupRetraction(double currentPosition);
 
-    // ========================================================================
+    // ============================================================================
     // STATE QUERIES
-    // ========================================================================
+    // ============================================================================
 
     /**
      * @brief Get current charging state
      * @return Current ChargingState
      */
-    ChargingState currentState() const { return m_currentState; }
+    ChargingState currentState() const {
+        return m_currentState;
+    }
 
     /**
      * @brief Check if charging is currently in progress
@@ -209,7 +209,9 @@ public:
      * @brief Check if post-charge lockout is active
      * @return true if in Lockout state
      */
-    bool isLockoutActive() const { return m_lockoutActive; }
+    bool isLockoutActive() const {
+        return m_lockoutActive;
+    }
 
     /**
      * @brief Check if charging is allowed (safety checks)
@@ -221,13 +223,17 @@ public:
      * @brief Get current cycle number (1-indexed)
      * @return Current cycle count
      */
-    int currentCycle() const { return m_currentCycleCount; }
+    int currentCycle() const {
+        return m_currentCycleCount;
+    }
 
     /**
      * @brief Get required cycles for current weapon
      * @return Number of cycles required
      */
-    int requiredCycles() const { return m_requiredCycles; }
+    int requiredCycles() const {
+        return m_requiredCycles;
+    }
 
     /**
      * @brief Get state name for logging
@@ -237,9 +243,9 @@ public:
     static QString stateName(ChargingState state);
 
 signals:
-    // ========================================================================
+    // ============================================================================
     // SIGNALS
-    // ========================================================================
+    // ============================================================================
 
     /**
      * @brief Emitted when charging state changes
@@ -295,9 +301,9 @@ private slots:
     void onLockoutExpired();
 
 private:
-    // ========================================================================
+    // ============================================================================
     // FSM METHODS
-    // ========================================================================
+    // ============================================================================
 
     /**
      * @brief Start a single charge cycle
@@ -328,9 +334,9 @@ private:
      */
     void startLockout();
 
-    // ========================================================================
+    // ============================================================================
     // JAM DETECTION
-    // ========================================================================
+    // ============================================================================
 
     /**
      * @brief Check for jam condition in actuator feedback
@@ -348,34 +354,34 @@ private:
      */
     void resetJamDetection();
 
-    // ========================================================================
+    // ============================================================================
     // DEPENDENCIES
-    // ========================================================================
+    // ============================================================================
     ServoActuatorDevice* m_actuator = nullptr;
     SafetyInterlock* m_safetyInterlock = nullptr;
 
-    // ========================================================================
+    // ============================================================================
     // STATE
-    // ========================================================================
+    // ============================================================================
     ChargingState m_currentState = ChargingState::Idle;
     int m_currentCycleCount = 0;
     int m_requiredCycles = 1;
     bool m_isShortPressCharge = false;  ///< true = auto-cycle, false = continuous hold
     bool m_lockoutActive = false;
-    bool m_buttonCurrentlyHeld = false; ///< Tracks button state for Extended handling
+    bool m_buttonCurrentlyHeld = false;  ///< Tracks button state for Extended handling
 
-    // ========================================================================
+    // ============================================================================
     // TIMERS
-    // ========================================================================
+    // ============================================================================
     QTimer* m_timeoutTimer = nullptr;
     QTimer* m_lockoutTimer = nullptr;
 
-    // ========================================================================
+    // ============================================================================
     // JAM DETECTION STATE
-    // ========================================================================
+    // ============================================================================
     int m_jamDetectionCounter = 0;
     double m_previousFeedbackPosition = 0.0;
     bool m_jamDetectionActive = false;
 };
 
-#endif // CHARGINGSTATEMACHINE_H
+#endif  // CHARGINGSTATEMACHINE_H

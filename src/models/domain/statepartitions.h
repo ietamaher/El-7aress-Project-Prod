@@ -46,9 +46,9 @@ class SystemStateModel;
 class SafetyInterlock;
 class EmergencyStopMonitor;
 
-// =============================================================================
+// ============================================================================
 // SAFETY STATE PARTITION
-// =============================================================================
+// ============================================================================
 
 /**
  * @brief Safety-critical state fields (WRITE-RESTRICTED)
@@ -67,38 +67,38 @@ class EmergencyStopMonitor;
  *          SafetyInterlock::checkFirePermission() or similar methods.
  */
 struct SafetyState {
-    // =========================================================================
+    // ============================================================================
     // EMERGENCY STOP
-    // =========================================================================
+    // ============================================================================
     bool emergencyStopActive = false;     ///< E-stop button pressed (PLC42)
 
-    // =========================================================================
+    // ============================================================================
     // STATION AUTHORIZATION
-    // =========================================================================
+    // ============================================================================
     bool stationEnabled = false;          ///< Station master enable switch
     bool authorized = false;              ///< System authorized for operation
 
-    // =========================================================================
+    // ============================================================================
     // WEAPON SAFETY
-    // =========================================================================
+    // ============================================================================
     bool gunArmed = false;                ///< Weapon arming switch state
     bool deadManSwitchActive = false;     ///< Dead man switch pressed
 
-    // =========================================================================
+    // ============================================================================
     // ZONE RESTRICTIONS
-    // =========================================================================
+    // ============================================================================
     bool isReticleInNoFireZone = false;   ///< Aiming into NFZ
     bool isReticleInNoTraverseZone = false; ///< Aiming into NTZ
 
-    // =========================================================================
+    // ============================================================================
     // HARDWARE INTERLOCKS
-    // =========================================================================
+    // ============================================================================
     bool upperLimitSensorActive = false;  ///< Upper travel limit reached
     bool lowerLimitSensorActive = false;  ///< Lower travel limit reached
 
-    // =========================================================================
+    // ============================================================================
     // DERIVED SAFETY CHECKS
-    // =========================================================================
+    // ============================================================================
 
     /**
      * @brief Check if firing is blocked by any safety condition
@@ -138,9 +138,9 @@ struct SafetyState {
     }
 };
 
-// =============================================================================
+// ============================================================================
 // WEAPON STATE PARTITION
-// =============================================================================
+// ============================================================================
 
 /**
  * @brief Weapon system state fields
@@ -149,9 +149,9 @@ struct SafetyState {
  * WeaponController is the primary owner of these fields.
  */
 struct WeaponState {
-    // =========================================================================
+    // ============================================================================
     // CHARGING SYSTEM (Cocking Actuator)
-    // =========================================================================
+    // ============================================================================
     ChargingState chargingState = ChargingState::Idle; ///< Current FSM state
     bool chargeCycleInProgress = false;   ///< Charging operation running
     bool weaponCharged = false;           ///< Round chambered
@@ -159,20 +159,20 @@ struct WeaponState {
     int chargeCyclesRequired = 2;         ///< Required cycles for weapon type
     bool chargeLockoutActive = false;     ///< 4-second post-charge lockout
 
-    // =========================================================================
+    // ============================================================================
     // WEAPON CONFIGURATION
-    // =========================================================================
+    // ============================================================================
     WeaponType installedWeaponType = WeaponType::M2HB; ///< Current weapon
     FireMode fireMode = FireMode::Unknown; ///< Selected fire mode
 
-    // =========================================================================
+    // ============================================================================
     // OPERATOR INPUT
-    // =========================================================================
+    // ============================================================================
     bool chargeButtonPressed = false;     ///< CHG button state
 
-    // =========================================================================
+    // ============================================================================
     // DERIVED CHECKS
-    // =========================================================================
+    // ============================================================================
 
     /**
      * @brief Check if weapon is ready to fire
@@ -195,9 +195,9 @@ struct WeaponState {
     }
 };
 
-// =============================================================================
+// ============================================================================
 // GIMBAL STATE PARTITION
-// =============================================================================
+// ============================================================================
 
 /**
  * @brief Gimbal positioning and servo state fields
@@ -206,24 +206,24 @@ struct WeaponState {
  * motion control. GimbalController is the primary owner of these fields.
  */
 struct GimbalState {
-    // =========================================================================
+    // ============================================================================
     // POSITION
-    // =========================================================================
+    // ============================================================================
     double gimbalAz = 0.0;                ///< Current azimuth (with offsets)
     double gimbalEl = 0.0;                ///< Current elevation (with offsets)
     double mechanicalGimbalAz = 0.0;      ///< Mechanical azimuth (raw)
     double mechanicalGimbalEl = 0.0;      ///< Mechanical elevation (raw)
 
-    // =========================================================================
+    // ============================================================================
     // MOTION CONTROL
-    // =========================================================================
+    // ============================================================================
     MotionMode motionMode = MotionMode::Idle; ///< Current motion mode
     HomingState homingState = HomingState::Idle; ///< Homing FSM state
     bool gotoHomePosition = false;        ///< Home command requested
 
-    // =========================================================================
+    // ============================================================================
     // AZIMUTH SERVO
-    // =========================================================================
+    // ============================================================================
     bool azServoConnected = false;        ///< Azimuth servo online
     float azMotorTemp = 0.0f;             ///< Motor temperature (°C)
     float azDriverTemp = 0.0f;            ///< Driver temperature (°C)
@@ -231,9 +231,9 @@ struct GimbalState {
     float azTorque = 0.0f;                ///< Torque percentage
     bool azFault = false;                 ///< Servo fault flag
 
-    // =========================================================================
+    // ============================================================================
     // ELEVATION SERVO
-    // =========================================================================
+    // ============================================================================
     bool elServoConnected = false;        ///< Elevation servo online
     float elMotorTemp = 0.0f;             ///< Motor temperature (°C)
     float elDriverTemp = 0.0f;            ///< Driver temperature (°C)
@@ -241,17 +241,17 @@ struct GimbalState {
     float elTorque = 0.0f;                ///< Torque percentage
     bool elFault = false;                 ///< Servo fault flag
 
-    // =========================================================================
+    // ============================================================================
     // ACTUATOR (Charging Mechanism)
-    // =========================================================================
+    // ============================================================================
     bool actuatorConnected = false;       ///< Actuator online
     double actuatorPosition = 0.0;        ///< Position in mm
     double actuatorVelocity = 0.0;        ///< Velocity in mm/s
     bool actuatorFault = false;           ///< Actuator fault flag
 
-    // =========================================================================
+    // ============================================================================
     // DERIVED CHECKS
-    // =========================================================================
+    // ============================================================================
 
     /**
      * @brief Check if gimbal is operational
@@ -281,9 +281,9 @@ struct GimbalState {
     }
 };
 
-// =============================================================================
+// ============================================================================
 // TRACKING STATE PARTITION
-// =============================================================================
+// ============================================================================
 
 /**
  * @brief Tracking system state fields
@@ -292,17 +292,17 @@ struct GimbalState {
  * tracker feedback. TrackingController is the primary owner of these fields.
  */
 struct TrackingState {
-    // =========================================================================
+    // ============================================================================
     // TRACKING STATUS
-    // =========================================================================
+    // ============================================================================
     bool trackingActive = false;          ///< Tracking system engaged
     TrackingPhase currentTrackingPhase = TrackingPhase::Off; ///< Current phase
     float trackingConfidence = 0.0f;      ///< Tracker confidence (0.0-1.0)
     VPITrackingState trackedTargetState = VPI_TRACKING_STATE_LOST; ///< VPI state
 
-    // =========================================================================
+    // ============================================================================
     // TRACKED TARGET
-    // =========================================================================
+    // ============================================================================
     bool trackerHasValidTarget = false;   ///< Tracker has lock
     float trackedTargetCenterX_px = 0.0f; ///< Target center X (pixels)
     float trackedTargetCenterY_px = 0.0f; ///< Target center Y (pixels)
@@ -311,23 +311,23 @@ struct TrackingState {
     float trackedTargetVelocityX_px_s = 0.0f; ///< Target X velocity (px/s)
     float trackedTargetVelocityY_px_s = 0.0f; ///< Target Y velocity (px/s)
 
-    // =========================================================================
+    // ============================================================================
     // ACQUISITION GATE
-    // =========================================================================
+    // ============================================================================
     float acquisitionBoxX_px = 512.0f;    ///< Gate center X (pixels)
     float acquisitionBoxY_px = 384.0f;    ///< Gate center Y (pixels)
     float acquisitionBoxW_px = 100.0f;    ///< Gate width (pixels)
     float acquisitionBoxH_px = 100.0f;    ///< Gate height (pixels)
 
-    // =========================================================================
+    // ============================================================================
     // TARGET ANGULAR POSITION
-    // =========================================================================
+    // ============================================================================
     double targetAz = 0.0;                ///< Target azimuth (degrees)
     double targetEl = 0.0;                ///< Target elevation (degrees)
 
-    // =========================================================================
+    // ============================================================================
     // DERIVED CHECKS
-    // =========================================================================
+    // ============================================================================
 
     /**
      * @brief Check if tracker has active lock
@@ -368,9 +368,9 @@ struct TrackingState {
     }
 };
 
-// =============================================================================
+// ============================================================================
 // UTILITY: POPULATE PARTITION FROM SYSTEM STATE DATA
-// =============================================================================
+// ============================================================================
 
 /**
  * @brief Populate SafetyState from SystemStateData
@@ -470,9 +470,9 @@ inline TrackingState extractTrackingState(const SystemStateData& data) {
     return state;
 }
 
-// =============================================================================
+// ============================================================================
 // ZONE STATE PARTITION
-// =============================================================================
+// ============================================================================
 
 /**
  * @brief Zone management state fields
@@ -481,30 +481,30 @@ inline TrackingState extractTrackingState(const SystemStateData& data) {
  * ZoneEnforcementService and SystemStateModel are the primary owners.
  */
 struct ZoneState {
-    // =========================================================================
+    // ============================================================================
     // ACTIVE ZONE STATUS
-    // =========================================================================
+    // ============================================================================
     bool isReticleInNoFireZone = false;   ///< Currently aiming into NFZ
     bool isReticleInNoTraverseZone = false; ///< Currently aiming into NTZ
 
-    // =========================================================================
+    // ============================================================================
     // ZONE CONFIGURATION
-    // =========================================================================
+    // ============================================================================
     int areaZoneCount = 0;                ///< Number of configured area zones
     int sectorScanZoneCount = 0;          ///< Number of sector scan zones
     int trpCount = 0;                     ///< Number of target reference points
 
-    // =========================================================================
+    // ============================================================================
     // ACTIVE SELECTIONS
-    // =========================================================================
+    // ============================================================================
     int activeAutoSectorScanZoneId = 1;   ///< Selected sector scan zone
     int activeTRPLocationPage = 1;        ///< Selected TRP location page
     QString currentScanName;              ///< Name of current scan operation
     QString currentTRPScanName;           ///< Name of current TRP scan
 
-    // =========================================================================
+    // ============================================================================
     // DERIVED CHECKS
-    // =========================================================================
+    // ============================================================================
 
     /**
      * @brief Check if any zone restriction is active
@@ -523,9 +523,9 @@ struct ZoneState {
     }
 };
 
-// =============================================================================
+// ============================================================================
 // ENVIRONMENTAL STATE PARTITION
-// =============================================================================
+// ============================================================================
 
 /**
  * @brief Environmental and ballistic compensation state fields
@@ -535,17 +535,17 @@ struct ZoneState {
  * WeaponController is the primary owner of these fields.
  */
 struct EnvironmentalState {
-    // =========================================================================
+    // ============================================================================
     // ZEROING COMPENSATION
-    // =========================================================================
+    // ============================================================================
     bool zeroingModeActive = false;       ///< Zeroing procedure active
     float zeroingAzimuthOffset = 0.0f;    ///< Zeroing Az offset (degrees)
     float zeroingElevationOffset = 0.0f;  ///< Zeroing El offset (degrees)
     bool zeroingAppliedToBallistics = false; ///< Zeroing applied to CCIP
 
-    // =========================================================================
+    // ============================================================================
     // WINDAGE COMPENSATION
-    // =========================================================================
+    // ============================================================================
     bool windageModeActive = false;       ///< Windage procedure active
     float windageSpeedKnots = 0.0f;       ///< Wind speed (knots)
     float windageDirectionDegrees = 0.0f; ///< Wind direction (degrees)
@@ -553,45 +553,45 @@ struct EnvironmentalState {
     bool windageAppliedToBallistics = false; ///< Windage applied to CCIP
     float calculatedCrosswindMS = 0.0f;   ///< Calculated crosswind (m/s)
 
-    // =========================================================================
+    // ============================================================================
     // ENVIRONMENTAL CONDITIONS
-    // =========================================================================
+    // ============================================================================
     bool environmentalModeActive = false; ///< Environmental procedure active
     float environmentalTemperatureCelsius = 15.0f; ///< Air temp (°C, ISA=15)
     float environmentalAltitudeMeters = 0.0f; ///< Altitude (m ASL)
     bool environmentalAppliedToBallistics = false; ///< Env applied to CCIP
 
-    // =========================================================================
+    // ============================================================================
     // BALLISTIC DROP
-    // =========================================================================
+    // ============================================================================
     bool ballisticDropActive = false;     ///< Auto ballistic drop active
     float ballisticDropOffsetAz = 0.0f;   ///< Wind deflection (degrees)
     float ballisticDropOffsetEl = 0.0f;   ///< Gravity drop (degrees)
 
-    // =========================================================================
+    // ============================================================================
     // LEAD ANGLE COMPENSATION (LAC)
-    // =========================================================================
+    // ============================================================================
     bool leadAngleCompensationActive = false; ///< LAC toggle active
     LeadAngleStatus currentLeadAngleStatus = LeadAngleStatus::Off; ///< LAC status
     float motionLeadOffsetAz = 0.0f;      ///< Motion lead Az (degrees)
     float motionLeadOffsetEl = 0.0f;      ///< Motion lead El (degrees)
 
-    // =========================================================================
+    // ============================================================================
     // CROWS-COMPLIANT LAC LATCHING
-    // =========================================================================
+    // ============================================================================
     bool lacArmed = false;                ///< LAC manually armed
     float lacLatchedAzRate_dps = 0.0f;    ///< Latched Az rate (deg/s)
     float lacLatchedElRate_dps = 0.0f;    ///< Latched El rate (deg/s)
 
-    // =========================================================================
+    // ============================================================================
     // TARGET PARAMETERS
-    // =========================================================================
+    // ============================================================================
     float currentTargetRange = 2000.0f;   ///< Target range (meters)
     float muzzleVelocityMPS = 900.0f;     ///< Muzzle velocity (m/s)
 
-    // =========================================================================
+    // ============================================================================
     // DERIVED CHECKS
-    // =========================================================================
+    // ============================================================================
 
     /**
      * @brief Check if any ballistic compensation is active
@@ -623,9 +623,9 @@ struct EnvironmentalState {
     }
 };
 
-// =============================================================================
+// ============================================================================
 // UTILITY: POPULATE ZONE AND ENVIRONMENTAL PARTITIONS
-// =============================================================================
+// ============================================================================
 
 /**
  * @brief Populate ZoneState from SystemStateData

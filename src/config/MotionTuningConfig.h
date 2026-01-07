@@ -126,15 +126,15 @@ struct StabilizerConfig {
     double maxVelocityCorr = 5.0;
     double maxTotalVel = 18.0;
     double maxTanEl = 10.0;
-    
+
     // ✅ NEW: Anti-jitter parameters
     double positionDeadbandDeg = 0.5;   ///< Ignore errors smaller than this
     double ahrsFilterTau = 0.15;          ///< AHRS angle filter time constant (seconds)
 };
 
-    // ========================================================================
+    // ============================================================================
     // PUBLIC API
-    // ========================================================================
+    // ============================================================================
 
     /**
      * @brief Load configuration from JSON file
@@ -155,9 +155,9 @@ struct StabilizerConfig {
      */
     static bool isLoaded();
 
-    // ========================================================================
+    // ============================================================================
     // CONFIGURATION ACCESSORS
-    // ========================================================================
+    // ============================================================================
 
     // Filter parameters
     FilterConfig filters;

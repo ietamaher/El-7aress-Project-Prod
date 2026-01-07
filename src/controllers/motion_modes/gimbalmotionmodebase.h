@@ -102,9 +102,9 @@ public:
     // Called when we exit this mode
     virtual void exitMode(GimbalController* /*controller*/) {}
 
-    // =========================================================================
+    // ============================================================================
     // TEMPLATE METHOD PATTERN FOR SAFETY ENFORCEMENT
-    // =========================================================================
+    // ============================================================================
     // All motion mode updates MUST pass through SafetyInterlock checks.
     // Use updateWithSafety() which is final and cannot be bypassed.
     //
@@ -112,7 +112,7 @@ public:
     // - GimbalController calls update() or updateWithSafety()
     // - Derived classes implement updateImpl() for their motion logic
     // - Safety checks are automatically enforced before updateImpl() is called
-    // =========================================================================
+    // ============================================================================
 
     /**
      * @brief Template method that enforces safety checks before motion updates.
@@ -197,9 +197,9 @@ public:
         Eigen::Vector3d& angVel_world_dps);
 
 protected:
-    // ========================================================================
+    // ============================================================================
     // VELOCITY TIMER & CENTRAL HELPERS (Expert Review - Critical Fixes)
-    // ========================================================================
+    // ============================================================================
 
     /**
      * @brief Velocity timer used across modes to compute dt
@@ -368,9 +368,9 @@ protected:
     static constexpr float SPEED_SCALING_FACTOR_SCAN = 250.0f;
     static constexpr float SPEED_SCALING_FACTOR_TRP_SCAN = 250.0f;
 
-    // ========================================================================
+    // ============================================================================
     // RUNTIME-CONFIGURABLE PARAMETERS (loaded from motion_tuning.json)
-    // ========================================================================
+    // ============================================================================
     // These inline functions provide access to tunable parameters without rebuild
 
     // Common PID/Scan constants
@@ -432,9 +432,9 @@ private:
         return rad * (180.0 / M_PI);
     }
 
-    // ========================================================================
+    // ============================================================================
     // STABILIZATION
-    // ========================================================================
+    // ============================================================================
 
     // Velocity-based stabilizer (stateless, shared across all modes)
     static GimbalStabilizer s_stabilizer;
@@ -453,9 +453,9 @@ private:
     qint32 m_lastAzSpeedHz = std::numeric_limits<qint32>::max(); // Initialize to invalid value
     qint32 m_lastElSpeedHz = std::numeric_limits<qint32>::max();
 
-    // ========================================================================
+    // ============================================================================
     // STATIC PACKET TEMPLATES (SINGLE MODBUS WRITE OPTIMIZATION)
-    // ========================================================================
+    // ============================================================================
     // Pre-built 10-register packets for single-write velocity commands:
     //   [0-1]: Speed (placeholder, filled at runtime)
     //   [2-3]: Accel rate (from config)
@@ -467,22 +467,22 @@ private:
     //   - ONE Modbus write instead of TWO (50% bus traffic reduction)
     //   - Axis-specific decel rates prevent overvoltage (AZ) and overshoot (EL)
     //   - Templates initialized once at startup, only speed changes at runtime
-    // ========================================================================
+    // ============================================================================
     static QVector<quint16> s_azVelocityPacketTemplate;  ///< Azimuth: smooth decel
     static QVector<quint16> s_elVelocityPacketTemplate;  ///< Elevation: crisp decel
     static bool s_packetsInitialized;
 
-    // ========================================================================
+    // ============================================================================
     // LEGACY FUNCTIONS (Deprecated - use GimbalStabilizer instead)
-    // ========================================================================
+    // ============================================================================
 
-    // ========================================================================
+    // ============================================================================
     // DEPRECATED FUNCTIONS REMOVED (2025-12-27)
     // The following functions were removed - use GimbalStabilizer instead:
     //   - calculateRequiredGimbalAngles()
     //   - calculateHybridStabilizationCorrection()
     //   - calculateStabilizationCorrection()
-    // ========================================================================
+    // ============================================================================
 };
 
 #endif // GIMBALMOTIONMO

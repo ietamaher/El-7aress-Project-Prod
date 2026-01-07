@@ -71,4 +71,4 @@ void ZeroingViewModel::setAccentColor(const QColor& color) {
         emit accentColorChanged();
     }
 }
- 
+

@@ -6,62 +6,35 @@
 // PUBLIC API
 // ============================================================================
 
-std::pair<double,double> GimbalStabilizer::computeStabilizedVelocity(
-    double desiredAzVel_dps,
-    double desiredElVel_dps,
-    double imuRoll_deg,
-    double imuPitch_deg,
-    double imuYaw_deg,
-    double gyroX_dps,
-    double gyroY_dps,
-    double gyroZ_dps,
-    double currentAz_deg,
-    double currentEl_deg,
-    double targetAz_world,
-    double targetEl_world,
-    bool useWorldTarget,
-    double dt) const
-{
-    // ========================================================================
+std::pair<double, double> GimbalStabilizer::computeStabilizedVelocity(
+    double desiredAzVel_dps, double desiredElVel_dps, double imuRoll_deg, double imuPitch_deg,
+    double imuYaw_deg, double gyroX_dps, double gyroY_dps, double gyroZ_dps, double currentAz_deg,
+    double currentEl_deg, double targetAz_world, double targetEl_world, bool useWorldTarget,
+    double dt) const {
+    // ============================================================================
     // DELEGATE TO DEBUG VERSION
     // The WithDebug version contains the complete, production-quality implementation
     // including: AHRS filtering, position deadband, FF smoothing, accel limiting
-    // ========================================================================
+    // ============================================================================
     SystemStateData::StabilizationDebug unusedDebug;
-    return computeStabilizedVelocityWithDebug(
-        unusedDebug,
-        desiredAzVel_dps, desiredElVel_dps,
-        imuRoll_deg, imuPitch_deg, imuYaw_deg,
-        gyroX_dps, gyroY_dps, gyroZ_dps,
-        currentAz_deg, currentEl_deg,
-        targetAz_world, targetEl_world,
-        useWorldTarget, dt);
+    return computeStabilizedVelocityWithDebug(unusedDebug, desiredAzVel_dps, desiredElVel_dps,
+                                              imuRoll_deg, imuPitch_deg, imuYaw_deg, gyroX_dps,
+                                              gyroY_dps, gyroZ_dps, currentAz_deg, currentEl_deg,
+                                              targetAz_world, targetEl_world, useWorldTarget, dt);
 }
 
 // ============================================================================
 // DEBUG VERSION - Populates debug struct for OSD visualization
 // ============================================================================
 
-std::pair<double,double> GimbalStabilizer::computeStabilizedVelocityWithDebug(
-    SystemStateData::StabilizationDebug& dbg,
-    double desiredAzVel_dps,
-    double desiredElVel_dps,
-    double imuRoll_deg,
-    double imuPitch_deg,
-    double imuYaw_deg,
-    double gyroX_dps,
-    double gyroY_dps,
-    double gyroZ_dps,
-    double currentAz_deg,
-    double currentEl_deg,
-    double targetAz_world,
-    double targetEl_world,
-    bool useWorldTarget,
-    double dt) const
-{
-    // ========================================================================
+std::pair<double, double> GimbalStabilizer::computeStabilizedVelocityWithDebug(
+    SystemStateData::StabilizationDebug& dbg, double desiredAzVel_dps, double desiredElVel_dps,
+    double imuRoll_deg, double imuPitch_deg, double imuYaw_deg, double gyroX_dps, double gyroY_dps,
+    double gyroZ_dps, double currentAz_deg, double currentEl_deg, double targetAz_world,
+    double targetEl_world, bool useWorldTarget, double dt) const {
+    // ============================================================================
     // Control Law: ω_cmd = ω_user + ω_feedforward + Kp × (angle_error)
-    // ========================================================================
+    // ============================================================================
 
     // Store user input for debug
     dbg.userAz_dps = desiredAzVel_dps;
@@ -94,13 +67,13 @@ std::pair<double,double> GimbalStabilizer::computeStabilizedVelocityWithDebug(
 
     dbg.stabActive = true;
 
-    // ========================================================================
+    // ============================================================================
     // COMPONENT 1: Position Correction (AHRS-based drift compensation)
-    // ========================================================================
+    // ============================================================================
 
     const auto& cfg = MotionTuningConfig::instance().stabilizer;
 
-        // ✅ FIX 1: Filter AHRS angles to reduce noise-induced jitter
+    // ✅ FIX 1: Filter AHRS angles to reduce noise-induced jitter
     if (!m_ahrsFilterInitialized) {
         m_filteredRoll_deg = imuRoll_deg;
         m_filteredPitch_deg = imuPitch_deg;
@@ -108,9 +81,9 @@ std::pair<double,double> GimbalStabilizer::computeStabilizedVelocityWithDebug(
         m_ahrsFilterInitialized = true;
     } else {
         double alpha = 1.0 - std::exp(-dt / cfg.ahrsFilterTau);
-        m_filteredRoll_deg  += alpha * (imuRoll_deg - m_filteredRoll_deg);
+        m_filteredRoll_deg += alpha * (imuRoll_deg - m_filteredRoll_deg);
         m_filteredPitch_deg += alpha * (imuPitch_deg - m_filteredPitch_deg);
-        
+
         // ✅ Special handling for yaw wraparound
         double yawDiff = normalizeAngle180(imuYaw_deg - m_filteredYaw_deg);
         m_filteredYaw_deg = normalizeAngle180(m_filteredYaw_deg + alpha * yawDiff);
@@ -119,8 +92,7 @@ std::pair<double,double> GimbalStabilizer::computeStabilizedVelocityWithDebug(
     // Compute required gimbal angles to point at world target
     auto [requiredAz_deg, requiredEl_deg] = computeRequiredGimbalAngles(
         m_filteredRoll_deg, m_filteredPitch_deg, m_filteredYaw_deg,  // ✅ FILTERED!
-        targetAz_world, targetEl_world
-    );
+        targetAz_world, targetEl_world);
     dbg.requiredAz_deg = requiredAz_deg;
     dbg.requiredEl_deg = requiredEl_deg;
 
@@ -134,7 +106,7 @@ std::pair<double,double> GimbalStabilizer::computeStabilizedVelocityWithDebug(
     if (dt > 1e-6) {
         azErrorRate_dps = (azError_deg - m_prevAzError_deg) / dt;
         elErrorRate_dps = (elError_deg - m_prevElError_deg) / dt;
-        
+
         // Clamp derivative to prevent spikes
         azErrorRate_dps = std::clamp(azErrorRate_dps, -cfg.maxErrorRate, cfg.maxErrorRate);
         elErrorRate_dps = std::clamp(elErrorRate_dps, -cfg.maxErrorRate, cfg.maxErrorRate);
@@ -146,12 +118,16 @@ std::pair<double,double> GimbalStabilizer::computeStabilizedVelocityWithDebug(
     // ✅ Apply deadband ONLY to proportional term (after derivative calc)
     double azErrorForP = azError_deg;
     double elErrorForP = elError_deg;
-    if (std::abs(azErrorForP) < cfg.positionDeadbandDeg) azErrorForP = 0.0;
-    if (std::abs(elErrorForP) < cfg.positionDeadbandDeg) elErrorForP = 0.0;
+    if (std::abs(azErrorForP) < cfg.positionDeadbandDeg)
+        azErrorForP = 0.0;
+    if (std::abs(elErrorForP) < cfg.positionDeadbandDeg)
+        elErrorForP = 0.0;
 
     // ✅ Also apply deadband to derivative when error is small (prevents chatter)
-    if (std::abs(azError_deg) < cfg.positionDeadbandDeg) azErrorRate_dps = 0.0;
-    if (std::abs(elError_deg) < cfg.positionDeadbandDeg) elErrorRate_dps = 0.0;
+    if (std::abs(azError_deg) < cfg.positionDeadbandDeg)
+        azErrorRate_dps = 0.0;
+    if (std::abs(elError_deg) < cfg.positionDeadbandDeg)
+        elErrorRate_dps = 0.0;
 
     dbg.azError_deg = azErrorForP;
     dbg.elError_deg = elErrorForP;
@@ -162,97 +138,87 @@ std::pair<double,double> GimbalStabilizer::computeStabilizedVelocityWithDebug(
     dbg.azPosCorr_dps = azPositionCorr_dps;
     dbg.elPosCorr_dps = elPositionCorr_dps;
 
- // ========================================================================
-// COMPONENT 2: Rate Feed-Forward (Gyro-based, SMOOTH & SAFE)
-// ========================================================================
+    // ============================================================================
+    // COMPONENT 2: Rate Feed-Forward (Gyro-based, SMOOTH & SAFE)
+    // ============================================================================
 
-auto [azRateFF_raw, elRateFF_raw] = computeRateFeedForward(
-    dbg.p_dps, dbg.q_dps, dbg.r_dps,
-    currentAz_deg, currentEl_deg
-);
+    auto [azRateFF_raw, elRateFF_raw] =
+        computeRateFeedForward(dbg.p_dps, dbg.q_dps, dbg.r_dps, currentAz_deg, currentEl_deg);
 
-// Clamp raw FF
-azRateFF_raw = std::clamp(azRateFF_raw, -cfg.maxVelocityCorr, cfg.maxVelocityCorr);
-elRateFF_raw = std::clamp(elRateFF_raw, -cfg.maxVelocityCorr, cfg.maxVelocityCorr);
+    // Clamp raw FF
+    azRateFF_raw = std::clamp(azRateFF_raw, -cfg.maxVelocityCorr, cfg.maxVelocityCorr);
+    elRateFF_raw = std::clamp(elRateFF_raw, -cfg.maxVelocityCorr, cfg.maxVelocityCorr);
 
-// ------------------------------------------------------------------
-// Smooth gyro-based FF ramp (NO DISCONTINUITY)
-// ------------------------------------------------------------------
-constexpr double GYRO_DB = 0.3;     // deg/s (noise)
-constexpr double GYRO_FULL = 1.2;   // deg/s (full FF)
+    // ------------------------------------------------------------------
+    // Smooth gyro-based FF ramp (NO DISCONTINUITY)
+    // ------------------------------------------------------------------
+    constexpr double GYRO_DB = 0.3;    // deg/s (noise)
+    constexpr double GYRO_FULL = 1.2;  // deg/s (full FF)
 
-double yawRate = std::abs(dbg.r_dps);
-double elRate  = std::hypot(dbg.p_dps, dbg.q_dps);
+    double yawRate = std::abs(dbg.r_dps);
+    double elRate = std::hypot(dbg.p_dps, dbg.q_dps);
 
-double azFFScale = std::clamp((yawRate - GYRO_DB) / (GYRO_FULL - GYRO_DB), 0.0, 1.0);
-double elFFScale = std::clamp((elRate  - GYRO_DB) / (GYRO_FULL - GYRO_DB), 0.0, 1.0);
+    double azFFScale = std::clamp((yawRate - GYRO_DB) / (GYRO_FULL - GYRO_DB), 0.0, 1.0);
+    double elFFScale = std::clamp((elRate - GYRO_DB) / (GYRO_FULL - GYRO_DB), 0.0, 1.0);
 
-// Apply scaling
-azRateFF_raw *= azFFScale;
-elRateFF_raw *= elFFScale;
+    // Apply scaling
+    azRateFF_raw *= azFFScale;
+    elRateFF_raw *= elFFScale;
 
-// ------------------------------------------------------------------
-// FF smoothing (models actuator inertia, kills jitter)
-// ------------------------------------------------------------------
-double alphaFF = 1.0 - std::exp(-dt / 0.10); // τ = 100 ms
+    // ------------------------------------------------------------------
+    // FF smoothing (models actuator inertia, kills jitter)
+    // ------------------------------------------------------------------
+    double alphaFF = 1.0 - std::exp(-dt / 0.10);  // τ = 100 ms
 
-m_azFF_smooth += alphaFF * (azRateFF_raw - m_azFF_smooth);
-m_elFF_smooth += alphaFF * (elRateFF_raw - m_elFF_smooth);
+    m_azFF_smooth += alphaFF * (azRateFF_raw - m_azFF_smooth);
+    m_elFF_smooth += alphaFF * (elRateFF_raw - m_elFF_smooth);
 
-dbg.azRateFF_dps = m_azFF_smooth;
-dbg.elRateFF_dps = m_elFF_smooth;
+    dbg.azRateFF_dps = m_azFF_smooth;
+    dbg.elRateFF_dps = m_elFF_smooth;
 
 
-// ========================================================================
-// COMPONENT 3: Velocity Composition (ACCEL-LIMITED)
-// ========================================================================
+    // ============================================================================
+    // COMPONENT 3: Velocity Composition (ACCEL-LIMITED)
+    // ============================================================================
 
-double azCmd = desiredAzVel_dps + azPositionCorr_dps + m_azFF_smooth;
-double elCmd = desiredElVel_dps + elPositionCorr_dps + m_elFF_smooth;
+    double azCmd = desiredAzVel_dps + azPositionCorr_dps + m_azFF_smooth;
+    double elCmd = desiredElVel_dps + elPositionCorr_dps + m_elFF_smooth;
 
-// Total velocity limit
-azCmd = std::clamp(azCmd, -cfg.maxTotalVel, cfg.maxTotalVel);
-elCmd = std::clamp(elCmd, -cfg.maxTotalVel, cfg.maxTotalVel);
+    // Total velocity limit
+    azCmd = std::clamp(azCmd, -cfg.maxTotalVel, cfg.maxTotalVel);
+    elCmd = std::clamp(elCmd, -cfg.maxTotalVel, cfg.maxTotalVel);
 
-// ------------------------------------------------------------------
-// Acceleration limiting (CRITICAL for smoothness)
-// ------------------------------------------------------------------
-constexpr double MAX_ACC_DPS2 = 35.0;   // safe for EO heads
+    // ------------------------------------------------------------------
+    // Acceleration limiting (CRITICAL for smoothness)
+    // ------------------------------------------------------------------
+    constexpr double MAX_ACC_DPS2 = 35.0;  // safe for EO heads
 
-double maxDelta = MAX_ACC_DPS2 * dt;
+    double maxDelta = MAX_ACC_DPS2 * dt;
 
-azCmd = std::clamp(azCmd,
-                   m_prevAzCmd_dps - maxDelta,
-                   m_prevAzCmd_dps + maxDelta);
+    azCmd = std::clamp(azCmd, m_prevAzCmd_dps - maxDelta, m_prevAzCmd_dps + maxDelta);
 
-elCmd = std::clamp(elCmd,
-                   m_prevElCmd_dps - maxDelta,
-                   m_prevElCmd_dps + maxDelta);
+    elCmd = std::clamp(elCmd, m_prevElCmd_dps - maxDelta, m_prevElCmd_dps + maxDelta);
 
-// Store
-m_prevAzCmd_dps = azCmd;
-m_prevElCmd_dps = elCmd;
+    // Store
+    m_prevAzCmd_dps = azCmd;
+    m_prevElCmd_dps = elCmd;
 
-dbg.finalAz_dps = azCmd;
-dbg.finalEl_dps = elCmd;
+    dbg.finalAz_dps = azCmd;
+    dbg.finalEl_dps = elCmd;
 
-return { azCmd, elCmd };
+    return {azCmd, elCmd};
 }
 
 // ============================================================================
 // PRIVATE IMPLEMENTATION
 // ============================================================================
 
-std::pair<double,double> GimbalStabilizer::computeRequiredGimbalAngles(
-    double roll_deg,
-    double pitch_deg,
-    double yaw_deg,
-    double targetAz_world,
-    double targetEl_world) const
-{
-    // ========================================================================
+std::pair<double, double>
+GimbalStabilizer::computeRequiredGimbalAngles(double roll_deg, double pitch_deg, double yaw_deg,
+                                              double targetAz_world, double targetEl_world) const {
+    // ============================================================================
     // Matrix-based rotation approach (avoids gimbal lock and sign errors)
-    // ========================================================================
+    // ============================================================================
 
     // Convert to radians
     double roll = degToRad(roll_deg);
@@ -267,28 +233,20 @@ std::pair<double,double> GimbalStabilizer::computeRequiredGimbalAngles(
     Eigen::Matrix3d Rz, Ry, Rx;
 
     // Rotation about Z-axis (yaw)
-    Rz <<  std::cos(yaw), -std::sin(yaw), 0,
-           std::sin(yaw),  std::cos(yaw), 0,
-                0,              0,         1;
+    Rz << std::cos(yaw), -std::sin(yaw), 0, std::sin(yaw), std::cos(yaw), 0, 0, 0, 1;
 
     // Rotation about Y-axis (pitch)
-    Ry <<  std::cos(pitch), 0, std::sin(pitch),
-                0,          1,      0,
-          -std::sin(pitch), 0, std::cos(pitch);
+    Ry << std::cos(pitch), 0, std::sin(pitch), 0, 1, 0, -std::sin(pitch), 0, std::cos(pitch);
 
     // Rotation about X-axis (roll)
-    Rx << 1,      0,              0,
-          0, std::cos(roll), -std::sin(roll),
-          0, std::sin(roll),  std::cos(roll);
+    Rx << 1, 0, 0, 0, std::cos(roll), -std::sin(roll), 0, std::sin(roll), std::cos(roll);
 
     Eigen::Matrix3d Rplat = Rz * Ry * Rx;
 
     // Step 2: Create unit vector pointing at world target
     double cos_el = std::cos(target_el);
     Eigen::Vector3d v_world;
-    v_world << cos_el * std::cos(target_az),
-               cos_el * std::sin(target_az),
-               std::sin(target_el);
+    v_world << cos_el * std::cos(target_az), cos_el * std::sin(target_az), std::sin(target_el);
 
     // Step 3: Transform target vector to platform frame
     // v_platform = Rplat^T * v_world
@@ -296,9 +254,8 @@ std::pair<double,double> GimbalStabilizer::computeRequiredGimbalAngles(
 
     // Step 4: Extract gimbal angles from platform-frame vector
     double gimbalAz_rad = std::atan2(v_platform.y(), v_platform.x());
-    double gimbalEl_rad = std::atan2(v_platform.z(),
-                                      std::sqrt(v_platform.x() * v_platform.x() +
-                                                v_platform.y() * v_platform.y()));
+    double gimbalEl_rad = std::atan2(v_platform.z(), std::sqrt(v_platform.x() * v_platform.x() +
+                                                               v_platform.y() * v_platform.y()));
 
     // Convert to degrees
     double gimbalAz_deg = radToDeg(gimbalAz_rad);
@@ -311,16 +268,13 @@ std::pair<double,double> GimbalStabilizer::computeRequiredGimbalAngles(
     return {gimbalAz_deg, gimbalEl_deg};
 }
 
-std::pair<double,double> GimbalStabilizer::computeRateFeedForward(
-    double p_dps,
-    double q_dps,
-    double r_dps,
-    double gimbalAz_deg,
-    double gimbalEl_deg) const
-{
-    // ========================================================================
+std::pair<double, double> GimbalStabilizer::computeRateFeedForward(double p_dps, double q_dps,
+                                                                   double r_dps,
+                                                                   double gimbalAz_deg,
+                                                                   double gimbalEl_deg) const {
+    // ============================================================================
     // Kinematic coupling: Transform platform angular rates to gimbal frame
-    // ========================================================================
+    // ============================================================================
 
     // Convert gimbal angles to radians
     double az_rad = degToRad(gimbalAz_deg);

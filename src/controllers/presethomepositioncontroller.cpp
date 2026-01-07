@@ -24,9 +24,7 @@
 // CONSTRUCTOR
 // ============================================================================
 
-PresetHomePositionController::PresetHomePositionController(QObject* parent)
-    : QObject(parent)
-{
+PresetHomePositionController::PresetHomePositionController(QObject* parent) : QObject(parent) {
     // Create position update timer
     m_updateTimer = new QTimer(this);
     m_updateTimer->setInterval(POSITION_UPDATE_INTERVAL_MS);
@@ -37,33 +35,29 @@ PresetHomePositionController::PresetHomePositionController(QObject* parent)
 // INITIALIZATION
 // ============================================================================
 
-void PresetHomePositionController::initialize()
-{
+void PresetHomePositionController::initialize() {
     Q_ASSERT(m_viewModel);
     Q_ASSERT(m_stateModel);
     // m_plc42 can be null during testing
 
     // Connect to color style changes
-    connect(m_stateModel, &SystemStateModel::colorStyleChanged,
-            this, &PresetHomePositionController::onColorStyleChanged);
+    connect(m_stateModel, &SystemStateModel::colorStyleChanged, this,
+            &PresetHomePositionController::onColorStyleChanged);
 
     // Set initial color
     const auto& data = m_stateModel->data();
     m_viewModel->setAccentColor(data.colorStyle);
 }
 
-void PresetHomePositionController::setViewModel(PresetHomePositionViewModel* viewModel)
-{
+void PresetHomePositionController::setViewModel(PresetHomePositionViewModel* viewModel) {
     m_viewModel = viewModel;
 }
 
-void PresetHomePositionController::setStateModel(SystemStateModel* stateModel)
-{
+void PresetHomePositionController::setStateModel(SystemStateModel* stateModel) {
     m_stateModel = stateModel;
 }
 
-void PresetHomePositionController::setPlc42Device(Plc42Device* plc42)
-{
+void PresetHomePositionController::setPlc42Device(Plc42Device* plc42) {
     m_plc42 = plc42;
 }
 
@@ -71,8 +65,7 @@ void PresetHomePositionController::setPlc42Device(Plc42Device* plc42)
 // UI CONTROL
 // ============================================================================
 
-void PresetHomePositionController::show()
-{
+void PresetHomePositionController::show() {
     qDebug() << "[PresetHomePositionController] show() called";
 
     transitionToState(ProcedureState::Instruct_PositionGimbal);
@@ -84,8 +77,7 @@ void PresetHomePositionController::show()
     qDebug() << "[PresetHomePositionController] Now in Instruct_PositionGimbal state";
 }
 
-void PresetHomePositionController::hide()
-{
+void PresetHomePositionController::hide() {
     qDebug() << "[PresetHomePositionController] hide() called";
 
     // Stop position update timer
@@ -99,8 +91,7 @@ void PresetHomePositionController::hide()
 // STATE MACHINE
 // ============================================================================
 
-void PresetHomePositionController::transitionToState(ProcedureState newState)
-{
+void PresetHomePositionController::transitionToState(ProcedureState newState) {
     qDebug() << "[PresetHomePositionController] State transition from"
              << static_cast<int>(m_currentState) << "to" << static_cast<int>(newState);
 
@@ -108,9 +99,9 @@ void PresetHomePositionController::transitionToState(ProcedureState newState)
     updateUI();
 }
 
-void PresetHomePositionController::updateUI()
-{
-    qDebug() << "[PresetHomePositionController] updateUI() for state" << static_cast<int>(m_currentState);
+void PresetHomePositionController::updateUI() {
+    qDebug() << "[PresetHomePositionController] updateUI() for state"
+             << static_cast<int>(m_currentState);
 
     // Update position data
     const auto& data = m_stateModel->data();
@@ -120,42 +111,36 @@ void PresetHomePositionController::updateUI()
     switch (m_currentState) {
     case ProcedureState::Instruct_PositionGimbal:
         m_viewModel->setTitle("Set Preset Home Position: Step 1");
-        m_viewModel->setInstruction(
-            "POSITION GIMBAL TO HOME LOCATION\n\n"
-            "1. Use the JOYSTICK to slew the gimbal to the\n"
-            "   desired HOME position.\n"
-            "2. Align with your visual/mechanical reference.\n"
-            "3. Current position is displayed below.\n\n"
-            "Press MENU/VAL when positioned correctly."
-        );
+        m_viewModel->setInstruction("POSITION GIMBAL TO HOME LOCATION\n\n"
+                                    "1. Use the JOYSTICK to slew the gimbal to the\n"
+                                    "   desired HOME position.\n"
+                                    "2. Align with your visual/mechanical reference.\n"
+                                    "3. Current position is displayed below.\n\n"
+                                    "Press MENU/VAL when positioned correctly.");
         m_viewModel->setStatus("POSITIONING GIMBAL - USE JOYSTICK");
         break;
 
     case ProcedureState::Confirm_SetHome:
         m_viewModel->setTitle("Set Preset Home Position: Step 2");
-        m_viewModel->setInstruction(
-            "CONFIRM HOME POSITION\n\n"
-            "You are about to set the current gimbal position\n"
-            "as the HOME reference point.\n\n"
-            "The motor controller will store this position\n"
-            "as the zero reference for future homing operations.\n\n"
-            "Press MENU/VAL to CONFIRM and set home."
-        );
+        m_viewModel->setInstruction("CONFIRM HOME POSITION\n\n"
+                                    "You are about to set the current gimbal position\n"
+                                    "as the HOME reference point.\n\n"
+                                    "The motor controller will store this position\n"
+                                    "as the zero reference for future homing operations.\n\n"
+                                    "Press MENU/VAL to CONFIRM and set home.");
         m_viewModel->setStatus(QString("AZ: %1 deg  |  EL: %2 deg")
-            .arg(data.gimbalAz, 0, 'f', 2)
-            .arg(data.gimbalEl, 0, 'f', 2));
+                                   .arg(data.gimbalAz, 0, 'f', 2)
+                                   .arg(data.gimbalEl, 0, 'f', 2));
         break;
 
     case ProcedureState::Completed:
         m_viewModel->setTitle("Set Preset Home Position: Complete");
-        m_viewModel->setInstruction(
-            "PRESET HOME POSITION SET!\n\n"
-            "The current position has been stored as the\n"
-            "home reference point in the motor controller.\n\n"
-            "Future HOME operations will return the gimbal\n"
-            "to this position.\n\n"
-            "Press MENU/VAL to return to Main Menu."
-        );
+        m_viewModel->setInstruction("PRESET HOME POSITION SET!\n\n"
+                                    "The current position has been stored as the\n"
+                                    "home reference point in the motor controller.\n\n"
+                                    "Future HOME operations will return the gimbal\n"
+                                    "to this position.\n\n"
+                                    "Press MENU/VAL to return to Main Menu.");
         m_viewModel->setStatus("HOME POSITION SAVED SUCCESSFULLY");
         break;
 
@@ -172,8 +157,7 @@ void PresetHomePositionController::updateUI()
 // BUTTON HANDLERS
 // ============================================================================
 
-void PresetHomePositionController::onSelectButtonPressed()
-{
+void PresetHomePositionController::onSelectButtonPressed() {
     qDebug() << "[PresetHomePositionController] onSelectButtonPressed() - Current state:"
              << static_cast<int>(m_currentState);
 
@@ -200,8 +184,7 @@ void PresetHomePositionController::onSelectButtonPressed()
     }
 }
 
-void PresetHomePositionController::onBackButtonPressed()
-{
+void PresetHomePositionController::onBackButtonPressed() {
     qDebug() << "[PresetHomePositionController] onBackButtonPressed() - cancelling";
 
     hide();
@@ -209,13 +192,11 @@ void PresetHomePositionController::onBackButtonPressed()
     emit procedureFinished();
 }
 
-void PresetHomePositionController::onUpButtonPressed()
-{
+void PresetHomePositionController::onUpButtonPressed() {
     // Reserved for future use
 }
 
-void PresetHomePositionController::onDownButtonPressed()
-{
+void PresetHomePositionController::onDownButtonPressed() {
     // Reserved for future use
 }
 
@@ -223,8 +204,7 @@ void PresetHomePositionController::onDownButtonPressed()
 // EXECUTE SET PRESET HOME
 // ============================================================================
 
-void PresetHomePositionController::executeSetPresetHome()
-{
+void PresetHomePositionController::executeSetPresetHome() {
     qDebug() << "[PresetHomePositionController] Executing setPresetHomePosition...";
 
     if (m_plc42) {
@@ -240,8 +220,7 @@ void PresetHomePositionController::executeSetPresetHome()
 // POSITION UPDATE HANDLER
 // ============================================================================
 
-void PresetHomePositionController::onPositionUpdate()
-{
+void PresetHomePositionController::onPositionUpdate() {
     // Update ViewModel with current position data while procedure is active
     if (m_currentState != ProcedureState::Idle) {
         const auto& data = m_stateModel->data();
@@ -254,8 +233,7 @@ void PresetHomePositionController::onPositionUpdate()
 // COLOR STYLE HANDLER
 // ============================================================================
 
-void PresetHomePositionController::onColorStyleChanged(const QColor& color)
-{
+void PresetHomePositionController::onColorStyleChanged(const QColor& color) {
     qDebug() << "[PresetHomePositionController] Color changed to" << color;
     m_viewModel->setAccentColor(color);
 }

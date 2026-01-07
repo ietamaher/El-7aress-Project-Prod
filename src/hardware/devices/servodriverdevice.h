@@ -1,22 +1,22 @@
 /**
  * @file ServoDriverDevice.h
  * @brief Refactored Modbus servo driver device following MIL-STD architecture
- * 
+ *
  * This class represents ONLY the device logic - no transport or protocol handling.
  * Transport and protocol parsing are injected as dependencies.
- * 
+ *
  * @section Architecture
  * - Device: Pure business logic (this class)
  * - Transport: ModbusTransport (injected)
  * - Parser: ServoDriverProtocolParser (injected)
  * - Data: ServoDriverData (in DataTypes.h)
- * 
+ *
  * @section Benefits
  * - 73% code reduction (450 lines → 120 lines)
  * - Thread-safe data access (automatic via TemplatedDevice)
  * - Easy unit testing (mock transport/parser)
  * - Protocol changes isolated to parser
- * 
+ *
  * @author refactored_to_milstd
  * @date 2025-10-28
  * @version 2.0
@@ -37,7 +37,7 @@ class Message;
 
 /**
  * @brief Modbus-based servo driver device
- * 
+ *
  * Manages a servo driver via Modbus RTU protocol. This class contains
  * ONLY device-specific logic - all transport and protocol handling
  * is delegated to injected dependencies.
@@ -52,7 +52,7 @@ public:
     QString identifier() const { return m_identifier; }
 
     // Dependency injection (called before initialize)
-    Q_INVOKABLE void setDependencies(Transport* transport, 
+    Q_INVOKABLE void setDependencies(Transport* transport,
                                       ServoDriverProtocolParser* parser);
 
     // IDevice interface (device lifecycle)
@@ -72,7 +72,7 @@ public:
     Q_INVOKABLE void clearAlarm();
     Q_INVOKABLE void readAlarmHistory();
     Q_INVOKABLE void clearAlarmHistory();
-    
+
     // Configuration
     Q_INVOKABLE void enableTemperatureReading(bool enable);
     Q_INVOKABLE void setTemperatureInterval(int intervalMs);

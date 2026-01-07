@@ -23,28 +23,28 @@ FireControlResult FireControlComputation::compute(
     result.previousDropActive = previousResult.ballisticDropActive;
     result.previousLeadStatus = previousResult.currentLeadAngleStatus;
 
-    // ========================================================================
+    // ============================================================================
     // STEP 1: COMPUTE CROSSWIND FROM WINDAGE
-    // ========================================================================
+    // ============================================================================
     // This runs INDEPENDENTLY of LAC status.
     // Crosswind component varies with absolute gimbal bearing.
-    // ========================================================================
+    // ============================================================================
     computeCrosswind(input, previousResult.calculatedCrosswindMS,
                      result.calculatedCrosswindMS, result.crosswindChanged);
 
-    // ========================================================================
+    // ============================================================================
     // STEP 2: NULL CHECK FOR BALLISTICS PROCESSOR
-    // ========================================================================
+    // ============================================================================
     if (!ballisticsProcessor) {
         qCritical() << "[FireControlComputation] BallisticsProcessor pointer is NULL!";
         return result;
     }
 
-    // ========================================================================
+    // ============================================================================
     // STEP 3: UPDATE ENVIRONMENTAL CONDITIONS
-    // ========================================================================
+    // ============================================================================
     // Environmental conditions affect both drop and lead calculations.
-    // ========================================================================
+    // ============================================================================
     if (input.environmentalAppliedToBallistics) {
         ballisticsProcessor->setEnvironmentalConditions(
             input.environmentalTemperatureCelsius,
@@ -58,15 +58,15 @@ FireControlResult FireControlComputation::compute(
         );
     }
 
-    // ========================================================================
+    // ============================================================================
     // STEP 4: COMPUTE BALLISTIC DROP (auto-applied when range valid)
-    // ========================================================================
+    // ============================================================================
     computeBallisticDrop(input, ballisticsProcessor, result.calculatedCrosswindMS,
                          previousResult.ballisticDropActive, result);
 
-    // ========================================================================
+    // ============================================================================
     // STEP 5: COMPUTE MOTION LEAD (only when LAC active)
-    // ========================================================================
+    // ============================================================================
     computeMotionLead(input, ballisticsProcessor,
                       previousResult.currentLeadAngleStatus, result);
 
@@ -118,7 +118,7 @@ float FireControlComputation::calculateCrosswindComponent(
     float windDirectionDeg,
     float gimbalAzimuthDeg)
 {
-    // ========================================================================
+    // ============================================================================
     // BALLISTICS PHYSICS: Crosswind Component Calculation
     // Wind direction: Direction wind is coming FROM (meteorological convention)
     // Gimbal azimuth: Direction weapon is pointing TO
@@ -135,7 +135,7 @@ float FireControlComputation::calculateCrosswindComponent(
     //     relative = -180deg -> sin(-180deg) = 0 -> no crosswind (tailwind)
     //   Wind from 0deg (North), firing at 270deg (West):
     //     relative = -270deg = +90deg -> sin(90deg) = +1 -> full crosswind (right)
-    // ========================================================================
+    // ============================================================================
 
     float relativeAngle = windDirectionDeg - gimbalAzimuthDeg;
 
@@ -258,14 +258,14 @@ void FireControlComputation::computeMotionLead(
     float currentHFOV, currentVFOV;
     getActiveCameraFOV(input, currentHFOV, currentVFOV);
 
-    // ========================================================================
+    // ============================================================================
     // USE DEFAULT RANGE FOR MOTION LEAD WHEN LRF IS CLEARED
-    // ========================================================================
+    // ============================================================================
     // Motion lead requires TOF which depends on range. When LRF is cleared:
     // - Use DEFAULT_LAC_RANGE (500m) for TOF calculation
     // - This allows CCIP to work for close-range moving targets
     // - Status will show "Lag" to indicate estimated range is used
-    // ========================================================================
+    // ============================================================================
     float leadCalculationRange = (targetRange > VALID_RANGE_THRESHOLD)
                                      ? targetRange
                                      : DEFAULT_LAC_RANGE;

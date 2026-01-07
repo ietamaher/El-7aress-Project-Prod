@@ -3,27 +3,20 @@
 #include "models/domain/systemstatemodel.h"
 #include <QDebug>
 
-SystemStatusController::SystemStatusController(QObject *parent)
-    : QObject(parent)
-    , m_viewModel(nullptr)
-    , m_stateModel(nullptr)
-{
-}
+SystemStatusController::SystemStatusController(QObject* parent)
+    : QObject(parent), m_viewModel(nullptr), m_stateModel(nullptr) {}
 
-void SystemStatusController::setViewModel(SystemStatusViewModel* viewModel)
-{
+void SystemStatusController::setViewModel(SystemStatusViewModel* viewModel) {
     m_viewModel = viewModel;
     qDebug() << "SystemStatusController: ViewModel set";
 }
 
-void SystemStatusController::setStateModel(SystemStateModel* stateModel)
-{
+void SystemStatusController::setStateModel(SystemStateModel* stateModel) {
     m_stateModel = stateModel;
     qDebug() << "SystemStatusController: StateModel set";
 }
 
-void SystemStatusController::initialize()
-{
+void SystemStatusController::initialize() {
     qDebug() << "SystemStatusController::initialize()";
     Q_ASSERT(m_viewModel);
     Q_ASSERT(m_stateModel);
@@ -40,17 +33,17 @@ void SystemStatusController::initialize()
 
     // Connect to SystemStateModel updates
     // ✅ LATENCY FIX: Queued connection prevents status aggregation from blocking device I/O
-    connect(m_stateModel, &SystemStateModel::dataChanged,
-            this, &SystemStatusController::onSystemStateChanged,
+    connect(m_stateModel, &SystemStateModel::dataChanged, this,
+            &SystemStatusController::onSystemStateChanged,
             Qt::QueuedConnection);  // Non-blocking signal delivery
 
     // Connect ViewModel actions to controller
-    connect(m_viewModel, &SystemStatusViewModel::clearAlarmsRequested,
-            this, &SystemStatusController::onClearAlarmsRequested);
+    connect(m_viewModel, &SystemStatusViewModel::clearAlarmsRequested, this,
+            &SystemStatusController::onClearAlarmsRequested);
 
     // Connect to color style changes
-    connect(m_stateModel, &SystemStateModel::colorStyleChanged,
-            this, &SystemStatusController::onColorStyleChanged);
+    connect(m_stateModel, &SystemStateModel::colorStyleChanged, this,
+            &SystemStatusController::onColorStyleChanged);
 
     // Set initial color
     const auto& data = m_stateModel->data();
@@ -59,118 +52,64 @@ void SystemStatusController::initialize()
     qDebug() << "SystemStatusController initialized successfully";
 }
 
-void SystemStatusController::show()
-{
+void SystemStatusController::show() {
     if (m_viewModel) {
         m_viewModel->setVisible(true);
     }
 }
 
-void SystemStatusController::hide()
-{
+void SystemStatusController::hide() {
     if (m_viewModel) {
         m_viewModel->setVisible(false);
     }
 }
 
-void SystemStatusController::onSystemStateChanged(const SystemStateData& data)
-{
-    if (!m_viewModel) return;
+void SystemStatusController::onSystemStateChanged(const SystemStateData& data) {
+    if (!m_viewModel)
+        return;
 
     // Update Azimuth Servo
-    m_viewModel->updateAzimuthServo(
-        data.azServoConnected,
-        data.gimbalAz,
-        data.azRpm,
-        data.azTorque,
-        data.azMotorTemp,
-        data.azDriverTemp,
-        data.azFault
-        );
+    m_viewModel->updateAzimuthServo(data.azServoConnected, data.gimbalAz, data.azRpm, data.azTorque,
+                                    data.azMotorTemp, data.azDriverTemp, data.azFault);
 
     // Update Elevation Servo
-    m_viewModel->updateElevationServo(
-        data.elServoConnected,
-        data.gimbalEl,
-        data.elRpm,
-        data.elTorque,
-        data.elMotorTemp,
-        data.elDriverTemp,
-        data.elFault
-        );
+    m_viewModel->updateElevationServo(data.elServoConnected, data.gimbalEl, data.elRpm,
+                                      data.elTorque, data.elMotorTemp, data.elDriverTemp,
+                                      data.elFault);
 
     // Update IMU
-    m_viewModel->updateImu(
-        data.imuConnected,
-        data.imuRollDeg,
-        data.imuPitchDeg,
-        data.imuYawDeg,
-        data.imuTemp
-        );
+    m_viewModel->updateImu(data.imuConnected, data.imuRollDeg, data.imuPitchDeg, data.imuYawDeg,
+                           data.imuTemp);
 
     // Update LRF
-    m_viewModel->updateLrf(
-        data.lrfConnected,
-        data.lrfDistance,
-        data.lrfTemp,
-        data.lrfLaserCount,
-        data.lrfSystemStatus,
-        data.lrfFault,
-        data.lrfNoEcho,
-        data.lrfLaserNotOut,
-        data.lrfOverTemp
-        );
+    m_viewModel->updateLrf(data.lrfConnected, data.lrfDistance, data.lrfTemp, data.lrfLaserCount,
+                           data.lrfSystemStatus, data.lrfFault, data.lrfNoEcho, data.lrfLaserNotOut,
+                           data.lrfOverTemp);
 
     // Update Day Camera
     m_viewModel->updateDayCamera(
-        data.dayCameraConnected,
-        data.activeCameraIsDay,
-        data.dayCurrentHFOV,
-        data.dayZoomPosition,
-        data.dayFocusPosition,
-        data.dayAutofocusEnabled,
-        data.dayCameraError,
-        data.dayCameraStatus 
-        );
+        data.dayCameraConnected, data.activeCameraIsDay, data.dayCurrentHFOV, data.dayZoomPosition,
+        data.dayFocusPosition, data.dayAutofocusEnabled, data.dayCameraError, data.dayCameraStatus);
 
     // Update Night Camera
     m_viewModel->updateNightCamera(
-        data.nightCameraConnected,
-        !data.activeCameraIsDay,
-        data.nightCurrentHFOV,
-        data.nightDigitalZoomLevel,
-        data.nightFfcInProgress,
-        data.nightCameraError,
-        data.nightCameraStatus,
-        data.nightVideoMode,
-        data.nightFpaTemperature
-        );
+        data.nightCameraConnected, !data.activeCameraIsDay, data.nightCurrentHFOV,
+        data.nightDigitalZoomLevel, data.nightFfcInProgress, data.nightCameraError,
+        data.nightCameraStatus, data.nightVideoMode, data.nightFpaTemperature);
 
     // Update PLC Status
-    m_viewModel->updatePlcStatus(
-        data.plc21Connected,
-        data.plc42Connected,
-        data.stationEnabled,
-        data.gunArmed
-        );
+    m_viewModel->updatePlcStatus(data.plc21Connected, data.plc42Connected, data.stationEnabled,
+                                 data.gunArmed);
 
     m_viewModel->updateServoActuator(
-        data.actuatorConnected,
-        data.actuatorPosition,
-        data.actuatorVelocity,
-        data.actuatorTemp,
-        data.actuatorBusVoltage,
-        data.actuatorTorque,
-        data.actuatorMotorOff,
-        data.actuatorFault
-    );
+        data.actuatorConnected, data.actuatorPosition, data.actuatorVelocity, data.actuatorTemp,
+        data.actuatorBusVoltage, data.actuatorTorque, data.actuatorMotorOff, data.actuatorFault);
     // Update Alarms
     QStringList alarms = buildAlarmsList(data);
     m_viewModel->updateAlarms(alarms);
 }
 
-QStringList SystemStatusController::buildAlarmsList(const SystemStateData& data)
-{
+QStringList SystemStatusController::buildAlarmsList(const SystemStateData& data) {
     QStringList alarms;
 
     // Emergency Stop
@@ -258,38 +197,32 @@ QStringList SystemStatusController::buildAlarmsList(const SystemStateData& data)
     return alarms;
 }
 
-void SystemStatusController::onClearAlarmsRequested()
-{
+void SystemStatusController::onClearAlarmsRequested() {
     qDebug() << "SystemStatusController: Clear alarms requested";
     emit clearAlarmsSignal();
 }
 
-void SystemStatusController::onSelectButtonPressed()
-{
+void SystemStatusController::onSelectButtonPressed() {
     hide();
     emit returnToMainMenu();
     emit menuFinished();
 }
 
-void SystemStatusController::onBackButtonPressed()
-{
+void SystemStatusController::onBackButtonPressed() {
     hide();
     emit returnToMainMenu();
     emit menuFinished();
 }
 
-void SystemStatusController::onUpButtonPressed()
-{
+void SystemStatusController::onUpButtonPressed() {
     // Could be used for scrolling through sections if needed
 }
 
-void SystemStatusController::onDownButtonPressed()
-{
+void SystemStatusController::onDownButtonPressed() {
     // Could be used for scrolling through sections if needed
 }
 
-void SystemStatusController::onColorStyleChanged(const QColor& color)
-{
+void SystemStatusController::onColorStyleChanged(const QColor& color) {
     if (m_viewModel) {
         m_viewModel->setAccentColor(color);
     }

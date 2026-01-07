@@ -22,30 +22,25 @@
 // CONSTRUCTOR & DESTRUCTOR
 // ============================================================================
 
-WeaponController::WeaponController(SystemStateModel* stateModel,
-                                   ServoActuatorDevice* servoActuator,
-                                   Plc42Device* plc42,
-                                   SafetyInterlock* safetyInterlock,
+WeaponController::WeaponController(SystemStateModel* stateModel, ServoActuatorDevice* servoActuator,
+                                   Plc42Device* plc42, SafetyInterlock* safetyInterlock,
                                    QObject* parent)
-    : QObject(parent)
-    , m_stateModel(stateModel)
-    , m_servoActuator(servoActuator)
-    , m_plc42(plc42)
-    , m_safetyInterlock(safetyInterlock)
-{
+    : QObject(parent), m_stateModel(stateModel), m_servoActuator(servoActuator), m_plc42(plc42),
+      m_safetyInterlock(safetyInterlock) {
     // Log SafetyInterlock status
     if (m_safetyInterlock) {
         qInfo() << "[WeaponController] SafetyInterlock connected - centralized safety active";
     } else {
-        qWarning() << "[WeaponController] WARNING: SafetyInterlock is null - using legacy safety checks";
+        qWarning()
+            << "[WeaponController] WARNING: SafetyInterlock is null - using legacy safety checks";
     }
-    // ========================================================================
+    // ============================================================================
     // SYSTEM STATE MONITORING
-    // ========================================================================
+    // ============================================================================
     if (m_stateModel) {
-        // ========================================================================
+        // ============================================================================
         // BUG FIX #4: MOTOR CONTROL LATENCY - USE DIRECT CONNECTION
-        // ========================================================================
+        // ============================================================================
         // ORIGINAL: Qt::QueuedConnection caused event queue saturation over time
         // - Servo updates at 110Hz → ~1200 events/min from state changes
         // - Queued events accumulate if processing takes longer than arrival rate
@@ -56,69 +51,69 @@ WeaponController::WeaponController(SystemStateModel* stateModel,
         // - Safe because SystemStateModel, WeaponController, and GimbalController
         //   all run in the main thread (required by QModbus)
         // - Ballistics calculations are fast (<1ms), won't block I/O
-        // ========================================================================
-        connect(m_stateModel, &SystemStateModel::dataChanged,
-                this, &WeaponController::onSystemStateChanged,
+        // ============================================================================
+        connect(m_stateModel, &SystemStateModel::dataChanged, this,
+                &WeaponController::onSystemStateChanged,
                 Qt::DirectConnection);  // ✅ FIX: Changed from QueuedConnection
 
         // Initialize GUI state for charging
         m_stateModel->setChargeCycleInProgress(false);
     }
 
-    // ========================================================================
+    // ============================================================================
     // CHARGING STATE MACHINE SETUP (Cocking Actuator FSM - Extracted)
-    // ========================================================================
+    // ============================================================================
     m_chargingStateMachine = new ChargingStateMachine(m_servoActuator, m_safetyInterlock, this);
 
     // Connect ChargingStateMachine signals
-    connect(m_chargingStateMachine, &ChargingStateMachine::stateChanged,
-            this, &WeaponController::onChargingStateChanged);
-    connect(m_chargingStateMachine, &ChargingStateMachine::cycleStarted,
-            this, &WeaponController::onChargeCycleStarted);
-    connect(m_chargingStateMachine, &ChargingStateMachine::cycleCompleted,
-            this, &WeaponController::onChargeCycleCompleted);
-    connect(m_chargingStateMachine, &ChargingStateMachine::cycleFaulted,
-            this, &WeaponController::onChargeCycleFaulted);
-    connect(m_chargingStateMachine, &ChargingStateMachine::lockoutExpired,
-            this, &WeaponController::onChargeLockoutExpired);
+    connect(m_chargingStateMachine, &ChargingStateMachine::stateChanged, this,
+            &WeaponController::onChargingStateChanged);
+    connect(m_chargingStateMachine, &ChargingStateMachine::cycleStarted, this,
+            &WeaponController::onChargeCycleStarted);
+    connect(m_chargingStateMachine, &ChargingStateMachine::cycleCompleted, this,
+            &WeaponController::onChargeCycleCompleted);
+    connect(m_chargingStateMachine, &ChargingStateMachine::cycleFaulted, this,
+            &WeaponController::onChargeCycleFaulted);
+    connect(m_chargingStateMachine, &ChargingStateMachine::lockoutExpired, this,
+            &WeaponController::onChargeLockoutExpired);
 
     // Connect actuator control signals from ChargingStateMachine
-    connect(m_chargingStateMachine, &ChargingStateMachine::requestActuatorMove,
-            this, &WeaponController::onActuatorMoveRequested);
-    connect(m_chargingStateMachine, &ChargingStateMachine::requestActuatorStop,
-            this, &WeaponController::onActuatorStopRequested);
+    connect(m_chargingStateMachine, &ChargingStateMachine::requestActuatorMove, this,
+            &WeaponController::onActuatorMoveRequested);
+    connect(m_chargingStateMachine, &ChargingStateMachine::requestActuatorStop, this,
+            &WeaponController::onActuatorStopRequested);
 
     // Connect actuator position feedback for FSM state transitions
     if (m_servoActuator) {
-        connect(m_servoActuator, &ServoActuatorDevice::actuatorDataChanged,
-                this, &WeaponController::onActuatorFeedback,
-                Qt::QueuedConnection);
+        connect(m_servoActuator, &ServoActuatorDevice::actuatorDataChanged, this,
+                &WeaponController::onActuatorFeedback, Qt::QueuedConnection);
 
-        // ====================================================================
+        // ============================================================================
         // CROWS M153: AUTOMATIC RETRACTION ON STARTUP
-        // ====================================================================
+        // ============================================================================
         // Per CROWS spec: "Upon powering on the CROWS, the system automatically
         // retracts the Cocking Actuator if it is extended to ensure it does not
         // interfere with firing."
         // Use a single-shot timer to perform this after construction completes
         QTimer::singleShot(500, this, [this]() {
             if (m_stateModel) {
-                m_chargingStateMachine->performStartupRetraction(m_stateModel->data().actuatorPosition);
+                m_chargingStateMachine->performStartupRetraction(
+                    m_stateModel->data().actuatorPosition);
             }
         });
     }
 
-    // ========================================================================
+    // ============================================================================
     // Log installed weapon type
-    // ========================================================================
+    // ============================================================================
     if (m_stateModel) {
         WeaponType weaponType = m_stateModel->data().installedWeaponType;
         qInfo() << "[WeaponController] Installed weapon type:" << static_cast<int>(weaponType);
     }
 
-    // ========================================================================
+    // ============================================================================
     // BALLISTICS: Professional LUT System (Kongsberg/Rafael approach)
-    // ========================================================================
+    // ============================================================================
     m_ballisticsProcessor = new BallisticsProcessorLUT();
 
     bool lutLoaded = m_ballisticsProcessor->loadAmmunitionTable(":/ballistic/tables/m2_ball.json");
@@ -132,8 +127,7 @@ WeaponController::WeaponController(SystemStateModel* stateModel,
     }
 }
 
-WeaponController::~WeaponController()
-{
+WeaponController::~WeaponController() {
     // Clean up ballistics processor
     delete m_ballisticsProcessor;
     m_ballisticsProcessor = nullptr;
@@ -145,18 +139,17 @@ WeaponController::~WeaponController()
 // STATE CHANGE HANDLER
 // ============================================================================
 
-void WeaponController::onSystemStateChanged(const SystemStateData& newData)
-{
-    // ========================================================================
+void WeaponController::onSystemStateChanged(const SystemStateData& newData) {
+    // ============================================================================
     // PRIORITY 1: EMERGENCY STOP HANDLING (HIGHEST PRIORITY - MIL-STD SAFETY)
-    // ========================================================================
+    // ============================================================================
     // When emergency stop is activated:
     // 1. IMMEDIATELY stop solenoid (cease fire)
     // 2. IMMEDIATELY stop servo actuator (halt charging mechanism)
     // 3. Block ALL weapon operations until emergency is cleared
     //
     // This is a fail-safe mechanism - we stop FIRST, ask questions later.
-    // ========================================================================
+    // ============================================================================
     if (newData.emergencyStopActive != m_oldState.emergencyStopActive) {
         if (newData.emergencyStopActive && !m_wasInEmergencyStop) {
             // EMERGENCY STOP ACTIVATED - IMMEDIATE HALT
@@ -194,16 +187,17 @@ void WeaponController::onSystemStateChanged(const SystemStateData& newData)
             qInfo() << "║     WEAPON CONTROLLER: EMERGENCY STOP CLEARED                ║";
             qInfo() << "╚══════════════════════════════════════════════════════════════╝";
 
-            // ================================================================
+            // ============================================================================
             // SAFE RECOVERY: AUTO-RETRACT ACTUATOR TO HOME POSITION
-            // ================================================================
+            // ============================================================================
             // Per CROWS spec: Actuator must be retracted before firing allowed
             // If actuator was stopped mid-cycle, it could be extended and
             // interfere with firing. We automatically retract to safe position.
             // Delegated to ChargingStateMachine via resetFault().
-            // ================================================================
+            // ============================================================================
             if (m_servoActuator && m_chargingStateMachine->currentState() == ChargingState::Fault) {
-                qInfo() << "[WeaponController] SAFE RECOVERY: Initiating safe retraction via ChargingStateMachine";
+                qInfo() << "[WeaponController] SAFE RECOVERY: Initiating safe retraction via "
+                           "ChargingStateMachine";
                 m_chargingStateMachine->resetFault();
             }
 
@@ -222,10 +216,10 @@ void WeaponController::onSystemStateChanged(const SystemStateData& newData)
         return;
     }
 
-    // ========================================================================
+    // ============================================================================
     // CHARGING CYCLE (delegated to ChargingStateMachine)
     // Detect button PRESS/RELEASE and forward to FSM
-    // ========================================================================
+    // ============================================================================
     if (newData.chargeButtonPressed && !m_oldState.chargeButtonPressed) {
         // Button was just pressed - try to start cycle
         onOperatorRequestCharge();
@@ -236,16 +230,16 @@ void WeaponController::onSystemStateChanged(const SystemStateData& newData)
         m_chargingStateMachine->onButtonReleased();
     }
 
-    // ========================================================================
+    // ============================================================================
     // DEAD MAN SWITCH
-    // ========================================================================
+    // ============================================================================
     if (m_oldState.deadManSwitchActive != newData.deadManSwitchActive) {
         m_fireReady = newData.deadManSwitchActive;
     }
 
-    // ========================================================================
+    // ============================================================================
     // FIRE MODE SELECTION
-    // ========================================================================
+    // ============================================================================
     if (m_oldState.fireMode != newData.fireMode) {
         switch (newData.fireMode) {
         case FireMode::SingleShot:
@@ -263,17 +257,16 @@ void WeaponController::onSystemStateChanged(const SystemStateData& newData)
         }
     }
 
-    // ========================================================================
+    // ============================================================================
     // SYSTEM ARMING CONDITIONS
-    // ========================================================================
-    m_systemArmed = (newData.opMode == OperationalMode::Engagement &&
-                     newData.gunArmed &&
-                     m_fireReady);
+    // ============================================================================
+    m_systemArmed =
+        (newData.opMode == OperationalMode::Engagement && newData.gunArmed && m_fireReady);
 
-    // ========================================================================
+    // ============================================================================
     // BALLISTICS RECALCULATION TRIGGERS
     // Detect changes in any parameter that affects lead angle calculation
-    // ========================================================================
+    // ============================================================================
     bool ballisticsInputsChanged = false;
 
     // LAC activation/deactivation
@@ -289,8 +282,10 @@ void WeaponController::onSystemStateChanged(const SystemStateData& newData)
         ballisticsInputsChanged = true;
         QString oldCam = m_oldState.activeCameraIsDay ? "DAY" : "NIGHT";
         QString newCam = newData.activeCameraIsDay ? "DAY" : "NIGHT";
-        float oldFov = m_oldState.activeCameraIsDay ? m_oldState.dayCurrentHFOV : m_oldState.nightCurrentHFOV;
-        float newFov = newData.activeCameraIsDay ? newData.dayCurrentHFOV : newData.nightCurrentHFOV;
+        float oldFov =
+            m_oldState.activeCameraIsDay ? m_oldState.dayCurrentHFOV : m_oldState.nightCurrentHFOV;
+        float newFov =
+            newData.activeCameraIsDay ? newData.dayCurrentHFOV : newData.nightCurrentHFOV;
         qDebug() << "[WeaponController] CAMERA SWITCHED:" << oldCam << "->" << newCam
                  << "| Active FOV:" << oldFov << "deg ->" << newFov << "deg";
     }
@@ -304,16 +299,16 @@ void WeaponController::onSystemStateChanged(const SystemStateData& newData)
 
         if (!qFuzzyCompare(m_oldState.dayCurrentHFOV, newData.dayCurrentHFOV) ||
             !qFuzzyCompare(m_oldState.dayCurrentVFOV, newData.dayCurrentVFOV)) {
-            qDebug() << "[WeaponController] Day camera ZOOM:"
-                     << m_oldState.dayCurrentHFOV << "x" << m_oldState.dayCurrentVFOV << "deg ->"
-                     << newData.dayCurrentHFOV << "x" << newData.dayCurrentVFOV << "deg"
+            qDebug() << "[WeaponController] Day camera ZOOM:" << m_oldState.dayCurrentHFOV << "x"
+                     << m_oldState.dayCurrentVFOV << "deg ->" << newData.dayCurrentHFOV << "x"
+                     << newData.dayCurrentVFOV << "deg"
                      << (newData.activeCameraIsDay ? "(ACTIVE)" : "(inactive)");
         }
         if (!qFuzzyCompare(m_oldState.nightCurrentHFOV, newData.nightCurrentHFOV) ||
             !qFuzzyCompare(m_oldState.nightCurrentVFOV, newData.nightCurrentVFOV)) {
-            qDebug() << "[WeaponController] Night camera ZOOM:"
-                     << m_oldState.nightCurrentHFOV << "x" << m_oldState.nightCurrentVFOV << "deg ->"
-                     << newData.nightCurrentHFOV << "x" << newData.nightCurrentVFOV << "deg"
+            qDebug() << "[WeaponController] Night camera ZOOM:" << m_oldState.nightCurrentHFOV
+                     << "x" << m_oldState.nightCurrentVFOV << "deg ->" << newData.nightCurrentHFOV
+                     << "x" << newData.nightCurrentVFOV << "deg"
                      << (!newData.activeCameraIsDay ? "(ACTIVE)" : "(inactive)");
         }
     }
@@ -334,20 +329,22 @@ void WeaponController::onSystemStateChanged(const SystemStateData& newData)
                  << "El:" << m_oldState.currentTargetAngularRateEl << "->" << newData.currentTargetAngularRateEl;*/
     }
 
-    // ========================================================================
+    // ============================================================================
     // ENVIRONMENTAL PARAMETERS CHANGE DETECTION
     // If environmental parameters changed and LAC is active, immediately
     // update ballistics processor with new conditions.
-    // ========================================================================
+    // ============================================================================
     bool environmentalParamsChanged = false;
 
-    if (!qFuzzyCompare(m_oldState.environmentalTemperatureCelsius, newData.environmentalTemperatureCelsius) ||
-        !qFuzzyCompare(m_oldState.environmentalAltitudeMeters, newData.environmentalAltitudeMeters) ||
+    if (!qFuzzyCompare(m_oldState.environmentalTemperatureCelsius,
+                       newData.environmentalTemperatureCelsius) ||
+        !qFuzzyCompare(m_oldState.environmentalAltitudeMeters,
+                       newData.environmentalAltitudeMeters) ||
         m_oldState.environmentalAppliedToBallistics != newData.environmentalAppliedToBallistics) {
         environmentalParamsChanged = true;
 
-        qDebug() << "[WeaponController] Environmental parameters changed:"
-                 << "Temp:" << m_oldState.environmentalTemperatureCelsius << "->"
+        qDebug() << "[WeaponController] Environmental parameters changed:" << "Temp:"
+                 << m_oldState.environmentalTemperatureCelsius << "->"
                  << newData.environmentalTemperatureCelsius
                  << "Alt:" << m_oldState.environmentalAltitudeMeters << "->"
                  << newData.environmentalAltitudeMeters
@@ -355,10 +352,10 @@ void WeaponController::onSystemStateChanged(const SystemStateData& newData)
                  << newData.environmentalAppliedToBallistics;
     }
 
-    // ========================================================================
+    // ============================================================================
     // WINDAGE PARAMETERS CHANGE DETECTION
     // Windage (wind direction + speed) affects crosswind calculation.
-    // ========================================================================
+    // ============================================================================
     bool windageParamsChanged = false;
 
     if (!qFuzzyCompare(m_oldState.windageSpeedKnots, newData.windageSpeedKnots) ||
@@ -366,21 +363,21 @@ void WeaponController::onSystemStateChanged(const SystemStateData& newData)
         m_oldState.windageAppliedToBallistics != newData.windageAppliedToBallistics) {
         windageParamsChanged = true;
 
-        qDebug() << "[WeaponController] Windage parameters changed:"
-                 << "Speed:" << m_oldState.windageSpeedKnots << "->" << newData.windageSpeedKnots << "knots"
+        qDebug() << "[WeaponController] Windage parameters changed:" << "Speed:"
+                 << m_oldState.windageSpeedKnots << "->" << newData.windageSpeedKnots << "knots"
                  << "Direction:" << m_oldState.windageDirectionDegrees << "->"
                  << newData.windageDirectionDegrees << "deg"
                  << "Applied:" << m_oldState.windageAppliedToBallistics << "->"
                  << newData.windageAppliedToBallistics;
     }
 
-    // ========================================================================
+    // ============================================================================
     // ABSOLUTE BEARING CHANGE DETECTION (Critical for Windage!)
     // When absolute gimbal bearing changes, the crosswind component changes
     // even if wind conditions remain constant (crosswind = wind x sin(angle))
     // Absolute bearing = IMU yaw (vehicle heading) + Station azimuth
     // NOTE: azimuthDirection is uint16_t, use direct comparison not qFuzzyCompare
-    // ========================================================================
+    // ============================================================================
 
     // Check station azimuth change
     if (m_oldState.azimuthDirection != newData.azimuthDirection) {
@@ -396,13 +393,13 @@ void WeaponController::onSystemStateChanged(const SystemStateData& newData)
         }
     }
 
-    // ========================================================================
+    // ============================================================================
     // TRIGGER BALLISTICS RECALCULATION
     // Recalculate if LAC is active AND any input changed
     // OR if LAC was just activated/deactivated
     // OR if windage parameters changed
     // OR if absolute bearing changed with windage active
-    // ========================================================================
+    // ============================================================================
     if (ballisticsInputsChanged || environmentalParamsChanged || windageParamsChanged) {
         updateFireControlSolution();
     }
@@ -414,8 +411,7 @@ void WeaponController::onSystemStateChanged(const SystemStateData& newData)
 // CHARGING CYCLE - OPERATOR ENTRY POINT (delegated to ChargingStateMachine)
 // ============================================================================
 
-void WeaponController::onOperatorRequestCharge()
-{
+void WeaponController::onOperatorRequestCharge() {
     // Get current weapon type from state model
     WeaponType weaponType = WeaponType::Unknown;
     if (m_stateModel) {
@@ -431,16 +427,14 @@ void WeaponController::onOperatorRequestCharge()
 // CHARGINGSTATEMACHINE SIGNAL HANDLERS
 // ============================================================================
 
-void WeaponController::onChargingStateChanged(ChargingState newState)
-{
+void WeaponController::onChargingStateChanged(ChargingState newState) {
     // Update SystemStateModel for OSD display
     if (m_stateModel) {
         m_stateModel->setChargingState(newState);
     }
 }
 
-void WeaponController::onChargeCycleStarted()
-{
+void WeaponController::onChargeCycleStarted() {
     // Notify GUI
     if (m_stateModel) {
         m_stateModel->setChargeCycleInProgress(true);
@@ -454,8 +448,7 @@ void WeaponController::onChargeCycleStarted()
     emit chargeCycleStarted();
 }
 
-void WeaponController::onChargeCycleCompleted()
-{
+void WeaponController::onChargeCycleCompleted() {
     // Notify GUI - weapon is now charged
     if (m_stateModel) {
         m_stateModel->setChargeCycleInProgress(false);
@@ -469,8 +462,7 @@ void WeaponController::onChargeCycleCompleted()
     emit chargeCycleCompleted();
 }
 
-void WeaponController::onChargeCycleFaulted()
-{
+void WeaponController::onChargeCycleFaulted() {
     // Notify GUI
     if (m_stateModel) {
         m_stateModel->setChargeCycleInProgress(false);
@@ -478,8 +470,7 @@ void WeaponController::onChargeCycleFaulted()
     emit chargeCycleFaulted();
 }
 
-void WeaponController::onChargeLockoutExpired()
-{
+void WeaponController::onChargeLockoutExpired() {
     // Update state model for GUI feedback
     if (m_stateModel) {
         SystemStateData data = m_stateModel->data();
@@ -488,22 +479,19 @@ void WeaponController::onChargeLockoutExpired()
     }
 }
 
-void WeaponController::onActuatorFeedback(const ServoActuatorData& data)
-{
+void WeaponController::onActuatorFeedback(const ServoActuatorData& data) {
     // Forward feedback to ChargingStateMachine for FSM processing
     m_chargingStateMachine->processActuatorFeedback(data);
 }
 
-void WeaponController::onActuatorMoveRequested(double positionMM)
-{
+void WeaponController::onActuatorMoveRequested(double positionMM) {
     // Execute actuator move request from ChargingStateMachine
     if (m_servoActuator) {
         m_servoActuator->moveToPosition(positionMM);
     }
 }
 
-void WeaponController::onActuatorStopRequested()
-{
+void WeaponController::onActuatorStopRequested() {
     // Execute actuator stop request from ChargingStateMachine
     if (m_servoActuator) {
         m_servoActuator->stopMove();
@@ -514,8 +502,7 @@ void WeaponController::onActuatorStopRequested()
 // CHARGING FAULT RESET
 // ============================================================================
 
-void WeaponController::resetChargingFault()
-{
+void WeaponController::resetChargingFault() {
     // Delegate to ChargingStateMachine for fault reset
     // This will attempt safe retraction if currently in Fault state
     if (m_chargingStateMachine) {
@@ -527,22 +514,19 @@ void WeaponController::resetChargingFault()
 // WEAPON CONTROL
 // ============================================================================
 
-void WeaponController::armWeapon(bool enable)
-{
+void WeaponController::armWeapon(bool enable) {
     Q_UNUSED(enable)
     // Implementation placeholder
 }
 
-void WeaponController::fireSingleShot()
-{
+void WeaponController::fireSingleShot() {
     // Implementation placeholder
 }
 
-void WeaponController::startFiring()
-{
-    // ========================================================================
+void WeaponController::startFiring() {
+    // ============================================================================
     // SAFETY INTERLOCK INTEGRATION (Phase 2 - Centralized Fire Authorization)
-    // ========================================================================
+    // ============================================================================
     // ALL fire authorization now routes through SafetyInterlock.canFire().
     // This ensures:
     // 1. Single authority for fire decisions (auditable)
@@ -559,7 +543,7 @@ void WeaponController::startFiring()
     // - Not in no-fire zone
     // - Not actively charging
     // - No charge fault/jam
-    // ========================================================================
+    // ============================================================================
     if (m_safetyInterlock) {
         SafetyDenialReason reason;
         if (!m_safetyInterlock->canFire(&reason)) {
@@ -571,10 +555,11 @@ void WeaponController::startFiring()
             return;
         }
     } else {
-        // ====================================================================
+        // ============================================================================
         // LEGACY FALLBACK (if SafetyInterlock not available)
-        // ====================================================================
-        qWarning() << "[WeaponController] WARNING: SafetyInterlock unavailable - using legacy checks";
+        // ============================================================================
+        qWarning()
+            << "[WeaponController] WARNING: SafetyInterlock unavailable - using legacy checks";
 
         if (m_stateModel && m_stateModel->data().emergencyStopActive) {
             qCritical() << "[WeaponController] FIRE BLOCKED: EMERGENCY STOP ACTIVE";
@@ -600,12 +585,12 @@ void WeaponController::startFiring()
         }
     }
 
-    // ========================================================================
+    // ============================================================================
     // FIRE COMMAND AUTHORIZED - ACTIVATE SOLENOID
-    // ========================================================================
+    // ============================================================================
     // All safety checks passed via SafetyInterlock.canFire()
     // Proceed with fire command
-    // ========================================================================
+    // ============================================================================
 
     // Future: CROWS/SARP LAC WORKFLOW (commented out for Phase 2)
     // Per CROWS doctrine: Lead is only applied when fire trigger is pressed.
@@ -635,45 +620,44 @@ void WeaponController::startFiring()
     m_plc42->setSolenoidState(1);
 }
 
-void WeaponController::stopFiring()
-{
+void WeaponController::stopFiring() {
     m_plc42->setSolenoidState(0);
 
     if (m_stateModel) {
         SystemStateData s = m_stateModel->data();
 
-        // =========================================================================
+        // ============================================================================
         // CROWS/SARP LAC WORKFLOW - DISENGAGE LAC ON TRIGGER RELEASE
-        // =========================================================================
+        // ============================================================================
         // Per CROWS doctrine: Lead is only applied during firing.
         // When fire trigger is released, disengage LAC (but keep it armed).
-        // =========================================================================
-       /*if (s.lacArmed && s.leadAngleCompensationActive) {
+        // ============================================================================
+        /*if (s.lacArmed && s.leadAngleCompensationActive) {
             qInfo() << "[CROWS] TRIGGER RELEASED - Disengaging LAC (lead removed, LAC still armed)";
             m_stateModel->disengageLAC();
         }*/
 
-        // =========================================================================
+        // ============================================================================
         // CROWS: Exit dead reckoning when firing stops
-        // =========================================================================
+        // ============================================================================
         // Per CROWS doctrine: Firing terminates tracking completely.
         // After firing, operator must re-acquire target to resume tracking.
-        // =========================================================================
+        // ============================================================================
         /*if (s.deadReckoningActive) {
             m_stateModel->exitDeadReckoning();
         }*/
     }
 }
 
-void WeaponController::unloadWeapon()
-{
+void WeaponController::unloadWeapon() {
     // Legacy API - stop firing first
     stopFiring();
 
     // Unload is essentially a safe retraction
     // Only allow when idle
     if (m_chargingStateMachine->currentState() == ChargingState::Idle) {
-        qDebug() << "[WeaponController] Unload requested - initiating retraction via ChargingStateMachine";
+        qDebug() << "[WeaponController] Unload requested - initiating retraction via "
+                    "ChargingStateMachine";
         // Use performStartupRetraction which handles safe retraction
         if (m_stateModel) {
             m_chargingStateMachine->performStartupRetraction(m_stateModel->data().actuatorPosition);
@@ -687,32 +671,29 @@ void WeaponController::unloadWeapon()
 // FIRE CONTROL SOLUTION
 // ============================================================================
 
-void WeaponController::updateFireControlSolution()
-{
-    if (!m_stateModel) return;
+void WeaponController::updateFireControlSolution() {
+    if (!m_stateModel)
+        return;
 
     SystemStateData sData = m_stateModel->data();
 
-    // ========================================================================
+    // ============================================================================
     // BUILD INPUT FOR FIRE CONTROL COMPUTATION
-    // ========================================================================
+    // ============================================================================
     FireControlInput input = buildFireControlInput(sData);
 
-    // ========================================================================
+    // ============================================================================
     // COMPUTE FIRE CONTROL SOLUTION (delegated to FireControlComputation)
-    // ========================================================================
+    // ============================================================================
     // This is now a pure computation with no side effects.
     // All state updates happen in applyFireControlResult().
-    // ========================================================================
-    FireControlResult result = m_fireControlComputation.compute(
-        input,
-        m_ballisticsProcessor,
-        m_previousFireControlResult
-    );
+    // ============================================================================
+    FireControlResult result =
+        m_fireControlComputation.compute(input, m_ballisticsProcessor, m_previousFireControlResult);
 
-    // ========================================================================
+    // ============================================================================
     // APPLY RESULT TO STATE MODEL
-    // ========================================================================
+    // ============================================================================
     applyFireControlResult(result, sData);
 
     // Store result for next iteration's change detection
@@ -723,8 +704,7 @@ void WeaponController::updateFireControlSolution()
 // FIRE CONTROL HELPER METHODS
 // ============================================================================
 
-FireControlInput WeaponController::buildFireControlInput(const SystemStateData& data) const
-{
+FireControlInput WeaponController::buildFireControlInput(const SystemStateData& data) const {
     FireControlInput input;
 
     // Range data
@@ -761,23 +741,22 @@ FireControlInput WeaponController::buildFireControlInput(const SystemStateData& 
     return input;
 }
 
-void WeaponController::applyFireControlResult(const FireControlResult& result, SystemStateData& data)
-{
+void WeaponController::applyFireControlResult(const FireControlResult& result,
+                                              SystemStateData& data) {
     bool needsUpdate = false;
 
-    // ========================================================================
+    // ============================================================================
     // APPLY CROSSWIND
-    // ========================================================================
+    // ============================================================================
     if (result.crosswindChanged) {
         data.calculatedCrosswindMS = result.calculatedCrosswindMS;
         needsUpdate = true;
     }
 
-    // ========================================================================
+    // ============================================================================
     // APPLY BALLISTIC DROP
-    // ========================================================================
-    if (result.dropChanged ||
-        data.ballisticDropOffsetAz != result.ballisticDropOffsetAz ||
+    // ============================================================================
+    if (result.dropChanged || data.ballisticDropOffsetAz != result.ballisticDropOffsetAz ||
         data.ballisticDropOffsetEl != result.ballisticDropOffsetEl ||
         data.ballisticDropActive != result.ballisticDropActive) {
 
@@ -787,11 +766,10 @@ void WeaponController::applyFireControlResult(const FireControlResult& result, S
         needsUpdate = true;
     }
 
-    // ========================================================================
+    // ============================================================================
     // APPLY MOTION LEAD
-    // ========================================================================
-    if (result.leadChanged ||
-        data.motionLeadOffsetAz != result.motionLeadOffsetAz ||
+    // ============================================================================
+    if (result.leadChanged || data.motionLeadOffsetAz != result.motionLeadOffsetAz ||
         data.motionLeadOffsetEl != result.motionLeadOffsetEl ||
         data.currentLeadAngleStatus != result.currentLeadAngleStatus) {
 
@@ -805,9 +783,9 @@ void WeaponController::applyFireControlResult(const FireControlResult& result, S
         needsUpdate = true;
     }
 
-    // ========================================================================
+    // ============================================================================
     // UPDATE STATE MODEL IF ANY VALUES CHANGED
-    // ========================================================================
+    // ============================================================================
     if (needsUpdate) {
         m_stateModel->updateData(data);
     }

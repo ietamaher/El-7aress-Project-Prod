@@ -13,9 +13,9 @@ class OsdViewModel : public QObject
 {
     Q_OBJECT
 
-    // ========================================================================
+    // ============================================================================
     // CORE DISPLAY PROPERTIES
-    // ========================================================================
+    // ============================================================================
     Q_PROPERTY(QColor accentColor READ accentColor NOTIFY accentColorChanged)
     Q_PROPERTY(QString modeText READ modeText NOTIFY modeTextChanged)
     Q_PROPERTY(QString motionText READ motionText NOTIFY motionTextChanged)
@@ -23,9 +23,9 @@ class OsdViewModel : public QObject
     Q_PROPERTY(QString cameraText READ cameraText NOTIFY cameraTextChanged)
     Q_PROPERTY(QString speedText READ speedText NOTIFY speedTextChanged)
 
-    // ========================================================================
+    // ============================================================================
     // GIMBAL POSITION
-    // ========================================================================
+    // ============================================================================
     Q_PROPERTY(float azimuth READ azimuth NOTIFY azimuthChanged)
     Q_PROPERTY(float elevation READ elevation NOTIFY elevationChanged)
 
@@ -34,9 +34,9 @@ class OsdViewModel : public QObject
     Q_PROPERTY(double vehicleRoll READ vehicleRoll NOTIFY vehicleRollChanged)
     Q_PROPERTY(double vehiclePitch READ vehiclePitch NOTIFY vehiclePitchChanged)
     Q_PROPERTY(double imuTemperature READ imuTemperature NOTIFY imuTemperatureChanged)
-    // ========================================================================
+    // ============================================================================
     // SYSTEM STATUS
-    // ========================================================================
+    // ============================================================================
     Q_PROPERTY(QString statusText READ statusText NOTIFY statusTextChanged)
     Q_PROPERTY(QString rateText READ rateText NOTIFY rateTextChanged)
     Q_PROPERTY(QString lrfText READ lrfText NOTIFY lrfTextChanged)
@@ -46,9 +46,9 @@ class OsdViewModel : public QObject
     Q_PROPERTY(QString homingText READ homingText NOTIFY homingTextChanged)
     Q_PROPERTY(bool homingVisible READ homingVisible NOTIFY homingVisibleChanged)
 
-    // ========================================================================
+    // ============================================================================
     // TRACKING
-    // ========================================================================
+    // ============================================================================
     Q_PROPERTY(QRectF trackingBox READ trackingBox NOTIFY trackingBoxChanged)
     Q_PROPERTY(bool trackingBoxVisible READ trackingBoxVisible NOTIFY trackingBoxVisibleChanged)
     Q_PROPERTY(QColor trackingBoxColor READ trackingBoxColor NOTIFY trackingBoxColorChanged)
@@ -61,25 +61,25 @@ class OsdViewModel : public QObject
     Q_PROPERTY(QRectF acquisitionBox READ acquisitionBox NOTIFY acquisitionBoxChanged)
     Q_PROPERTY(bool acquisitionBoxVisible READ acquisitionBoxVisible NOTIFY acquisitionBoxVisibleChanged)
 
-    // ========================================================================
+    // ============================================================================
     // RETICLE (Main aiming reticle - with zeroing only)
-    // ========================================================================
+    // ============================================================================
     Q_PROPERTY(int reticleType READ reticleType NOTIFY reticleTypeChanged)
     Q_PROPERTY(float reticleOffsetX READ reticleOffsetX NOTIFY reticleOffsetChanged)
     Q_PROPERTY(float reticleOffsetY READ reticleOffsetY NOTIFY reticleOffsetChanged)
     Q_PROPERTY(float currentFov READ currentFov NOTIFY currentFovChanged)
 
-    // ========================================================================
+    // ============================================================================
     // CCIP PIPPER (Impact prediction with lead angle)
-    // ========================================================================
+    // ============================================================================
     Q_PROPERTY(float ccipX READ ccipX NOTIFY ccipPositionChanged)
     Q_PROPERTY(float ccipY READ ccipY NOTIFY ccipPositionChanged)
     Q_PROPERTY(bool ccipVisible READ ccipVisible NOTIFY ccipVisibleChanged)
     Q_PROPERTY(QString ccipStatus READ ccipStatus NOTIFY ccipStatusChanged)
 
-    // ========================================================================
+    // ============================================================================
     // PROCEDURES (Zeroing, Environment)
-    // ========================================================================
+    // ============================================================================
     Q_PROPERTY(QString zeroingText READ zeroingText NOTIFY zeroingTextChanged)
     Q_PROPERTY(bool zeroingVisible READ zeroingVisible NOTIFY zeroingVisibleChanged)
 
@@ -93,15 +93,15 @@ class OsdViewModel : public QObject
     Q_PROPERTY(bool detectionVisible READ detectionVisible NOTIFY detectionVisibleChanged)
     Q_PROPERTY(QVariantList detectionBoxes READ detectionBoxes NOTIFY detectionBoxesChanged)
 
-    // ========================================================================
+    // ============================================================================
     // ZONE WARNINGS
-    // ========================================================================
+    // ============================================================================
     Q_PROPERTY(QString zoneWarningText READ zoneWarningText NOTIFY zoneWarningTextChanged)
     Q_PROPERTY(bool zoneWarningVisible READ zoneWarningVisible NOTIFY zoneWarningVisibleChanged)
 
-    // ========================================================================
+    // ============================================================================
     // LEAD ANGLE & SCAN
-    // ========================================================================
+    // ============================================================================
     Q_PROPERTY(QString leadAngleText READ leadAngleText NOTIFY leadAngleTextChanged)
     Q_PROPERTY(bool leadAngleVisible READ leadAngleVisible NOTIFY leadAngleVisibleChanged)
 
@@ -112,18 +112,18 @@ class OsdViewModel : public QObject
     Q_PROPERTY(float rangeMeters READ rangeMeters NOTIFY rangeMetersChanged)
     Q_PROPERTY(float confidenceLevel READ confidenceLevel NOTIFY confidenceLevelChanged)
 
-    // ========================================================================
+    // ============================================================================
     // STARTUP SEQUENCE & ERROR MESSAGES
-    // ========================================================================
+    // ============================================================================
     Q_PROPERTY(QString startupMessageText READ startupMessageText NOTIFY startupMessageTextChanged)
     Q_PROPERTY(bool startupMessageVisible READ startupMessageVisible NOTIFY startupMessageVisibleChanged)
 
     Q_PROPERTY(QString errorMessageText READ errorMessageText NOTIFY errorMessageTextChanged)
     Q_PROPERTY(bool errorMessageVisible READ errorMessageVisible NOTIFY errorMessageVisibleChanged)
 
-    // ========================================================================
+    // ============================================================================
     // DEVICE HEALTH STATUS (for warning displays)
-    // ========================================================================
+    // ============================================================================
     Q_PROPERTY(bool dayCameraConnected READ dayCameraConnected NOTIFY dayCameraConnectedChanged)
     Q_PROPERTY(bool dayCameraError READ dayCameraError NOTIFY dayCameraErrorChanged)
     Q_PROPERTY(bool nightCameraConnected READ nightCameraConnected NOTIFY nightCameraConnectedChanged)
@@ -148,17 +148,17 @@ class OsdViewModel : public QObject
 
     Q_PROPERTY(bool ammunitionLevel READ ammunitionLevel NOTIFY ammunitionLevelChanged)
 
-    // ========================================================================
+    // ============================================================================
     // AMMUNITION FEED STATUS (for OSD display with animation)
     // States: 0=Idle, 1=Extending, 2=Retracting, 3=Fault
-    // ========================================================================
+    // ============================================================================
     Q_PROPERTY(int ammoFeedState READ ammoFeedState NOTIFY ammoFeedStateChanged)
     Q_PROPERTY(bool ammoFeedCycleInProgress READ ammoFeedCycleInProgress NOTIFY ammoFeedCycleInProgressChanged)
     Q_PROPERTY(bool ammoLoaded READ ammoLoaded NOTIFY ammoLoadedChanged)
 
-    // ========================================================================
+    // ============================================================================
     // SERVO DRIVER DEBUG DATA (for diagnostic OSD overlay)
-    // ========================================================================
+    // ============================================================================
     Q_PROPERTY(bool servoDebugVisible READ servoDebugVisible NOTIFY servoDebugVisibleChanged)
     // Azimuth Servo
     Q_PROPERTY(float azMotorTemp READ azMotorTemp NOTIFY servoDebugChanged)
@@ -171,9 +171,9 @@ class OsdViewModel : public QObject
     Q_PROPERTY(float elRpm READ elRpm NOTIFY servoDebugChanged)
     Q_PROPERTY(float elTorque READ elTorque NOTIFY servoDebugChanged)
 
-    // ========================================================================
+    // ============================================================================
     // GYROSTABILIZATION DEBUG DATA (for diagnostic OSD overlay)
-    // ========================================================================
+    // ============================================================================
     Q_PROPERTY(bool stabDebugVisible READ stabDebugVisible NOTIFY stabDebugVisibleChanged)
     Q_PROPERTY(bool stabDebugActive READ stabDebugActive NOTIFY stabDebugChanged)
     Q_PROPERTY(bool stabDebugWorldHeld READ stabDebugWorldHeld NOTIFY stabDebugChanged)
@@ -550,8 +550,8 @@ private:
     double m_vehicleRoll = 0.0;       // Roll angle
     double m_vehiclePitch = 0.0;      // Pitch angle
     double m_imuTemperature = 0.0;    // IMU temp
-    
-    
+
+
     QString m_statusText;
     QString m_rateText;
     QString m_lrfText;

@@ -100,10 +100,10 @@ void ServoActuatorDevice::shutdown() {
 
 void ServoActuatorDevice::onFrameReceived(const QByteArray& frame) {
     if (!m_parser) return;
-    
+
     // Parse frame into messages
     auto messages = m_parser->parse(frame);
-    
+
     // Process each message
     for (const auto& msg : messages) {
         if (msg) {
@@ -116,7 +116,7 @@ void ServoActuatorDevice::processMessage(const Message& message) {
     if (message.typeId() == Message::Type::ServoActuatorDataType) {
         auto const* dataMsg = static_cast<const ServoActuatorDataMessage*>(&message);
         mergePartialData(dataMsg->data());
-        
+
     } else if (message.typeId() == Message::Type::ServoActuatorAckType) {
         auto const* ackMsg = static_cast<const ServoActuatorAckMessage*>(&message);
 
@@ -132,7 +132,7 @@ void ServoActuatorDevice::processMessage(const Message& message) {
             QTimer::singleShot(INTER_COMMAND_DELAY_MS, this,
                                &ServoActuatorDevice::processNextCommand);
         }
-        
+
     } else if (message.typeId() == Message::Type::ServoActuatorNackType) {
         auto const* nackMsg = static_cast<const ServoActuatorNackMessage*>(&message);
 
@@ -148,7 +148,7 @@ void ServoActuatorDevice::processMessage(const Message& message) {
             QTimer::singleShot(INTER_COMMAND_DELAY_MS, this,
                                &ServoActuatorDevice::processNextCommand);
         }
-        
+
     } else if (message.typeId() == Message::Type::ServoActuatorCriticalFaultType) {
         auto const* faultMsg = static_cast<const ServoActuatorCriticalFaultMessage*>(&message);
         emit criticalFaultOccurred(faultMsg->criticalFaults());

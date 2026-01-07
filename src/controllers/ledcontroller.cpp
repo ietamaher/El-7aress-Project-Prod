@@ -1,20 +1,18 @@
 #include "ledcontroller.h"
 #include "hardware/devices/plc21device.h"
 
-LedController::LedController(SystemStateModel* systemStateModel, Plc21Device* plc21Device, QObject *parent)
-    : QObject(parent),
-    m_systemStateModel(systemStateModel),
-    m_plc21Device(plc21Device)
-{
+LedController::LedController(SystemStateModel* systemStateModel, Plc21Device* plc21Device,
+                             QObject* parent)
+    : QObject(parent), m_systemStateModel(systemStateModel), m_plc21Device(plc21Device) {
     // ✅ LATENCY FIX: Queued connection prevents LED updates from blocking device I/O
-    connect(m_systemStateModel, &SystemStateModel::dataChanged,
-            this, &LedController::onSystemStateChanged,
+    connect(m_systemStateModel, &SystemStateModel::dataChanged, this,
+            &LedController::onSystemStateChanged,
             Qt::QueuedConnection);  // Non-blocking signal delivery
 }
 
-void LedController::onSystemStateChanged(const SystemStateData &data)
-{
-    if (!m_plc21Device) return;
+void LedController::onSystemStateChanged(const SystemStateData& data) {
+    if (!m_plc21Device)
+        return;
 
     // Only write to PLC21 when LED states actually change
     // This prevents flooding PLC21 with redundant Modbus writes (was 80 writes/sec!)
@@ -40,4 +38,3 @@ void LedController::onSystemStateChanged(const SystemStateData &data)
         m_plc21Device->setPanelBacklight(panelBacklight);
     }
 }
-

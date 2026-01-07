@@ -12,20 +12,16 @@
 // ============================================================================
 
 HomingController::HomingController(Plc42Device* plc42, QObject* parent)
-    : QObject(parent)
-    , m_plc42(plc42)
-{
+    : QObject(parent), m_plc42(plc42) {
     // Initialize timeout timer
     m_timeoutTimer = new QTimer(this);
     m_timeoutTimer->setSingleShot(true);
-    connect(m_timeoutTimer, &QTimer::timeout,
-            this, &HomingController::onHomingTimeout);
+    connect(m_timeoutTimer, &QTimer::timeout, this, &HomingController::onHomingTimeout);
 
     qDebug() << "[HomingController] Initialized (timeout:" << m_homingTimeoutMs << "ms)";
 }
 
-HomingController::~HomingController()
-{
+HomingController::~HomingController() {
     if (m_timeoutTimer) {
         m_timeoutTimer->stop();
     }
@@ -36,9 +32,7 @@ HomingController::~HomingController()
 // PUBLIC INTERFACE
 // ============================================================================
 
-void HomingController::process(const SystemStateData& newData,
-                                const SystemStateData& oldData)
-{
+void HomingController::process(const SystemStateData& newData, const SystemStateData& oldData) {
     switch (newData.homingState) {
     case HomingState::Idle:
         processIdle(newData, oldData);
@@ -78,8 +72,7 @@ void HomingController::process(const SystemStateData& newData,
     }
 }
 
-void HomingController::start(MotionMode currentMotionMode)
-{
+void HomingController::start(MotionMode currentMotionMode) {
     if (m_currentHomingState != HomingState::Idle) {
         qWarning() << "[HomingController] Cannot start - homing already in progress";
         return;
@@ -99,8 +92,7 @@ void HomingController::start(MotionMode currentMotionMode)
     emit homingStarted();
 }
 
-void HomingController::abort(const QString& reason)
-{
+void HomingController::abort(const QString& reason) {
     if (m_currentHomingState == HomingState::Idle) {
         qDebug() << "[HomingController] Nothing to abort - not homing";
         return;
@@ -123,14 +115,12 @@ void HomingController::abort(const QString& reason)
     emit homingAborted(reason);
 }
 
-bool HomingController::isHomingInProgress() const
-{
+bool HomingController::isHomingInProgress() const {
     return (m_currentHomingState == HomingState::Requested ||
             m_currentHomingState == HomingState::InProgress);
 }
 
-void HomingController::setHomingTimeout(int timeoutMs)
-{
+void HomingController::setHomingTimeout(int timeoutMs) {
     m_homingTimeoutMs = timeoutMs;
     qDebug() << "[HomingController] Timeout set to" << timeoutMs << "ms";
 }
@@ -139,10 +129,8 @@ void HomingController::setHomingTimeout(int timeoutMs)
 // PRIVATE SLOTS
 // ============================================================================
 
-void HomingController::onHomingTimeout()
-{
-    qCritical() << "[HomingController] HOME sequence TIMEOUT after"
-                << m_homingTimeoutMs << "ms";
+void HomingController::onHomingTimeout() {
+    qCritical() << "[HomingController] HOME sequence TIMEOUT after" << m_homingTimeoutMs << "ms";
     qCritical() << "[HomingController] HOME-END signal was NOT received";
     qCritical() << "[HomingController] Possible causes:";
     qCritical() << "[HomingController]   - Wiring issue (I0_7 not connected)";
@@ -156,9 +144,7 @@ void HomingController::onHomingTimeout()
 // FSM PROCESSING
 // ============================================================================
 
-void HomingController::processIdle(const SystemStateData& newData,
-                                    const SystemStateData& oldData)
-{
+void HomingController::processIdle(const SystemStateData& newData, const SystemStateData& oldData) {
     // Check for home button press (rising edge detection)
     if (newData.gotoHomePosition && !oldData.gotoHomePosition) {
         qInfo() << "[HomingController] Home button pressed";
@@ -166,8 +152,7 @@ void HomingController::processIdle(const SystemStateData& newData,
     }
 }
 
-void HomingController::processRequested(const SystemStateData& newData)
-{
+void HomingController::processRequested(const SystemStateData& newData) {
     // This state is processed once to send HOME command
     if (m_currentHomingState == HomingState::Requested) {
         // Already processed - wait for state model to transition
@@ -200,8 +185,7 @@ void HomingController::processRequested(const SystemStateData& newData)
 }
 
 void HomingController::processInProgress(const SystemStateData& newData,
-                                          const SystemStateData& oldData)
-{
+                                         const SystemStateData& oldData) {
     // Check if BOTH HOME-END signals received
     bool azHomeDone = newData.azimuthHomeComplete;
     bool elHomeDone = newData.elevationHomeComplete;
@@ -228,8 +212,7 @@ void HomingController::processInProgress(const SystemStateData& newData,
     }
 }
 
-void HomingController::completeHoming()
-{
+void HomingController::completeHoming() {
     // Stop timeout timer
     m_timeoutTimer->stop();
 
@@ -247,8 +230,7 @@ void HomingController::completeHoming()
     emit homingCompleted();
 }
 
-void HomingController::failHoming(const QString& reason)
-{
+void HomingController::failHoming(const QString& reason) {
     // Stop timeout timer
     m_timeoutTimer->stop();
 
@@ -261,16 +243,14 @@ void HomingController::failHoming(const QString& reason)
     emit homingFailed(reason);
 }
 
-void HomingController::returnToManualMode()
-{
+void HomingController::returnToManualMode() {
     if (m_plc42) {
         m_plc42->setManualMode();  // Clears HOME output (Q1_1 LOW)
         qDebug() << "[HomingController] PLC42 returned to MANUAL mode";
     }
 }
 
-void HomingController::transitionTo(HomingState newState)
-{
+void HomingController::transitionTo(HomingState newState) {
     if (m_currentHomingState == newState) {
         return;
     }
@@ -278,8 +258,7 @@ void HomingController::transitionTo(HomingState newState)
     HomingState oldState = m_currentHomingState;
     m_currentHomingState = newState;
 
-    qDebug() << "[HomingController] State transition:"
-             << static_cast<int>(oldState) << "->"
+    qDebug() << "[HomingController] State transition:" << static_cast<int>(oldState) << "->"
              << static_cast<int>(newState);
 
     emit homingStateChanged(newState);

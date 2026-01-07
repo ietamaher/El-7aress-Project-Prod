@@ -38,75 +38,69 @@ class PresetHomePositionViewModel;
 class SystemStateModel;
 class Plc42Device;
 
-class PresetHomePositionController : public QObject
-{
+class PresetHomePositionController : public QObject {
     Q_OBJECT
 
 public:
     explicit PresetHomePositionController(QObject* parent = nullptr);
 
-    // ========================================================================
+    // ============================================================================
     // Initialization
-    // ========================================================================
+    // ============================================================================
     void initialize();
     void setViewModel(PresetHomePositionViewModel* viewModel);
     void setStateModel(SystemStateModel* stateModel);
     void setPlc42Device(Plc42Device* plc42);
 
 public slots:
-    // ========================================================================
+    // ============================================================================
     // UI Control
-    // ========================================================================
+    // ============================================================================
     void show();
     void hide();
 
-    // ========================================================================
+    // ============================================================================
     // Button Handlers
-    // ========================================================================
+    // ============================================================================
     void onSelectButtonPressed();
     void onBackButtonPressed();
     void onUpButtonPressed();
     void onDownButtonPressed();
 
 signals:
-    // ========================================================================
+    // ============================================================================
     // Navigation Signals
-    // ========================================================================
+    // ============================================================================
     void procedureFinished();
     void returnToMainMenu();
 
 private slots:
-    // ========================================================================
+    // ============================================================================
     // State Handlers
-    // ========================================================================
+    // ============================================================================
     void onColorStyleChanged(const QColor& color);
     void onPositionUpdate();
 
 private:
-    // ========================================================================
+    // ============================================================================
     // State Machine
-    // ========================================================================
-    enum class ProcedureState {
-        Idle,
-        Instruct_PositionGimbal,
-        Confirm_SetHome,
-        Completed
-    };
+    // ============================================================================
+    enum class ProcedureState { Idle, Instruct_PositionGimbal, Confirm_SetHome, Completed };
 
     void transitionToState(ProcedureState newState);
     void updateUI();
     void executeSetPresetHome();
 
-    // ========================================================================
+    // ============================================================================
     // Dependencies
-    // ========================================================================
+    // ============================================================================
     PresetHomePositionViewModel* m_viewModel = nullptr;
     SystemStateModel* m_stateModel = nullptr;
     Plc42Device* m_plc42 = nullptr;
 
-    // ========================================================================
+    // ============================================================================
     // State
-    // ========================================================================
+    // ============================================================================
     ProcedureState m_currentState = ProcedureState::Idle;
 
     // Timer for updating position display during procedure
@@ -114,4 +108,4 @@ private:
     static constexpr int POSITION_UPDATE_INTERVAL_MS = 100;
 };
 
-#endif // PRESETHOMEPOSITIONCONTROLLER_H
+#endif  // PRESETHOMEPOSITIONCONTROLLER_H

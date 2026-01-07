@@ -15,51 +15,43 @@
 // CONSTRUCTOR
 // ============================================================================
 
-ColorMenuController::ColorMenuController(QObject* parent)
-    : QObject(parent)
-{
-}
+ColorMenuController::ColorMenuController(QObject* parent) : QObject(parent) {}
 
 // ============================================================================
 // INITIALIZATION
 // ============================================================================
 
-void ColorMenuController::initialize()
-{
+void ColorMenuController::initialize() {
     Q_ASSERT(m_viewModel);
     Q_ASSERT(m_osdViewModel);
     Q_ASSERT(m_stateModel);
 
-    connect(m_viewModel, &MenuViewModel::optionSelected,
-            this, &ColorMenuController::handleMenuOptionSelected);
+    connect(m_viewModel, &MenuViewModel::optionSelected, this,
+            &ColorMenuController::handleMenuOptionSelected);
 
     // Connect to currentIndexChanged to update preview as user navigates
     // Use Qt::QueuedConnection to prevent re-entrant calls during hardware button processing
-    connect(m_viewModel, &MenuViewModel::currentIndexChanged,
-            this, [this]() {
-                handleCurrentItemChanged(m_viewModel->currentIndex());
-            }, Qt::QueuedConnection);
+    connect(
+        m_viewModel, &MenuViewModel::currentIndexChanged, this,
+        [this]() { handleCurrentItemChanged(m_viewModel->currentIndex()); }, Qt::QueuedConnection);
 
-    connect(m_stateModel, &SystemStateModel::colorStyleChanged,
-            this, &ColorMenuController::onColorStyleChanged);
+    connect(m_stateModel, &SystemStateModel::colorStyleChanged, this,
+            &ColorMenuController::onColorStyleChanged);
 
     // Set initial color
     const auto& data = m_stateModel->data();
     m_viewModel->setAccentColor(data.colorStyle);
 }
 
-void ColorMenuController::setViewModel(MenuViewModel* viewModel)
-{
+void ColorMenuController::setViewModel(MenuViewModel* viewModel) {
     m_viewModel = viewModel;
 }
 
-void ColorMenuController::setOsdViewModel(OsdViewModel* osdViewModel)
-{
+void ColorMenuController::setOsdViewModel(OsdViewModel* osdViewModel) {
     m_osdViewModel = osdViewModel;
 }
 
-void ColorMenuController::setStateModel(SystemStateModel* stateModel)
-{
+void ColorMenuController::setStateModel(SystemStateModel* stateModel) {
     m_stateModel = stateModel;
 }
 
@@ -67,8 +59,7 @@ void ColorMenuController::setStateModel(SystemStateModel* stateModel)
 // CONVERSION HELPERS
 // ============================================================================
 
-QStringList ColorMenuController::buildColorOptions() const
-{
+QStringList ColorMenuController::buildColorOptions() const {
     QStringList options;
 
     for (int i = 0; i < static_cast<int>(ColorStyle::COUNT); ++i) {
@@ -79,31 +70,39 @@ QStringList ColorMenuController::buildColorOptions() const
     return options;
 }
 
-QString ColorMenuController::colorStyleToString(ColorStyle style) const
-{
+QString ColorMenuController::colorStyleToString(ColorStyle style) const {
     switch (style) {
-    case ColorStyle::Green: return "Green";
-    case ColorStyle::Red:   return "Red";
-    case ColorStyle::White: return "White";
-    default:                return "Green";
+    case ColorStyle::Green:
+        return "Green";
+    case ColorStyle::Red:
+        return "Red";
+    case ColorStyle::White:
+        return "White";
+    default:
+        return "Green";
     }
 }
 
-ColorStyle ColorMenuController::stringToColorStyle(const QString& str) const
-{
-    if (str == "Green") return ColorStyle::Green;
-    if (str == "Red")   return ColorStyle::Red;
-    if (str == "White") return ColorStyle::White;
+ColorStyle ColorMenuController::stringToColorStyle(const QString& str) const {
+    if (str == "Green")
+        return ColorStyle::Green;
+    if (str == "Red")
+        return ColorStyle::Red;
+    if (str == "White")
+        return ColorStyle::White;
     return ColorStyle::Green;
 }
 
-QColor ColorMenuController::colorStyleToQColor(ColorStyle style) const
-{
+QColor ColorMenuController::colorStyleToQColor(ColorStyle style) const {
     switch (style) {
-    case ColorStyle::Green: return QColor("#04db85");
-    case ColorStyle::Red:   return QColor("#910000");
-    case ColorStyle::White: return QColor("#FFFFFF");
-    default:                return QColor("#04db85");
+    case ColorStyle::Green:
+        return QColor("#04db85");
+    case ColorStyle::Red:
+        return QColor("#910000");
+    case ColorStyle::White:
+        return QColor("#FFFFFF");
+    default:
+        return QColor("#04db85");
     }
 }
 
@@ -111,8 +110,7 @@ QColor ColorMenuController::colorStyleToQColor(ColorStyle style) const
 // UI CONTROL
 // ============================================================================
 
-void ColorMenuController::show()
-{
+void ColorMenuController::show() {
     // Save current color for potential restore
     const auto& data = m_stateModel->data();
 
@@ -141,8 +139,7 @@ void ColorMenuController::show()
     }
 }
 
-void ColorMenuController::hide()
-{
+void ColorMenuController::hide() {
     m_viewModel->hideMenu();
 }
 
@@ -150,23 +147,19 @@ void ColorMenuController::hide()
 // BUTTON HANDLERS
 // ============================================================================
 
-void ColorMenuController::onUpButtonPressed()
-{
+void ColorMenuController::onUpButtonPressed() {
     m_viewModel->moveSelectionUp();
 }
 
-void ColorMenuController::onDownButtonPressed()
-{
+void ColorMenuController::onDownButtonPressed() {
     m_viewModel->moveSelectionDown();
 }
 
-void ColorMenuController::onSelectButtonPressed()
-{
+void ColorMenuController::onSelectButtonPressed() {
     m_viewModel->selectCurrentItem();
 }
 
-void ColorMenuController::onBackButtonPressed()
-{
+void ColorMenuController::onBackButtonPressed() {
     hide();
     emit returnToMainMenu();
     emit menuFinished();
@@ -176,8 +169,7 @@ void ColorMenuController::onBackButtonPressed()
 // MENU HANDLERS
 // ============================================================================
 
-void ColorMenuController::handleCurrentItemChanged(int index)
-{
+void ColorMenuController::handleCurrentItemChanged(int index) {
     QStringList options = buildColorOptions();
 
     // Exclude "Return ..." option from preview
@@ -192,8 +184,7 @@ void ColorMenuController::handleCurrentItemChanged(int index)
     }
 }
 
-void ColorMenuController::handleMenuOptionSelected(const QString& option)
-{
+void ColorMenuController::handleMenuOptionSelected(const QString& option) {
     qDebug() << "[ColorMenuController] Selected" << option;
 
     hide();
@@ -221,8 +212,7 @@ void ColorMenuController::handleMenuOptionSelected(const QString& option)
 // COLOR STYLE HANDLER
 // ============================================================================
 
-void ColorMenuController::onColorStyleChanged(const QColor& color)
-{
+void ColorMenuController::onColorStyleChanged(const QColor& color) {
     qDebug() << "[ColorMenuController] Color changed to" << color;
 
     if (m_viewModel) {

@@ -5,8 +5,7 @@
 #include <QString>
 #include <QSerialPort>
 
-class DeviceConfiguration
-{
+class DeviceConfiguration {
 public:
     struct VideoConfig {
         int sourceWidth = 1280;
@@ -20,7 +19,7 @@ public:
     struct ImuConfig {
         QString port;
         int baudRate = 115200;
-        int samplingRateHz = 100;  // 3DM-GX3-25 sampling rate (50-1000Hz)
+        int samplingRateHz = 100;            // 3DM-GX3-25 sampling rate (50-1000Hz)
         double tiltWarningThreshold = 30.0;  // Tilt warning threshold in degrees
         // Note: No slaveId - serial binary protocol, not Modbus
     };
@@ -109,22 +108,50 @@ public:
     static bool load(const QString& externalPath = "./config/devices.json");
 
     // Getters - Hardware
-    static const VideoConfig& video() { return m_video; }
-    static const ImuConfig& imu() { return m_imu; }
-    static const LrfConfig& lrf() { return m_lrf; }
-    static const PlcConfig& plc21() { return m_plc21; }
-    static const PlcConfig& plc42() { return m_plc42; }
-    static const ServoConfig& servoAz() { return m_servoAz; }
-    static const ServoConfig& servoEl() { return m_servoEl; }
-    static const ActuatorConfig& actuator() { return m_actuator; }
+    static const VideoConfig& video() {
+        return m_video;
+    }
+    static const ImuConfig& imu() {
+        return m_imu;
+    }
+    static const LrfConfig& lrf() {
+        return m_lrf;
+    }
+    static const PlcConfig& plc21() {
+        return m_plc21;
+    }
+    static const PlcConfig& plc42() {
+        return m_plc42;
+    }
+    static const ServoConfig& servoAz() {
+        return m_servoAz;
+    }
+    static const ServoConfig& servoEl() {
+        return m_servoEl;
+    }
+    static const ActuatorConfig& actuator() {
+        return m_actuator;
+    }
 
     // Getters - System
-    static const SystemConfig& system() { return m_system; }
-    static const GimbalConfig& gimbal() { return m_gimbal; }
-    static const BallisticsConfig& ballistics() { return m_ballistics; }
-    static const UiConfig& ui() { return m_ui; }
-    static const SafetyConfig& safety() { return m_safety; }
-    static const PerformanceConfig& performance() { return m_performance; }
+    static const SystemConfig& system() {
+        return m_system;
+    }
+    static const GimbalConfig& gimbal() {
+        return m_gimbal;
+    }
+    static const BallisticsConfig& ballistics() {
+        return m_ballistics;
+    }
+    static const UiConfig& ui() {
+        return m_ui;
+    }
+    static const SafetyConfig& safety() {
+        return m_safety;
+    }
+    static const PerformanceConfig& performance() {
+        return m_performance;
+    }
 
 private:
     static bool loadFromFile(const QString& filePath);
@@ -146,4 +173,4 @@ private:
     static PerformanceConfig m_performance;
 };
 
-#endif // DEVICECONFIGURATION_H
+#endif  // DEVICECONFIGURATION_H

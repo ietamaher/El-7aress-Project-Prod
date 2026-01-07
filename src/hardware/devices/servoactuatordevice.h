@@ -1,23 +1,23 @@
 /**
  * @file ServoActuatorDevice.h
  * @brief Refactored serial servo actuator device following MIL-STD architecture
- * 
+ *
  * This class represents ONLY the device logic - no transport or protocol handling.
  * Transport and protocol parsing are injected as dependencies.
- * 
+ *
  * @section Architecture
  * - Device: Pure business logic (this class)
  * - Transport: SerialPortTransport (injected)
  * - Parser: ServoActuatorProtocolParser (injected)
  * - Data: ServoActuatorData (in DataTypes.h)
- * 
+ *
  * @section Benefits
  * - 62% code reduction (400 lines → 150 lines)
  * - Thread-safe data access (automatic via TemplatedDevice)
  * - Easy unit testing (mock transport/parser)
  * - Protocol changes isolated to parser
  * - Command queue managed internally
- * 
+ *
  * @author refactored_to_milstd
  * @date 2025-10-28
  * @version 2.0
@@ -37,7 +37,7 @@ class Message;
 
 /**
  * @brief Serial ASCII-based servo actuator device
- * 
+ *
  * Manages a servo actuator via serial ASCII protocol. This class contains
  * ONLY device-specific logic - all transport and protocol handling
  * is delegated to injected dependencies.
@@ -52,7 +52,7 @@ public:
     QString identifier() const { return m_identifier; }
 
     // Dependency injection (called before initialize)
-    Q_INVOKABLE void setDependencies(Transport* transport, 
+    Q_INVOKABLE void setDependencies(Transport* transport,
                                       ServoActuatorProtocolParser* parser);
 
     // IDevice interface (device lifecycle)

@@ -3,41 +3,36 @@
 #include "models/domain/systemstatemodel.h"
 #include <QDebug>
 
-EnvironmentalController::EnvironmentalController(QObject *parent)
-    : QObject(parent)
-    , m_viewModel(nullptr)
-    , m_stateModel(nullptr)
-    , m_currentState(EnvironmentalState::Idle)
-    , m_currentTemperatureEdit(15.0f)
-    , m_currentAltitudeEdit(0.0f)
-{
-}
+EnvironmentalController::EnvironmentalController(QObject* parent)
+    : QObject(parent), m_viewModel(nullptr), m_stateModel(nullptr),
+      m_currentState(EnvironmentalState::Idle), m_currentTemperatureEdit(15.0f),
+      m_currentAltitudeEdit(0.0f) {}
 
-void EnvironmentalController::initialize()
-{
+void EnvironmentalController::initialize() {
     Q_ASSERT(m_viewModel);
     Q_ASSERT(m_stateModel);
 
     // ✅ LATENCY FIX: Use dedicated environmentalModeChanged signal to reduce event queue load
     // Only processes ~5 events per menu session instead of 1,200 events/min from dataChanged
-    connect(m_stateModel, &SystemStateModel::environmentalModeChanged,
-            this, [this](bool active) {
-                // If environmental mode is externally cancelled
-                if (!active && m_currentState != EnvironmentalState::Idle) {
-                    qDebug() << "Environmental mode became inactive externally.";
-                }
-            }, Qt::QueuedConnection);  // Non-blocking signal delivery
+    connect(
+        m_stateModel, &SystemStateModel::environmentalModeChanged, this,
+        [this](bool active) {
+            // If environmental mode is externally cancelled
+            if (!active && m_currentState != EnvironmentalState::Idle) {
+                qDebug() << "Environmental mode became inactive externally.";
+            }
+        },
+        Qt::QueuedConnection);  // Non-blocking signal delivery
 
-    connect(m_stateModel, &SystemStateModel::colorStyleChanged,
-            this, &EnvironmentalController::onColorStyleChanged);
+    connect(m_stateModel, &SystemStateModel::colorStyleChanged, this,
+            &EnvironmentalController::onColorStyleChanged);
 
     // Set initial color
     const auto& data = m_stateModel->data();
     m_viewModel->setAccentColor(data.colorStyle);
 }
 
-void EnvironmentalController::show()
-{
+void EnvironmentalController::show() {
     m_stateModel->startEnvironmentalProcedure();
     const auto& data = m_stateModel->data();
     m_currentTemperatureEdit = data.environmentalTemperatureCelsius;
@@ -47,68 +42,53 @@ void EnvironmentalController::show()
     m_viewModel->setVisible(true);
 }
 
-void EnvironmentalController::hide()
-{
+void EnvironmentalController::hide() {
     m_viewModel->setVisible(false);
     transitionToState(EnvironmentalState::Idle);
 }
 
-void EnvironmentalController::transitionToState(EnvironmentalState newState)
-{
+void EnvironmentalController::transitionToState(EnvironmentalState newState) {
     m_currentState = newState;
     updateUI();
 }
 
-void EnvironmentalController::updateUI()
-{
+void EnvironmentalController::updateUI() {
     switch (m_currentState) {
     case EnvironmentalState::Set_Temperature:
         m_viewModel->setTitle("Environment (1/2): Temperature");
-        m_viewModel->setInstruction(
-            "Set air temperature.\n"
-            "Use UP/DOWN to adjust. Press SELECT to confirm."
-        );
+        m_viewModel->setInstruction("Set air temperature.\n"
+                                    "Use UP/DOWN to adjust. Press SELECT to confirm.");
         m_viewModel->setTemperature(m_currentTemperatureEdit);
         m_viewModel->setShowParameters(true);
         m_viewModel->setParameterLabel(
-            QString("Temperature: %1°C").arg(m_currentTemperatureEdit, 0, 'f', 1)
-        );
+            QString("Temperature: %1°C").arg(m_currentTemperatureEdit, 0, 'f', 1));
         break;
 
     case EnvironmentalState::Set_Altitude:
         m_viewModel->setTitle("Environment (2/2): Altitude");
-        m_viewModel->setInstruction(
-            "Set altitude above sea level.\n"
-            "Use UP/DOWN to adjust. Press SELECT to confirm.\n\n"
-            "NOTE: For wind, use Windage menu."
-        );
+        m_viewModel->setInstruction("Set altitude above sea level.\n"
+                                    "Use UP/DOWN to adjust. Press SELECT to confirm.\n\n"
+                                    "NOTE: For wind, use Windage menu.");
         m_viewModel->setAltitude(m_currentAltitudeEdit);
         m_viewModel->setShowParameters(true);
         m_viewModel->setParameterLabel(
-            QString("Altitude: %1 m").arg(m_currentAltitudeEdit, 0, 'f', 0)
-        );
+            QString("Altitude: %1 m").arg(m_currentAltitudeEdit, 0, 'f', 0));
         break;
 
-    case EnvironmentalState::Completed:
-    {
+    case EnvironmentalState::Completed: {
         const auto& data = m_stateModel->data();
         m_viewModel->setTitle("Environmental Settings Applied");
-        m_viewModel->setInstruction(
-            QString("Ballistic calculations updated.\n\n"
-                    "Temp: %1°C | Alt: %2m\n\n"
-                    "For wind conditions, use Windage menu.\n\n"
-                    "Press SELECT to return.")
-                .arg(data.environmentalTemperatureCelsius, 0, 'f', 1)
-                .arg(data.environmentalAltitudeMeters, 0, 'f', 0)
-        );
+        m_viewModel->setInstruction(QString("Ballistic calculations updated.\n\n"
+                                            "Temp: %1°C | Alt: %2m\n\n"
+                                            "For wind conditions, use Windage menu.\n\n"
+                                            "Press SELECT to return.")
+                                        .arg(data.environmentalTemperatureCelsius, 0, 'f', 1)
+                                        .arg(data.environmentalAltitudeMeters, 0, 'f', 0));
         m_viewModel->setShowParameters(true);
-        m_viewModel->setParameterLabel(
-            QString("Temp: %1°C | Alt: %2m (APPLIED)")
-                .arg(data.environmentalTemperatureCelsius, 0, 'f', 1)
-                .arg(data.environmentalAltitudeMeters, 0, 'f', 0)
-        );
-    }
-        break;
+        m_viewModel->setParameterLabel(QString("Temp: %1°C | Alt: %2m (APPLIED)")
+                                           .arg(data.environmentalTemperatureCelsius, 0, 'f', 1)
+                                           .arg(data.environmentalAltitudeMeters, 0, 'f', 0));
+    } break;
 
     case EnvironmentalState::Idle:
     default:
@@ -119,8 +99,7 @@ void EnvironmentalController::updateUI()
     }
 }
 
-void EnvironmentalController::onSelectButtonPressed()
-{
+void EnvironmentalController::onSelectButtonPressed() {
     switch (m_currentState) {
     case EnvironmentalState::Set_Temperature:
         m_stateModel->setEnvironmentalTemperature(m_currentTemperatureEdit);
@@ -147,12 +126,12 @@ void EnvironmentalController::onSelectButtonPressed()
     }
 }
 
-void EnvironmentalController::onBackButtonPressed()
-{
+void EnvironmentalController::onBackButtonPressed() {
     SystemStateData currentData = m_stateModel->data();
 
     if (currentData.environmentalModeActive) {
-        if (!currentData.environmentalAppliedToBallistics && m_currentState != EnvironmentalState::Completed) {
+        if (!currentData.environmentalAppliedToBallistics &&
+            m_currentState != EnvironmentalState::Completed) {
             m_stateModel->clearEnvironmental();
         } else {
             SystemStateData updatedData = currentData;
@@ -167,18 +146,19 @@ void EnvironmentalController::onBackButtonPressed()
     emit environmentalFinished();
 }
 
-void EnvironmentalController::onUpButtonPressed()
-{
+void EnvironmentalController::onUpButtonPressed() {
     switch (m_currentState) {
     case EnvironmentalState::Set_Temperature:
         m_currentTemperatureEdit += 1.0f;
-        if (m_currentTemperatureEdit > 60.0f) m_currentTemperatureEdit = 60.0f;
+        if (m_currentTemperatureEdit > 60.0f)
+            m_currentTemperatureEdit = 60.0f;
         updateUI();
         break;
 
     case EnvironmentalState::Set_Altitude:
         m_currentAltitudeEdit += 50.0f;
-        if (m_currentAltitudeEdit > 5000.0f) m_currentAltitudeEdit = 5000.0f;
+        if (m_currentAltitudeEdit > 5000.0f)
+            m_currentAltitudeEdit = 5000.0f;
         updateUI();
         break;
 
@@ -187,18 +167,19 @@ void EnvironmentalController::onUpButtonPressed()
     }
 }
 
-void EnvironmentalController::onDownButtonPressed()
-{
+void EnvironmentalController::onDownButtonPressed() {
     switch (m_currentState) {
     case EnvironmentalState::Set_Temperature:
         m_currentTemperatureEdit -= 1.0f;
-        if (m_currentTemperatureEdit < -40.0f) m_currentTemperatureEdit = -40.0f;
+        if (m_currentTemperatureEdit < -40.0f)
+            m_currentTemperatureEdit = -40.0f;
         updateUI();
         break;
 
     case EnvironmentalState::Set_Altitude:
         m_currentAltitudeEdit -= 50.0f;
-        if (m_currentAltitudeEdit < -100.0f) m_currentAltitudeEdit = -100.0f;
+        if (m_currentAltitudeEdit < -100.0f)
+            m_currentAltitudeEdit = -100.0f;
         updateUI();
         break;
 
@@ -207,18 +188,15 @@ void EnvironmentalController::onDownButtonPressed()
     }
 }
 
-void EnvironmentalController::onColorStyleChanged(const QColor& color)
-{
+void EnvironmentalController::onColorStyleChanged(const QColor& color) {
     qDebug() << "EnvironmentalController: Color changed to" << color;
     m_viewModel->setAccentColor(color);
 }
 
-void EnvironmentalController::setViewModel(EnvironmentalViewModel* viewModel)
-{
+void EnvironmentalController::setViewModel(EnvironmentalViewModel* viewModel) {
     m_viewModel = viewModel;
 }
 
-void EnvironmentalController::setStateModel(SystemStateModel* stateModel)
-{
+void EnvironmentalController::setStateModel(SystemStateModel* stateModel) {
     m_stateModel = stateModel;
 }

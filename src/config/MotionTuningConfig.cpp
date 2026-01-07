@@ -66,9 +66,9 @@ bool MotionTuningConfig::loadFromFile(const QString& filePath)
 
     QJsonObject root = doc.object();
 
-    // ========================================================================
+    // ============================================================================
     // FILTERS
-    // ========================================================================
+    // ============================================================================
     if (root.contains("filters") && root["filters"].isObject()) {
         QJsonObject filters = root["filters"].toObject();
 
@@ -89,9 +89,9 @@ bool MotionTuningConfig::loadFromFile(const QString& filePath)
         }
     }
 
-    // ========================================================================
+    // ============================================================================
     // MOTION LIMITS
-    // ========================================================================
+    // ============================================================================
     if (root.contains("motion") && root["motion"].isObject()) {
         QJsonObject motion = root["motion"].toObject();
         m_instance.motion.maxAccelerationDegS2 = motion.value("maxAccelerationDegS2").toDouble(50.0);
@@ -103,18 +103,18 @@ bool MotionTuningConfig::loadFromFile(const QString& filePath)
         m_instance.motion.updateIntervalS = motion.value("updateIntervalS").toDouble(0.05);
     }
 
-    // ========================================================================
+    // ============================================================================
     // SERVO CONSTANTS
-    // ========================================================================
+    // ============================================================================
     if (root.contains("servo") && root["servo"].isObject()) {
         QJsonObject servo = root["servo"].toObject();
         m_instance.servo.azStepsPerDegree = servo.value("azStepsPerDegree").toDouble(618.0556);
         m_instance.servo.elStepsPerDegree = servo.value("elStepsPerDegree").toDouble(555.5556);
     }
 
-    // ========================================================================
+    // ============================================================================
     // PID GAINS
-    // ========================================================================
+    // ============================================================================
     if (root.contains("pid") && root["pid"].isObject()) {
         QJsonObject pid = root["pid"].toObject();
 
@@ -171,18 +171,18 @@ bool MotionTuningConfig::loadFromFile(const QString& filePath)
         }
     }
 
-    // ========================================================================
+    // ============================================================================
     // ACCELERATION LIMITS
-    // ========================================================================
+    // ============================================================================
     if (root.contains("accelLimits") && root["accelLimits"].isObject()) {
         QJsonObject accelLimits = root["accelLimits"].toObject();
         m_instance.manualLimits.maxAccelHzPerSec =
             accelLimits.value("manualMaxAccelHzPerSec").toDouble(500000.0);
     }
 
-    // ========================================================================
+    // ============================================================================
     // AXIS-SPECIFIC SERVO PARAMETERS (AZD-KX Optimization)
-    // ========================================================================
+    // ============================================================================
     // Defaults optimized for RCWS:
     // - Azimuth: Heavy turret, smooth decel (100000 Hz/s) to avoid overvoltage
     // - Elevation: Light gun, crisp decel (300000 Hz/s) to avoid overshoot

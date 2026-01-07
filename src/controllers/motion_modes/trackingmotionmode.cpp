@@ -43,7 +43,7 @@ TrackingMotionMode::TrackingMotionMode(QObject* parent)
     m_elPid.Kd = 0.4;
     m_elPid.Ki = 0.0;
     m_elPid.maxIntegral = 3.0;
-    
+
     // Initialize measurement velocity tracking
     m_lastGimbalAz = 0.0;
     m_lastGimbalEl = 0.0;
@@ -97,7 +97,7 @@ void TrackingMotionMode::exitMode(GimbalController* controller)
     qDebug() << "[TrackingMotionMode] Exit";
     stopServos(controller);
 }
- 
+
 
 void TrackingMotionMode::onTargetPositionUpdated(
     double imageErrAz_deg,
@@ -130,9 +130,9 @@ void TrackingMotionMode::updateImpl(GimbalController* controller, double dt)
     // NOTE: Base class updateWithSafety() has already verified SafetyInterlock.canMove()
     // This method is only called after general safety checks pass.
 
-    // =========================================================================
+    // ============================================================================
     // 0. MODE-SPECIFIC VALIDATION
-    // =========================================================================
+    // ============================================================================
     if (!controller || !m_targetValid || dt <= 0.0001)
         return;
 
@@ -144,9 +144,9 @@ void TrackingMotionMode::updateImpl(GimbalController* controller, double dt)
         return;
     }
 
-    // =========================================================================
+    // ============================================================================
     // 1. STATE MACHINE & BLENDING (TRACK / FIRE_LEAD / RECENTER)
-    // =========================================================================
+    // ============================================================================
     // Physical constraint: RIGID CRADLE - camera and gun are locked together
     // Consequence: During lead injection, target MUST drift off-center
     //
@@ -154,7 +154,7 @@ void TrackingMotionMode::updateImpl(GimbalController* controller, double dt)
     //   TRACK -> FIRE_LEAD  : when lacArmed && leadAngleCompensationActive
     //   FIRE_LEAD -> RECENTER : when LAC deactivated
     //   RECENTER -> TRACK   : when blend factor reaches 0
-    // =========================================================================
+    // ============================================================================
     LACTrackingState prevState = m_state;
 
     if (data.lacArmed && data.deadReckoningActive) {
@@ -189,15 +189,15 @@ void TrackingMotionMode::updateImpl(GimbalController* controller, double dt)
                  << "blend=" << QString::number(m_lacBlendFactor, 'f', 2);
     }
 
-    // =========================================================================
+    // ============================================================================
     // 2. INPUTS
-    // =========================================================================
+    // ============================================================================
     double errAz = m_imageErrAz;
     double errEl = m_imageErrEl;
 
-    // =========================================================================
+    // ============================================================================
     // 2a. FILTERED DERIVATIVE-ON-ERROR (Noise-resistant damping)
-    // =========================================================================
+    // ============================================================================
     // PROBLEM IDENTIFIED: Raw dErr amplifies tracker noise → command spikes →
     // gimbal jerks → image blur → more tracker noise → positive feedback!
     //
@@ -224,9 +224,9 @@ void TrackingMotionMode::updateImpl(GimbalController* controller, double dt)
     double dErrAz = qBound(-MAX_DERR, m_filteredDErrAz, MAX_DERR);
     double dErrEl = qBound(-MAX_DERR, m_filteredDErrEl, MAX_DERR);
 
-    // =========================================================================
+    // ============================================================================
     // 3. MANUAL NUDGE (POSITION OFFSET - TRACK STATE ONLY)
-    // =========================================================================
+    // ============================================================================
     constexpr double JOYSTICK_DB = 0.15;
     constexpr double MANUAL_GAIN = 4.0;
     constexpr double MAX_MANUAL  = 5.0;
@@ -254,9 +254,9 @@ void TrackingMotionMode::updateImpl(GimbalController* controller, double dt)
         if (std::abs(m_manualElOffset_deg) < ERR_DB) m_manualElOffset_deg = 0.0;
     }
 
-    // =========================================================================
+    // ============================================================================
     // 4. TRACKING CONTROL (P + D + FEEDFORWARD)
-    // =========================================================================
+    // ============================================================================
     // STABILITY FIX: Removed RATE_DB deadband - was causing "Deadband Death Spiral"
     // When rate dropped below 0.8 deg/s, damping vanished → undamped P-control → divergent oscillation
 
@@ -321,18 +321,18 @@ void TrackingMotionMode::updateImpl(GimbalController* controller, double dt)
         m_elPid.Kd * dErrEl +
         ffEl;
 
-    // =========================================================================
+    // ============================================================================
     // 5. LEAD INJECTION (OPEN-LOOP VELOCITY - PHYSICS BASED)
-    // =========================================================================
+    // ============================================================================
     // IMPORTANT FOR RIGID CRADLE:
     // Lead does NOT attempt to re-center the target.
     // It intentionally drives ahead and lets the image drift.
     // This is CORRECT behavior - the gun must aim ahead of the target.
     double lacAzCmd = data.lacLatchedAzRate_dps * LAC_RATE_BIAS_GAIN;
     double lacElCmd = data.lacLatchedElRate_dps * LAC_RATE_BIAS_GAIN;
-    // =========================================================================
+    // ============================================================================
     // 6. FINAL BLEND
-    // =========================================================================
+    // ============================================================================
     // lacBlendFactor = 0.0 : 100% tracking control (target centered)
     // lacBlendFactor = 1.0 : 100% lead injection (target drifts)
     double finalAzCmd =
@@ -343,18 +343,18 @@ void TrackingMotionMode::updateImpl(GimbalController* controller, double dt)
         (1.0 - m_lacBlendFactor) * trackElCmd +
         m_lacBlendFactor         * lacElCmd;
 
-    // =========================================================================
+    // ============================================================================
     // 7. SATURATION & OUTPUT
-    // =========================================================================
+    // ============================================================================
     constexpr double MAX_VEL_AZ = 12.0;
     constexpr double MAX_VEL_EL = 10.0;
 
     finalAzCmd = qBound(-MAX_VEL_AZ, finalAzCmd, MAX_VEL_AZ);
     finalElCmd = qBound(-MAX_VEL_EL, finalElCmd, MAX_VEL_EL);
 
-    // =========================================================================
+    // ============================================================================
     // 8. DEBUG OUTPUT (Enhanced with P+D+FF breakdown)
-    // =========================================================================
+    // ============================================================================
     if (++m_logCycleCounter >= 10) {
         m_logCycleCounter = 0;
 
@@ -378,9 +378,9 @@ void TrackingMotionMode::updateImpl(GimbalController* controller, double dt)
                         << QString::number(finalElCmd, 'f', 2).toStdString().c_str() << ")";
     }
 
-    // =========================================================================
+    // ============================================================================
     // 9. SEND SERVO COMMANDS (sign convention per system requirement)
-    // =========================================================================
+    // ============================================================================
 
     constexpr double CMD_CHANGE_THRESHOLD = 0.05;  // deg/s
     if (std::abs(finalAzCmd - m_lastSentAzCmd) < CMD_CHANGE_THRESHOLD &&

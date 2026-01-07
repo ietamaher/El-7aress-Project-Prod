@@ -12,13 +12,13 @@
 
 int main(int argc, char *argv[])
 {
-    // ========================================================================
+    // ============================================================================
     // CRITICAL: Configure Qt BEFORE QGuiApplication is created
-    // ========================================================================
-    
+    // ============================================================================
+
     // Check if running in production (systemd service)
     bool isProduction = qEnvironmentVariableIsSet("RCWS_PRODUCTION");
-    
+
     if (isProduction || !qEnvironmentVariableIsSet("DISPLAY")) {
         // PRODUCTION MODE: EGLFS
         qputenv("QT_QPA_PLATFORM", "eglfs");
@@ -27,12 +27,12 @@ int main(int argc, char *argv[])
         qputenv("QT_QPA_EGLFS_FORCE_888", "1");
         qInfo() << "EGLFS mode configured";
     }
-    
+
     // Always set these optimizations
     qputenv("QT_QUICK_BACKEND", "rhi");
     qputenv("QSG_RHI_BACKEND", "opengl");
     qputenv("QSG_RENDER_LOOP", "basic");
-    
+
     // NOW create QGuiApplication (reads environment variables above)
     QGuiApplication app(argc, argv);
 
@@ -40,14 +40,14 @@ int main(int argc, char *argv[])
     app.setApplicationName("El Harress RCWS");
     app.setOrganizationName("Tunisian Ministry of Defense");
     app.setApplicationVersion(AppVersion::version());
-    
+
     qInfo() << "QPA Platform:" << app.platformName();
-    
+
     gst_init(&argc, &argv);
-    
-    // ========================================================================
+
+    // ============================================================================
     // CONFIGURATION LOADING
-    // ========================================================================
+    // ============================================================================
 
     QString configDir = QCoreApplication::applicationDirPath() + "/config";
     qInfo() << "Configuration directory:" << QDir(configDir).absolutePath();
@@ -87,29 +87,29 @@ int main(int argc, char *argv[])
     // Initialize system
     SystemController sysCtrl;
     sysCtrl.initializeHardware();
-    
+
     QQmlApplicationEngine engine;
     sysCtrl.initializeQmlSystem(&engine);
-    
+
     // Load QML
     engine.load(QUrl(QStringLiteral("qrc:/qml/views/main.qml")));
     if (engine.rootObjects().isEmpty()) {
         qCritical() << "Failed to load QML!";
         return -1;
     }
-    
+
     // Show window
     QObject *rootObject = engine.rootObjects().first();
     QQuickWindow *window = qobject_cast<QQuickWindow*>(rootObject);
-    
+
     if (window) {
         qInfo() << "Showing window (fullscreen in EGLFS)";
         //window->show();  // In EGLFS, show() is always fullscreen
         window->showFullScreen();
     }
-    
+
     // Start hardware
     sysCtrl.startSystem();
-    
+
     return app.exec();
 }

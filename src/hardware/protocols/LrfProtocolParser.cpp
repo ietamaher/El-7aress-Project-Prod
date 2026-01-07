@@ -3,8 +3,8 @@
 #include "hardware/messages/LrfMessage.h"
 #include <QDebug>
 
-LrfProtocolParser::LrfProtocolParser(QObject* parent) 
-    : ProtocolParser(parent) 
+LrfProtocolParser::LrfProtocolParser(QObject* parent)
+    : ProtocolParser(parent)
 {
 }
 
@@ -74,9 +74,9 @@ bool LrfProtocolParser::verifyChecksum(const QByteArray &packet) const {
 
 MessagePtr LrfProtocolParser::handleResponse(const QByteArray &response) {
     quint8 responseCode = static_cast<quint8>(response.at(2));
-    
+
     LrfData data;
-    
+
     switch (responseCode) {
     case 0x01: { // Self-check response
         quint8 status1 = static_cast<quint8>(response.at(3));
@@ -100,13 +100,13 @@ MessagePtr LrfProtocolParser::handleResponse(const QByteArray &response) {
         data.isOverTemperature = (status0 & 0x20);
        quint16 lrfDistance    = (static_cast<quint8>(response.at(6)) << 8) |
                            static_cast<quint8>(response.at(5)) ;
-        data.lastDistance = lrfDistance / 100;   // it is in centimeters convert to meeters 
+        data.lastDistance = lrfDistance / 100;   // it is in centimeters convert to meeters
         data.isLastRangingValid = (data.lastDistance > 0 && !data.noEcho && !data.isFault);
         data.pulseCount = static_cast<quint8>(response.at(7));
         return std::make_unique<LrfDataMessage>(data);
     }
     case 0x0A: { // Pulse count response
-        quint16 pulse_base = (static_cast<quint8>(response.at(6)) << 8) | 
+        quint16 pulse_base = (static_cast<quint8>(response.at(6)) << 8) |
                             static_cast<quint8>(response.at(5));
         data.laserCount = static_cast<quint32>(pulse_base) * 100;
         return std::make_unique<LrfDataMessage>(data);

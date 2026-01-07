@@ -7,12 +7,11 @@ class SystemStatusViewModel;
 class SystemStateModel;
 class SystemStateData;
 
-class SystemStatusController : public QObject
-{
+class SystemStatusController : public QObject {
     Q_OBJECT
 
 public:
-    explicit SystemStatusController(QObject *parent = nullptr);
+    explicit SystemStatusController(QObject* parent = nullptr);
 
     void setViewModel(SystemStatusViewModel* viewModel);
     void setStateModel(SystemStateModel* stateModel);
@@ -46,4 +45,4 @@ private:
     SystemStateModel* m_stateModel;
 };
 
-#endif // SYSTEMSTATUSCONTROLLER_H
+#endif  // SYSTEMSTATUSCONTROLLER_H

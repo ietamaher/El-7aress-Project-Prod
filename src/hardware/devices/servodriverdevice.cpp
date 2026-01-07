@@ -101,13 +101,13 @@ void ServoDriverDevice::shutdown() {
 
 void ServoDriverDevice::pollTimerTimeout() {
     // Read position data every poll cycle
-    sendReadRequest(ServoDriverRegisters::POSITION_START_ADDR, 
+    sendReadRequest(ServoDriverRegisters::POSITION_START_ADDR,
                     ServoDriverRegisters::POSITION_REG_COUNT);
 }
 
 void ServoDriverDevice::temperatureTimerTimeout() {
     // Read temperature data periodically
-    sendReadRequest(ServoDriverRegisters::TEMPERATURE_START_ADDR, 
+    sendReadRequest(ServoDriverRegisters::TEMPERATURE_START_ADDR,
                     ServoDriverRegisters::TEMPERATURE_REG_COUNT);
 }
 
@@ -117,21 +117,21 @@ void ServoDriverDevice::sendReadRequest(int startAddress, int count) {
     // Cast to ModbusTransport to access Modbus-specific methods
     auto modbusTransport = qobject_cast<QModbusRtuSerialClient*>(
         m_transport->property("client").value<QObject*>());
-    
+
     if (!modbusTransport) return;
 
     QModbusDataUnit readUnit(QModbusDataUnit::HoldingRegisters, startAddress, count);
-    
+
     // Send request via transport (transport handles the Modbus details)
     // Note: In real implementation, ModbusTransport would expose sendReadRequest method
     // For now, we'll use QMetaObject::invokeMethod for loose coupling
-    
+
     QModbusReply* reply = nullptr;
     QMetaObject::invokeMethod(m_transport, "sendReadRequest",
                               Qt::DirectConnection,
                               Q_RETURN_ARG(QModbusReply*, reply),
                               Q_ARG(QModbusDataUnit, readUnit));
-    
+
     if (reply) {
         connect(reply, &QModbusReply::finished, this, [this, reply]() {
             onModbusReplyReady(reply);
@@ -194,7 +194,7 @@ void ServoDriverDevice::processMessage(const Message& message) {
          if (!qFuzzyCompare(partialData.torque + 1.0f, currentData->torque + 1.0f)) {
             newData->torque = partialData.torque;
             dataChanged = true;
-        }       
+        }
 
         if (!qFuzzyCompare(partialData.driverTemp + 1.0f, currentData->driverTemp + 1.0f)) {
             newData->driverTemp = partialData.driverTemp;
@@ -209,7 +209,7 @@ void ServoDriverDevice::processMessage(const Message& message) {
             updateData(newData);
             emit servoDataChanged(*newData);  // Only emit when data actually changed
         }
-        
+
     } else if (message.typeId() == Message::Type::ServoDriverAlarmType) {
         auto const* alarmMsg = static_cast<const ServoDriverAlarmMessage*>(&message);
 
@@ -220,7 +220,7 @@ void ServoDriverDevice::processMessage(const Message& message) {
 
         emit alarmDetected(alarmMsg->alarmCode(), alarmMsg->description());
         emit servoDataChanged(*newData);
-        
+
     } else if (message.typeId() == Message::Type::ServoDriverAlarmHistoryType) {
         auto const* historyMsg = static_cast<const ServoDriverAlarmHistoryMessage*>(&message);
         emit alarmHistoryRead(historyMsg->alarmHistory());
@@ -235,8 +235,8 @@ void ServoDriverDevice::writePosition(float position) {
     int32_t positionRaw = static_cast<int32_t>(position);
     quint16 highWord = (positionRaw >> 16) & 0xFFFF;
     quint16 lowWord = positionRaw & 0xFFFF;
-    
-    sendWriteRequest(ServoDriverRegisters::POSITION_START_ADDR, 
+
+    sendWriteRequest(ServoDriverRegisters::POSITION_START_ADDR,
                      QVector<quint16>{highWord, lowWord});
 }
 
@@ -244,9 +244,9 @@ void ServoDriverDevice::writeSpeed(float speed) {
     int32_t speedRaw = static_cast<int32_t>(speed);
     quint16 highWord = (speedRaw >> 16) & 0xFFFF;
     quint16 lowWord = speedRaw & 0xFFFF;
-    
+
     // Note: Define SPEED_START_ADDR in ServoDriverRegisters namespace
-    // sendWriteRequest(ServoDriverRegisters::SPEED_START_ADDR, 
+    // sendWriteRequest(ServoDriverRegisters::SPEED_START_ADDR,
     //                  QVector<quint16>{highWord, lowWord});
 }
 
@@ -270,12 +270,12 @@ void ServoDriverDevice::readAlarmStatus() {
 void ServoDriverDevice::clearAlarm() {
     sendWriteRequest(ServoDriverRegisters::ALARM_RESET_ADDR,
                      QVector<quint16>{0, 1}); // Execute clear command
-    
+
     // Reset register back to 0
     QTimer::singleShot(100, this, [this]() {
         sendWriteRequest(ServoDriverRegisters::ALARM_RESET_ADDR,
                          QVector<quint16>{0, 0});
-        
+
         auto newData = std::make_shared<ServoDriverData>(*data());
         newData->fault = false;
         //newData->alarmCode = 0;
@@ -293,7 +293,7 @@ void ServoDriverDevice::readAlarmHistory() {
 void ServoDriverDevice::clearAlarmHistory() {
     sendWriteRequest(ServoDriverRegisters::ALARM_HISTORY_CLEAR_ADDR,
                      QVector<quint16>{0, 1});
-    
+
     QTimer::singleShot(100, this, [this]() {
         sendWriteRequest(ServoDriverRegisters::ALARM_HISTORY_CLEAR_ADDR,
                          QVector<quint16>{0, 0});
@@ -318,8 +318,8 @@ void ServoDriverDevice::sendWriteRequest(int startAddress, const QVector<quint16
     // ⭐ RATE LIMIT: Skip if too many pending writes (prevents queue buildup)
     if (m_pendingWrites > 2) {
         //log when skipping writes
-        qDebug() << "⚠️ [MODBUS WRITE] " << m_identifier 
-                 << "pending writes:" << m_pendingWrites.load() 
+        qDebug() << "⚠️ [MODBUS WRITE] " << m_identifier
+                 << "pending writes:" << m_pendingWrites.load()
                  << "exceeds limit - skipping write to" << startAddress;
         // Queue is backing up - skip this write to let it drain
         return;

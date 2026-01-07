@@ -15,8 +15,7 @@ class SystemStateModel;
  * @brief Controller for Zone Definition workflow
  * Implements the state machine for zone creation/editing/deletion
  */
-class ZoneDefinitionController : public QObject
-{
+class ZoneDefinitionController : public QObject {
     Q_OBJECT
 
 public:
@@ -54,12 +53,12 @@ public:
     };
     Q_ENUM(State)
 
-    explicit ZoneDefinitionController(QObject *parent = nullptr);
+    explicit ZoneDefinitionController(QObject* parent = nullptr);
     void initialize();
     void setViewModel(ZoneDefinitionViewModel* viewModel);
     void setParameterViewModels(AreaZoneParameterViewModel* areaVM,
                                 SectorScanParameterViewModel* sectorVM,
-                                TRPParameterViewModel* trpVM);  
+                                TRPParameterViewModel* trpVM);
     void setMapViewModel(ZoneMapViewModel* mapViewModel);
     void setStateModel(SystemStateModel* stateModel);
 
@@ -122,7 +121,6 @@ private:
     void updateMapWipZone();
 
 
-
     State m_currentState;
 
     // ViewModels
@@ -138,7 +136,7 @@ private:
     // WIP data
     int m_editingZoneId;
     ZoneType m_wipZoneType;
-    ZoneType m_deleteZoneType; // Store type for deletion confirmation
+    ZoneType m_deleteZoneType;  // Store type for deletion confirmation
     AreaZone m_wipAreaZone;
     AutoSectorScanZone m_wipSectorScan;
     TargetReferencePoint m_wipTRP;
@@ -156,4 +154,4 @@ private:
     int m_currentMenuIndex;
 };
 
-#endif // ZONEDEFINITIONCONTROLLER_H
+#endif  // ZONEDEFINITIONCONTROLLER_H

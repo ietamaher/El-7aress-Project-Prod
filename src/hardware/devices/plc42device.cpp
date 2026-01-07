@@ -181,16 +181,16 @@ void Plc42Device::mergePartialData(const Plc42Data& partialData) {
 
     bool dataChanged = false;
 
-    // ========================================================================
+    // ============================================================================
     // Merge discrete inputs (8 total - includes dual HOME-END)
-    // ========================================================================
+    // ============================================================================
     if (partialData.stationUpperSensor != currentData->stationUpperSensor ||
         partialData.stationLowerSensor != currentData->stationLowerSensor ||
         partialData.emergencyStopActive != currentData->emergencyStopActive ||
         partialData.ammunitionLevel != currentData->ammunitionLevel ||
         partialData.hatchState != currentData->hatchState ||
         partialData.freeGimbalState != currentData->freeGimbalState ||
-        partialData.azimuthHomeComplete != currentData->azimuthHomeComplete ||   
+        partialData.azimuthHomeComplete != currentData->azimuthHomeComplete ||
         partialData.elevationHomeComplete != currentData->elevationHomeComplete ||
         partialData.solenoidActive != currentData->solenoidActive) {
 
@@ -200,15 +200,15 @@ void Plc42Device::mergePartialData(const Plc42Data& partialData) {
         newData->ammunitionLevel = partialData.ammunitionLevel;
         newData->hatchState = partialData.hatchState;
         newData->freeGimbalState = partialData.freeGimbalState;
-        newData->azimuthHomeComplete = partialData.azimuthHomeComplete;     
-        newData->elevationHomeComplete = partialData.elevationHomeComplete; 
+        newData->azimuthHomeComplete = partialData.azimuthHomeComplete;
+        newData->elevationHomeComplete = partialData.elevationHomeComplete;
         newData->solenoidActive = partialData.solenoidActive;
         dataChanged = true;
     }
 
-    // ========================================================================
+    // ============================================================================
     // Merge holding registers (unchanged)
-    // ========================================================================
+    // ============================================================================
     if (partialData.solenoidMode != currentData->solenoidMode ||
         partialData.gimbalOpMode != currentData->gimbalOpMode ||
         partialData.azimuthSpeed != currentData->azimuthSpeed ||

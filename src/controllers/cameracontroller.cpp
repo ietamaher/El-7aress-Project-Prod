@@ -23,21 +23,15 @@ CameraController::CameraController(DayCameraControlDevice* dayControl,
                                    CameraVideoStreamDevice* dayProcessor,
                                    NightCameraControlDevice* nightControl,
                                    CameraVideoStreamDevice* nightProcessor,
-                                   SystemStateModel* stateModel,
-                                   LRFDevice* lrfDevice,
+                                   SystemStateModel* stateModel, LRFDevice* lrfDevice,
                                    QObject* parent)
-    : QObject(parent)
-    , m_dayControl(dayControl)
-    , m_dayProcessor(dayProcessor)
-    , m_nightControl(nightControl)
-    , m_nightProcessor(nightProcessor)
-    , m_stateModel(stateModel)
-    , m_lrfDevice(lrfDevice)
-{
+    : QObject(parent), m_dayControl(dayControl), m_dayProcessor(dayProcessor),
+      m_nightControl(nightControl), m_nightProcessor(nightProcessor), m_stateModel(stateModel),
+      m_lrfDevice(lrfDevice) {
     // Connect to system state changes
     if (m_stateModel) {
-        connect(m_stateModel, &SystemStateModel::dataChanged,
-                this, &CameraController::onSystemStateChanged, Qt::QueuedConnection);
+        connect(m_stateModel, &SystemStateModel::dataChanged, this,
+                &CameraController::onSystemStateChanged, Qt::QueuedConnection);
 
         m_isDayCameraActive = m_stateModel->data().activeCameraIsDay;
         qInfo() << "[CameraController] Initialized. Active camera:"
@@ -55,8 +49,7 @@ CameraController::CameraController(DayCameraControlDevice* dayControl,
     }
 }
 
-CameraController::~CameraController()
-{
+CameraController::~CameraController() {
     qInfo() << "[CameraController] Destructor";
 }
 
@@ -64,13 +57,11 @@ CameraController::~CameraController()
 // INITIALIZATION
 // ============================================================================
 
-bool CameraController::initialize()
-{
+bool CameraController::initialize() {
     // CameraVideoStreamDevice instances are started by SystemController
     // CameraControlDevices are opened by SystemController
 
-    if (!m_stateModel || !m_dayControl || !m_nightControl ||
-        !m_dayProcessor || !m_nightProcessor) {
+    if (!m_stateModel || !m_dayControl || !m_nightControl || !m_dayProcessor || !m_nightProcessor) {
         updateStatus("Initialization failed: Missing required components.");
         return false;
     }
@@ -83,23 +74,19 @@ bool CameraController::initialize()
 // CAMERA PROCESSOR ACCESSORS
 // ============================================================================
 
-CameraVideoStreamDevice* CameraController::getDayCameraProcessor() const
-{
+CameraVideoStreamDevice* CameraController::getDayCameraProcessor() const {
     return m_dayProcessor;
 }
 
-CameraVideoStreamDevice* CameraController::getNightCameraProcessor() const
-{
+CameraVideoStreamDevice* CameraController::getNightCameraProcessor() const {
     return m_nightProcessor;
 }
 
-CameraVideoStreamDevice* CameraController::getActiveCameraProcessor() const
-{
+CameraVideoStreamDevice* CameraController::getActiveCameraProcessor() const {
     return m_isDayCameraActive ? m_dayProcessor : m_nightProcessor;
 }
 
-bool CameraController::isDayCameraActive() const
-{
+bool CameraController::isDayCameraActive() const {
     return m_isDayCameraActive;
 }
 
@@ -107,8 +94,7 @@ bool CameraController::isDayCameraActive() const
 // STATE CHANGE HANDLER
 // ============================================================================
 
-void CameraController::onSystemStateChanged(const SystemStateData& newData)
-{
+void CameraController::onSystemStateChanged(const SystemStateData& newData) {
     QMutexLocker locker(&m_mutex);
 
     bool cameraChanged = (m_cachedState.activeCameraIsDay != newData.activeCameraIsDay);
@@ -122,13 +108,13 @@ void CameraController::onSystemStateChanged(const SystemStateData& newData)
         setActiveCamera(newData.activeCameraIsDay);
 
         // Stop tracking on the camera that just became inactive
-        CameraVideoStreamDevice* oldProcessor = oldStateBeforeUpdate.activeCameraIsDay
-                                                ? m_dayProcessor
-                                                : m_nightProcessor;
+        CameraVideoStreamDevice* oldProcessor =
+            oldStateBeforeUpdate.activeCameraIsDay ? m_dayProcessor : m_nightProcessor;
 
         if (oldProcessor && oldStateBeforeUpdate.trackingActive) {
-            qInfo() << "[CameraController] Camera switched, stopping tracking on inactive processor:"
-                    << oldProcessor->property("cameraIndex").toInt();
+            qInfo()
+                << "[CameraController] Camera switched, stopping tracking on inactive processor:"
+                << oldProcessor->property("cameraIndex").toInt();
 
             QMetaObject::invokeMethod(oldProcessor, "setTrackingEnabled", Qt::QueuedConnection,
                                       Q_ARG(bool, false));
@@ -138,13 +124,11 @@ void CameraController::onSystemStateChanged(const SystemStateData& newData)
     }
 }
 
-void CameraController::setActiveCamera(bool isDay)
-{
+void CameraController::setActiveCamera(bool isDay) {
     // Assumes mutex is already locked if called from onSystemStateChanged
     if (m_isDayCameraActive != isDay) {
         m_isDayCameraActive = isDay;
-        qInfo() << "[CameraController] Active camera set to:"
-                << (isDay ? "Day" : "Night");
+        qInfo() << "[CameraController] Active camera set to:" << (isDay ? "Day" : "Night");
     }
 }
 
@@ -152,8 +136,7 @@ void CameraController::setActiveCamera(bool isDay)
 // TRACKING CONTROL
 // ============================================================================
 
-bool CameraController::startTracking()
-{
+bool CameraController::startTracking() {
     QMutexLocker locker(&m_mutex);
 
     if (!m_stateModel) {
@@ -177,9 +160,8 @@ bool CameraController::startTracking()
     qInfo() << "[CameraController] Requesting tracking START on processor:"
             << activeProcessor->property("cameraIndex").toInt();
 
-    bool invokeSuccess = QMetaObject::invokeMethod(
-        activeProcessor, "setTrackingEnabled", Qt::QueuedConnection,
-        Q_ARG(bool, true));
+    bool invokeSuccess = QMetaObject::invokeMethod(activeProcessor, "setTrackingEnabled",
+                                                   Qt::QueuedConnection, Q_ARG(bool, true));
 
     if (!invokeSuccess) {
         qWarning() << "[CameraController] Failed to invoke setTrackingEnabled(true)";
@@ -193,13 +175,12 @@ bool CameraController::startTracking()
     }
 
     updateStatus(QString("Tracking start requested on %1 camera.")
-                 .arg(m_isDayCameraActive ? "Day" : "Night"));
+                     .arg(m_isDayCameraActive ? "Day" : "Night"));
 
     return true;
 }
 
-void CameraController::stopTracking()
-{
+void CameraController::stopTracking() {
     QMutexLocker locker(&m_mutex);
 
     if (!m_stateModel) {
@@ -223,9 +204,8 @@ void CameraController::stopTracking()
     qInfo() << "[CameraController] Requesting tracking STOP on processor:"
             << activeProcessor->property("cameraIndex").toInt();
 
-    bool invokeSuccess = QMetaObject::invokeMethod(
-        activeProcessor, "setTrackingEnabled", Qt::QueuedConnection,
-        Q_ARG(bool, false));
+    bool invokeSuccess = QMetaObject::invokeMethod(activeProcessor, "setTrackingEnabled",
+                                                   Qt::QueuedConnection, Q_ARG(bool, false));
 
     if (!invokeSuccess) {
         qWarning() << "[CameraController] Failed to invoke setTrackingEnabled(false)";
@@ -239,15 +219,14 @@ void CameraController::stopTracking()
     }
 
     updateStatus(QString("Tracking stop requested on %1 camera.")
-                 .arg(m_isDayCameraActive ? "Day" : "Night"));
+                     .arg(m_isDayCameraActive ? "Day" : "Night"));
 }
 
 // ============================================================================
 // DAY CAMERA CONTROL (ZOOM / FOCUS)
 // ============================================================================
 
-void CameraController::zoomIn()
-{
+void CameraController::zoomIn() {
     if (m_isDayCameraActive) {
         if (m_dayControl) {
             m_dayControl->zoomIn();
@@ -260,8 +239,7 @@ void CameraController::zoomIn()
     }
 }
 
-void CameraController::zoomOut()
-{
+void CameraController::zoomOut() {
     if (m_isDayCameraActive) {
         if (m_dayControl) {
             m_dayControl->zoomOut();
@@ -274,37 +252,32 @@ void CameraController::zoomOut()
     }
 }
 
-void CameraController::zoomStop()
-{
+void CameraController::zoomStop() {
     if (m_isDayCameraActive && m_dayControl) {
         m_dayControl->zoomStop();
     }
     // Night camera digital zoom doesn't have a stop command
 }
 
-void CameraController::focusNear()
-{
+void CameraController::focusNear() {
     if (m_isDayCameraActive && m_dayControl) {
         m_dayControl->focusNear();
     }
 }
 
-void CameraController::focusFar()
-{
+void CameraController::focusFar() {
     if (m_isDayCameraActive && m_dayControl) {
         m_dayControl->focusFar();
     }
 }
 
-void CameraController::focusStop()
-{
+void CameraController::focusStop() {
     if (m_isDayCameraActive && m_dayControl) {
         m_dayControl->focusStop();
     }
 }
 
-void CameraController::setFocusAuto(bool enabled)
-{
+void CameraController::setFocusAuto(bool enabled) {
     if (m_isDayCameraActive && m_dayControl) {
         m_dayControl->setFocusAuto(enabled);
     }
@@ -314,24 +287,21 @@ void CameraController::setFocusAuto(bool enabled)
 // NIGHT CAMERA CONTROL (THERMAL)
 // ============================================================================
 
-void CameraController::nextVideoLUT()
-{
+void CameraController::nextVideoLUT() {
     if (!m_isDayCameraActive && m_nightControl) {
         m_lutIndex = qMin(m_lutIndex + 1, 12);
         m_nightControl->setVideoModeLUT(m_lutIndex);
     }
 }
 
-void CameraController::prevVideoLUT()
-{
+void CameraController::prevVideoLUT() {
     if (!m_isDayCameraActive && m_nightControl) {
         m_lutIndex = qMax(m_lutIndex - 1, 0);
         m_nightControl->setVideoModeLUT(m_lutIndex);
     }
 }
 
-void CameraController::performFFC()
-{
+void CameraController::performFFC() {
     if (!m_isDayCameraActive && m_nightControl) {
         m_nightControl->performFFC();
     }
@@ -342,8 +312,7 @@ void CameraController::performFFC()
 // Called by JoystickController when Button 1 is pressed
 // ============================================================================
 
-void CameraController::triggerLRF()
-{
+void CameraController::triggerLRF() {
     if (!m_lrfDevice) {
         qWarning() << "[CameraController] LRF device not available!";
         return;
@@ -353,8 +322,7 @@ void CameraController::triggerLRF()
     m_lrfDevice->sendSingleRanging();
 }
 
-void CameraController::startContinuousLRF()
-{
+void CameraController::startContinuousLRF() {
     if (!m_lrfDevice) {
         qWarning() << "[CameraController] LRF device not available!";
         return;
@@ -364,8 +332,7 @@ void CameraController::startContinuousLRF()
     m_lrfDevice->sendContinuousRanging5Hz();
 }
 
-void CameraController::stopContinuousLRF()
-{
+void CameraController::stopContinuousLRF() {
     if (!m_lrfDevice) {
         qWarning() << "[CameraController] LRF device not available!";
         return;
@@ -379,8 +346,7 @@ void CameraController::stopContinuousLRF()
 // STATUS UPDATE
 // ============================================================================
 
-void CameraController::updateStatus(const QString& message)
-{
+void CameraController::updateStatus(const QString& message) {
     if (m_statusMessage != message) {
         m_statusMessage = message;
         qDebug() << "[CameraController] Status:" << message;

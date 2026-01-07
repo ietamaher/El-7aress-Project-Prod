@@ -7,11 +7,11 @@
 #include <QMutex>
 
 #include "videoframenotifier.h"
-// =============================================================================
+// ============================================================================
 // VIDEO FRAME NOTIFIER (Latency Fix #1)
 // QQuickImageProvider can't emit signals (no QObject), so we use a separate
 // notifier class. QML connects to this instead of using a polling Timer.
-// =============================================================================
+// ============================================================================
 /*class VideoFrameNotifier : public QObject
 {
     Q_OBJECT

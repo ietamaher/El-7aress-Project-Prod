@@ -1,10 +1,10 @@
 /**
  * @file SystemStateModel.cpp
  * @brief Implementation of SystemStateModel class
- * 
+ *
  * This file contains ALL method implementations for the SystemStateModel class,
  * organized to match the EXACT order in SystemStateModel.h for easy navigation.
- * 
+ *
  * ORGANIZATION (matches header file 1:1):
  * 1. Constructor
  * 2. Core System Data Management
@@ -27,7 +27,7 @@
  * 19. System Mode Control Slots
  * 20. Utility Methods
  * 21. Private Helper Methods
- * 
+ *
  * @author MB
  * @date 19 Juin 2025
  * @version 1.1 - Fully reorganized to match header structure
@@ -63,10 +63,10 @@ SystemStateModel::SystemStateModel(QObject *parent)
              << "at (" << m_currentStateData.reticleAimpointImageX_px << ","
              << m_currentStateData.reticleAimpointImageY_px << ")";
 
-    // ========================================================================
+    // ============================================================================
     // ZONES.JSON LOADING - FIRST-RUN TEMPLATE COPY
     // If zones.json doesn't exist in filesystem, copy from embedded resource
-    // ========================================================================
+    // ============================================================================
     QString zonesPath = QCoreApplication::applicationDirPath() + "/config/zones.json";
 
     // First-run: copy template from embedded resource if file doesn't exist
@@ -145,13 +145,13 @@ void SystemStateModel::updateData(const SystemStateData &newState) {
         bool gimbalChanged = !qFuzzyCompare(m_currentStateData.gimbalAz, newState.gimbalAz) ||
                              !qFuzzyCompare(m_currentStateData.gimbalEl, newState.gimbalEl);
 
-        // ========================================================================
+        // ============================================================================
         // CRITICAL: Detect ballistic drop offset changes (from WeaponController)
-        // ========================================================================
+        // ============================================================================
         // When gimbal moves, WeaponController recalculates crosswind and ballistic drop.
         // We MUST recalculate reticle position to reflect the new drop offsets!
         // This fixes the bug where reticle only updates on camera switch.
-        // ========================================================================
+        // ============================================================================
         bool ballisticOffsetsChanged =
             !qFuzzyCompare(m_currentStateData.ballisticDropOffsetAz, newState.ballisticDropOffsetAz) ||
             !qFuzzyCompare(m_currentStateData.ballisticDropOffsetEl, newState.ballisticDropOffsetEl) ||
@@ -179,14 +179,14 @@ void SystemStateModel::updateData(const SystemStateData &newState) {
 // --- UI Related Setters Implementation  ---
 void SystemStateModel::setColorStyle(const QColor &style)
 {
-    qDebug() << "SystemStateModel::setColorStyle() called with:" << style;   
+    qDebug() << "SystemStateModel::setColorStyle() called with:" << style;
 
     SystemStateData newData = m_currentStateData;
     newData.colorStyle = style;
     newData.osdColorStyle = ColorUtils::fromQColor(style);
 
-    emit colorStyleChanged(style);   
-    qDebug() << "SystemStateModel: colorStyleChanged signal emitted";   
+    emit colorStyleChanged(style);
+    qDebug() << "SystemStateModel: colorStyleChanged signal emitted";
 
     updateData(newData);
 }
@@ -228,12 +228,12 @@ void SystemStateModel::setUpTrack(bool pressed) {
 void SystemStateModel::setUpSw(bool pressed) { if(m_currentStateData.menuUp != pressed) { m_currentStateData.menuUp = pressed; emit dataChanged(m_currentStateData); } }
 
 void SystemStateModel::setActiveCameraIsDay(bool isDay) {
-    // ========================================================================
+    // ============================================================================
     // UC5: Camera Switch During Tracking
-    // ========================================================================
+    // ============================================================================
     // When switching between day/night cameras, FOV changes (different optics)
     // Reticle pixel position must recalculate for new camera's FOV
-    // ========================================================================
+    // ============================================================================
     if(m_currentStateData.activeCameraIsDay != isDay) {
         m_currentStateData.activeCameraIsDay = isDay;
         qDebug() << "✓ [FIX UC5] Active camera switched to" << (isDay ? "DAY" : "NIGHT")
@@ -679,13 +679,13 @@ void SystemStateModel::onServoElDataChanged(const ServoDriverData &elData) {
 
 void SystemStateModel::onDayCameraDataChanged(const DayCameraData &dayData)
 {
-    // ========================================================================
+    // ============================================================================
     // UC1: Zoom During Zeroed Operation
     // UC4: Zoom During Active Tracking
-    // ========================================================================
+    // ============================================================================
     // When day camera FOV changes (zoom in/out), reticle pixel position must
     // be recalculated to maintain correct angular offset on screen.
-    // ========================================================================
+    // ============================================================================
 
     bool fovChanged = !qFuzzyCompare(
         static_cast<float>(m_currentStateData.dayCurrentHFOV),
@@ -756,7 +756,7 @@ void SystemStateModel::onGyroDataChanged(const ImuData &gyroData)
 
     // Update stationary status
      updateStationaryStatus(newData);
- 
+
     updateData(newData);
 }
 
@@ -817,21 +817,21 @@ void SystemStateModel::onJoystickAxisChanged(int axis, float normalizedValue)
     const float CHANGE_THRESHOLD = 0.05f;
      static int count = 0;
     static auto lastLog = std::chrono::high_resolution_clock::now();
-       
+
     float oldX = m_currentStateData.joystickAzValue;
     float oldY = m_currentStateData.joystickElValue;
-    
+
     // Update axis value
     if (axis == 0) {
         newData.joystickAzValue = - normalizedValue;
     } else if (axis == 1){
         newData.joystickElValue = - normalizedValue;
     }
-    
+
     // Check if change is significant
     float deltaX = std::abs(newData.joystickAzValue - oldX);
     float deltaY = std::abs(newData.joystickElValue - oldY);
-    
+
     if (deltaX > CHANGE_THRESHOLD || deltaY > CHANGE_THRESHOLD) {
         // ✅ Emit SPECIFIC signal for immediate motor response
         updateData(newData);
@@ -842,7 +842,7 @@ void SystemStateModel::onJoystickAxisChanged(int axis, float normalizedValue)
                      << (100000.0 / elapsed) << "Hz";
             lastLog = now;
         }
-    } 
+    }
 }
 
 void SystemStateModel::onJoystickButtonChanged(int button, bool pressed)
@@ -897,14 +897,14 @@ void SystemStateModel::onLrfDataChanged(const LrfData &lrfData)
 
 void SystemStateModel::onNightCameraDataChanged(const NightCameraData &nightData)
 {
-    // ========================================================================
+    // ============================================================================
     // UC1: Zoom During Zeroed Operation
     // UC4: Zoom During Active Tracking
     // UC5: Camera Switch During Tracking
-    // ========================================================================
+    // ============================================================================
     // When night camera FOV changes (digital zoom), reticle pixel position
     // must be recalculated to maintain correct angular offset on screen.
-    // ========================================================================
+    // ============================================================================
 
     bool fovChanged = !qFuzzyCompare(
         static_cast<float>(m_currentStateData.nightCurrentHFOV),
@@ -954,7 +954,7 @@ void SystemStateModel::onPlc21DataChanged(const Plc21PanelData &pData)
 
     newData.authorized = pData.authorizeSw;
     newData.enableStabilization = pData.enableStabilizationSW;
-    
+
     // ⭐ CRITICAL: authorizeSw FALSE = Emergency Stop!
     newData.emergencyStopActive = !pData.authorizeSw;
 
@@ -1007,7 +1007,7 @@ void SystemStateModel::onPlc21DataChanged(const Plc21PanelData &pData)
 void SystemStateModel::onPlc42DataChanged(const Plc42Data &pData)
 {
     SystemStateData newData = m_currentStateData;
-    
+
     // Limit sensors
     newData.upperLimitSensorActive = pData.stationUpperSensor;
     newData.lowerLimitSensorActive = pData.stationLowerSensor;
@@ -1016,7 +1016,7 @@ void SystemStateModel::onPlc42DataChanged(const Plc42Data &pData)
     newData.stationAmmunitionLevel = pData.ammunitionLevel;
     newData.hatchState = pData.hatchState;
     newData.freeGimbalState = pData.freeGimbalState;  // ✓ FREE toggle
-    
+
     // HOME-END signals (one per axis) ⭐ NEW
     newData.azimuthHomeComplete = pData.azimuthHomeComplete;
     newData.elevationHomeComplete = pData.elevationHomeComplete;
@@ -1032,13 +1032,13 @@ void SystemStateModel::onPlc42DataChanged(const Plc42Data &pData)
     newData.resetAlarm = pData.resetAlarm;
     newData.plc42Connected = pData.isConnected;
 
-    // ========================================================================
+    // ============================================================================
     // FREE MODE AUTONOMOUS CONTROL (local toggle has priority)
-    // ========================================================================
+    // ============================================================================
     // The physical FREE toggle switch at the station controls this
     // MDUINO 42+ monitors I0_3 and autonomously switches gimbalOpMode
     // We just track the state changes here
-    
+
     // Rising edge: FREE toggle turned ON
     if (pData.freeGimbalState && !m_currentStateData.freeGimbalState) {
         qInfo() << "[SystemStateModel] FREE toggle activated - entering MotionFree";
@@ -1051,9 +1051,9 @@ void SystemStateModel::onPlc42DataChanged(const Plc42Data &pData)
         newData.motionMode = newData.previousMotionMode;
     }
 
-    // ========================================================================
+    // ============================================================================
     // EMERGENCY STOP FROM GIMBAL OP MODE
-    // ========================================================================
+    // ============================================================================
     // If PLC42 gimbalOpMode == 1, emergency stop is active via hardware
     if (pData.gimbalOpMode == 1 && !m_currentStateData.emergencyStopActive) {
         qCritical() << "[SystemStateModel] Emergency stop detected from PLC42";
@@ -1067,13 +1067,13 @@ void SystemStateModel::onServoActuatorDataChanged(const ServoActuatorData &actua
 {
     SystemStateData newData = m_currentStateData;
     newData.actuatorPosition = actuatorData.position_mm;
-    newData.actuatorConnected = actuatorData.isConnected;           
-    newData.actuatorVelocity = actuatorData.velocity_mm_s;           
-    newData.actuatorTemp = actuatorData.temperature_c;              
-    newData.actuatorBusVoltage = actuatorData.busVoltage_v;        
-    newData.actuatorTorque = actuatorData.torque_percent;            
-    newData.actuatorMotorOff = actuatorData.status.isMotorOff;      
-    newData.actuatorFault = actuatorData.status.isLatchingFaultActive;  
+    newData.actuatorConnected = actuatorData.isConnected;
+    newData.actuatorVelocity = actuatorData.velocity_mm_s;
+    newData.actuatorTemp = actuatorData.temperature_c;
+    newData.actuatorBusVoltage = actuatorData.busVoltage_v;
+    newData.actuatorTorque = actuatorData.torque_percent;
+    newData.actuatorMotorOff = actuatorData.status.isMotorOff;
+    newData.actuatorFault = actuatorData.status.isLatchingFaultActive;
 
     updateData(newData);
 }
@@ -1082,13 +1082,13 @@ void SystemStateModel::startZeroingProcedure() {
     if (!m_currentStateData.zeroingModeActive) {
         m_currentStateData.zeroingModeActive = true;
 
-        // ========================================================================
+        // ============================================================================
         // BUG FIX #1: CAPTURE INITIAL GIMBAL POSITION
-        // ========================================================================
+        // ============================================================================
         // Store current gimbal position as reference point
         // When finalized, offset = (final_position - initial_position)
         // This tracks how far the operator moved the gimbal to align with impact
-        // ========================================================================
+        // ============================================================================
         m_zeroingState.initialAz = m_currentStateData.gimbalAz;
         m_zeroingState.initialEl = m_currentStateData.gimbalEl;
         m_zeroingState.capturedInitialPos = true;
@@ -1117,9 +1117,9 @@ void SystemStateModel::applyZeroingAdjustment(float deltaAz, float deltaEl) {
         // We might need separate "raw mechanical zero" and "user zero offset".
         // For now, these are offsets from a nominal zero.
 
-        // ========================================================================
+        // ============================================================================
         // SIGN CONVENTION FIX FOR ELEVATION
-        // ========================================================================
+        // ============================================================================
         // The gimbal elevation has inverted sign convention:
         //   gimbalEl = servo_position * (-0.0018)
         // This means pointing UP = more negative gimbalEl.
@@ -1131,10 +1131,10 @@ void SystemStateModel::applyZeroingAdjustment(float deltaAz, float deltaEl) {
         // so the reticle shifts UP to show where bullets hit.
         //
         // Solution: Negate deltaEl to compensate for inverted gimbal coordinates.
-        // ========================================================================
+        // ============================================================================
 
         m_currentStateData.zeroingAzimuthOffset -= deltaAz; // NEGATED to fix inverted gimbal
-        m_currentStateData.zeroingElevationOffset += deltaEl;  
+        m_currentStateData.zeroingElevationOffset += deltaEl;
 
         // Clamp total offsets if necessary (e.g., to +/- 3 degrees from some baseline)
         // float maxOffset = 3.0f;
@@ -1150,13 +1150,13 @@ void SystemStateModel::applyZeroingAdjustment(float deltaAz, float deltaEl) {
 
 void SystemStateModel::finalizeZeroing() {
     if (m_currentStateData.zeroingModeActive && m_zeroingState.capturedInitialPos) {
-        // ========================================================================
+        // ============================================================================
         // BUG FIX #1: CALCULATE ZEROING OFFSET FROM GIMBAL MOVEMENT
-        // ========================================================================
+        // ============================================================================
         // Calculate how far the gimbal moved from initial position
         // This represents the angular offset between weapon bore and camera LOS
         // Positive offset means weapon hits right/high of where camera points
-        // ========================================================================
+        // ============================================================================
 
         float currentAz = m_currentStateData.gimbalAz;
         float currentEl = m_currentStateData.gimbalEl;
@@ -1193,12 +1193,12 @@ void SystemStateModel::finalizeZeroing() {
 
         qInfo() << "[ZEROING] ✓ Procedure complete - Zeroing now ACTIVE";
 
-        // ========================================================================
+        // ============================================================================
         // BUG FIX: RECALCULATE RETICLE POSITION WITH NEW ZEROING OFFSETS
-        // ========================================================================
+        // ============================================================================
         // Without this call, the reticle position doesn't update until another
         // action (zoom, LAC toggle) triggers recalculation.
-        // ========================================================================
+        // ============================================================================
         recalculateDerivedAimpointData();
 
         emit dataChanged(m_currentStateData);
@@ -1224,10 +1224,10 @@ void SystemStateModel::clearZeroing() { // Called on power down, or manually
 // LRF CLEAR (Button 10)
 // ============================================================================
 void SystemStateModel::clearLRF() {
-    // ========================================================================
+    // ============================================================================
     // Simple LRF clear: Reset distance to 0 and recalculate reticle
     // Does NOT affect zeroing offsets (separate function for that)
-    // ========================================================================
+    // ============================================================================
 
     qInfo() << "[LRF CLEAR] Button 10 pressed - Clearing LRF measurement";
 
@@ -1411,9 +1411,9 @@ void SystemStateModel::setLeadAngleCompensationActive(bool active) {
 }
 
 void SystemStateModel::recalculateDerivedAimpointData() {
-    // ========================================================================
+    // ============================================================================
     // CROWS-COMPLIANT COORDINATE SYSTEM (TM 9-1090-225-10-2)
-    // ========================================================================
+    // ============================================================================
     // 1. RETICLE: Gun boresight with ZEROING ONLY (shows where gun points)
     //    - NO ballistic drop, NO motion lead
     //    - Reticle stays at gun axis (with zeroing offset)
@@ -1424,22 +1424,22 @@ void SystemStateModel::recalculateDerivedAimpointData() {
     //
     // This is the safer, more certifiable approach per user review:
     // "Reticle = center + zeroing only... slightly less magical but more robust"
-    // ========================================================================
+    // ============================================================================
 
     SystemStateData& data = m_currentStateData;
 
     // Determine active camera's HFOV
     float activeHfov = data.activeCameraIsDay ? static_cast<float>(data.dayCurrentHFOV) : static_cast<float>(data.nightCurrentHFOV);
 
-    // ========================================================================
+    // ============================================================================
     // CALCULATION 1: RETICLE Position (ZEROING ONLY - CROWS Doctrine)
-    // ========================================================================
+    // ============================================================================
     // Reticle = gun boresight = center + zeroing correction
     // NO ballistic drop, NO motion lead
     //
     // Per CROWS doctrine: The reticle shows where the gun is pointing NOW.
     // Ballistic corrections only affect CCIP (impact prediction).
-    // ========================================================================
+    // ============================================================================
     QPointF newReticlePosPx = ReticleAimpointCalculator::calculateReticleImagePositionPx(
         data.zeroingAzimuthOffset,        // Zeroing correction (camera-gun alignment)
         data.zeroingElevationOffset,      // Zeroing correction
@@ -1453,9 +1453,9 @@ void SystemStateModel::recalculateDerivedAimpointData() {
         data.currentImageHeightPx
     );
 
-    // ========================================================================
+    // ============================================================================
     // CALCULATION 2: CCIP Position (ZEROING + DROP + LEAD - Full FCS)
-    // ========================================================================
+    // ============================================================================
     // CCIP = predicted bullet impact point
     // - Zeroing: camera-gun alignment
     // - Ballistic drop: gravity + wind (auto when LRF valid)
@@ -1463,7 +1463,7 @@ void SystemStateModel::recalculateDerivedAimpointData() {
     //
     // Per CROWS doctrine: Operator fires when TARGET overlaps CCIP,
     // not when reticle is on target.
-    // ========================================================================
+    // ============================================================================
     float ccipTotalAz = data.ballisticDropOffsetAz + data.motionLeadOffsetAz;
     float ccipTotalEl = - data.ballisticDropOffsetEl + data.motionLeadOffsetEl;
     bool ccipActive = data.ballisticDropActive || data.leadAngleCompensationActive;
@@ -1503,16 +1503,16 @@ void SystemStateModel::recalculateDerivedAimpointData() {
         ccipPosChanged = true;
     }
 
-    // ========================================================================
+    // ============================================================================
     // CROWS/SARP ZOOM OUT DETECTION (TM 9-1090-225-10-2)
-    // ========================================================================
+    // ============================================================================
     // "If the Lead Angle is greater than the selected camera FOV, ZOOM OUT
     //  appears over the on screen reticle. The message remains on screen until
     //  the hit point is no longer outside the viewing area."
     //
     // Check if CCIP is outside the current camera FOV boundaries
     // Also set proper status for ballistic-only mode (when LAC is not active)
-    // ========================================================================
+    // ============================================================================
     bool ccipOutOfFov = false;
     if (data.leadAngleCompensationActive || data.ballisticDropActive) {
         ccipOutOfFov =
@@ -1545,13 +1545,13 @@ void SystemStateModel::recalculateDerivedAimpointData() {
     else if (data.zeroingModeActive) data.zeroingStatusText = "ZEROING";
     else data.zeroingStatusText = "";
 
-    // ========================================================================
+    // ============================================================================
     // CROWS/SARP STATUS TEXT LOGIC
-    // ========================================================================
+    // ============================================================================
     // ZoomOut can occur from ballistic drop alone (extreme range) or LAC
     // Display "ZOOM OUT" in both cases since CCIP is outside FOV
     // LAC-specific status texts only shown when LAC is active
-    // ========================================================================
+    // ============================================================================
     if (data.currentLeadAngleStatus == LeadAngleStatus::ZoomOut &&
         (data.leadAngleCompensationActive || data.ballisticDropActive)) {
         // ZOOM OUT from either LAC or ballistic drop
@@ -1640,9 +1640,9 @@ void SystemStateModel::updateCalculatedLeadOffsets(float angularLeadAz, float an
 }
 
 void SystemStateModel::updateTargetAngularRates(float rateAzDegS, float rateElDegS) {
-    // ========================================================================
+    // ============================================================================
     // BUG FIX #1: Target Angular Rates for LAC Motion Lead Calculation
-    // ========================================================================
+    // ============================================================================
     // This method is called by GimbalController when tracking is active.
     // It provides the target's angular velocity (deg/s) to WeaponController
     // for calculating motion lead compensation.
@@ -1655,7 +1655,7 @@ void SystemStateModel::updateTargetAngularRates(float rateAzDegS, float rateElDe
     //
     // Critical: Without this update, currentTargetAngularRateAz/El remain 0,
     // and LAC motion lead will never be calculated!
-    // ========================================================================
+    // ============================================================================
 
     bool changed = false;
 
@@ -1677,14 +1677,14 @@ void SystemStateModel::updateTargetAngularRates(float rateAzDegS, float rateElDe
     }
 }
 
-// =============================================================================
+// ============================================================================
 // CROWS-COMPLIANT LAC LATCHING (TM 9-1090-225-10-2)
-// =============================================================================
+// ============================================================================
 
 void SystemStateModel::armLAC(float azRate_dps, float elRate_dps) {
-    // ========================================================================
+    // ============================================================================
     // CROWS/SARP LAC WORKFLOW - ARM STEP (TM 9-1090-225-10-2)
-    // ========================================================================
+    // ============================================================================
     // When operator presses LAC button:
     // 1. Latch current angular rates (capture target motion)
     // 2. Display "LAC ARMED" on OSD
@@ -1702,7 +1702,7 @@ void SystemStateModel::armLAC(float azRate_dps, float elRate_dps) {
     // NOTE: leadAngleCompensationActive is set TRUE only when fire trigger
     // is pressed. This ensures joystick motion NEVER produces lead unless
     // both LAC is armed AND fire trigger is active.
-    // ========================================================================
+    // ============================================================================
 
     SystemStateData& data = m_currentStateData;
 
@@ -1731,14 +1731,14 @@ void SystemStateModel::armLAC(float azRate_dps, float elRate_dps) {
 }
 
 bool SystemStateModel::disarmLAC() {
-    // ========================================================================
+    // ============================================================================
     // Per TM 9-1090-225-10-2:
     // "Cancel Lead Angle Compensation by pressing the Palm Switch with the
     //  CG in the neutral position."
     //
     // "A minimum of 2 seconds must be waited before reuse of lead angle
     //  compensation feature."
-    // ========================================================================
+    // ============================================================================
 
     SystemStateData& data = m_currentStateData;
 
@@ -1780,9 +1780,9 @@ bool SystemStateModel::canRearmLAC() const {
 }
 
 void SystemStateModel::engageLAC() {
-    // ========================================================================
+    // ============================================================================
     // CROWS/SARP LAC WORKFLOW - ENGAGE STEP (Fire Trigger Pressed)
-    // ========================================================================
+    // ============================================================================
     // When fire trigger is pressed and LAC is armed:
     // 1. Set leadAngleCompensationActive = true
     // 2. CCIP now includes motion lead (using latched rates)
@@ -1790,7 +1790,7 @@ void SystemStateModel::engageLAC() {
     //
     // This is the moment when lead is actually applied to the firing solution.
     // Lead is calculated using the latched rates from armLAC().
-    // ========================================================================
+    // ============================================================================
 
     if (!m_currentStateData.lacArmed) {
         qDebug() << "[LAC] engageLAC called but LAC is not armed - ignoring";
@@ -1813,9 +1813,9 @@ void SystemStateModel::engageLAC() {
 }
 
 void SystemStateModel::disengageLAC() {
-    // ========================================================================
+    // ============================================================================
     // CROWS/SARP LAC WORKFLOW - DISENGAGE STEP (Fire Trigger Released)
-    // ========================================================================
+    // ============================================================================
     // When fire trigger is released:
     // 1. Set leadAngleCompensationActive = false
     // 2. CCIP returns to ballistic-only (no motion lead)
@@ -1823,7 +1823,7 @@ void SystemStateModel::disengageLAC() {
     //
     // Lead is NOT applied outside of firing. Operator can re-engage
     // by pressing fire trigger again (with same latched rates).
-    // ========================================================================
+    // ============================================================================
 
     if (!m_currentStateData.leadAngleCompensationActive) {
         // Already disengaged - no change needed
@@ -1839,18 +1839,18 @@ void SystemStateModel::disengageLAC() {
     emit dataChanged(m_currentStateData);
 }
 
-// =============================================================================
+// ============================================================================
 // DEAD RECKONING (Firing during tracking)
-// =============================================================================
+// ============================================================================
 
 void SystemStateModel::enterDeadReckoning(float azVel_dps, float elVel_dps) {
-    // ========================================================================
+    // ============================================================================
     // Per TM 9-1090-225-10-2 page 38:
     // "When firing is initiated, CROWS aborts Target Tracking. Instead the
     //  system moves according to the speed and direction of the WS just prior
     //  to pulling the trigger. CROWS will not automatically compensate for
     //  changes in speed or direction of the tracked target during firing."
-    // ========================================================================
+    // ============================================================================
 
     SystemStateData& data = m_currentStateData;
 
@@ -2043,7 +2043,7 @@ double SystemStateModel::getCollisionFraction(double current, double boundary, d
     // Standard Ray Cast
     if (t < 0.0) return 2.0; // Moving away
 
-    double effectiveDist = std::abs(distToWall) - NTZ_EPS; 
+    double effectiveDist = std::abs(distToWall) - NTZ_EPS;
     if (effectiveDist < 0) effectiveDist = 0;
 
     return effectiveDist / std::abs(delta);
@@ -2063,7 +2063,7 @@ void SystemStateModel::computeAllowedDeltas(
     double dt)
 {
     Q_UNUSED(dt);
-    
+
     allowedAzDelta = intendedAzDelta;
     allowedElDelta = intendedElDelta;
 
@@ -2091,18 +2091,18 @@ void SystemStateModel::computeAllowedDeltas(
         }
         NtzState& state = m_ntzStates[zone.id];
 
-        // ====================================================================
+        // ============================================================================
         // PRIORITY 1: IMMEDIATE LATCH
-        // ====================================================================
+        // ============================================================================
         if (physicallyInside && !state.isInside) {
              state.isInside = true;
              state.isInitialized = true;
-             
+
              double dStart = std::abs(shortestSignedDelta(curAz, zStart));
              double dEnd   = std::abs(shortestSignedDelta(curAz, zEnd));
              double dMin   = std::abs(curEl - zMinEl);
              double dMax   = std::abs(curEl - zMaxEl);
-             
+
              double minAz = std::min(dStart, dEnd);
              double minEl = std::min(dMin, dMax);
 
@@ -2118,9 +2118,9 @@ void SystemStateModel::computeAllowedDeltas(
              }
         }
 
-        // ====================================================================
+        // ============================================================================
         // CASE A: PREDICTIVE COLLISION
-        // ====================================================================
+        // ============================================================================
         if (!state.isInside) {
             bool azInNext = isInsideAz(nextAz, zStart, zEnd);
             bool elInNext = (nextEl >= zMinEl && nextEl <= zMaxEl);
@@ -2141,10 +2141,10 @@ void SystemStateModel::computeAllowedDeltas(
                 }
             }
         }
-        
-        // ====================================================================
+
+        // ============================================================================
         // CASE B: RECOVERY (STATIC WALL LOGIC)
-        // ====================================================================
+        // ============================================================================
         else {
             double dStart = std::abs(shortestSignedDelta(curAz, zStart));
             double dEnd   = std::abs(shortestSignedDelta(curAz, zEnd));
@@ -2161,7 +2161,7 @@ void SystemStateModel::computeAllowedDeltas(
             if (state.enteredViaAz) {
                 // Determine if we are at Start or End wall
                 bool isStartWall = std::abs(shortestSignedDelta(state.entryBoundary, zStart)) < 0.1;
-                
+
                 if (isStartWall) {
                     // Start Wall (Left/CCW edge of zone). Zone is to the Right (+).
                     // BLOCK Positive (CW) motion.
@@ -2173,7 +2173,7 @@ void SystemStateModel::computeAllowedDeltas(
                     // ALLOW Positive (CW) motion.
                     if (intendedAzDelta < 0) allowedAzDelta = 0.0f;
                 }
-                
+
                 // ELEVATION IS FREE
             }
             else {
@@ -2375,13 +2375,13 @@ void SystemStateModel::selectPreviousTRPLocationPage() {
     emit dataChanged(data);
 }
 
- 
+
 void SystemStateModel::processStateTransitions(const SystemStateData& oldData,
                                                 SystemStateData& newData)
 {
-    // ========================================================================
+    // ============================================================================
     // PRIORITY 1: Emergency Stop Check (HIGHEST PRIORITY!)
-    // ========================================================================
+    // ============================================================================
     if (newData.emergencyStopActive && !oldData.emergencyStopActive) {
         enterEmergencyStopMode();
         return;  // E-Stop overrides all other transitions
@@ -2397,14 +2397,14 @@ void SystemStateModel::processStateTransitions(const SystemStateData& oldData,
         return;
     }
 
-    // ========================================================================
+    // ============================================================================
     // PRIORITY 2: HOMING SEQUENCE MANAGEMENT
-    // ========================================================================
+    // ============================================================================
     processHomingStateMachine(oldData, newData);
 
-    // ========================================================================
+    // ============================================================================
     // PRIORITY 3: Station Power Check
-    // ========================================================================
+    // ============================================================================
     if (!newData.stationEnabled && oldData.stationEnabled) {
         enterIdleMode();
         return;
@@ -2484,9 +2484,9 @@ void SystemStateModel::commandEngagement(bool start) {
 void SystemStateModel::processHomingStateMachine(const SystemStateData& oldData,
                                                   SystemStateData& newData)
 {
-    // ========================================================================
+    // ============================================================================
     // HOMING BUTTON PRESSED (rising edge)
-    // ========================================================================
+    // ============================================================================
     if (newData.gotoHomePosition && !oldData.gotoHomePosition) {
         // Home button just pressed
         if (newData.homingState == HomingState::Idle) {
@@ -2500,9 +2500,9 @@ void SystemStateModel::processHomingStateMachine(const SystemStateData& oldData,
         }
     }
 
-    // ========================================================================
+    // ============================================================================
     // HOMING REQUESTED → TRANSITION TO IN PROGRESS
-    // ========================================================================
+    // ============================================================================
     // ⭐ BUG FIX: Auto-transition from Requested to InProgress
     // GimbalController sets its own m_currentHomingState but doesn't propagate
     // back to SystemStateModel. We auto-transition after one cycle to sync states.
@@ -2514,9 +2514,9 @@ void SystemStateModel::processHomingStateMachine(const SystemStateData& oldData,
         newData.homingState = HomingState::InProgress;
     }
 
-    // ========================================================================
+    // ============================================================================
     // HOMING IN PROGRESS → CHECK FOR COMPLETION (REQUIRE BOTH AXES)
-    // ========================================================================
+    // ============================================================================
     if (newData.homingState == HomingState::InProgress) {
         // Check if BOTH HOME-END signals received
         // We need both azimuth AND elevation to complete homing
@@ -2544,9 +2544,9 @@ void SystemStateModel::processHomingStateMachine(const SystemStateData& oldData,
         }
     }
 
-    // ========================================================================
+    // ============================================================================
     // HOMING COMPLETED → RESTORE MOTION MODE AND CLEAR FLAGS
-    // ========================================================================
+    // ============================================================================
     if (newData.homingState == HomingState::Completed &&
         oldData.homingState == HomingState::InProgress) {
         // Homing just completed - restore previous motion mode
@@ -2562,9 +2562,9 @@ void SystemStateModel::processHomingStateMachine(const SystemStateData& oldData,
         // Will transition to Idle on next cycle
     }
 
-    // ========================================================================
+    // ============================================================================
     // HOMING FAILED/ABORTED → RESTORE MOTION MODE
-    // ========================================================================
+    // ============================================================================
     if ((newData.homingState == HomingState::Failed ||
          newData.homingState == HomingState::Aborted) &&
         (oldData.homingState == HomingState::InProgress ||
@@ -2578,10 +2578,10 @@ void SystemStateModel::processHomingStateMachine(const SystemStateData& oldData,
         newData.elevationHomeComplete = false;
     }
 
-    // ========================================================================
+    // ============================================================================
     // AUTO-TRANSITION COMPLETED/FAILED/ABORTED → IDLE (HomingState)
     // ⭐ BUG FIX: Hold completion state for 2 seconds for OSD display
-    // ========================================================================
+    // ============================================================================
     if ((newData.homingState == HomingState::Completed ||
          newData.homingState == HomingState::Failed ||
          newData.homingState == HomingState::Aborted) &&
@@ -2782,16 +2782,16 @@ void SystemStateModel::updateTrackingResult(
         /*qDebug() << "[MODEL-OUT] Emitting dataChanged. New Phase:" << static_cast<int>(data.currentTrackingPhase)
                  << "Valid Target:" << data.trackerHasValidTarget;
          qDebug() << "trackedTarget_position: (" << data.trackedTargetCenterX_px << ", " << data.trackedTargetCenterY_px << ")";*/
-         
+
         emit dataChanged(m_currentStateData);
     }
 }
 
 void SystemStateModel::startTrackingAcquisition() {
-    // ========================================================================
+    // ============================================================================
     // UC2: Initiate Tracking on Moving Target
     // UC3: Track Target with Lead Angle Active
-    // ========================================================================
+    // ============================================================================
     // CRITICAL ARCHITECTURAL PRINCIPLE:
     // • Visual tracking (acquisition box) operates in IMAGE COORDINATES
     // • Ballistic compensation (reticle position) operates in ANGULAR COORDINATES
@@ -2799,7 +2799,7 @@ void SystemStateModel::startTrackingAcquisition() {
     //
     // The acquisition box marks WHERE THE TARGET APPEARS VISUALLY
     // The reticle marks WHERE TO AIM TO HIT (with ballistic corrections)
-    // ========================================================================
+    // ============================================================================
 
     SystemStateData& data = m_currentStateData;
     if (data.currentTrackingPhase == TrackingPhase::Off) {
@@ -2881,13 +2881,13 @@ void SystemStateModel::stopTracking() {
 }
 
 void SystemStateModel::adjustAcquisitionBoxSize(float dW, float dH) {
-    // ========================================================================
+    // ============================================================================
     // SAFETY: Acquisition Box Boundary Validation
-    // ========================================================================
+    // ============================================================================
     // Ensures acquisition box stays within valid bounds during user adjustment
     // Maintains minimum size for VPI tracker initialization requirements
     // Prevents box from exceeding screen dimensions
-    // ========================================================================
+    // ============================================================================
 
     SystemStateData& data = m_currentStateData;
     if (data.currentTrackingPhase == TrackingPhase::Acquisition) {
@@ -3050,9 +3050,9 @@ void SystemStateModel::setWeaponCharged(bool charged)
     qDebug() << "[SystemStateModel] Weapon charged:" << charged;
 }
 
-// =============================================================================
+// ============================================================================
 // WRITE-PROTECTED SAFETY STATE MODIFICATION (Protected Methods)
-// =============================================================================
+// ============================================================================
 // These methods are only accessible to friend classes (SafetyInterlock,
 // EmergencyStopMonitor). They provide controlled access to safety-critical
 // state with audit logging.

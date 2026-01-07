@@ -22,7 +22,7 @@ void ManualMotionMode::enterMode(GimbalController* controller)
 
     // ✅ CRITICAL: Start velocity timer for dt measurement
     startVelocityTimer();
-    
+
 }
 
 void ManualMotionMode::exitMode(GimbalController* controller)
@@ -154,14 +154,14 @@ double ManualMotionMode::processJoystickInput(double filteredInput) {
     // before this method is called. We can proceed directly to the mode's logic.
 
     SystemStateData data = controller->systemStateModel()->data();
-    
+
     float angularVelocity = data.gimbalSpeed * SPEED_MULTIPLIER;
-    
+
     double azInput = data.joystickAzValue;
     double elInput = data.joystickElValue;
 
-    if (!checkElevationLimits(data.gimbalEl, elInput, 
-                             data.upperLimitSensorActive, 
+    if (!checkElevationLimits(data.gimbalEl, elInput,
+                             data.upperLimitSensorActive,
                              data.lowerLimitSensorActive)) {
         elInput = 0.0;
         qDebug() << "[ManualMotionMode] Elevation limit reached";
@@ -173,7 +173,7 @@ double ManualMotionMode::processJoystickInput(double filteredInput) {
     float maxSpeedDegS = data.gimbalSpeed * SPEED_MULTIPLIER;
     double targetAzVelocity = data.joystickAzValue * maxSpeedDegS;
     double targetElVelocity = data.joystickElValue * maxSpeedDegS;
-    
+
     // 2. Apply a proper, state-aware Rate Limiter.
     double maxVelocityChange = MAX_MANUAL_ACCEL_DEGS2 * UPDATE_INTERVAL_S;
 
@@ -209,7 +209,7 @@ double ManualMotionMode::processJoystickInput(double filteredInput) {
 
     //double desiredAzVelocity = (data.joystickAzValue != 0.0) ? std::copysign(maxSpeedDegS, data.joystickAzValue) : 0.0;
     //double desiredElVelocity = (data.joystickElValue != 0.0) ? std::copysign(maxSpeedDegS, data.joystickElValue) : 0.0;
-   
+
     // Pass the desired world velocity to the base class.
     // It will handle stabilization, limit checks, and hardware communication.
      //   sendStabilizedServoCommands(controller, 0.0, 0.0);

@@ -21,8 +21,7 @@ DeviceConfiguration::UiConfig DeviceConfiguration::m_ui;
 DeviceConfiguration::SafetyConfig DeviceConfiguration::m_safety;
 DeviceConfiguration::PerformanceConfig DeviceConfiguration::m_performance;
 
-bool DeviceConfiguration::load(const QString& externalPath)
-{
+bool DeviceConfiguration::load(const QString& externalPath) {
     qInfo() << "Loading device configuration...";
 
     // Try external file first
@@ -46,8 +45,7 @@ bool DeviceConfiguration::load(const QString& externalPath)
     return false;
 }
 
-bool DeviceConfiguration::loadFromFile(const QString& filePath)
-{
+bool DeviceConfiguration::loadFromFile(const QString& filePath) {
     QFile file(filePath);
     if (!file.open(QIODevice::ReadOnly)) {
         qWarning() << "Cannot open config file:" << filePath;
@@ -109,7 +107,8 @@ bool DeviceConfiguration::loadFromFile(const QString& filePath)
         m_imu.port = imu["port"].toString();
         m_imu.baudRate = imu["baudRate"].toInt(m_imu.baudRate);
         m_imu.samplingRateHz = imu["samplingRateHz"].toInt(m_imu.samplingRateHz);
-        m_imu.tiltWarningThreshold = imu["tiltWarningThreshold"].toDouble(m_imu.tiltWarningThreshold);
+        m_imu.tiltWarningThreshold =
+            imu["tiltWarningThreshold"].toDouble(m_imu.tiltWarningThreshold);
     }
 
     // Parse LRF
@@ -192,11 +191,14 @@ bool DeviceConfiguration::loadFromFile(const QString& filePath)
     // Parse Ballistics
     if (root.contains("ballistics")) {
         QJsonObject ballistics = root["ballistics"].toObject();
-        m_ballistics.maxZeroingOffset = ballistics["maxZeroingOffset"].toDouble(m_ballistics.maxZeroingOffset);
-        m_ballistics.zeroingStepSize = ballistics["zeroingStepSize"].toDouble(m_ballistics.zeroingStepSize);
+        m_ballistics.maxZeroingOffset =
+            ballistics["maxZeroingOffset"].toDouble(m_ballistics.maxZeroingOffset);
+        m_ballistics.zeroingStepSize =
+            ballistics["zeroingStepSize"].toDouble(m_ballistics.zeroingStepSize);
         m_ballistics.maxWindSpeed = ballistics["maxWindSpeed"].toDouble(m_ballistics.maxWindSpeed);
         m_ballistics.windStepSize = ballistics["windStepSize"].toDouble(m_ballistics.windStepSize);
-        m_ballistics.defaultBulletSpeed = ballistics["defaultBulletSpeed"].toDouble(m_ballistics.defaultBulletSpeed);
+        m_ballistics.defaultBulletSpeed =
+            ballistics["defaultBulletSpeed"].toDouble(m_ballistics.defaultBulletSpeed);
     }
 
     // Parse UI
@@ -213,33 +215,43 @@ bool DeviceConfiguration::loadFromFile(const QString& filePath)
     if (root.contains("safety")) {
         QJsonObject safety = root["safety"].toObject();
         m_safety.enableNoFireZones = safety["enableNoFireZones"].toBool(m_safety.enableNoFireZones);
-        m_safety.enableNoTraverseZones = safety["enableNoTraverseZones"].toBool(m_safety.enableNoTraverseZones);
+        m_safety.enableNoTraverseZones =
+            safety["enableNoTraverseZones"].toBool(m_safety.enableNoTraverseZones);
         m_safety.requireArmedState = safety["requireArmedState"].toBool(m_safety.requireArmedState);
-        m_safety.requireStationEnabled = safety["requireStationEnabled"].toBool(m_safety.requireStationEnabled);
+        m_safety.requireStationEnabled =
+            safety["requireStationEnabled"].toBool(m_safety.requireStationEnabled);
         m_safety.motorMaxTemp = safety["motorMaxTemp"].toDouble(m_safety.motorMaxTemp);
         m_safety.motorWarningTemp = safety["motorWarningTemp"].toDouble(m_safety.motorWarningTemp);
         m_safety.driverMaxTemp = safety["driverMaxTemp"].toDouble(m_safety.driverMaxTemp);
-        m_safety.driverWarningTemp = safety["driverWarningTemp"].toDouble(m_safety.driverWarningTemp);
+        m_safety.driverWarningTemp =
+            safety["driverWarningTemp"].toDouble(m_safety.driverWarningTemp);
     }
 
     // Parse Performance
     if (root.contains("performance")) {
         QJsonObject perf = root["performance"].toObject();
-        m_performance.gimbalMotionBufferSize = perf["gimbalMotionBufferSize"].toInt(m_performance.gimbalMotionBufferSize);
-        m_performance.imuDataBufferSize = perf["imuDataBufferSize"].toInt(m_performance.imuDataBufferSize);
-        m_performance.trackingDataBufferSize = perf["trackingDataBufferSize"].toInt(m_performance.trackingDataBufferSize);
-        m_performance.videoFrameBufferSize = perf["videoFrameBufferSize"].toInt(m_performance.videoFrameBufferSize);
+        m_performance.gimbalMotionBufferSize =
+            perf["gimbalMotionBufferSize"].toInt(m_performance.gimbalMotionBufferSize);
+        m_performance.imuDataBufferSize =
+            perf["imuDataBufferSize"].toInt(m_performance.imuDataBufferSize);
+        m_performance.trackingDataBufferSize =
+            perf["trackingDataBufferSize"].toInt(m_performance.trackingDataBufferSize);
+        m_performance.videoFrameBufferSize =
+            perf["videoFrameBufferSize"].toInt(m_performance.videoFrameBufferSize);
     }
 
     return true;
 }
 
-QSerialPort::Parity DeviceConfiguration::parseParity(const QString& parityStr)
-{
+QSerialPort::Parity DeviceConfiguration::parseParity(const QString& parityStr) {
     QString lower = parityStr.toLower();
-    if (lower == "even") return QSerialPort::EvenParity;
-    if (lower == "odd") return QSerialPort::OddParity;
-    if (lower == "space") return QSerialPort::SpaceParity;
-    if (lower == "mark") return QSerialPort::MarkParity;
+    if (lower == "even")
+        return QSerialPort::EvenParity;
+    if (lower == "odd")
+        return QSerialPort::OddParity;
+    if (lower == "space")
+        return QSerialPort::SpaceParity;
+    if (lower == "mark")
+        return QSerialPort::MarkParity;
     return QSerialPort::NoParity;
 }

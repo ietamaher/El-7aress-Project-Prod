@@ -7,20 +7,20 @@
 
 /**
  * @brief Protocol parser for Jioptics LRF devices
- * 
+ *
  * Implements the 9-byte packet protocol used by Jioptics laser range finders.
  * Handles parsing of ranging responses, status information, and command building.
  */
 class LrfProtocolParser : public ProtocolParser {
     Q_OBJECT
-    
+
 public:
     explicit LrfProtocolParser(QObject* parent = nullptr);
     ~LrfProtocolParser() override = default;
 
     // ProtocolParser interface
     std::vector<MessagePtr> parse(const QByteArray& rawData) override;
-    
+
     /**
      * @brief Build command packet for transmission
      * @param commandCode Command code byte

@@ -4,16 +4,16 @@
 /**
  * @file SystemStateData.h
  * @brief Core data structures and enumerations for Remote Controlled Weapon System (RCWS)
- * 
+ *
  * This header defines all fundamental data structures, enumerations, and constants
  * used throughout the RCWS application for state management and system operation.
- * 
+ *
  * MAIN COMPONENTS:
  * 1. System Constants - Color definitions and default values
  * 2. Core Enumerations - System modes, states, and operational parameters
  * 3. Zone Management Structures - Area zones, sector scan zones, and target reference points
  * 4. System State Structure - Complete system state with organized data categories
- * 
+ *
  * DATA ORGANIZATION WITHIN SystemStateData:
  * • Operational State & Modes - Current and previous operational modes
  * • Display & UI Configuration - Visual settings and screen parameters
@@ -28,7 +28,7 @@
  * • Tracking System - Target tracking and movement control
  * • Ballistics & Fire Control - Zeroing, windage, and lead compensation
  * • Status & Information Display - System messages and status text
- * 
+ *
  * HELPER FUNCTIONS:
  * • System readiness checks
  * • Health monitoring utilities
@@ -81,7 +81,7 @@ enum class ReticleType {
 /**
  * @brief Weapon firing modes available in the system
  */
-enum class FireMode { 
+enum class FireMode {
     SingleShot,  ///< Single round per trigger pull
     ShortBurst,  ///< Short controlled burst
     LongBurst,   ///< Extended burst fire
@@ -91,7 +91,7 @@ enum class FireMode {
 /**
  * @brief High-level operational modes of the weapon system
  */
-enum class OperationalMode { 
+enum class OperationalMode {
     Idle,         ///< System idle, no active operations
     Surveillance, ///< Area surveillance mode
     Tracking,     ///< Target tracking mode
@@ -102,7 +102,7 @@ enum class OperationalMode {
 /**
  * @brief Motion control modes for gimbal and weapon positioning
  */
-enum class MotionMode { 
+enum class MotionMode {
     Manual,        ///< Manual joystick control
     Pattern,       ///< Predefined pattern scanning
     AutoTrack,     ///< Automatic target tracking
@@ -117,7 +117,7 @@ enum class MotionMode {
 
 /**
  * @brief Homing sequence state machine states
- * 
+ *
  * Tracks the complete homing operation from button press to completion.
  * The homing process sends a HOME command to Oriental Motor servo drives,
  * which move to their mechanical home position and send a HOME-END signal.
@@ -230,34 +230,34 @@ struct AreaZone {
     QString name = "";                  ///< Human-readable zone name
 
     AreaZone() = default;
-    
+
     /**
      * @brief Equality comparison operator for AreaZone
      * @param other The other AreaZone to compare with
      * @return True if zones are identical, false otherwise
      */
     bool operator==(const AreaZone& other) const {
-        return id == other.id && 
-               type == other.type && 
+        return id == other.id &&
+               type == other.type &&
                isEnabled == other.isEnabled &&
-               isFactorySet == other.isFactorySet && 
+               isFactorySet == other.isFactorySet &&
                isOverridable == other.isOverridable &&
-               qFuzzyCompare(startAzimuth, other.startAzimuth) && 
+               qFuzzyCompare(startAzimuth, other.startAzimuth) &&
                qFuzzyCompare(endAzimuth, other.endAzimuth) &&
-               qFuzzyCompare(minElevation, other.minElevation) && 
+               qFuzzyCompare(minElevation, other.minElevation) &&
                qFuzzyCompare(maxElevation, other.maxElevation) &&
-               qFuzzyCompare(minRange, other.minRange) && 
+               qFuzzyCompare(minRange, other.minRange) &&
                qFuzzyCompare(maxRange, other.maxRange) &&
                name == other.name;
     }
-    
+
     /**
      * @brief Inequality comparison operator for AreaZone
      * @param other The other AreaZone to compare with
      * @return True if zones are different, false otherwise
      */
-    bool operator!=(const AreaZone& other) const { 
-        return !(*this == other); 
+    bool operator!=(const AreaZone& other) const {
+        return !(*this == other);
     }
 };
 
@@ -274,29 +274,29 @@ struct AutoSectorScanZone {
     float scanSpeed = 20.0f;   ///< Scanning speed in degrees per second
 
     AutoSectorScanZone() = default;
-    
+
     /**
      * @brief Equality comparison operator for AutoSectorScanZone
      * @param other The other AutoSectorScanZone to compare with
      * @return True if scan zones are identical, false otherwise
      */
     bool operator==(const AutoSectorScanZone& other) const {
-        return id == other.id && 
+        return id == other.id &&
                isEnabled == other.isEnabled &&
-               qFuzzyCompare(az1, other.az1) && 
+               qFuzzyCompare(az1, other.az1) &&
                qFuzzyCompare(el1, other.el1) &&
-               qFuzzyCompare(az2, other.az2) && 
+               qFuzzyCompare(az2, other.az2) &&
                qFuzzyCompare(el2, other.el2) &&
                qFuzzyCompare(scanSpeed, other.scanSpeed);
     }
-    
+
     /**
      * @brief Inequality comparison operator for AutoSectorScanZone
      * @param other The other AutoSectorScanZone to compare with
      * @return True if scan zones are different, false otherwise
      */
-    bool operator!=(const AutoSectorScanZone& other) const { 
-        return !(*this == other); 
+    bool operator!=(const AutoSectorScanZone& other) const {
+        return !(*this == other);
     }
 };
 
@@ -312,28 +312,28 @@ struct TargetReferencePoint {
     float haltTime = 0.0f;     ///< Halt time at TRP in seconds
 
     TargetReferencePoint() = default;
-    
+
     /**
      * @brief Equality comparison operator for TargetReferencePoint
      * @param other The other TargetReferencePoint to compare with
      * @return True if TRPs are identical, false otherwise
      */
     bool operator==(const TargetReferencePoint& other) const {
-        return id == other.id && 
-               locationPage == other.locationPage && 
+        return id == other.id &&
+               locationPage == other.locationPage &&
                trpInPage == other.trpInPage &&
-               qFuzzyCompare(azimuth, other.azimuth) && 
+               qFuzzyCompare(azimuth, other.azimuth) &&
                qFuzzyCompare(elevation, other.elevation) &&
                qFuzzyCompare(haltTime, other.haltTime);
     }
-    
+
     /**
      * @brief Inequality comparison operator for TargetReferencePoint
      * @param other The other TargetReferencePoint to compare with
      * @return True if TRPs are different, false otherwise
      */
-    bool operator!=(const TargetReferencePoint& other) const { 
-        return !(*this == other); 
+    bool operator!=(const TargetReferencePoint& other) const {
+        return !(*this == other);
     }
 };
 
@@ -359,13 +359,13 @@ struct SimpleRadarPlot {
 
 /**
  * @brief Comprehensive system state structure containing all RCWS operational data
- * 
+ *
  * This structure serves as the central data repository for the entire RCWS system,
  * organizing all operational parameters, sensor data, control states, and status
  * information into logical categories for efficient access and management.
  */
 struct SystemStateData {
-    
+
     // =================================
     // OPERATIONAL STATE & MODES
     // =================================
@@ -373,7 +373,7 @@ struct SystemStateData {
     OperationalMode previousOpMode = OperationalMode::Idle; ///< Previous operational mode for state transitions
     MotionMode motionMode = MotionMode::Idle;               ///< Current motion control mode
     MotionMode previousMotionMode = MotionMode::Idle;       ///< Previous motion mode for state transitions
-    
+
     // =================================
     // DISPLAY & UI CONFIGURATION
     // =================================
@@ -399,7 +399,7 @@ struct SystemStateData {
     QString currentTRPScanName;                             ///< Name of current TRP scan operation
     bool isReticleInNoFireZone = false;                     ///< Whether reticle is in a no-fire zone
     bool isReticleInNoTraverseZone = false;                 ///< Whether reticle is in a no-traverse zone
-    
+
     // =================================
     // CAMERA SYSTEMS
     // =================================
@@ -427,7 +427,7 @@ struct SystemStateData {
 
     // Camera Control
     bool activeCameraIsDay = false;     ///< True if day camera is active, false if night camera
-    
+
     // =================================
     // GIMBAL & POSITIONING SYSTEM
     // =================================
@@ -457,7 +457,7 @@ struct SystemStateData {
 
 
     // =================================
-    // SERVO ACTUATOR  
+    // SERVO ACTUATOR
     // =================================
     bool actuatorConnected = false;      ///< Servo actuator connection status
     double actuatorPosition = 0.0;       ///< Linear actuator position in mm
@@ -467,9 +467,9 @@ struct SystemStateData {
     double actuatorTorque = 0.0;         ///< Actuator torque percentage (0-100)
     bool actuatorMotorOff = false;       ///< Actuator motor off status
     bool actuatorFault = false;          ///< Actuator fault/latching fault status
- 
 
-    
+
+
     // =================================
     // ORIENTATION & STABILIZATION
     // =================================
@@ -531,7 +531,7 @@ struct SystemStateData {
     bool isVehicleStationary = false;   ///< Flag indicating if the vehicle is stationary
     double previousAccelMagnitude = 0.0; ///< Previous accelerometer magnitude for delta calculation
     QDateTime stationaryStartTime;      ///< Timestamp when stationary conditions began
-    
+
     // =================================
     // LASER RANGE FINDER (LRF)
     // =================================
@@ -551,7 +551,7 @@ struct SystemStateData {
     // =================================
     QVector<SimpleRadarPlot> radarPlots;         // The latest list of all detected plots
     quint32 selectedRadarTrackId = 0;      // The ID of the target the user has selected from the list
-    
+
     // =================================
     // JOYSTICK & MANUAL CONTROLS
     // =================================
@@ -566,7 +566,7 @@ struct SystemStateData {
     bool menuVal = false;             ///< Menu validation switch status
     int joystickHatDirection = 0;         ///< Joystick hat switch direction (0-7, 0 = center, 1 = up, 2 = up-right, etc.)
 
-    
+
     // =================================
     // WEAPON SYSTEM CONTROL (PLC21)
     // =================================
@@ -589,19 +589,19 @@ struct SystemStateData {
     bool plc42Connected = false;          ///< PLC42 connection status
     bool upperLimitSensorActive = false; ///< Upper travel limit sensor status
     bool lowerLimitSensorActive = false; ///< Lower travel limit sensor status
-    
+
     // Station Inputs
     bool stationAmmunitionLevel = false; ///< Station ammunition level sensor
     bool hatchState = false;          ///< General station input 1
     bool freeGimbalState = false;          ///< General station input 2
     bool stationInput3 = false;          ///< General station input 3
      bool azimuthHomeComplete = false;      ///< Az HOME-END signal from Oriental Motor (DI6/I0_6)
-    bool elevationHomeComplete = false;    ///< El HOME-END signal from Oriental Motor (DI7/I0_7)   
+    bool elevationHomeComplete = false;    ///< El HOME-END signal from Oriental Motor (DI7/I0_7)
     // Environmental Monitoring
     int panelTemperature = 0;            ///< Control panel temperature in Celsius
     int stationTemperature = 0;          ///< Station ambient temperature in Celsius
     int stationPressure = 0;             ///< Station atmospheric pressure
-    
+
     // Control States
     uint16_t solenoidMode = 0;           ///< Solenoid valve mode setting
     uint16_t gimbalOpMode = 0;           ///< Gimbal operational mode
@@ -657,7 +657,7 @@ struct SystemStateData {
     float zeroingAzimuthOffset = 0.0f;      ///< Zeroing azimuth offset in degrees
     float zeroingElevationOffset = 0.0f;    ///< Zeroing elevation offset in degrees
     bool zeroingAppliedToBallistics = false; ///< Whether zeroing is applied to ballistic calculations
-    
+
     // Windage Compensation
     bool windageModeActive = false;         ///< Windage compensation mode active status
     float windageSpeedKnots = 0.0f;         ///< Wind speed for windage calculation in knots
@@ -672,7 +672,7 @@ struct SystemStateData {
     bool environmentalModeActive = false;   ///< Environmental settings mode active status
     float environmentalTemperatureCelsius = 15.0f; ///< Air temperature in degrees Celsius (ISO standard: 15°C)
     float environmentalAltitudeMeters = 0.0f;      ///< Altitude above sea level in meters
-    bool environmentalAppliedToBallistics = false; ///< Whether environmental settings are applied    
+    bool environmentalAppliedToBallistics = false; ///< Whether environmental settings are applied
     // Lead Angle Compensation
     bool leadAngleCompensationActive = false;           ///< Lead angle compensation active status (NOW controls motion lead ONLY)
     LeadAngleStatus currentLeadAngleStatus = LeadAngleStatus::Off; ///< Current lead angle system status
@@ -718,7 +718,7 @@ struct SystemStateData {
     float currentTargetAngularRateAz = 0.0f;            ///< Target angular rate in azimuth (degrees/second)
     float currentTargetAngularRateEl = 0.0f;            ///< Target angular rate in elevation (degrees/second)
     float muzzleVelocityMPS = 900.0f;                   ///< Projectile muzzle velocity in meters per second
-    
+
     // Charging Parameters (CROWS M153 Compliant - Cocking Actuator)
     WeaponType installedWeaponType = WeaponType::M2HB;  ///< Currently installed weapon type
     ChargingState chargingState = ChargingState::Idle;  ///< Current charging FSM state (for OSD display)
@@ -737,11 +737,11 @@ struct SystemStateData {
     QString alertsWarnings;             ///< System alerts and warnings
     QString leadStatusText = "";        ///< Lead angle status text for display
     QString zeroingStatusText = "";     ///< Zeroing status text for display
-    
+
     // =================================
     // HELPER FUNCTIONS
     // =================================
-    
+
     /**
      * @brief Checks if the weapon system is ready for operation
      * @return True if all safety and authorization conditions are met
@@ -749,7 +749,7 @@ struct SystemStateData {
     bool isReady() const {
         return gunArmed && weaponCharged && deadManSwitchActive && authorized;
     }
-    
+
     /**
      * @brief Checks if the tracking system is ready for operation
      * @return True if tracking system is operational and safe
@@ -757,35 +757,35 @@ struct SystemStateData {
     bool isTrackingReady() const {
         return trackingActive && !emergencyStopActive && stationEnabled;
     }
-    
+
     /**
      * @brief Checks if the camera system is healthy and operational
      * @return True if the active camera is connected and error-free
      */
     bool isCameraSystemHealthy() const {
-        return activeCameraIsDay ? (!dayCameraError && dayCameraConnected) 
+        return activeCameraIsDay ? (!dayCameraError && dayCameraConnected)
                                  : (!nightCameraError && nightCameraConnected);
     }
-    
+
     // =================================
     // COMPARISON OPERATORS
     // =================================
-    
+
     /**
      * @brief Equality comparison operator for complete system state
      * @param other The other SystemStateData to compare with
      * @return True if all system state parameters are identical
-     * 
+     *
      * NOTE: This operator now includes ALL member variables for complete state comparison
      */
     bool operator==(const SystemStateData& other) const {
-        return 
+        return
                // Operational State & Modes
-               opMode == other.opMode && 
-               motionMode == other.motionMode && 
+               opMode == other.opMode &&
+               motionMode == other.motionMode &&
                previousOpMode == other.previousOpMode &&
                previousMotionMode == other.previousMotionMode &&
-               
+
                // Display & UI Configuration
                reticleType == other.reticleType &&
                osdColorStyle == other.osdColorStyle &&
@@ -807,7 +807,7 @@ struct SystemStateData {
                currentTRPScanName == other.currentTRPScanName &&
                isReticleInNoFireZone == other.isReticleInNoFireZone &&
                isReticleInNoTraverseZone == other.isReticleInNoTraverseZone &&
-               
+
                // Camera Systems - Day Camera
                qFuzzyCompare(dayZoomPosition, other.dayZoomPosition) &&
                qFuzzyCompare(dayCurrentHFOV, other.dayCurrentHFOV) &&
@@ -832,7 +832,7 @@ struct SystemStateData {
 
                // Camera Control
                activeCameraIsDay == other.activeCameraIsDay &&
-               
+
                // Gimbal & Positioning System
                qFuzzyCompare(gimbalAz, other.gimbalAz) &&
                qFuzzyCompare(gimbalEl, other.gimbalEl) &&
@@ -844,7 +844,7 @@ struct SystemStateData {
                qFuzzyCompare(azRpm, other.azRpm) &&
                qFuzzyCompare(azTorque, other.azTorque) &&
                azFault == other.azFault &&
-               
+
                // Elevation Servo
                elServoConnected == other.elServoConnected &&
                qFuzzyCompare(elMotorTemp, other.elMotorTemp) &&
@@ -852,11 +852,11 @@ struct SystemStateData {
                qFuzzyCompare(elRpm, other.elRpm) &&
                qFuzzyCompare(elTorque, other.elTorque) &&
                elFault == other.elFault &&
-               
+
                // Reticle Position
                qFuzzyCompare(reticleAz, other.reticleAz) &&
                qFuzzyCompare(reticleEl, other.reticleEl) &&
-               
+
                // Servo Actuator
                actuatorConnected == other.actuatorConnected &&
                qFuzzyCompare(actuatorPosition, other.actuatorPosition) &&
@@ -866,7 +866,7 @@ struct SystemStateData {
                qFuzzyCompare(actuatorTorque, other.actuatorTorque) &&
                actuatorMotorOff == other.actuatorMotorOff &&
                actuatorFault == other.actuatorFault &&
-               
+
                // Orientation & Stabilization
                imuConnected == other.imuConnected &&
                qFuzzyCompare(imuRollDeg, other.imuRollDeg) &&
@@ -891,7 +891,7 @@ struct SystemStateData {
                isVehicleStationary == other.isVehicleStationary &&
                qFuzzyCompare(previousAccelMagnitude, other.previousAccelMagnitude) &&
                stationaryStartTime == other.stationaryStartTime &&
-               
+
                // Laser Range Finder (LRF)
                lrfConnected == other.lrfConnected &&
                qFuzzyCompare(lrfDistance, other.lrfDistance) &&
@@ -903,11 +903,11 @@ struct SystemStateData {
                lrfLaserNotOut == other.lrfLaserNotOut &&
                lrfOverTemp == other.lrfOverTemp &&
                isOverTemperature == other.isOverTemperature &&
-               
+
                // Radar Data
                radarPlots == other.radarPlots &&
                selectedRadarTrackId == other.selectedRadarTrackId &&
-               
+
                // Joystick & Manual Controls
                joystickConnected == other.joystickConnected &&
                deadManSwitchActive == other.deadManSwitchActive &&
@@ -919,7 +919,7 @@ struct SystemStateData {
                menuDown == other.menuDown &&
                menuVal == other.menuVal &&
                joystickHatDirection == other.joystickHatDirection &&
-               
+
                // Weapon System Control (PLC21)
                plc21Connected == other.plc21Connected &&
                stationEnabled == other.stationEnabled &&
@@ -931,7 +931,7 @@ struct SystemStateData {
                fireMode == other.fireMode &&
                qFuzzyCompare(gimbalSpeed, other.gimbalSpeed) &&
                enableStabilization == other.enableStabilization &&
-               
+
                // Gimbal Station Hardware (PLC42)
                plc42Connected == other.plc42Connected &&
                upperLimitSensorActive == other.upperLimitSensorActive &&
@@ -979,7 +979,7 @@ struct SystemStateData {
                qFuzzyCompare(acquisitionBoxY_px, other.acquisitionBoxY_px) &&
                qFuzzyCompare(acquisitionBoxW_px, other.acquisitionBoxW_px) &&
                qFuzzyCompare(acquisitionBoxH_px, other.acquisitionBoxH_px) &&
-               
+
                // Ballistics & Fire Control
                zeroingModeActive == other.zeroingModeActive &&
                qFuzzyCompare(zeroingAzimuthOffset, other.zeroingAzimuthOffset) &&
@@ -1034,7 +1034,7 @@ struct SystemStateData {
                leadStatusText == other.leadStatusText &&
                zeroingStatusText == other.zeroingStatusText;
     }
-    
+
     bool operator!=(const SystemStateData& other) const {
         return !(*this == other);
     }

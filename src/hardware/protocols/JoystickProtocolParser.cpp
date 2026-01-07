@@ -89,7 +89,7 @@ void JoystickProtocolParser::reset()
     m_currentState.axisX = 0.0f;
     m_currentState.axisY = 0.0f;
     m_currentState.hatState = 0;
-    
+
     for (int i = 0; i < JoystickData::MAX_BUTTONS; ++i) {
         m_currentState.buttons[i] = false;
     }
@@ -99,7 +99,7 @@ float JoystickProtocolParser::normalizeAxisValue(int16_t value)
 {
     // Apply deadzone to filter out joystick drift
     const int16_t DEADZONE = 3000;  // ~9% deadzone
-    
+
     if (std::abs(value) < DEADZONE) {
         return 0.0f;
     }

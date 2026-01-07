@@ -310,7 +310,7 @@ struct Plc21PanelData {
 
 /**
  * @brief PLC42 data structure - UPDATED FOR HOME POSITION DETECTION
- * 
+ *
  * HARDWARE MAPPING (MDUINO 42+ Station Control):
  * Digital Inputs (8 total):
  *   DI0 (I0_0) → stationUpperSensor (Upper limit)
@@ -321,7 +321,7 @@ struct Plc21PanelData {
  *   DI5 (I0_5) → Reserved (future E-STOP button)
  *   DI6 (I0_6) → azimuthHomeComplete  (Az HOME-END from Oriental Motor)
  *   DI7 (I0_7) → elevationHomeComplete   (El HOME-END from Oriental Motor)
- * 
+ *
  * Holding Registers (10 total):
  *   HR0: solenoidMode (1=Single, 2=Burst, 3=Continuous)
  *   HR1: gimbalOpMode (0=Manual, 1=Stop, 3=Home, 4=Free)
@@ -336,9 +336,9 @@ struct Plc21PanelData {
 struct Plc42Data {
     bool isConnected = false;
 
-    // =========================================================================
+    // ============================================================================
     // DISCRETE INPUTS (8 inputs)
-    // =========================================================================
+    // ============================================================================
     bool stationUpperSensor = false;       ///< DI0: Upper limit sensor
     bool stationLowerSensor = false;       ///< DI1: Lower limit sensor
     bool hatchState = false;               ///< DI2: Hatch state
@@ -347,14 +347,14 @@ struct Plc42Data {
     // DI5: Reserved (future E-STOP button)
     bool azimuthHomeComplete = false;      ///< DI6: Az HOME-END signal ⭐ NEW
     bool elevationHomeComplete = false;    ///< DI7: El HOME-END signal ⭐ NEW
-    
+
     // Derived values (computed in parser)
     bool emergencyStopActive = false;      ///< Derived: gimbalOpMode == 1
     bool solenoidActive = false;           ///< Derived: solenoidState != 0
 
-    // =========================================================================
+    // ============================================================================
     // HOLDING REGISTERS (11 registers)
-    // =========================================================================
+    // ============================================================================
     uint16_t solenoidMode = 0;          ///< HR0: Fire mode
     uint16_t gimbalOpMode = 0;          ///< HR1: Gimbal operation mode
     uint32_t azimuthSpeed = 0;          ///< HR2-3: Azimuth speed (32-bit)
@@ -372,8 +372,8 @@ struct Plc42Data {
                 hatchState != other.hatchState ||
                 freeGimbalState != other.freeGimbalState ||
                 ammunitionLevel != other.ammunitionLevel ||
-                azimuthHomeComplete != other.azimuthHomeComplete ||     
-                elevationHomeComplete != other.elevationHomeComplete || 
+                azimuthHomeComplete != other.azimuthHomeComplete ||
+                elevationHomeComplete != other.elevationHomeComplete ||
                 emergencyStopActive != other.emergencyStopActive ||
                 solenoidActive != other.solenoidActive ||
                 solenoidMode != other.solenoidMode ||

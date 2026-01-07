@@ -19,12 +19,11 @@ class SystemStateModel;
  *
  * Safety: Default selection is NO to prevent accidental shutdown.
  */
-class ShutdownConfirmationController : public QObject
-{
+class ShutdownConfirmationController : public QObject {
     Q_OBJECT
 
 public:
-    explicit ShutdownConfirmationController(QObject *parent = nullptr);
+    explicit ShutdownConfirmationController(QObject* parent = nullptr);
     ~ShutdownConfirmationController();
 
     // Dependency injection
@@ -77,4 +76,4 @@ private:
     bool m_shutdownInProgress = false;
 };
 
-#endif // SHUTDOWNCONFIRMATIONCONTROLLER_H
+#endif  // SHUTDOWNCONFIRMATIONCONTROLLER_H

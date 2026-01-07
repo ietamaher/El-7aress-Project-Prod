@@ -6,12 +6,11 @@
 class EnvironmentalViewModel;
 class SystemStateModel;
 
-class EnvironmentalController : public QObject
-{
+class EnvironmentalController : public QObject {
     Q_OBJECT
 
 public:
-    explicit EnvironmentalController(QObject *parent = nullptr);
+    explicit EnvironmentalController(QObject* parent = nullptr);
     void initialize();
     void setViewModel(EnvironmentalViewModel* viewModel);
     void setStateModel(SystemStateModel* stateModel);
@@ -32,12 +31,7 @@ private slots:
     void onColorStyleChanged(const QColor& color);
 
 private:
-    enum class EnvironmentalState {
-        Idle,
-        Set_Temperature,
-        Set_Altitude,
-        Completed
-    };
+    enum class EnvironmentalState { Idle, Set_Temperature, Set_Altitude, Completed };
 
     void updateUI();
     void transitionToState(EnvironmentalState newState);
@@ -50,4 +44,4 @@ private:
     // NOTE: Crosswind removed - use Windage menu instead (wind direction + speed)
 };
 
-#endif // ENVIRONMENTALCONTROLLER_H
+#endif  // ENVIRONMENTALCONTROLLER_H

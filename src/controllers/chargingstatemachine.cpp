@@ -14,29 +14,22 @@
 // ============================================================================
 
 ChargingStateMachine::ChargingStateMachine(ServoActuatorDevice* actuator,
-                                             SafetyInterlock* safetyInterlock,
-                                             QObject* parent)
-    : QObject(parent)
-    , m_actuator(actuator)
-    , m_safetyInterlock(safetyInterlock)
-{
+                                           SafetyInterlock* safetyInterlock, QObject* parent)
+    : QObject(parent), m_actuator(actuator), m_safetyInterlock(safetyInterlock) {
     // Initialize timeout timer
     m_timeoutTimer = new QTimer(this);
     m_timeoutTimer->setSingleShot(true);
-    connect(m_timeoutTimer, &QTimer::timeout,
-            this, &ChargingStateMachine::onChargingTimeout);
+    connect(m_timeoutTimer, &QTimer::timeout, this, &ChargingStateMachine::onChargingTimeout);
 
     // Initialize lockout timer (CROWS M153 4-second post-charge lockout)
     m_lockoutTimer = new QTimer(this);
     m_lockoutTimer->setSingleShot(true);
-    connect(m_lockoutTimer, &QTimer::timeout,
-            this, &ChargingStateMachine::onLockoutExpired);
+    connect(m_lockoutTimer, &QTimer::timeout, this, &ChargingStateMachine::onLockoutExpired);
 
     qDebug() << "[ChargingStateMachine] Initialized (timeout:" << COCKING_TIMEOUT_MS << "ms)";
 }
 
-ChargingStateMachine::~ChargingStateMachine()
-{
+ChargingStateMachine::~ChargingStateMachine() {
     if (m_timeoutTimer) {
         m_timeoutTimer->stop();
     }
@@ -50,15 +43,12 @@ ChargingStateMachine::~ChargingStateMachine()
 // PUBLIC INTERFACE
 // ============================================================================
 
-bool ChargingStateMachine::requestCharge(WeaponType weaponType)
-{
-    qDebug() << "[ChargingStateMachine] Charge request. Current state:"
-             << stateName(m_currentState)
+bool ChargingStateMachine::requestCharge(WeaponType weaponType) {
+    qDebug() << "[ChargingStateMachine] Charge request. Current state:" << stateName(m_currentState)
              << "| Lockout active:" << m_lockoutActive;
 
     // Handle FAULT state specially - operator presses button to reset
-    if (m_currentState == ChargingState::Fault ||
-        m_currentState == ChargingState::JamDetected) {
+    if (m_currentState == ChargingState::Fault || m_currentState == ChargingState::JamDetected) {
         qDebug() << "[ChargingStateMachine] Button pressed in FAULT state - resetting fault";
         resetFault();
         return true;
@@ -81,16 +71,14 @@ bool ChargingStateMachine::requestCharge(WeaponType weaponType)
     m_requiredCycles = getRequiredCyclesForWeapon(weaponType);
     m_buttonCurrentlyHeld = true;  // Assume button is held when request comes in
 
-    qInfo() << "[ChargingStateMachine] Starting charge sequence:"
-            << m_requiredCycles << "cycle(s) required for weapon type"
-            << static_cast<int>(weaponType);
+    qInfo() << "[ChargingStateMachine] Starting charge sequence:" << m_requiredCycles
+            << "cycle(s) required for weapon type" << static_cast<int>(weaponType);
 
     startCycle();
     return true;
 }
 
-void ChargingStateMachine::onButtonReleased()
-{
+void ChargingStateMachine::onButtonReleased() {
     m_buttonCurrentlyHeld = false;
 
     if (m_currentState == ChargingState::Extended) {
@@ -99,8 +87,9 @@ void ChargingStateMachine::onButtonReleased()
         m_currentCycleCount++;
         m_isShortPressCharge = false;  // Mark as continuous hold mode
 
-        qInfo() << "[ChargingStateMachine] Button RELEASED in Extended state - initiating retraction"
-                << "(Cycle" << m_currentCycleCount << "of" << m_requiredCycles << ")";
+        qInfo()
+            << "[ChargingStateMachine] Button RELEASED in Extended state - initiating retraction"
+            << "(Cycle" << m_currentCycleCount << "of" << m_requiredCycles << ")";
 
         transitionTo(ChargingState::Retracting);
         emit requestActuatorMove(COCKING_RETRACT_POS);
@@ -108,15 +97,13 @@ void ChargingStateMachine::onButtonReleased()
     } else if (m_currentState == ChargingState::Extending ||
                m_currentState == ChargingState::Retracting) {
         // Button released during extend/retract motion - logged but cycle continues
-        qDebug() << "[ChargingStateMachine] Button released during"
-                 << stateName(m_currentState) << "- cycle continues";
+        qDebug() << "[ChargingStateMachine] Button released during" << stateName(m_currentState)
+                 << "- cycle continues";
     }
 }
 
-void ChargingStateMachine::abort(const QString& reason)
-{
-    if (m_currentState == ChargingState::Idle ||
-        m_currentState == ChargingState::Lockout) {
+void ChargingStateMachine::abort(const QString& reason) {
+    if (m_currentState == ChargingState::Idle || m_currentState == ChargingState::Lockout) {
         qDebug() << "[ChargingStateMachine] Nothing to abort - not charging";
         return;
     }
@@ -139,10 +126,8 @@ void ChargingStateMachine::abort(const QString& reason)
     emit cycleFaulted();
 }
 
-void ChargingStateMachine::resetFault()
-{
-    if (m_currentState != ChargingState::Fault &&
-        m_currentState != ChargingState::JamDetected) {
+void ChargingStateMachine::resetFault() {
+    if (m_currentState != ChargingState::Fault && m_currentState != ChargingState::JamDetected) {
         qDebug() << "[ChargingStateMachine] Fault reset IGNORED - not in FAULT state";
         return;
     }
@@ -161,11 +146,9 @@ void ChargingStateMachine::resetFault()
     m_timeoutTimer->start(COCKING_TIMEOUT_MS);
 }
 
-void ChargingStateMachine::processActuatorFeedback(const ServoActuatorData& data)
-{
+void ChargingStateMachine::processActuatorFeedback(const ServoActuatorData& data) {
     // Jam detection during motion states
-    if (m_currentState == ChargingState::Extending ||
-        m_currentState == ChargingState::Retracting ||
+    if (m_currentState == ChargingState::Extending || m_currentState == ChargingState::Retracting ||
         m_currentState == ChargingState::SafeRetract) {
         checkForJam(data);
     }
@@ -174,8 +157,7 @@ void ChargingStateMachine::processActuatorFeedback(const ServoActuatorData& data
     processPosition(data.position_mm);
 }
 
-void ChargingStateMachine::performStartupRetraction(double currentPosition)
-{
+void ChargingStateMachine::performStartupRetraction(double currentPosition) {
     if (currentPosition > ACTUATOR_RETRACTED_THRESHOLD) {
         qInfo() << "========================================";
         qInfo() << "  CROWS M153: STARTUP - ACTUATOR EXTENDED, AUTO-RETRACTING";
@@ -200,8 +182,7 @@ void ChargingStateMachine::performStartupRetraction(double currentPosition)
 // STATE QUERIES
 // ============================================================================
 
-bool ChargingStateMachine::isChargingInProgress() const
-{
+bool ChargingStateMachine::isChargingInProgress() const {
     return (m_currentState == ChargingState::Extending ||
             m_currentState == ChargingState::Extended ||
             m_currentState == ChargingState::Retracting ||
@@ -209,8 +190,7 @@ bool ChargingStateMachine::isChargingInProgress() const
             m_currentState == ChargingState::JamDetected);
 }
 
-bool ChargingStateMachine::isChargingAllowed() const
-{
+bool ChargingStateMachine::isChargingAllowed() const {
     // Delegate safety decision to SafetyInterlock
     if (m_safetyInterlock) {
         SafetyDenialReason reason;
@@ -232,17 +212,24 @@ bool ChargingStateMachine::isChargingAllowed() const
     return true;
 }
 
-QString ChargingStateMachine::stateName(ChargingState state)
-{
+QString ChargingStateMachine::stateName(ChargingState state) {
     switch (state) {
-    case ChargingState::Idle:        return "Idle";
-    case ChargingState::Extending:   return "Extending";
-    case ChargingState::Extended:    return "Extended";
-    case ChargingState::Retracting:  return "Retracting";
-    case ChargingState::Lockout:     return "Lockout";
-    case ChargingState::JamDetected: return "JamDetected";
-    case ChargingState::SafeRetract: return "SafeRetract";
-    case ChargingState::Fault:       return "Fault";
+    case ChargingState::Idle:
+        return "Idle";
+    case ChargingState::Extending:
+        return "Extending";
+    case ChargingState::Extended:
+        return "Extended";
+    case ChargingState::Retracting:
+        return "Retracting";
+    case ChargingState::Lockout:
+        return "Lockout";
+    case ChargingState::JamDetected:
+        return "JamDetected";
+    case ChargingState::SafeRetract:
+        return "SafeRetract";
+    case ChargingState::Fault:
+        return "Fault";
     }
     return "Unknown";
 }
@@ -251,8 +238,7 @@ QString ChargingStateMachine::stateName(ChargingState state)
 // PRIVATE SLOTS
 // ============================================================================
 
-void ChargingStateMachine::onChargingTimeout()
-{
+void ChargingStateMachine::onChargingTimeout() {
     qWarning() << "[ChargingStateMachine] CHARGING TIMEOUT in state:" << stateName(m_currentState)
                << "- actuator did not reach expected position within" << COCKING_TIMEOUT_MS << "ms";
 
@@ -265,8 +251,7 @@ void ChargingStateMachine::onChargingTimeout()
     // and then use resetFault() to attempt recovery
 }
 
-void ChargingStateMachine::onLockoutExpired()
-{
+void ChargingStateMachine::onLockoutExpired() {
     qInfo() << "[ChargingStateMachine] CROWS M153: 4-second lockout expired - charging now allowed";
 
     m_lockoutActive = false;
@@ -279,8 +264,7 @@ void ChargingStateMachine::onLockoutExpired()
 // FSM METHODS
 // ============================================================================
 
-void ChargingStateMachine::startCycle()
-{
+void ChargingStateMachine::startCycle() {
     qInfo() << "========================================";
     qInfo() << "  CHARGE CYCLE STARTING";
     qInfo() << "  Cycle:" << (m_currentCycleCount + 1) << "of" << m_requiredCycles;
@@ -300,8 +284,7 @@ void ChargingStateMachine::startCycle()
     m_timeoutTimer->start(COCKING_TIMEOUT_MS);
 }
 
-void ChargingStateMachine::processPosition(double positionMM)
-{
+void ChargingStateMachine::processPosition(double positionMM) {
     switch (m_currentState) {
     case ChargingState::Extending:
         if (positionMM >= (COCKING_EXTEND_POS - COCKING_POSITION_TOLERANCE)) {
@@ -312,7 +295,8 @@ void ChargingStateMachine::processPosition(double positionMM)
                 // CONTINUOUS HOLD MODE: Button still held - hold position
                 m_isShortPressCharge = false;
                 transitionTo(ChargingState::Extended);
-                qDebug() << "[ChargingStateMachine] Extension complete - HOLDING (button still pressed)";
+                qDebug()
+                    << "[ChargingStateMachine] Extension complete - HOLDING (button still pressed)";
                 // No watchdog in Extended state - operator controls timing
             } else {
                 // SHORT PRESS MODE: Button already released - auto-cycle
@@ -401,21 +385,19 @@ void ChargingStateMachine::processPosition(double positionMM)
     }
 }
 
-void ChargingStateMachine::transitionTo(ChargingState newState)
-{
+void ChargingStateMachine::transitionTo(ChargingState newState) {
     if (m_currentState == newState) {
         return;
     }
 
-    qDebug() << "[ChargingStateMachine] State transition:"
-             << stateName(m_currentState) << "->" << stateName(newState);
+    qDebug() << "[ChargingStateMachine] State transition:" << stateName(m_currentState) << "->"
+             << stateName(newState);
 
     m_currentState = newState;
     emit stateChanged(newState);
 }
 
-int ChargingStateMachine::getRequiredCyclesForWeapon(WeaponType type)
-{
+int ChargingStateMachine::getRequiredCyclesForWeapon(WeaponType type) {
     switch (type) {
     case WeaponType::M2HB:
         // M2HB .50 cal - closed bolt weapon, requires 2 cycles
@@ -433,8 +415,7 @@ int ChargingStateMachine::getRequiredCyclesForWeapon(WeaponType type)
     }
 }
 
-void ChargingStateMachine::startLockout()
-{
+void ChargingStateMachine::startLockout() {
     qInfo() << "[ChargingStateMachine] CROWS M153: Starting 4-second charge lockout";
 
     m_lockoutActive = true;
@@ -448,8 +429,7 @@ void ChargingStateMachine::startLockout()
 // JAM DETECTION
 // ============================================================================
 
-void ChargingStateMachine::checkForJam(const ServoActuatorData& data)
-{
+void ChargingStateMachine::checkForJam(const ServoActuatorData& data) {
     // Skip if jam detection not yet initialized (first sample)
     if (!m_jamDetectionActive) {
         m_previousFeedbackPosition = data.position_mm;
@@ -468,8 +448,8 @@ void ChargingStateMachine::checkForJam(const ServoActuatorData& data)
     if (highTorque && stalled) {
         m_jamDetectionCounter++;
 
-        qWarning() << "[ChargingStateMachine] JAM WARNING:"
-                   << "Torque:" << QString::number(data.torque_percent, 'f', 1) << "%"
+        qWarning() << "[ChargingStateMachine] JAM WARNING:" << "Torque:"
+                   << QString::number(data.torque_percent, 'f', 1) << "%"
                    << "| Stalled at:" << QString::number(data.position_mm, 'f', 2) << "mm"
                    << "| Count:" << m_jamDetectionCounter << "/" << JAM_CONFIRM_SAMPLES;
 
@@ -489,8 +469,7 @@ void ChargingStateMachine::checkForJam(const ServoActuatorData& data)
     m_previousFeedbackPosition = data.position_mm;
 }
 
-void ChargingStateMachine::executeJamRecovery()
-{
+void ChargingStateMachine::executeJamRecovery() {
     qCritical() << "========================================";
     qCritical() << "  JAM DETECTED - EMERGENCY STOP INITIATED";
     qCritical() << "========================================";
@@ -526,8 +505,7 @@ void ChargingStateMachine::executeJamRecovery()
     resetJamDetection();
 }
 
-void ChargingStateMachine::resetJamDetection()
-{
+void ChargingStateMachine::resetJamDetection() {
     m_jamDetectionCounter = 0;
     m_jamDetectionActive = false;
     m_previousFeedbackPosition = 0.0;

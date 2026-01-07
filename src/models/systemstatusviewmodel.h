@@ -15,7 +15,7 @@
  * - Cameras (Day/Night)
  * - Control Systems (PLCs)
  * - Active alarms
- * 
+ *
  * All status text properties follow the pattern:
  * - "✓ OK" when connected and healthy
  * - "⚠ [ERROR DESCRIPTION]" when connected with errors
@@ -25,9 +25,9 @@ class SystemStatusViewModel : public QObject
 {
     Q_OBJECT
 
-    // ========================================================================
+    // ============================================================================
     // AZIMUTH SERVO
-    // ========================================================================
+    // ============================================================================
     Q_PROPERTY(bool azConnected READ azConnected NOTIFY azConnectedChanged)
     Q_PROPERTY(QString azPositionText READ azPositionText NOTIFY azPositionTextChanged)
     Q_PROPERTY(QString azRpmText READ azRpmText NOTIFY azRpmTextChanged)
@@ -37,9 +37,9 @@ class SystemStatusViewModel : public QObject
     Q_PROPERTY(bool azFault READ azFault NOTIFY azFaultChanged)
     Q_PROPERTY(QString azStatusText READ azStatusText NOTIFY azStatusTextChanged)
 
-    // ========================================================================
+    // ============================================================================
     // ELEVATION SERVO
-    // ========================================================================
+    // ============================================================================
     Q_PROPERTY(bool elConnected READ elConnected NOTIFY elConnectedChanged)
     Q_PROPERTY(QString elPositionText READ elPositionText NOTIFY elPositionTextChanged)
     Q_PROPERTY(QString elRpmText READ elRpmText NOTIFY elRpmTextChanged)
@@ -49,9 +49,9 @@ class SystemStatusViewModel : public QObject
     Q_PROPERTY(bool elFault READ elFault NOTIFY elFaultChanged)
     Q_PROPERTY(QString elStatusText READ elStatusText NOTIFY elStatusTextChanged)
 
-    // ========================================================================
+    // ============================================================================
     // IMU
-    // ========================================================================
+    // ============================================================================
     Q_PROPERTY(bool imuConnected READ imuConnected NOTIFY imuConnectedChanged)
     Q_PROPERTY(QString imuRollText READ imuRollText NOTIFY imuRollTextChanged)
     Q_PROPERTY(QString imuPitchText READ imuPitchText NOTIFY imuPitchTextChanged)
@@ -59,9 +59,9 @@ class SystemStatusViewModel : public QObject
     Q_PROPERTY(QString imuTempText READ imuTempText NOTIFY imuTempTextChanged)
     Q_PROPERTY(QString imuStatusText READ imuStatusText NOTIFY imuStatusTextChanged)
 
-    // ========================================================================
+    // ============================================================================
     // LRF
-    // ========================================================================
+    // ============================================================================
     Q_PROPERTY(bool lrfConnected READ lrfConnected NOTIFY lrfConnectedChanged)
     Q_PROPERTY(QString lrfDistanceText READ lrfDistanceText NOTIFY lrfDistanceTextChanged)
     Q_PROPERTY(QString lrfTempText READ lrfTempText NOTIFY lrfTempTextChanged)
@@ -70,9 +70,9 @@ class SystemStatusViewModel : public QObject
     Q_PROPERTY(bool lrfFault READ lrfFault NOTIFY lrfFaultChanged)
     Q_PROPERTY(QString lrfFaultText READ lrfFaultText NOTIFY lrfFaultTextChanged)
 
-    // ========================================================================
+    // ============================================================================
     // DAY CAMERA
-    // ========================================================================
+    // ============================================================================
     Q_PROPERTY(bool dayCamConnected READ dayCamConnected NOTIFY dayCamConnectedChanged)
     Q_PROPERTY(bool dayCamActive READ dayCamActive NOTIFY dayCamActiveChanged)
     Q_PROPERTY(QString dayCamFovText READ dayCamFovText NOTIFY dayCamFovTextChanged)
@@ -82,9 +82,9 @@ class SystemStatusViewModel : public QObject
     Q_PROPERTY(bool dayCamError READ dayCamError NOTIFY dayCamErrorChanged)
     Q_PROPERTY(QString dayCamStatusText READ dayCamStatusText NOTIFY dayCamStatusTextChanged)
 
-    // ========================================================================
+    // ============================================================================
     // NIGHT CAMERA
-    // ========================================================================
+    // ============================================================================
     Q_PROPERTY(bool nightCamConnected READ nightCamConnected NOTIFY nightCamConnectedChanged)
     Q_PROPERTY(bool nightCamActive READ nightCamActive NOTIFY nightCamActiveChanged)
     Q_PROPERTY(QString nightCamFovText READ nightCamFovText NOTIFY nightCamFovTextChanged)
@@ -95,9 +95,9 @@ class SystemStatusViewModel : public QObject
     Q_PROPERTY(QString nightCamVideoModeText READ nightCamVideoModeText NOTIFY nightCamVideoModeTextChanged)
     Q_PROPERTY(QString nightCamStatusText READ nightCamStatusText NOTIFY nightCamStatusTextChanged)
 
-    // ========================================================================
+    // ============================================================================
     // PLC STATUS
-    // ========================================================================
+    // ============================================================================
     Q_PROPERTY(bool plc21Connected READ plc21Connected NOTIFY plc21ConnectedChanged)
     Q_PROPERTY(bool plc42Connected READ plc42Connected NOTIFY plc42ConnectedChanged)
     Q_PROPERTY(bool stationEnabled READ stationEnabled NOTIFY stationEnabledChanged)
@@ -105,9 +105,9 @@ class SystemStatusViewModel : public QObject
     Q_PROPERTY(QString plc21StatusText READ plc21StatusText NOTIFY plc21StatusTextChanged)
     Q_PROPERTY(QString plc42StatusText READ plc42StatusText NOTIFY plc42StatusTextChanged)
 
-    // ========================================================================
+    // ============================================================================
     // SERVO ACTUATOR
-    // ========================================================================
+    // ============================================================================
     Q_PROPERTY(bool actuatorConnected READ actuatorConnected NOTIFY actuatorConnectedChanged)
     Q_PROPERTY(QString actuatorPositionText READ actuatorPositionText NOTIFY actuatorPositionTextChanged)
     Q_PROPERTY(QString actuatorVelocityText READ actuatorVelocityText NOTIFY actuatorVelocityTextChanged)
@@ -118,24 +118,24 @@ class SystemStatusViewModel : public QObject
     Q_PROPERTY(bool actuatorFault READ actuatorFault NOTIFY actuatorFaultChanged)
     Q_PROPERTY(QString actuatorStatusText READ actuatorStatusText NOTIFY actuatorStatusTextChanged)
 
-    // ========================================================================
+    // ============================================================================
     // ALARMS
-    // ========================================================================
+    // ============================================================================
     Q_PROPERTY(QStringList alarmsList READ alarmsList NOTIFY alarmsListChanged)
     Q_PROPERTY(bool hasAlarms READ hasAlarms NOTIFY hasAlarmsChanged)
 
-    // ========================================================================
+    // ============================================================================
     // VISIBILITY & STYLE
-    // ========================================================================
+    // ============================================================================
     Q_PROPERTY(bool visible READ visible WRITE setVisible NOTIFY visibleChanged)
     Q_PROPERTY(QColor accentColor READ accentColor NOTIFY accentColorChanged)
 
 public:
     explicit SystemStatusViewModel(QObject *parent = nullptr);
 
-    // ========================================================================
+    // ============================================================================
     // GETTERS - AZIMUTH SERVO
-    // ========================================================================
+    // ============================================================================
     bool azConnected() const { return m_azConnected; }
     QString azPositionText() const { return m_azPositionText; }
     QString azRpmText() const { return m_azRpmText; }
@@ -145,9 +145,9 @@ public:
     bool azFault() const { return m_azFault; }
     QString azStatusText() const { return m_azStatusText; }
 
-    // ========================================================================
+    // ============================================================================
     // GETTERS - ELEVATION SERVO
-    // ========================================================================
+    // ============================================================================
     bool elConnected() const { return m_elConnected; }
     QString elPositionText() const { return m_elPositionText; }
     QString elRpmText() const { return m_elRpmText; }
@@ -157,9 +157,9 @@ public:
     bool elFault() const { return m_elFault; }
     QString elStatusText() const { return m_elStatusText; }
 
-    // ========================================================================
+    // ============================================================================
     // GETTERS - IMU
-    // ========================================================================
+    // ============================================================================
     bool imuConnected() const { return m_imuConnected; }
     QString imuRollText() const { return m_imuRollText; }
     QString imuPitchText() const { return m_imuPitchText; }
@@ -167,9 +167,9 @@ public:
     QString imuTempText() const { return m_imuTempText; }
     QString imuStatusText() const { return m_imuStatusText; }
 
-    // ========================================================================
+    // ============================================================================
     // GETTERS - LRF
-    // ========================================================================
+    // ============================================================================
     bool lrfConnected() const { return m_lrfConnected; }
     QString lrfDistanceText() const { return m_lrfDistanceText; }
     QString lrfTempText() const { return m_lrfTempText; }
@@ -178,9 +178,9 @@ public:
     bool lrfFault() const { return m_lrfFault; }
     QString lrfFaultText() const { return m_lrfFaultText; }
 
-    // ========================================================================
+    // ============================================================================
     // GETTERS - DAY CAMERA
-    // ========================================================================
+    // ============================================================================
     bool dayCamConnected() const { return m_dayCamConnected; }
     bool dayCamActive() const { return m_dayCamActive; }
     QString dayCamFovText() const { return m_dayCamFovText; }
@@ -190,9 +190,9 @@ public:
     bool dayCamError() const { return m_dayCamError; }
     QString dayCamStatusText() const { return m_dayCamStatusText; }
 
-    // ========================================================================
+    // ============================================================================
     // GETTERS - NIGHT CAMERA
-    // ========================================================================
+    // ============================================================================
     bool nightCamConnected() const { return m_nightCamConnected; }
     bool nightCamActive() const { return m_nightCamActive; }
     QString nightCamFovText() const { return m_nightCamFovText; }
@@ -203,9 +203,9 @@ public:
     QString nightCamVideoModeText() const { return m_nightCamVideoModeText; }
     QString nightCamStatusText() const { return m_nightCamStatusText; }
 
-    // ========================================================================
+    // ============================================================================
     // GETTERS - PLC
-    // ========================================================================
+    // ============================================================================
     bool plc21Connected() const { return m_plc21Connected; }
     bool plc42Connected() const { return m_plc42Connected; }
     bool stationEnabled() const { return m_stationEnabled; }
@@ -213,9 +213,9 @@ public:
     QString plc21StatusText() const { return m_plc21StatusText; }
     QString plc42StatusText() const { return m_plc42StatusText; }
 
-    // ========================================================================
+    // ============================================================================
     // GETTERS - SERVO ACTUATOR
-    // ========================================================================
+    // ============================================================================
     bool actuatorConnected() const { return m_actuatorConnected; }
     QString actuatorPositionText() const { return m_actuatorPositionText; }
     QString actuatorVelocityText() const { return m_actuatorVelocityText; }
@@ -226,15 +226,15 @@ public:
     bool actuatorFault() const { return m_actuatorFault; }
     QString actuatorStatusText() const { return m_actuatorStatusText; }
 
-    // ========================================================================
+    // ============================================================================
     // GETTERS - ALARMS
-    // ========================================================================
+    // ============================================================================
     QStringList alarmsList() const { return m_alarmsList; }
     bool hasAlarms() const { return m_hasAlarms; }
 
-    // ========================================================================
+    // ============================================================================
     // GETTERS - VISIBILITY
-    // ========================================================================
+    // ============================================================================
     bool visible() const { return m_visible; }
     QColor accentColor() const { return m_accentColor; }
 
@@ -242,9 +242,9 @@ public:
     void setAccentColor(const QColor& color);
 
 public slots:
-    // ========================================================================
+    // ============================================================================
     // UPDATE METHODS (called by controller)
-    // ========================================================================
+    // ============================================================================
     void updateAzimuthServo(bool connected, float position, float rpm, float torque,
                             float motorTemp, float driverTemp, bool fault);
 
@@ -271,9 +271,9 @@ public slots:
     void updateAlarms(const QStringList& alarms);
 
 signals:
-    // ========================================================================
+    // ============================================================================
     // SIGNALS - AZIMUTH SERVO
-    // ========================================================================
+    // ============================================================================
     void azConnectedChanged();
     void azPositionTextChanged();
     void azRpmTextChanged();
@@ -283,9 +283,9 @@ signals:
     void azFaultChanged();
     void azStatusTextChanged();
 
-    // ========================================================================
+    // ============================================================================
     // SIGNALS - ELEVATION SERVO
-    // ========================================================================
+    // ============================================================================
     void elConnectedChanged();
     void elPositionTextChanged();
     void elRpmTextChanged();
@@ -295,9 +295,9 @@ signals:
     void elFaultChanged();
     void elStatusTextChanged();
 
-    // ========================================================================
+    // ============================================================================
     // SIGNALS - IMU
-    // ========================================================================
+    // ============================================================================
     void imuConnectedChanged();
     void imuRollTextChanged();
     void imuPitchTextChanged();
@@ -305,9 +305,9 @@ signals:
     void imuTempTextChanged();
     void imuStatusTextChanged();
 
-    // ========================================================================
+    // ============================================================================
     // SIGNALS - LRF
-    // ========================================================================
+    // ============================================================================
     void lrfConnectedChanged();
     void lrfDistanceTextChanged();
     void lrfTempTextChanged();
@@ -316,9 +316,9 @@ signals:
     void lrfFaultChanged();
     void lrfFaultTextChanged();
 
-    // ========================================================================
+    // ============================================================================
     // SIGNALS - DAY CAMERA
-    // ========================================================================
+    // ============================================================================
     void dayCamConnectedChanged();
     void dayCamActiveChanged();
     void dayCamFovTextChanged();
@@ -328,9 +328,9 @@ signals:
     void dayCamErrorChanged();
     void dayCamStatusTextChanged();
 
-    // ========================================================================
+    // ============================================================================
     // SIGNALS - NIGHT CAMERA
-    // ========================================================================
+    // ============================================================================
     void nightCamConnectedChanged();
     void nightCamActiveChanged();
     void nightCamFovTextChanged();
@@ -341,9 +341,9 @@ signals:
     void nightCamVideoModeTextChanged();
     void nightCamStatusTextChanged();
 
-    // ========================================================================
+    // ============================================================================
     // SIGNALS - PLC
-    // ========================================================================
+    // ============================================================================
     void plc21ConnectedChanged();
     void plc42ConnectedChanged();
     void stationEnabledChanged();
@@ -351,9 +351,9 @@ signals:
     void plc21StatusTextChanged();
     void plc42StatusTextChanged();
 
-    // ========================================================================
+    // ============================================================================
     // SIGNALS - SERVO ACTUATOR
-    // ========================================================================
+    // ============================================================================
     void actuatorConnectedChanged();
     void actuatorPositionTextChanged();
     void actuatorVelocityTextChanged();
@@ -364,33 +364,33 @@ signals:
     void actuatorFaultChanged();
     void actuatorStatusTextChanged();
 
-    // ========================================================================
+    // ============================================================================
     // SIGNALS - ALARMS
-    // ========================================================================
+    // ============================================================================
     void alarmsListChanged();
     void hasAlarmsChanged();
 
-    // ========================================================================
+    // ============================================================================
     // SIGNALS - VISIBILITY
-    // ========================================================================
+    // ============================================================================
     void visibleChanged();
     void accentColorChanged();
 
-    // ========================================================================
+    // ============================================================================
     // ACTION SIGNALS
-    // ========================================================================
+    // ============================================================================
     void clearAlarmsRequested();
 
 private:
-    // ========================================================================
+    // ============================================================================
     // HELPER FUNCTIONS
-    // ========================================================================
+    // ============================================================================
     QString getDayCameraErrorDescription(quint8 errorCode) const;
     QString getNightCameraErrorDescription(quint8 errorCode) const;
 
-    // ========================================================================
+    // ============================================================================
     // PRIVATE MEMBERS - AZIMUTH SERVO
-    // ========================================================================
+    // ============================================================================
     bool m_azConnected;
     QString m_azPositionText;
     QString m_azRpmText;
@@ -400,9 +400,9 @@ private:
     bool m_azFault;
     QString m_azStatusText;
 
-    // ========================================================================
+    // ============================================================================
     // PRIVATE MEMBERS - ELEVATION SERVO
-    // ========================================================================
+    // ============================================================================
     bool m_elConnected;
     QString m_elPositionText;
     QString m_elRpmText;
@@ -412,9 +412,9 @@ private:
     bool m_elFault;
     QString m_elStatusText;
 
-    // ========================================================================
+    // ============================================================================
     // PRIVATE MEMBERS - IMU
-    // ========================================================================
+    // ============================================================================
     bool m_imuConnected;
     QString m_imuRollText;
     QString m_imuPitchText;
@@ -422,9 +422,9 @@ private:
     QString m_imuTempText;
     QString m_imuStatusText;
 
-    // ========================================================================
+    // ============================================================================
     // PRIVATE MEMBERS - LRF
-    // ========================================================================
+    // ============================================================================
     bool m_lrfConnected;
     QString m_lrfDistanceText;
     QString m_lrfTempText;
@@ -433,9 +433,9 @@ private:
     bool m_lrfFault;
     QString m_lrfFaultText;
 
-    // ========================================================================
+    // ============================================================================
     // PRIVATE MEMBERS - DAY CAMERA
-    // ========================================================================
+    // ============================================================================
     bool m_dayCamConnected;
     bool m_dayCamActive;
     QString m_dayCamFovText;
@@ -445,9 +445,9 @@ private:
     bool m_dayCamError;
     QString m_dayCamStatusText;
 
-    // ========================================================================
+    // ============================================================================
     // PRIVATE MEMBERS - NIGHT CAMERA
-    // ========================================================================
+    // ============================================================================
     bool m_nightCamConnected;
     bool m_nightCamActive;
     QString m_nightCamFovText;
@@ -458,9 +458,9 @@ private:
     QString m_nightCamVideoModeText;
     QString m_nightCamStatusText;
 
-    // ========================================================================
+    // ============================================================================
     // PRIVATE MEMBERS - PLC
-    // ========================================================================
+    // ============================================================================
     bool m_plc21Connected;
     bool m_plc42Connected;
     bool m_stationEnabled;
@@ -468,9 +468,9 @@ private:
     QString m_plc21StatusText;
     QString m_plc42StatusText;
 
-    // ========================================================================
+    // ============================================================================
     // PRIVATE MEMBERS - SERVO ACTUATOR
-    // ========================================================================
+    // ============================================================================
     bool m_actuatorConnected;
     QString m_actuatorPositionText;
     QString m_actuatorVelocityText;
@@ -481,15 +481,15 @@ private:
     bool m_actuatorFault;
     QString m_actuatorStatusText;
 
-    // ========================================================================
+    // ============================================================================
     // PRIVATE MEMBERS - ALARMS
-    // ========================================================================
+    // ============================================================================
     QStringList m_alarmsList;
     bool m_hasAlarms;
 
-    // ========================================================================
+    // ============================================================================
     // PRIVATE MEMBERS - VISIBILITY
-    // ========================================================================
+    // ============================================================================
     bool m_visible;
     QColor m_accentColor;
 };

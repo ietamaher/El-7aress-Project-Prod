@@ -26,8 +26,7 @@
  *   - Proper kinematic transformation for rate feed-forward
  *   - Velocity-domain composition (matches AZD-KD velocity control)
  */
-class GimbalStabilizer
-{
+class GimbalStabilizer {
 public:
     GimbalStabilizer() = default;
 
@@ -51,21 +50,12 @@ public:
      *
      * @return std::pair<double,double> Stabilized velocity commands (az_dps, el_dps)
      */
-    std::pair<double,double> computeStabilizedVelocity(
-        double desiredAzVel_dps,
-        double desiredElVel_dps,
-        double imuRoll_deg,
-        double imuPitch_deg,
-        double imuYaw_deg,
-        double gyroX_dps,
-        double gyroY_dps,
-        double gyroZ_dps,
-        double currentAz_deg,
-        double currentEl_deg,
-        double targetAz_world,
-        double targetEl_world,
-        bool useWorldTarget,
-        double dt) const;
+    std::pair<double, double>
+    computeStabilizedVelocity(double desiredAzVel_dps, double desiredElVel_dps, double imuRoll_deg,
+                              double imuPitch_deg, double imuYaw_deg, double gyroX_dps,
+                              double gyroY_dps, double gyroZ_dps, double currentAz_deg,
+                              double currentEl_deg, double targetAz_world, double targetEl_world,
+                              bool useWorldTarget, double dt) const;
 
     /**
      * @brief Compute stabilized velocity with debug output for OSD visualization
@@ -76,27 +66,17 @@ public:
      * @param debugOut Output debug data for OSD display
      * @param ... (same parameters as above)
      */
-    std::pair<double,double> computeStabilizedVelocityWithDebug(
-        SystemStateData::StabilizationDebug& debugOut,
-        double desiredAzVel_dps,
-        double desiredElVel_dps,
-        double imuRoll_deg,
-        double imuPitch_deg,
-        double imuYaw_deg,
-        double gyroX_dps,
-        double gyroY_dps,
-        double gyroZ_dps,
-        double currentAz_deg,
-        double currentEl_deg,
-        double targetAz_world,
-        double targetEl_world,
-        bool useWorldTarget,
+    std::pair<double, double> computeStabilizedVelocityWithDebug(
+        SystemStateData::StabilizationDebug& debugOut, double desiredAzVel_dps,
+        double desiredElVel_dps, double imuRoll_deg, double imuPitch_deg, double imuYaw_deg,
+        double gyroX_dps, double gyroY_dps, double gyroZ_dps, double currentAz_deg,
+        double currentEl_deg, double targetAz_world, double targetEl_world, bool useWorldTarget,
         double dt) const;
 
 private:
-    // ========================================================================
+    // ============================================================================
     // Internal computation methods
-    // ========================================================================
+    // ============================================================================
 
     /**
      * @brief Compute required gimbal angles for world-frame target using matrices
@@ -111,12 +91,9 @@ private:
      * @param targetEl_world World elevation (deg)
      * @return std::pair<double,double> Required gimbal angles (az_deg, el_deg)
      */
-    std::pair<double,double> computeRequiredGimbalAngles(
-        double roll_deg,
-        double pitch_deg,
-        double yaw_deg,
-        double targetAz_world,
-        double targetEl_world) const;
+    std::pair<double, double> computeRequiredGimbalAngles(double roll_deg, double pitch_deg,
+                                                          double yaw_deg, double targetAz_world,
+                                                          double targetEl_world) const;
 
     /**
      * @brief Compute velocity feed-forward from platform angular rates
@@ -131,16 +108,13 @@ private:
      * @param gimbalEl_deg Current gimbal elevation (deg)
      * @return std::pair<double,double> Rate feed-forward velocities (az_dps, el_dps)
      */
-    std::pair<double,double> computeRateFeedForward(
-        double p_dps,
-        double q_dps,
-        double r_dps,
-        double gimbalAz_deg,
-        double gimbalEl_deg) const;
+    std::pair<double, double> computeRateFeedForward(double p_dps, double q_dps, double r_dps,
+                                                     double gimbalAz_deg,
+                                                     double gimbalEl_deg) const;
 
-    // ========================================================================
+    // ============================================================================
     // Tuning parameters
-    // ========================================================================
+    // ============================================================================
     // All tuning parameters are now loaded from motion_tuning.json at runtime
     // via MotionTuningConfig::instance().stabilizer
     //
@@ -151,16 +125,22 @@ private:
     //   - maxTotalVel:      Max total correction velocity (deg/s) [default: 12.0]
     //   - maxTanEl:         Clamp tan(elevation) for singularity protection [default: 10.0]
 
-    // ========================================================================
+    // ============================================================================
     // Helper functions
-    // ========================================================================
+    // ============================================================================
 
-    inline double degToRad(double d) const { return d * M_PI / 180.0; }
-    inline double radToDeg(double r) const { return r * 180.0 / M_PI; }
+    inline double degToRad(double d) const {
+        return d * M_PI / 180.0;
+    }
+    inline double radToDeg(double r) const {
+        return r * 180.0 / M_PI;
+    }
 
     inline double normalizeAngle180(double angle) const {
-        while (angle > 180.0) angle -= 360.0;
-        while (angle < -180.0) angle += 360.0;
+        while (angle > 180.0)
+            angle -= 360.0;
+        while (angle < -180.0)
+            angle += 360.0;
         return angle;
     }
 
@@ -172,17 +152,14 @@ private:
     mutable double m_filteredPitch_deg = 0.0;
     mutable double m_filteredRoll_deg = 0.0;
     mutable bool m_ahrsFilterInitialized = false;
-    mutable bool  m_requiredAnglesInitialized = false;
-    mutable double  m_filteredRequiredAz_deg = 0.0;
-    mutable double  m_filteredRequiredEl_deg = 0.0;
+    mutable bool m_requiredAnglesInitialized = false;
+    mutable double m_filteredRequiredAz_deg = 0.0;
+    mutable double m_filteredRequiredEl_deg = 0.0;
 
-mutable double m_prevAzCmd_dps = 0.0;
-mutable double m_prevElCmd_dps = 0.0;
-mutable double m_azFF_smooth = 0.0;
-mutable double m_elFF_smooth = 0.0;
-
-
-
+    mutable double m_prevAzCmd_dps = 0.0;
+    mutable double m_prevElCmd_dps = 0.0;
+    mutable double m_azFF_smooth = 0.0;
+    mutable double m_elFF_smooth = 0.0;
 };
 
-#endif // GIMBALSTABILIZER_H
+#endif  // GIMBALSTABILIZER_H

@@ -50,14 +50,13 @@ class Plc42Device;
  * homing.process(newData, oldData);
  * @endcode
  */
-class HomingController : public QObject
-{
+class HomingController : public QObject {
     Q_OBJECT
 
 public:
-    // ========================================================================
+    // ============================================================================
     // CONFIGURATION
-    // ========================================================================
+    // ============================================================================
 
     /**
      * @brief Default homing timeout in milliseconds
@@ -67,9 +66,9 @@ public:
      */
     static constexpr int DEFAULT_HOMING_TIMEOUT_MS = 30000;
 
-    // ========================================================================
+    // ============================================================================
     // CONSTRUCTOR / DESTRUCTOR
-    // ========================================================================
+    // ============================================================================
 
     /**
      * @brief Construct HomingController
@@ -79,9 +78,9 @@ public:
     explicit HomingController(Plc42Device* plc42, QObject* parent = nullptr);
     ~HomingController();
 
-    // ========================================================================
+    // ============================================================================
     // PUBLIC INTERFACE
-    // ========================================================================
+    // ============================================================================
 
     /**
      * @brief Process homing state machine
@@ -119,13 +118,17 @@ public:
      * @brief Get current homing state
      * @return Current HomingState
      */
-    HomingState currentState() const { return m_currentHomingState; }
+    HomingState currentState() const {
+        return m_currentHomingState;
+    }
 
     /**
      * @brief Get motion mode to restore after homing
      * @return Motion mode that was active before homing started
      */
-    MotionMode modeBeforeHoming() const { return m_modeBeforeHoming; }
+    MotionMode modeBeforeHoming() const {
+        return m_modeBeforeHoming;
+    }
 
     /**
      * @brief Set homing timeout
@@ -134,9 +137,9 @@ public:
     void setHomingTimeout(int timeoutMs);
 
 signals:
-    // ========================================================================
+    // ============================================================================
     // SIGNALS
-    // ========================================================================
+    // ============================================================================
 
     /**
      * @brief Emitted when homing sequence starts
@@ -175,9 +178,9 @@ private slots:
     void onHomingTimeout();
 
 private:
-    // ========================================================================
+    // ============================================================================
     // FSM METHODS
-    // ========================================================================
+    // ============================================================================
 
     /**
      * @brief Process HomingState::Idle
@@ -215,22 +218,22 @@ private:
      */
     void transitionTo(HomingState newState);
 
-    // ========================================================================
+    // ============================================================================
     // DEPENDENCIES
-    // ========================================================================
+    // ============================================================================
     Plc42Device* m_plc42 = nullptr;
 
-    // ========================================================================
+    // ============================================================================
     // STATE
-    // ========================================================================
+    // ============================================================================
     HomingState m_currentHomingState = HomingState::Idle;
     MotionMode m_modeBeforeHoming = MotionMode::Manual;
 
-    // ========================================================================
+    // ============================================================================
     // TIMERS
-    // ========================================================================
+    // ============================================================================
     QTimer* m_timeoutTimer = nullptr;
     int m_homingTimeoutMs = DEFAULT_HOMING_TIMEOUT_MS;
 };
 
-#endif // HOMINGCONTROLLER_H
+#endif  // HOMINGCONTROLLER_H

@@ -16,70 +16,53 @@
 #include <QCoreApplication>
 #include <QProcess>
 
-ApplicationController::ApplicationController(QObject *parent)
-    : QObject(parent)
-    , m_currentMenuState(MenuState::None)
-    , m_mainMenuController(nullptr)
-    , m_reticleMenuController(nullptr)
-    , m_colorMenuController(nullptr)
-    , m_zeroingController(nullptr)
-    , m_windageController(nullptr)
-    , m_environmentalController(nullptr)
-    , m_brightnessController(nullptr)
-    , m_presetHomePositionController(nullptr)
-    , m_zoneDefinitionController(nullptr)
-    , m_systemStateModel(nullptr)
-    , m_aboutController(nullptr)
-    , m_shutdownConfirmationController(nullptr)
-{
-}
+ApplicationController::ApplicationController(QObject* parent)
+    : QObject(parent), m_currentMenuState(MenuState::None), m_mainMenuController(nullptr),
+      m_reticleMenuController(nullptr), m_colorMenuController(nullptr),
+      m_zeroingController(nullptr), m_windageController(nullptr),
+      m_environmentalController(nullptr), m_brightnessController(nullptr),
+      m_presetHomePositionController(nullptr), m_zoneDefinitionController(nullptr),
+      m_systemStateModel(nullptr), m_aboutController(nullptr),
+      m_shutdownConfirmationController(nullptr) {}
 
 // ============================================================================
 // DEPENDENCY INJECTION
 // ============================================================================
 
-void ApplicationController::setMainMenuController(MainMenuController* controller)
-{
+void ApplicationController::setMainMenuController(MainMenuController* controller) {
     m_mainMenuController = controller;
 }
 
-void ApplicationController::setReticleMenuController(ReticleMenuController* controller)
-{
+void ApplicationController::setReticleMenuController(ReticleMenuController* controller) {
     m_reticleMenuController = controller;
 }
 
-void ApplicationController::setColorMenuController(ColorMenuController* controller)
-{
+void ApplicationController::setColorMenuController(ColorMenuController* controller) {
     m_colorMenuController = controller;
 }
 
-void ApplicationController::setZeroingController(ZeroingController* controller)
-{
+void ApplicationController::setZeroingController(ZeroingController* controller) {
     m_zeroingController = controller;
 }
 
-void ApplicationController::setWindageController(WindageController* controller)
-{
+void ApplicationController::setWindageController(WindageController* controller) {
     m_windageController = controller;
 }
 
-void ApplicationController::setEnvironmentalController(EnvironmentalController* controller)
-{
+void ApplicationController::setEnvironmentalController(EnvironmentalController* controller) {
     m_environmentalController = controller;
 }
 
-void ApplicationController::setBrightnessController(BrightnessController* controller)
-{
+void ApplicationController::setBrightnessController(BrightnessController* controller) {
     m_brightnessController = controller;
 }
 
-void ApplicationController::setPresetHomePositionController(PresetHomePositionController* controller)
-{
+void ApplicationController::setPresetHomePositionController(
+    PresetHomePositionController* controller) {
     m_presetHomePositionController = controller;
 }
 
-void ApplicationController::setZoneDefinitionController(ZoneDefinitionController* controller)
-{
+void ApplicationController::setZoneDefinitionController(ZoneDefinitionController* controller) {
     m_zoneDefinitionController = controller;
 }
 
@@ -88,18 +71,16 @@ void ApplicationController::setZoneDefinitionController(ZoneDefinitionController
 //     m_systemStatusController = controller;  // DISABLED
 // }  // DISABLED
 
-void ApplicationController::setAboutController(AboutController* controller)
-{
+void ApplicationController::setAboutController(AboutController* controller) {
     m_aboutController = controller;
 }
 
-void ApplicationController::setShutdownConfirmationController(ShutdownConfirmationController* controller)
-{
+void ApplicationController::setShutdownConfirmationController(
+    ShutdownConfirmationController* controller) {
     m_shutdownConfirmationController = controller;
 }
 
-void ApplicationController::setSystemStateModel(SystemStateModel* model)
-{
+void ApplicationController::setSystemStateModel(SystemStateModel* model) {
     m_systemStateModel = model;
 }
 
@@ -107,8 +88,7 @@ void ApplicationController::setSystemStateModel(SystemStateModel* model)
 // INITIALIZATION
 // ============================================================================
 
-void ApplicationController::initialize()
-{
+void ApplicationController::initialize() {
     qDebug() << "ApplicationController: Initializing...";
 
     // Verify all dependencies are set
@@ -126,111 +106,111 @@ void ApplicationController::initialize()
     Q_ASSERT(m_shutdownConfirmationController);
     Q_ASSERT(m_systemStateModel);
 
-    // =========================================================================
+    // ============================================================================
     // MAIN MENU CONNECTIONS
-    // =========================================================================
-    connect(m_mainMenuController, &MainMenuController::personalizeReticleRequested,
-            this, &ApplicationController::handlePersonalizeReticle);
-    connect(m_mainMenuController, &MainMenuController::personalizeColorsRequested,
-            this, &ApplicationController::handlePersonalizeColors);
-    connect(m_mainMenuController, &MainMenuController::brightnessRequested,
-            this, &ApplicationController::handleBrightness);
-    connect(m_mainMenuController, &MainMenuController::zeroingRequested,
-            this, &ApplicationController::handleZeroing);
-    connect(m_mainMenuController, &MainMenuController::clearZeroRequested,
-            this, &ApplicationController::handleClearZero);
-    connect(m_mainMenuController, &MainMenuController::windageRequested,
-            this, &ApplicationController::handleWindage);
-    connect(m_mainMenuController, &MainMenuController::clearWindageRequested,
-            this, &ApplicationController::handleClearWindage);
-    connect(m_mainMenuController, &MainMenuController::environmentalRequested,
-            this, &ApplicationController::handleEnvironmental);
-    connect(m_mainMenuController, &MainMenuController::clearEnvironmentalRequested,
-            this, &ApplicationController::handleClearEnvironmental);
-    connect(m_mainMenuController, &MainMenuController::presetHomePositionRequested,
-            this, &ApplicationController::handlePresetHomePosition);
-    connect(m_mainMenuController, &MainMenuController::zoneDefinitionsRequested,
-            this, &ApplicationController::handleZoneDefinitions);
+    // ============================================================================
+    connect(m_mainMenuController, &MainMenuController::personalizeReticleRequested, this,
+            &ApplicationController::handlePersonalizeReticle);
+    connect(m_mainMenuController, &MainMenuController::personalizeColorsRequested, this,
+            &ApplicationController::handlePersonalizeColors);
+    connect(m_mainMenuController, &MainMenuController::brightnessRequested, this,
+            &ApplicationController::handleBrightness);
+    connect(m_mainMenuController, &MainMenuController::zeroingRequested, this,
+            &ApplicationController::handleZeroing);
+    connect(m_mainMenuController, &MainMenuController::clearZeroRequested, this,
+            &ApplicationController::handleClearZero);
+    connect(m_mainMenuController, &MainMenuController::windageRequested, this,
+            &ApplicationController::handleWindage);
+    connect(m_mainMenuController, &MainMenuController::clearWindageRequested, this,
+            &ApplicationController::handleClearWindage);
+    connect(m_mainMenuController, &MainMenuController::environmentalRequested, this,
+            &ApplicationController::handleEnvironmental);
+    connect(m_mainMenuController, &MainMenuController::clearEnvironmentalRequested, this,
+            &ApplicationController::handleClearEnvironmental);
+    connect(m_mainMenuController, &MainMenuController::presetHomePositionRequested, this,
+            &ApplicationController::handlePresetHomePosition);
+    connect(m_mainMenuController, &MainMenuController::zoneDefinitionsRequested, this,
+            &ApplicationController::handleZoneDefinitions);
     // connect(m_mainMenuController, &MainMenuController::systemStatusRequested,  // DISABLED
     //         this, &ApplicationController::handleSystemStatus);  // DISABLED
-    connect(m_mainMenuController, &MainMenuController::toggleDetectionRequested,
-            this, &ApplicationController::handleToggleDetection);
-    connect(m_mainMenuController, &MainMenuController::shutdownSystemRequested,
-            this, &ApplicationController::handleShutdown);
-    connect(m_mainMenuController, &MainMenuController::radarTargetListRequested,
-            this, &ApplicationController::handleRadarTargetList);
-    connect(m_mainMenuController, &MainMenuController::helpAboutRequested,
-            this, &ApplicationController::handleHelpAbout);
-    connect(m_mainMenuController, &MainMenuController::menuFinished,
-            this, &ApplicationController::handleMainMenuFinished);
+    connect(m_mainMenuController, &MainMenuController::toggleDetectionRequested, this,
+            &ApplicationController::handleToggleDetection);
+    connect(m_mainMenuController, &MainMenuController::shutdownSystemRequested, this,
+            &ApplicationController::handleShutdown);
+    connect(m_mainMenuController, &MainMenuController::radarTargetListRequested, this,
+            &ApplicationController::handleRadarTargetList);
+    connect(m_mainMenuController, &MainMenuController::helpAboutRequested, this,
+            &ApplicationController::handleHelpAbout);
+    connect(m_mainMenuController, &MainMenuController::menuFinished, this,
+            &ApplicationController::handleMainMenuFinished);
 
-    // =========================================================================
+    // ============================================================================
     // RETICLE MENU CONNECTIONS
-    // =========================================================================
-    connect(m_reticleMenuController, &ReticleMenuController::returnToMainMenu,
-            this, &ApplicationController::handleReturnToMainMenu);
-    connect(m_reticleMenuController, &ReticleMenuController::menuFinished,
-            this, &ApplicationController::handleReticleMenuFinished);
+    // ============================================================================
+    connect(m_reticleMenuController, &ReticleMenuController::returnToMainMenu, this,
+            &ApplicationController::handleReturnToMainMenu);
+    connect(m_reticleMenuController, &ReticleMenuController::menuFinished, this,
+            &ApplicationController::handleReticleMenuFinished);
 
-    // =========================================================================
+    // ============================================================================
     // COLOR MENU CONNECTIONS
-    // =========================================================================
-    connect(m_colorMenuController, &ColorMenuController::returnToMainMenu,
-            this, &ApplicationController::handleReturnToMainMenu);
-    connect(m_colorMenuController, &ColorMenuController::menuFinished,
-            this, &ApplicationController::handleColorMenuFinished);
+    // ============================================================================
+    connect(m_colorMenuController, &ColorMenuController::returnToMainMenu, this,
+            &ApplicationController::handleReturnToMainMenu);
+    connect(m_colorMenuController, &ColorMenuController::menuFinished, this,
+            &ApplicationController::handleColorMenuFinished);
 
-    // =========================================================================
+    // ============================================================================
     // ZEROING CONNECTIONS
-    // =========================================================================
-    connect(m_zeroingController, &ZeroingController::returnToMainMenu,
-            this, &ApplicationController::handleReturnToMainMenu);
-    connect(m_zeroingController, &ZeroingController::zeroingFinished,
-            this, &ApplicationController::handleZeroingFinished);
+    // ============================================================================
+    connect(m_zeroingController, &ZeroingController::returnToMainMenu, this,
+            &ApplicationController::handleReturnToMainMenu);
+    connect(m_zeroingController, &ZeroingController::zeroingFinished, this,
+            &ApplicationController::handleZeroingFinished);
 
-    // =========================================================================
+    // ============================================================================
     // WINDAGE CONNECTIONS
-    // =========================================================================
-    connect(m_windageController, &WindageController::returnToMainMenu,
-            this, &ApplicationController::handleReturnToMainMenu);
-    connect(m_windageController, &WindageController::windageFinished,
-            this, &ApplicationController::handleWindageFinished);
+    // ============================================================================
+    connect(m_windageController, &WindageController::returnToMainMenu, this,
+            &ApplicationController::handleReturnToMainMenu);
+    connect(m_windageController, &WindageController::windageFinished, this,
+            &ApplicationController::handleWindageFinished);
 
-    // =========================================================================
+    // ============================================================================
     // ENVIRONMENTAL CONNECTIONS
-    // =========================================================================
-    connect(m_environmentalController, &EnvironmentalController::returnToMainMenu,
-            this, &ApplicationController::handleReturnToMainMenu);
-    connect(m_environmentalController, &EnvironmentalController::environmentalFinished,
-            this, &ApplicationController::handleEnvironmentalFinished);
+    // ============================================================================
+    connect(m_environmentalController, &EnvironmentalController::returnToMainMenu, this,
+            &ApplicationController::handleReturnToMainMenu);
+    connect(m_environmentalController, &EnvironmentalController::environmentalFinished, this,
+            &ApplicationController::handleEnvironmentalFinished);
 
-    // =========================================================================
+    // ============================================================================
     // BRIGHTNESS CONNECTIONS
-    // =========================================================================
-    connect(m_brightnessController, &BrightnessController::returnToMainMenu,
-            this, &ApplicationController::handleReturnToMainMenu);
-    connect(m_brightnessController, &BrightnessController::brightnessFinished,
-            this, &ApplicationController::handleBrightnessFinished);
+    // ============================================================================
+    connect(m_brightnessController, &BrightnessController::returnToMainMenu, this,
+            &ApplicationController::handleReturnToMainMenu);
+    connect(m_brightnessController, &BrightnessController::brightnessFinished, this,
+            &ApplicationController::handleBrightnessFinished);
 
-    // =========================================================================
+    // ============================================================================
     // PRESET HOME POSITION CONNECTIONS
-    // =========================================================================
-    connect(m_presetHomePositionController, &PresetHomePositionController::returnToMainMenu,
-            this, &ApplicationController::handleReturnToMainMenu);
-    connect(m_presetHomePositionController, &PresetHomePositionController::procedureFinished,
-            this, &ApplicationController::handlePresetHomePositionFinished);
+    // ============================================================================
+    connect(m_presetHomePositionController, &PresetHomePositionController::returnToMainMenu, this,
+            &ApplicationController::handleReturnToMainMenu);
+    connect(m_presetHomePositionController, &PresetHomePositionController::procedureFinished, this,
+            &ApplicationController::handlePresetHomePositionFinished);
 
-    // =========================================================================
+    // ============================================================================
     // ZONE DEFINITION CONNECTIONS
-    // =========================================================================
-    connect(m_zoneDefinitionController, &ZoneDefinitionController::returnToMainMenu,
-            this, &ApplicationController::handleReturnToMainMenu);
-    connect(m_zoneDefinitionController, &ZoneDefinitionController::closed,
-            this, &ApplicationController::handleZoneDefinitionFinished);
+    // ============================================================================
+    connect(m_zoneDefinitionController, &ZoneDefinitionController::returnToMainMenu, this,
+            &ApplicationController::handleReturnToMainMenu);
+    connect(m_zoneDefinitionController, &ZoneDefinitionController::closed, this,
+            &ApplicationController::handleZoneDefinitionFinished);
 
-    // ========================================================================
+    // ============================================================================
     // CONNECT SYSTEM STATUS CONTROLLER
-    // ========================================================================
+    // ============================================================================
     // if (m_systemStatusController) {  // DISABLED
     //     connect(m_systemStatusController, &SystemStatusController::menuFinished,  // DISABLED
     //             this, &ApplicationController::handleSystemStatusFinished);  // DISABLED
@@ -239,20 +219,20 @@ void ApplicationController::initialize()
     //     qDebug() << "ApplicationController: SystemStatusController signals connected";  // DISABLED
     // }  // DISABLED
 
-    // ========================================================================
+    // ============================================================================
     // CONNECT ABOUT CONTROLLER
-    // ========================================================================
+    // ============================================================================
     if (m_aboutController) {
-        connect(m_aboutController, &AboutController::aboutFinished,
-                this, &ApplicationController::handleAboutFinished);
-        connect(m_aboutController, &AboutController::returnToMainMenu,
-                this, &ApplicationController::handleReturnToMainMenu);
+        connect(m_aboutController, &AboutController::aboutFinished, this,
+                &ApplicationController::handleAboutFinished);
+        connect(m_aboutController, &AboutController::returnToMainMenu, this,
+                &ApplicationController::handleReturnToMainMenu);
         qDebug() << "ApplicationController: AboutController signals connected";
     }
 
-    // ========================================================================
+    // ============================================================================
     // CONNECT SHUTDOWN CONFIRMATION CONTROLLER
-    // ========================================================================
+    // ============================================================================
     if (m_shutdownConfirmationController) {
         connect(m_shutdownConfirmationController, &ShutdownConfirmationController::dialogFinished,
                 this, &ApplicationController::handleShutdownConfirmationFinished);
@@ -261,13 +241,13 @@ void ApplicationController::initialize()
         qDebug() << "ApplicationController: ShutdownConfirmationController signals connected";
     }
 
-    // =========================================================================
+    // ============================================================================
     // HARDWARE BUTTON MONITORING (PLC21 switches)
-    // =========================================================================
+    // ============================================================================
     // ✅ LATENCY FIX: Use dedicated buttonStateChanged signal instead of dataChanged
     // Reduces event load from 1,200/min (20Hz) to ~10-20/min (only on actual button presses)
-    connect(m_systemStateModel, &SystemStateModel::buttonStateChanged,
-            this, &ApplicationController::onButtonStateChanged,
+    connect(m_systemStateModel, &SystemStateModel::buttonStateChanged, this,
+            &ApplicationController::onButtonStateChanged,
             Qt::QueuedConnection);  // Non-blocking signal delivery
     qDebug() << "ApplicationController: PLC21 button monitoring connected (optimized)";
 
@@ -278,22 +258,19 @@ void ApplicationController::initialize()
 // STATE MANAGEMENT
 // ============================================================================
 
-void ApplicationController::setMenuState(MenuState state)
-{
+void ApplicationController::setMenuState(MenuState state) {
     m_currentMenuState = state;
     qDebug() << "ApplicationController: Menu state changed to" << static_cast<int>(state);
 }
 
-void ApplicationController::showMainMenu()
-{
+void ApplicationController::showMainMenu() {
     qDebug() << "ApplicationController: showMainMenu() called";
     hideAllMenus();
     m_mainMenuController->show();
     setMenuState(MenuState::MainMenu);
 }
 
-void ApplicationController::hideAllMenus()
-{
+void ApplicationController::hideAllMenus() {
     m_mainMenuController->hide();
     m_reticleMenuController->hide();
     m_colorMenuController->hide();
@@ -312,8 +289,7 @@ void ApplicationController::hideAllMenus()
 // BUTTON HANDLERS
 // ============================================================================
 
-void ApplicationController::onMenuValButtonPressed()
-{
+void ApplicationController::onMenuValButtonPressed() {
     qDebug() << "ApplicationController: MENU/VAL button pressed in state"
              << static_cast<int>(m_currentMenuState);
 
@@ -323,7 +299,7 @@ void ApplicationController::onMenuValButtonPressed()
         m_currentMenuState == MenuState::EnvironmentalProcedure ||
         m_currentMenuState == MenuState::BrightnessProcedure ||
         m_currentMenuState == MenuState::PresetHomePositionProcedure ||
-        m_currentMenuState == MenuState::ZoneDefinition     ||
+        m_currentMenuState == MenuState::ZoneDefinition ||
         m_currentMenuState == MenuState::HelpAbout ||
         m_currentMenuState == MenuState::ShutdownConfirmation ||
         // m_currentMenuState == MenuState::SystemStatus  ||  // DISABLED
@@ -354,25 +330,21 @@ void ApplicationController::onMenuValButtonPressed()
     }
 
 
-
     qWarning() << "ApplicationController: MENU/VAL pressed in unhandled state:"
                << static_cast<int>(m_currentMenuState);
 }
 
-void ApplicationController::handleMenuValInNoMenuState()
-{
+void ApplicationController::handleMenuValInNoMenuState() {
     qDebug() << "ApplicationController: Opening main menu";
     showMainMenu();
 }
 
-void ApplicationController::handleMenuValInMainMenu()
-{
+void ApplicationController::handleMenuValInMainMenu() {
     qDebug() << "ApplicationController: Selecting main menu item";
     m_mainMenuController->onSelectButtonPressed();
 }
 
-void ApplicationController::handleMenuValInSubmenu()
-{
+void ApplicationController::handleMenuValInSubmenu() {
     qDebug() << "ApplicationController: Selecting submenu item";
 
     switch (m_currentMenuState) {
@@ -387,8 +359,7 @@ void ApplicationController::handleMenuValInSubmenu()
     }
 }
 
-void ApplicationController::handleMenuValInProcedure()
-{
+void ApplicationController::handleMenuValInProcedure() {
     qDebug() << "ApplicationController: Confirming procedure step";
 
     switch (m_currentMenuState) {
@@ -414,18 +385,19 @@ void ApplicationController::handleMenuValInProcedure()
     //     if (m_systemStatusController) m_systemStatusController->onSelectButtonPressed();  // DISABLED
     //     break;  // DISABLED
     case MenuState::HelpAbout:
-        if (m_aboutController) m_aboutController->onSelectButtonPressed();
+        if (m_aboutController)
+            m_aboutController->onSelectButtonPressed();
         break;
     case MenuState::ShutdownConfirmation:
-        if (m_shutdownConfirmationController) m_shutdownConfirmationController->onSelectButtonPressed();
+        if (m_shutdownConfirmationController)
+            m_shutdownConfirmationController->onSelectButtonPressed();
         break;
     default:
         break;
     }
 }
 
-void ApplicationController::onUpButtonPressed()
-{
+void ApplicationController::onUpButtonPressed() {
     qDebug() << "ApplicationController: UP button pressed";
 
     switch (m_currentMenuState) {
@@ -460,10 +432,12 @@ void ApplicationController::onUpButtonPressed()
     //     if (m_systemStatusController) m_systemStatusController->onUpButtonPressed();  // DISABLED
     //     break;  // DISABLED
     case MenuState::HelpAbout:
-        if (m_aboutController) m_aboutController->onUpButtonPressed();
+        if (m_aboutController)
+            m_aboutController->onUpButtonPressed();
         break;
     case MenuState::ShutdownConfirmation:
-        if (m_shutdownConfirmationController) m_shutdownConfirmationController->onUpButtonPressed();
+        if (m_shutdownConfirmationController)
+            m_shutdownConfirmationController->onUpButtonPressed();
         break;
 
     default:
@@ -472,8 +446,7 @@ void ApplicationController::onUpButtonPressed()
     }
 }
 
-void ApplicationController::onDownButtonPressed()
-{
+void ApplicationController::onDownButtonPressed() {
     qDebug() << "ApplicationController: DOWN button pressed";
 
     switch (m_currentMenuState) {
@@ -508,10 +481,12 @@ void ApplicationController::onDownButtonPressed()
     //     if (m_systemStatusController) m_systemStatusController->onDownButtonPressed();  // DISABLED
     //     break;  // DISABLED
     case MenuState::HelpAbout:
-        if (m_aboutController) m_aboutController->onDownButtonPressed();
+        if (m_aboutController)
+            m_aboutController->onDownButtonPressed();
         break;
     case MenuState::ShutdownConfirmation:
-        if (m_shutdownConfirmationController) m_shutdownConfirmationController->onDownButtonPressed();
+        if (m_shutdownConfirmationController)
+            m_shutdownConfirmationController->onDownButtonPressed();
         break;
     default:
         qDebug() << "ApplicationController: DOWN pressed with no active menu";
@@ -523,32 +498,28 @@ void ApplicationController::onDownButtonPressed()
 // MAIN MENU ACTION HANDLERS
 // ============================================================================
 
-void ApplicationController::handlePersonalizeReticle()
-{
+void ApplicationController::handlePersonalizeReticle() {
     qDebug() << "ApplicationController: Showing Reticle Menu";
     hideAllMenus();
     m_reticleMenuController->show();
     setMenuState(MenuState::ReticleMenu);
 }
 
-void ApplicationController::handlePersonalizeColors()
-{
+void ApplicationController::handlePersonalizeColors() {
     qDebug() << "ApplicationController: Showing Color Menu";
     hideAllMenus();
     m_colorMenuController->show();
     setMenuState(MenuState::ColorMenu);
 }
 
-void ApplicationController::handleZeroing()
-{
+void ApplicationController::handleZeroing() {
     qDebug() << "ApplicationController: Zeroing requested";
     hideAllMenus();
     m_zeroingController->show();
     setMenuState(MenuState::ZeroingProcedure);
 }
 
-void ApplicationController::handleClearZero()
-{
+void ApplicationController::handleClearZero() {
     qDebug() << "ApplicationController: Clear Zero requested";
     if (m_systemStateModel) {
         m_systemStateModel->clearZeroing();
@@ -556,16 +527,14 @@ void ApplicationController::handleClearZero()
     showMainMenu();
 }
 
-void ApplicationController::handleWindage()
-{
+void ApplicationController::handleWindage() {
     qDebug() << "ApplicationController: Windage requested";
     hideAllMenus();
     m_windageController->show();
     setMenuState(MenuState::WindageProcedure);
 }
 
-void ApplicationController::handleClearWindage()
-{
+void ApplicationController::handleClearWindage() {
     qDebug() << "ApplicationController: Clear Windage requested";
     if (m_systemStateModel) {
         m_systemStateModel->clearWindage();
@@ -573,16 +542,14 @@ void ApplicationController::handleClearWindage()
     showMainMenu();
 }
 
-void ApplicationController::handleEnvironmental()
-{
+void ApplicationController::handleEnvironmental() {
     qDebug() << "ApplicationController: Environmental settings requested";
     hideAllMenus();
     m_environmentalController->show();
     setMenuState(MenuState::EnvironmentalProcedure);
 }
 
-void ApplicationController::handleClearEnvironmental()
-{
+void ApplicationController::handleClearEnvironmental() {
     qDebug() << "ApplicationController: Clear Environmental settings requested";
     if (m_systemStateModel) {
         m_systemStateModel->clearEnvironmental();
@@ -590,24 +557,21 @@ void ApplicationController::handleClearEnvironmental()
     showMainMenu();
 }
 
-void ApplicationController::handleBrightness()
-{
+void ApplicationController::handleBrightness() {
     qDebug() << "ApplicationController: Brightness settings requested";
     hideAllMenus();
     m_brightnessController->show();
     setMenuState(MenuState::BrightnessProcedure);
 }
 
-void ApplicationController::handlePresetHomePosition()
-{
+void ApplicationController::handlePresetHomePosition() {
     qDebug() << "ApplicationController: Preset Home Position requested";
     hideAllMenus();
     m_presetHomePositionController->show();
     setMenuState(MenuState::PresetHomePositionProcedure);
 }
 
-void ApplicationController::handleZoneDefinitions()
-{
+void ApplicationController::handleZoneDefinitions() {
     qDebug() << "ApplicationController: Zone Definitions requested";
     hideAllMenus();
     m_zoneDefinitionController->show();
@@ -622,8 +586,7 @@ void ApplicationController::handleZoneDefinitions()
 //     setMenuState(MenuState::SystemStatus);  // DISABLED
 // }  // DISABLED
 
-void ApplicationController::handleToggleDetection()
-{
+void ApplicationController::handleToggleDetection() {
     qDebug() << "ApplicationController: Toggle Detection requested";
 
     if (m_systemStateModel) {
@@ -648,8 +611,7 @@ void ApplicationController::handleToggleDetection()
     setMenuState(MenuState::None);
 }
 
-void ApplicationController::handleShutdown()
-{
+void ApplicationController::handleShutdown() {
     qDebug() << "ApplicationController: Shutdown System requested - showing confirmation";
     hideAllMenus();
 
@@ -658,16 +620,14 @@ void ApplicationController::handleShutdown()
     setMenuState(MenuState::ShutdownConfirmation);
 }
 
-void ApplicationController::handleRadarTargetList()
-{
+void ApplicationController::handleRadarTargetList() {
     qDebug() << "ApplicationController: Radar Target List requested";
     hideAllMenus();
     setMenuState(MenuState::RadarTargets);
     showMainMenu();
 }
 
-void ApplicationController::handleHelpAbout()
-{
+void ApplicationController::handleHelpAbout() {
     qDebug() << "ApplicationController: Help/About requested";
     hideAllMenus();
     m_aboutController->show();
@@ -678,8 +638,7 @@ void ApplicationController::handleHelpAbout()
 // COMPLETION HANDLERS
 // ============================================================================
 
-void ApplicationController::handleMainMenuFinished()
-{
+void ApplicationController::handleMainMenuFinished() {
     qDebug() << "ApplicationController: handleMainMenuFinished()";
     qDebug() << "  Current state:" << static_cast<int>(m_currentMenuState);
 
@@ -694,43 +653,35 @@ void ApplicationController::handleMainMenuFinished()
     }
 }
 
-void ApplicationController::handleReticleMenuFinished()
-{
+void ApplicationController::handleReticleMenuFinished() {
     qDebug() << "ApplicationController: Reticle menu finished";
 }
 
-void ApplicationController::handleColorMenuFinished()
-{
+void ApplicationController::handleColorMenuFinished() {
     qDebug() << "ApplicationController: Color menu finished";
 }
 
-void ApplicationController::handleZeroingFinished()
-{
+void ApplicationController::handleZeroingFinished() {
     qDebug() << "ApplicationController: Zeroing procedure finished";
 }
 
-void ApplicationController::handleWindageFinished()
-{
+void ApplicationController::handleWindageFinished() {
     qDebug() << "ApplicationController: Windage procedure finished";
 }
 
-void ApplicationController::handleEnvironmentalFinished()
-{
+void ApplicationController::handleEnvironmentalFinished() {
     qDebug() << "ApplicationController: Environmental procedure finished";
 }
 
-void ApplicationController::handleBrightnessFinished()
-{
+void ApplicationController::handleBrightnessFinished() {
     qDebug() << "ApplicationController: Brightness procedure finished";
 }
 
-void ApplicationController::handlePresetHomePositionFinished()
-{
+void ApplicationController::handlePresetHomePositionFinished() {
     qDebug() << "ApplicationController: Preset Home Position procedure finished";
 }
 
-void ApplicationController::handleZoneDefinitionFinished()
-{
+void ApplicationController::handleZoneDefinitionFinished() {
     qDebug() << "ApplicationController: Zone Definition finished";
 }
 
@@ -739,18 +690,15 @@ void ApplicationController::handleZoneDefinitionFinished()
 //     qDebug() << "ApplicationController: System Status finished";  // DISABLED
 // }  // DISABLED
 
-void ApplicationController::handleAboutFinished()
-{
+void ApplicationController::handleAboutFinished() {
     qDebug() << "ApplicationController: About finished";
 }
 
-void ApplicationController::handleShutdownConfirmationFinished()
-{
+void ApplicationController::handleShutdownConfirmationFinished() {
     qDebug() << "ApplicationController: Shutdown Confirmation finished";
 }
 
-void ApplicationController::handleReturnToMainMenu()
-{
+void ApplicationController::handleReturnToMainMenu() {
     qDebug() << "ApplicationController: handleReturnToMainMenu()";
     qDebug() << "  Current state:" << static_cast<int>(m_currentMenuState);
 
@@ -764,14 +712,13 @@ void ApplicationController::handleReturnToMainMenu()
 // HARDWARE BUTTON MONITORING (PLC21 Panel)
 // ============================================================================
 
-void ApplicationController::onButtonStateChanged(bool menuUp, bool menuDown, bool menuVal)
-{
+void ApplicationController::onButtonStateChanged(bool menuUp, bool menuDown, bool menuVal) {
     // ✅ LATENCY FIX: This slot is now called ONLY when buttons change, not every 50ms!
     // Event load reduced from 1,200 events/min → ~10-20 events/min (95% reduction)
 
     // Rising edge detection for menuUp button (false → true = button press)
     if (menuUp && !m_previousMenuUpState) {
-        m_previousMenuUpState = true; // Update BEFORE calling handler to prevent re-entrancy
+        m_previousMenuUpState = true;  // Update BEFORE calling handler to prevent re-entrancy
         onUpButtonPressed();
     } else {
         m_previousMenuUpState = menuUp;
@@ -779,7 +726,7 @@ void ApplicationController::onButtonStateChanged(bool menuUp, bool menuDown, boo
 
     // Rising edge detection for menuDown button (false → true = button press)
     if (menuDown && !m_previousMenuDownState) {
-        m_previousMenuDownState = true; // Update BEFORE calling handler to prevent re-entrancy
+        m_previousMenuDownState = true;  // Update BEFORE calling handler to prevent re-entrancy
         onDownButtonPressed();
     } else {
         m_previousMenuDownState = menuDown;
@@ -787,7 +734,7 @@ void ApplicationController::onButtonStateChanged(bool menuUp, bool menuDown, boo
 
     // Rising edge detection for menuVal button (false → true = button press)
     if (menuVal && !m_previousMenuValState) {
-        m_previousMenuValState = true; // Update BEFORE calling handler to prevent re-entrancy
+        m_previousMenuValState = true;  // Update BEFORE calling handler to prevent re-entrancy
         onMenuValButtonPressed();
     } else {
         m_previousMenuValState = menuVal;
