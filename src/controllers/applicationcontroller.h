@@ -14,6 +14,7 @@ class EnvironmentalController;
 class BrightnessController;
 class PresetHomePositionController;
 class ZoneDefinitionController;
+class RadarTargetListController;
 // class SystemStatusController;  // DISABLED
 class AboutController;
 class ShutdownConfirmationController;
@@ -42,6 +43,7 @@ public:
     void setBrightnessController(BrightnessController* controller);
     void setPresetHomePositionController(PresetHomePositionController* controller);
     void setZoneDefinitionController(ZoneDefinitionController* controller);
+    void setRadarTargetListController(RadarTargetListController* controller);
     // void setSystemStatusController(SystemStatusController* controller);  // DISABLED
     void setAboutController(AboutController* controller);
     void setShutdownConfirmationController(ShutdownConfirmationController* controller);
@@ -104,6 +106,7 @@ private slots:
     void handleBrightnessFinished();
     void handlePresetHomePositionFinished();
     void handleZoneDefinitionFinished();
+    void handleRadarTargetListFinished();
     // void handleSystemStatusFinished();  // DISABLED
     void handleAboutFinished();
     void handleShutdownConfirmationFinished();
@@ -142,6 +145,7 @@ private:
     BrightnessController* m_brightnessController;
     PresetHomePositionController* m_presetHomePositionController;
     ZoneDefinitionController* m_zoneDefinitionController;
+    RadarTargetListController* m_radarTargetListController;
     // SystemStatusController* m_systemStatusController;  // DISABLED
     AboutController* m_aboutController;
     ShutdownConfirmationController* m_shutdownConfirmationController;

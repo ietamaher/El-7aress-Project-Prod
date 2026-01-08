@@ -1787,6 +1787,17 @@ Repeater {
     }
 
     // ========================================================================
+    // RADAR TARGET LIST (Below Status Block - for radar slew mode)
+    // ========================================================================
+    RadarTargetList {
+        id: radarTargetList
+        x: 10
+        y: statusBlock.y + statusBlock.height + 10
+        viewModel: radarTargetListViewModel  // Context property from C++
+        z: 350  // Above other debug overlays
+    }
+
+    // ========================================================================
     // HELPER FUNCTIONS
     // ========================================================================
     function getCardinalDirection(bearing) {

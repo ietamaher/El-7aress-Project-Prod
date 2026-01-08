@@ -27,6 +27,7 @@
 // #include "controllers/systemstatuscontroller.h"  // DISABLED
 #include "controllers/aboutcontroller.h"
 #include "controllers/shutdownconfirmationcontroller.h"
+#include "controllers/radartargetlistcontroller.h"
 
 // ViewModels
 #include "models/osdviewmodel.h"
@@ -42,6 +43,7 @@
 // #include "models/systemstatusviewmodel.h"  // DISABLED
 #include "models/aboutviewmodel.h"
 #include "models/shutdownconfirmationviewmodel.h"
+#include "models/radartargetlistviewmodel.h"
 
 // Domain Models
 #include "models/domain/systemstatemodel.h"
@@ -239,6 +241,11 @@ bool ControllerRegistry::createQmlControllers()
         m_shutdownConfirmationController->setViewModel(m_viewModelRegistry->shutdownConfirmationViewModel());
         m_shutdownConfirmationController->setStateModel(m_systemStateModel);
 
+        // Radar Target List Controller
+        m_radarTargetListController = new RadarTargetListController(this);
+        m_radarTargetListController->setViewModel(m_viewModelRegistry->radarTargetListViewModel());
+        m_radarTargetListController->setStateModel(m_systemStateModel);
+
         // Application Controller (LAST - needs all other controllers)
         m_appController = new ApplicationController(this);
         m_appController->setMainMenuController(m_mainMenuController);
@@ -253,6 +260,7 @@ bool ControllerRegistry::createQmlControllers()
         // m_appController->setSystemStatusController(m_systemStatusController);  // DISABLED
         m_appController->setAboutController(m_aboutController);
         m_appController->setShutdownConfirmationController(m_shutdownConfirmationController);
+        m_appController->setRadarTargetListController(m_radarTargetListController);
         m_appController->setSystemStateModel(m_systemStateModel);
 
         qInfo() << "  ✓ QML controllers created";
@@ -288,6 +296,7 @@ bool ControllerRegistry::initializeControllers()
         // m_systemStatusController->initialize();  // DISABLED
         m_aboutController->initialize();
         m_shutdownConfirmationController->initialize();
+        m_radarTargetListController->initialize();
 
         // Initialize ApplicationController LAST (it connects to all others)
         m_appController->initialize();

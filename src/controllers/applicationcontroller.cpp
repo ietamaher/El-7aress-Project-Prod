@@ -8,6 +8,7 @@
 #include "controllers/brightnesscontroller.h"
 #include "controllers/presethomepositioncontroller.h"
 #include "controllers/zonedefinitioncontroller.h"
+#include "controllers/radartargetlistcontroller.h"
 // #include "controllers/systemstatuscontroller.h"  // DISABLED
 #include "controllers/aboutcontroller.h"
 #include "controllers/shutdownconfirmationcontroller.h"
@@ -28,6 +29,7 @@ ApplicationController::ApplicationController(QObject *parent)
     , m_brightnessController(nullptr)
     , m_presetHomePositionController(nullptr)
     , m_zoneDefinitionController(nullptr)
+    , m_radarTargetListController(nullptr)
     , m_systemStateModel(nullptr)
     , m_aboutController(nullptr)
     , m_shutdownConfirmationController(nullptr)
@@ -83,6 +85,11 @@ void ApplicationController::setZoneDefinitionController(ZoneDefinitionController
     m_zoneDefinitionController = controller;
 }
 
+void ApplicationController::setRadarTargetListController(RadarTargetListController* controller)
+{
+    m_radarTargetListController = controller;
+}
+
 // void ApplicationController::setSystemStatusController(SystemStatusController* controller)  // DISABLED
 // {  // DISABLED
 //     m_systemStatusController = controller;  // DISABLED
@@ -121,6 +128,7 @@ void ApplicationController::initialize()
     Q_ASSERT(m_brightnessController);
     Q_ASSERT(m_presetHomePositionController);
     Q_ASSERT(m_zoneDefinitionController);
+    Q_ASSERT(m_radarTargetListController);
     // Q_ASSERT(m_systemStatusController);  // DISABLED
     Q_ASSERT(m_aboutController);
     Q_ASSERT(m_shutdownConfirmationController);
@@ -261,6 +269,17 @@ void ApplicationController::initialize()
         qDebug() << "ApplicationController: ShutdownConfirmationController signals connected";
     }
 
+    // ========================================================================
+    // CONNECT RADAR TARGET LIST CONTROLLER
+    // ========================================================================
+    if (m_radarTargetListController) {
+        connect(m_radarTargetListController, &RadarTargetListController::listClosed,
+                this, &ApplicationController::handleRadarTargetListFinished);
+        connect(m_radarTargetListController, &RadarTargetListController::returnToMainMenu,
+                this, &ApplicationController::handleReturnToMainMenu);
+        qDebug() << "ApplicationController: RadarTargetListController signals connected";
+    }
+
     // =========================================================================
     // HARDWARE BUTTON MONITORING (PLC21 switches)
     // =========================================================================
@@ -306,6 +325,7 @@ void ApplicationController::hideAllMenus()
     // m_systemStatusController->hide();  // DISABLED
     m_aboutController->hide();
     m_shutdownConfirmationController->hide();
+    if (m_radarTargetListController) m_radarTargetListController->hide();
 }
 
 // ============================================================================
@@ -326,6 +346,7 @@ void ApplicationController::onMenuValButtonPressed()
         m_currentMenuState == MenuState::ZoneDefinition     ||
         m_currentMenuState == MenuState::HelpAbout ||
         m_currentMenuState == MenuState::ShutdownConfirmation ||
+        m_currentMenuState == MenuState::RadarTargets ||
         // m_currentMenuState == MenuState::SystemStatus  ||  // DISABLED
         false) {
         handleMenuValInProcedure();
@@ -419,6 +440,9 @@ void ApplicationController::handleMenuValInProcedure()
     case MenuState::ShutdownConfirmation:
         if (m_shutdownConfirmationController) m_shutdownConfirmationController->onSelectButtonPressed();
         break;
+    case MenuState::RadarTargets:
+        if (m_radarTargetListController) m_radarTargetListController->onSelectButtonPressed();
+        break;
     default:
         break;
     }
@@ -464,6 +488,9 @@ void ApplicationController::onUpButtonPressed()
         break;
     case MenuState::ShutdownConfirmation:
         if (m_shutdownConfirmationController) m_shutdownConfirmationController->onUpButtonPressed();
+        break;
+    case MenuState::RadarTargets:
+        if (m_radarTargetListController) m_radarTargetListController->onUpButtonPressed();
         break;
 
     default:
@@ -512,6 +539,9 @@ void ApplicationController::onDownButtonPressed()
         break;
     case MenuState::ShutdownConfirmation:
         if (m_shutdownConfirmationController) m_shutdownConfirmationController->onDownButtonPressed();
+        break;
+    case MenuState::RadarTargets:
+        if (m_radarTargetListController) m_radarTargetListController->onDownButtonPressed();
         break;
     default:
         qDebug() << "ApplicationController: DOWN pressed with no active menu";
@@ -662,8 +692,10 @@ void ApplicationController::handleRadarTargetList()
 {
     qDebug() << "ApplicationController: Radar Target List requested";
     hideAllMenus();
+    if (m_radarTargetListController) {
+        m_radarTargetListController->show();
+    }
     setMenuState(MenuState::RadarTargets);
-    showMainMenu();
 }
 
 void ApplicationController::handleHelpAbout()
@@ -732,6 +764,13 @@ void ApplicationController::handlePresetHomePositionFinished()
 void ApplicationController::handleZoneDefinitionFinished()
 {
     qDebug() << "ApplicationController: Zone Definition finished";
+}
+
+void ApplicationController::handleRadarTargetListFinished()
+{
+    qDebug() << "ApplicationController: Radar Target List finished";
+    hideAllMenus();
+    setMenuState(MenuState::None);
 }
 
 // void ApplicationController::handleSystemStatusFinished()  // DISABLED

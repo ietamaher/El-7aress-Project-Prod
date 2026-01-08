@@ -779,6 +779,12 @@ public:
      */
     void commandSlewToSelectedRadarTrack();
 
+    /**
+     * @brief Sets the selected radar track ID directly.
+     * @param trackId The ID of the radar track to select (0 = no selection).
+     */
+    void setSelectedRadarTrackId(quint32 trackId);
+
     // =================================
     // UTILITY METHODS
     // =================================

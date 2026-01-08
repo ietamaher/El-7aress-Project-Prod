@@ -2995,6 +2995,16 @@ void SystemStateModel::commandSlewToSelectedRadarTrack() {
     }
 }
 
+void SystemStateModel::setSelectedRadarTrackId(quint32 trackId) {
+    SystemStateData& data = m_currentStateData;
+
+    if (data.selectedRadarTrackId != trackId) {
+        qDebug() << "[MODEL] Setting selected radar track ID:" << trackId;
+        data.selectedRadarTrackId = trackId;
+        emit dataChanged(data);
+    }
+}
+
 /*
 Charging Cycle State Management (Cocking Actuator)
 */
