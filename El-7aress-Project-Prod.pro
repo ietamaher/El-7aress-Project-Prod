@@ -58,6 +58,8 @@ INCLUDEPATH += /usr/local/cuda/include
 LIBS += -L/usr/local/cuda/lib64 -lcudart
 
 SOURCES += \
+    src/controllers/radartargetlistcontroller.cpp \
+    src/models/radartargetlistviewmodel.cpp \
     src/safety/SafetyInterlock.cpp \
     src/safety/ZoneEnforcementService.cpp \
     src/safety/EmergencyStopMonitor.cpp \
@@ -167,6 +169,8 @@ else: unix:!android: target.path = /opt/$${TARGET}/bin
 !isEmpty(target.path): INSTALLS += target
 
 HEADERS += \
+    src/controllers/radartargetlistcontroller.h \
+    src/models/radartargetlistviewmodel.h \
     src/safety/SafetyInterlock.h \
     src/safety/ZoneEnforcementService.h \
     src/safety/EmergencyStopMonitor.h \

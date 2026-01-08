@@ -20,6 +20,7 @@
 	<file>../qml/components/AzimuthIndicator.qml</file>
         <file>../qml/components/ElevationScale.qml</file>
         <file>../qml/components/TrackingBox.qml</file>
+        <file>../qml/components/RadarTargetList.qml</file>
         <file>../qml/components/ReticleRenderer.qml</file>
         <file>../qml/components/CcipPipper.qml</file>
         <file>../qml/components/AboutDialog.qml</file>
