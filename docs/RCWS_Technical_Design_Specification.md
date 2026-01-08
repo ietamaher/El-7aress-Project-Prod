@@ -1,57 +1,102 @@
 # RCWS Qt6/QML Application - Technical Design Specification (TDS)
 
-**Document Version:** 1.0
+**Document Version:** 1.1
 **Date:** January 2026
 **Classification:** UNCLASSIFIED // FOR OFFICIAL USE ONLY
 **Prepared for:** Engineering Team - El Harress RCWS Project
 
 ---
 
-## Document Purpose
+## 1. Purpose and Scope
 
-This Technical Design Specification (TDS) provides engineer-facing technical details for the RCWS Qt6/QML application. It complements the RCWS_Qt6_Design_Document.md by describing implementation-level mechanisms including state machines, timing parameters, threading architecture, safety enforcement flows, error handling, and data flow patterns.
+### 1.1 Document Purpose
 
-**Intended Audience:** Software engineers, system integrators, and verification/validation teams requiring detailed understanding of internal mechanisms for implementation, debugging, and certification activities.
+This Technical Design Specification (TDS) provides the technical realization of the architecture described in the Descriptive Design Document (RCWS_Qt6_Design_Document.md). It focuses on state machines, timing, execution model, and safety enforcement. It does not replace the descriptive architecture and does not document source code.
+
+**Intended Audience:** Software engineers, system integrators, and verification/validation teams requiring detailed understanding of behavioral mechanisms for implementation, debugging, and certification activities.
+
+### 1.2 Relationship to Descriptive Design Document
+
+| Document | Focus | Level of Detail |
+|----------|-------|-----------------|
+| Descriptive Design (SDD) | System structure, component responsibilities, interaction patterns | Architectural |
+| Technical Design (TDS) | State behavior, timing constraints, execution mechanics | Behavioral |
+
+The SDD answers "What components exist and how do they interact?"
+The TDS answers "How do those components behave at runtime?"
+
+### 1.3 Scope Statement
+
+This document covers:
+- State machine behavior for critical subsystems
+- Timing constraints and rate requirements
+- Execution model and threading architecture
+- Safety enforcement flows and decision logic
+- Fault classification and recovery mechanisms
+- Data integrity rules and consistency guarantees
 
 ---
 
-## Table of Contents
+## 2. Explicit Out-of-Scope Items
 
-1. [State Machines](#1-state-machines)
-2. [Control Loop Timing](#2-control-loop-timing)
-3. [Threading Model](#3-threading-model)
-4. [Safety Enforcement Flow](#4-safety-enforcement-flow)
-5. [Error Handling and Recovery](#5-error-handling-and-recovery)
-6. [Data Flow](#6-data-flow)
+The following topics are intentionally excluded from this specification:
+
+| Topic | Rationale |
+|-------|-----------|
+| UI layout and visual design | Covered in QML component specifications |
+| Operator procedures | Covered in Operator Manual |
+| Hardware electrical interfaces | Covered in Hardware ICD |
+| Detailed algorithms (PID, stabilization) | Implementation detail, not behavioral |
+| Performance optimization techniques | Implementation detail |
+| Source code structure | Covered in code-level documentation |
+| Configuration file formats | Covered in Configuration Guide |
+| Test procedures | Covered in Verification Plan |
 
 ---
 
-## 1. State Machines
+## 3. State Machines
 
-### 1.1 Homing State Machine (HomingController)
+State machines are described at the behavioral level. Internal implementation details are intentionally omitted. Each state machine is specified using state tables, transition diagrams, and trigger → action → next state notation.
+
+### 3.1 Homing State Machine
 
 The homing state machine manages the gimbal zeroing sequence, establishing a known reference position for accurate aiming.
 
-#### States
+#### 3.1.1 States
 
-| State | Description |
-|-------|-------------|
-| `Idle` | No homing activity; system ready for homing request |
-| `Requested` | Homing request received; preparing to send HOME command |
-| `InProgress` | HOME command sent; awaiting HOME-END signals from both axes |
-| `Completed` | Both azimuth and elevation HOME-END received; success |
-| `Failed` | Timeout or error occurred during homing |
-| `Aborted` | Operator or system abort (e.g., emergency stop) |
+| State | Entry Condition | Behavior | Exit Condition |
+|-------|-----------------|----------|----------------|
+| Idle | System startup or homing complete | No homing activity; monitor for operator request | Operator presses home button |
+| Requested | Home button rising edge detected | Store current motion mode; prepare HOME command | HOME command transmitted |
+| InProgress | HOME command sent to drive controller | Monitor for HOME-END signals from both axes | Both HOME-END received OR timeout OR abort |
+| Completed | Both axes report HOME-END | Clear homing flags; restore previous motion mode | Auto-transition to Idle (next cycle) |
+| Failed | Timeout elapsed without HOME-END | Log failure cause; retain fault indication | Operator acknowledges or system reset |
+| Aborted | Emergency stop or operator cancel | Halt homing sequence; log abort reason | Immediate transition to Idle |
 
-#### State Transition Diagram
+#### 3.1.2 State Transition Table
+
+| Current State | Trigger | Guard Condition | Action | Next State |
+|---------------|---------|-----------------|--------|------------|
+| Idle | Home button pressed | Station enabled | Store mode; send HOME | Requested |
+| Requested | Command sent | — | Start timeout timer | InProgress |
+| InProgress | HOME-END (Az) | — | Mark Az complete | InProgress |
+| InProgress | HOME-END (El) | — | Mark El complete | InProgress |
+| InProgress | Both axes complete | — | Stop timer; signal success | Completed |
+| InProgress | Timeout | — | Log failure | Failed |
+| InProgress | E-Stop activated | — | Abort sequence | Aborted |
+| Completed | Next cycle | — | Restore motion mode | Idle |
+| Failed | Reset | — | Clear fault | Idle |
+| Aborted | — | — | Clear flags | Idle |
+
+#### 3.1.3 State Diagram
 
 ```
-                  ┌─────────────────────────────────────┐
-                  │                                     │
-                  v                                     │
-    ┌──────┐   button   ┌───────────┐   PLC42     ┌────────────┐
-    │ Idle │ ─────────> │ Requested │ ─────────> │ InProgress │
-    └──────┘   pressed  └───────────┘   HOME      └────────────┘
+                     ┌─────────────────────────────────────┐
+                     │                                     │
+                     v                                     │
+    ┌──────┐   button   ┌───────────┐   command    ┌────────────┐
+    │ Idle │ ─────────> │ Requested │ ──────────> │ InProgress │
+    └──────┘   pressed  └───────────┘    sent     └────────────┘
        ^                                               │
        │                                    ┌──────────┼──────────┐
        │                                    │          │          │
@@ -60,50 +105,58 @@ The homing state machine manages the gimbal zeroing sequence, establishing a kno
        │                                    v          v          v
        │                              ┌───────────┐ ┌────────┐ ┌─────────┐
        └──────────────────────────────│ Completed │ │ Failed │ │ Aborted │
-            (auto-clear after 1 cycle)└───────────┘ └────────┘ └─────────┘
+             (auto-transition)        └───────────┘ └────────┘ └─────────┘
 ```
 
-#### Timing Parameters
+#### 3.1.4 Timing Constraints
 
-| Parameter | Value | Location |
-|-----------|-------|----------|
-| `m_homingTimeoutMs` | 30000 ms | `HomingController` configurable |
-| Auto-clear delay | 1 control cycle (~50ms) | State clears on next `process()` |
-
-#### Signal Dependencies
-
-- **Input:** `gotoHomePosition` (button rising edge), `azimuthHomeComplete`, `elevationHomeComplete`
-- **Output:** `homingStarted`, `homingCompleted`, `homingFailed`, `homingAborted`, `homingStateChanged`
-
-#### Implementation Notes
-
-- Stores `m_modeBeforeHoming` to restore motion mode after completion
-- Rising edge detection on button prevents repeated triggering
-- Synchronizes with SystemStateModel's own homing state to handle race conditions
+| Parameter | Value | Description |
+|-----------|-------|-------------|
+| Homing timeout | 30 seconds | Maximum duration for complete homing sequence |
+| State clear delay | 1 control cycle | Completed state auto-clears to Idle |
 
 ---
 
-### 1.2 Charging State Machine (ChargingStateMachine)
+### 3.2 Charging State Machine
 
-The charging (cocking) state machine manages the weapon charging cycle, including multi-cycle support for closed-bolt weapons (M2HB) and jam detection/recovery.
+The charging (cocking) state machine manages the weapon charging cycle, including multi-cycle support for closed-bolt weapons and jam detection with recovery.
 
-#### States
+#### 3.2.1 States
 
-| State | Description |
-|-------|-------------|
-| `Idle` | Actuator retracted; ready for charge request |
-| `Extending` | Actuator moving toward full extension |
-| `Extended` | Actuator at full extension; holding position (continuous hold mode) |
-| `Retracting` | Actuator returning to home position |
-| `Lockout` | CROWS M153 4-second post-charge lockout period |
-| `Fault` | Error state requiring operator acknowledgment |
-| `JamDetected` | Mechanical obstruction detected; executing backoff |
-| `SafeRetract` | Recovery retraction; transitions to Idle (no auto-cycle) |
+| State | Entry Condition | Behavior | Exit Condition |
+|-------|-----------------|----------|----------------|
+| Idle | Actuator retracted; no active cycle | Monitor for charge request | Charge button pressed |
+| Extending | Charge initiated | Command actuator extension; monitor position | Position reached OR jam OR timeout |
+| Extended | Full extension reached | Hold position (continuous hold mode) | Button released |
+| Retracting | Extension complete or button released | Command actuator retraction | Position reached OR jam OR timeout |
+| Lockout | All cycles completed | Enforce post-charge delay | Lockout timer expires |
+| Fault | Timeout or error | Await operator acknowledgment | Operator reset |
+| JamDetected | High torque + stall detected | Execute backoff sequence | Backoff complete |
+| SafeRetract | Fault recovery initiated | Retract to home position | Position reached |
 
-#### State Transition Diagram
+#### 3.2.2 State Transition Table
+
+| Current State | Trigger | Guard Condition | Action | Next State |
+|---------------|---------|-----------------|--------|------------|
+| Idle | Charge button | Safety permits | Start extension; start timer | Extending |
+| Extending | Position reached | Button held | Hold position | Extended |
+| Extending | Position reached | Button released | Increment cycle; retract | Retracting |
+| Extending | Jam detected | — | Stop actuator; backoff | JamDetected |
+| Extending | Timeout | — | Signal fault | Fault |
+| Extended | Button released | — | Increment cycle; retract | Retracting |
+| Retracting | Position reached | More cycles needed | Start extension | Extending |
+| Retracting | Position reached | All cycles done | Start lockout | Lockout |
+| Retracting | Jam detected | — | Stop actuator; backoff | JamDetected |
+| Retracting | Timeout | — | Signal fault | Fault |
+| Lockout | Timer expires | — | Clear lockout flag | Idle |
+| JamDetected | Backoff complete | — | Await operator | Fault |
+| Fault | Operator reset | — | Initiate safe retract | SafeRetract |
+| SafeRetract | Position reached | — | Clear fault | Idle |
+
+#### 3.2.3 State Diagram
 
 ```
-                                    Short Press Mode
+                                    Short Press Path
                                    ┌──────────────────┐
                                    │                  │
     ┌──────┐  charge  ┌───────────┐│ position ┌────────────┐ position ┌───────────┐
@@ -130,758 +183,579 @@ The charging (cocking) state machine manages the weapon charging cycle, includin
        │              ┌────────────┐               │                    │
        └──────────────│ SafeRetract │ <────────────┘                    │
          (position    └────────────┘                                    │
-          reached)          ^                                           │
-                            │                                           │
-                            └───────────────────────────────────────────┘
-                                      Continuous Hold Mode
+          reached)                                                      │
+                                      Continuous Hold Path ─────────────┘
 ```
 
-#### Timing Parameters
+#### 3.2.4 Timing Constraints
 
 | Parameter | Value | Description |
 |-----------|-------|-------------|
-| `COCKING_TIMEOUT_MS` | 5000 ms | Watchdog for extend/retract operations |
-| `CHARGE_LOCKOUT_MS` | 4000 ms | CROWS M153 mandatory post-charge lockout |
-| `BACKOFF_STABILIZE_MS` | 200 ms | Delay before reverse direction after jam |
-| Startup retraction timeout | `COCKING_TIMEOUT_MS / 2` | Faster timeout for startup recovery |
+| Extend/retract timeout | 5 seconds | Watchdog for actuator movement |
+| Post-charge lockout | 4 seconds | CROWS M153 mandatory delay |
+| Backoff stabilization delay | 200 ms | Motor stabilization before reverse |
+| Startup retraction timeout | 2.5 seconds | Faster timeout for startup |
 
-#### Position Thresholds
+#### 3.2.5 Jam Detection Criteria
 
-| Parameter | Value | Description |
-|-----------|-------|-------------|
-| `COCKING_EXTEND_POS` | Configurable (mm) | Full extension position |
-| `COCKING_RETRACT_POS` | Configurable (mm) | Home/retracted position |
-| `COCKING_POSITION_TOLERANCE` | ±2 mm | Acceptable arrival threshold |
-| `ACTUATOR_RETRACTED_THRESHOLD` | 5 mm | Startup retraction trigger |
+| Criterion | Threshold | Description |
+|-----------|-----------|-------------|
+| Torque threshold | 80% | High torque indication |
+| Position stall | < 0.5 mm movement | No progress detected |
+| Confirmation samples | 3 consecutive | Sustained condition required |
 
-#### Jam Detection Parameters
+#### 3.2.6 Multi-Cycle Requirements
 
-| Parameter | Value | Description |
-|-----------|-------|-------------|
-| `JAM_TORQUE_THRESHOLD_PERCENT` | 80% | High torque detection threshold |
-| `POSITION_STALL_TOLERANCE_MM` | 0.5 mm | Stall detection threshold |
-| `JAM_CONFIRM_SAMPLES` | 3 | Consecutive samples to confirm jam |
-
-#### Multi-Cycle Support
-
-| Weapon Type | Required Cycles | Description |
-|-------------|-----------------|-------------|
-| M2HB (.50 cal) | 2 | Closed bolt; cycle 1 picks round, cycle 2 chambers |
+| Weapon Type | Required Cycles | Rationale |
+|-------------|-----------------|-----------|
+| M2HB (.50 cal) | 2 | Closed bolt: Cycle 1 picks round, Cycle 2 chambers |
 | M240B, M249, MK19 | 1 | Open bolt weapons |
-
-#### Operating Modes
-
-1. **Short Press Mode:** Button released before extension complete → auto-cycles through all required extend/retract cycles
-2. **Continuous Hold Mode:** Button held through extension → holds at Extended until release, then retracts (counts as one cycle)
 
 ---
 
-### 1.3 LAC Tracking State Machine (TrackingMotionMode)
+### 3.3 Motion Mode Transition State Machine
 
-The Lead Angle Compensation (LAC) state machine manages smooth transitions between precision tracking and lead-injected firing modes.
+The motion mode transition state machine manages smooth transitions between gimbal control modes with lead angle compensation blending.
 
-#### States
+#### 3.3.1 States (Tracking with LAC)
 
-| State | Description |
-|-------|-------------|
-| `TRACK` | Normal tracking; target centered; PID control active |
-| `FIRE_LEAD` | Lead injection active; target intentionally drifts off-center |
-| `RECENTER` | Transitioning from lead back to centered tracking |
+| State | Entry Condition | Behavior | Exit Condition |
+|-------|-----------------|----------|----------------|
+| TRACK | Normal tracking active | PID control; target centered | LAC armed AND fire trigger |
+| FIRE_LEAD | LAC engaged during firing | Open-loop lead injection; target drifts | Trigger released |
+| RECENTER | Transitioning from lead | Blend lead out; target re-centering | Blend factor reaches zero |
 
-#### State Transition Logic
+#### 3.3.2 State Transition Table
 
-```cpp
-if (lacArmed && deadReckoningActive) {
-    state = FIRE_LEAD;
-} else {
-    if (previousState == FIRE_LEAD) {
-        state = RECENTER;
-    } else if (blendFactor <= 0.001) {
-        state = TRACK;
-    }
-    // else: stay in RECENTER while ramping down
-}
-```
+| Current State | Trigger | Guard Condition | Action | Next State |
+|---------------|---------|-----------------|--------|------------|
+| TRACK | Fire trigger | LAC armed | Begin blend ramp-in | FIRE_LEAD |
+| FIRE_LEAD | Trigger released | — | Begin blend ramp-out | RECENTER |
+| RECENTER | Blend = 0 | — | Resume tracking | TRACK |
 
-#### Blend Factor Timing
+#### 3.3.3 Blend Timing
 
 | Parameter | Value | Resulting Duration |
 |-----------|-------|-------------------|
-| `LAC_BLEND_RAMP_IN` | 5.0 (1/s) | ~200 ms to reach 1.0 |
-| `LAC_BLEND_RAMP_OUT` | 3.0 (1/s) | ~333 ms to reach 0.0 |
+| Ramp-in rate | 5.0 per second | ~200 ms to full lead |
+| Ramp-out rate | 3.0 per second | ~333 ms to centered |
 
-#### Rigid Cradle Constraint
+#### 3.3.4 Rigid Cradle Constraint
 
-**Critical:** Camera and gun are mechanically locked. During lead injection (`FIRE_LEAD`), the target **intentionally drifts off-center** because the gun must aim ahead of the target. This is correct behavior for ballistic lead.
+**Critical Design Constraint:** Camera and gun are mechanically locked (rigid cradle). During lead injection (FIRE_LEAD state), the target intentionally drifts off-center because the gun must aim ahead of the target's current position. This apparent "tracking error" is correct ballistic behavior.
 
 ---
 
-### 1.4 Emergency Stop Monitor (EmergencyStopMonitor)
+### 3.4 Emergency Stop Lifecycle
 
-The emergency stop monitor provides debounced state tracking and recovery management for the physical E-Stop button.
+The emergency stop lifecycle manages debounced state transitions and recovery timing for the physical E-Stop mechanism.
 
-#### Debounce State Machine
+#### 3.4.1 States
 
-```
-                    state change
-    ┌─────────────┐  detected   ┌────────────┐   DEBOUNCE_MS   ┌───────────────┐
-    │ Not         │ ──────────> │ Debouncing │ ──────────────> │ State Changed │
-    │ Debouncing  │             └────────────┘    elapsed      └───────────────┘
-    └─────────────┘                   │
-          ^                           │ state reverted
-          │                           │ during debounce
-          └───────────────────────────┘
-```
+| State | Entry Condition | Behavior | Exit Condition |
+|-------|-----------------|----------|----------------|
+| Inactive | E-Stop not pressed | Normal operation permitted | E-Stop button pressed |
+| Debouncing | Button state change detected | Filter contact bounce | Debounce period elapsed OR state reverts |
+| Active | Debounced activation confirmed | All motion/firing inhibited | E-Stop button released |
+| Recovery | Debounced deactivation confirmed | Enforcing recovery delay | Recovery period elapsed |
 
-#### Timing Parameters
+#### 3.4.2 State Transition Table
+
+| Current State | Trigger | Guard Condition | Action | Next State |
+|---------------|---------|-----------------|--------|------------|
+| Inactive | Button pressed | — | Start debounce timer | Debouncing |
+| Debouncing | Debounce elapsed | State still changed | Log activation; inhibit all | Active |
+| Debouncing | State reverted | — | Cancel debounce | Inactive |
+| Active | Button released | — | Start debounce timer | Debouncing |
+| Debouncing | Debounce elapsed | State changed to inactive | Start recovery timer | Recovery |
+| Recovery | Timer elapsed | — | Log recovery complete | Inactive |
+
+#### 3.4.3 Timing Constraints
 
 | Parameter | Value | Description |
 |-----------|-------|-------------|
-| `DEBOUNCE_MS` | 50 ms | Contact bounce filtering |
-| `RECOVERY_DELAY_MS` | 1000 ms | Safe recovery period after deactivation |
-| `MAX_EVENT_HISTORY` | 100 | Audit trail buffer size |
-
-#### Signals
-
-| Signal | Description |
-|--------|-------------|
-| `activated(event)` | E-Stop activated (includes source, timestamp) |
-| `deactivated(event)` | E-Stop deactivated (includes duration) |
-| `recoveryStarted()` | Recovery period begun |
-| `recoveryComplete()` | Safe to resume normal operation |
-| `stateChanged(bool)` | State change notification |
-
-#### Force Activation
-
-The `forceActivate(reason)` method bypasses debounce for software-triggered emergency stops.
+| Debounce period | 50 ms | Contact bounce filtering |
+| Recovery delay | 1000 ms | Safe period before normal operation |
+| Event history size | 100 events | Audit trail buffer |
 
 ---
 
-## 2. Control Loop Timing
+## 4. Timing and Rates
 
-### 2.1 Primary Control Loop (GimbalController)
+### 4.1 Control Loop Frequencies
 
-The gimbal controller runs a 20 Hz periodic update loop for motion control.
+| Control Loop | Frequency | Period | Purpose |
+|--------------|-----------|--------|---------|
+| Motion control (gimbal) | 20 Hz | 50 ms | Servo velocity commands |
+| Safety monitoring | 20 Hz | 50 ms | Interlock evaluation |
+| State change processing | Event-driven | — | Reactive to hardware |
 
-#### Timer Configuration
+### 4.2 Hardware Polling and Update Rates
 
-```cpp
-m_updateTimer = new QTimer(this);
-m_updateTimer->start(50);  // 50 ms = 20 Hz
-```
+| Device/Interface | Update Rate | Direction | Notes |
+|------------------|-------------|-----------|-------|
+| Servo drive feedback | 110 Hz | Read | Position, velocity, status |
+| Servo velocity commands | 20 Hz | Write | Velocity mode commands |
+| PLC I/O (panel) | 50 Hz | Read/Write | Switches, indicators |
+| PLC I/O (gimbal) | 50 Hz | Read/Write | Limit switches, E-stop |
+| IMU data | 100 Hz | Read | Attitude, angular rates |
+| Joystick axes | Event-driven | Read | Position change events |
+| LRF | On-demand | Read | Range measurement trigger |
+| Video frames | 60 fps | Read | Camera image stream |
 
-#### Centralized dt Computation
+### 4.3 Safety Response Bounds
 
-```cpp
-double dt = m_velocityTimer.restart() / 1000.0;  // Convert ms to seconds
-dt = std::clamp(dt, 0.001, 0.050);               // Clamp between 1-50 ms
-```
+| Safety Event | Maximum Response Time | Enforcement |
+|--------------|----------------------|-------------|
+| E-Stop activation | < 50 ms | Debounce period |
+| Fire inhibit (zone entry) | < 50 ms | Next control cycle |
+| Motion halt (E-Stop) | < 100 ms | Control cycle + servo response |
+| Charging abort | < 50 ms | Next control cycle |
 
-**Rationale:** Clamping prevents numerical instability from extreme dt values caused by system delays or startup conditions.
+### 4.4 Timeout Values
 
-#### Update Loop Structure
+| Operation | Timeout | Action on Expiry |
+|-----------|---------|------------------|
+| Homing sequence | 30 seconds | Transition to Failed state |
+| Actuator extend/retract | 5 seconds | Transition to Fault state |
+| Post-charge lockout | 4 seconds | Return to Idle |
+| E-Stop recovery | 1 second | Enable normal operation |
+| Thread shutdown | 2 seconds | Force terminate |
 
-1. **Shutdown safety check** - Return if SystemStateModel destroyed
-2. **Startup sanity checks** - Verify IMU units, stabilizer limits (once)
-3. **Centralized dt computation** - Measure actual loop interval
-4. **LAC velocity calculation** - Gimbal velocity for manual mode LAC
-5. **Update loop diagnostics** - Jitter logging every 50 cycles
-6. **Motion mode update** - Safety check, then delegate to mode implementation
+### 4.5 Timing Assumptions and Limitations
 
-#### Priority Processing (onSystemStateChanged)
+**Assumptions:**
 
-| Priority | Condition | Action |
-|----------|-----------|--------|
-| 1 | Emergency Stop changed | Process immediately; block all else if active |
-| 2 | Homing state changed | Delegate to HomingController |
-| 3 | Free mode changed | Log state change |
-| 4 | Motion mode changed | Reconfigure motion mode |
-| 5 | Tracking data changed | Update target position |
+1. **Soft Real-Time:** The system operates as a soft real-time system within a Qt event loop. Timing guarantees are probabilistic, not deterministic.
 
-### 2.2 Motion Mode Update Timing
+2. **Event Loop Latency:** Qt's event loop introduces non-deterministic latency. Design assumes worst-case event processing delay of 50 ms under normal load.
 
-Motion modes receive the centralized `dt` parameter from GimbalController:
+3. **Modbus Latency:** Serial Modbus RTU communications have inherent latency (1-5 ms per transaction). Control algorithms account for this delay.
 
-```cpp
-m_currentMode->update(this, dt);
-```
+4. **Single-Core Assumption:** The main control logic assumes single-threaded execution. Thread safety is achieved through connection types, not locks.
 
-#### Motion Mode Filter Time Constants
+**Limitations:**
 
-| Filter | Tau (τ) | Purpose |
-|--------|---------|---------|
-| `manualJoystickTau` | 0.05 s | Joystick input smoothing (configurable) |
-| `DERR_FILTER_TAU` | 0.1 s | Derivative-on-error noise rejection |
-| `FF_FILTER_TAU` | 0.15 s | Feedforward velocity smoothing |
-| Gimbal velocity filter | 0.1 s | LAC velocity measurement |
+1. **No Hard Real-Time Guarantees:** This system cannot guarantee microsecond-level timing precision. Safety-critical timing constraints are designed with margins.
 
-#### Rate Limiting (ManualMotionMode)
+2. **Jitter Tolerance:** Control loops tolerate ±20% timing jitter without stability impact. Jitter beyond this threshold triggers diagnostic logging.
 
-```cpp
-double maxChangeHz = cfg.manualLimits.maxAccelHzPerSec * dt;  // Hz/s * s = Hz
-```
-
-### 2.3 Hardware Polling Intervals
-
-| Device | Polling Rate | Mechanism |
-|--------|--------------|-----------|
-| Servo Drivers | 110 Hz | Modbus read (implicit via write cycle) |
-| PLC21 (Panel) | 50 Hz | Modbus polling timer |
-| PLC42 (I/O) | 50 Hz | Modbus polling timer |
-| IMU | 100 Hz | Serial streaming (3DM-GX3 internal rate) |
-| Joystick | Event-driven | SDL2 event polling |
-| LRF | On-demand | Serial request/response |
-
-### 2.4 Video Processing Timing
-
-| Pipeline Stage | Rate | Description |
-|----------------|------|-------------|
-| Frame capture | 60 fps | GStreamer V4L2 source |
-| Frame decode | 60 fps | GStreamer MJPEG decoder |
-| OSD overlay | Per-frame | QML Image refresh triggered by signal |
-| QML update | Signal-driven | `frameUpdated()` signal → immediate refresh |
-
-**Latency Optimization:** Timer-based polling (33ms jitter) replaced with signal-driven refresh for 0-33ms latency reduction.
+3. **Video Latency:** End-to-end video latency (capture to display) is approximately 30-60 ms. Fire control calculations do not depend on video timing.
 
 ---
 
-## 3. Threading Model
+## 5. Execution Model
 
-### 3.1 Thread Architecture Overview
+### 5.1 Threading Architecture
 
 ```
-┌──────────────────────────────────────────────────────────────────────────────┐
-│                              Main Thread (Qt Event Loop)                      │
-│                                                                              │
-│  ┌────────────────┐  ┌──────────────────┐  ┌──────────────────────────────┐ │
-│  │ QGuiApplication│  │ QQmlEngine       │  │ SystemStateModel             │ │
-│  │ Event Loop     │  │ + QML UI         │  │ + All Controllers            │ │
-│  └────────────────┘  └──────────────────┘  │ + Safety Interlock           │ │
-│                                            │ + Hardware Devices (Modbus)  │ │
-│                                            └──────────────────────────────┘ │
-└──────────────────────────────────────────────────────────────────────────────┘
-        │                    │                           │
-        │                    │                           │
-        v                    v                           v
-┌───────────────┐    ┌───────────────┐           ┌───────────────┐
-│ Day Video     │    │ Night Video   │           │ Servo Threads │
-│ Thread        │    │ Thread        │           │ (Az/El)       │
-│               │    │               │           │               │
-│ ┌───────────┐ │    │ ┌───────────┐ │           │ ┌───────────┐ │
-│ │GStreamer  │ │    │ │GStreamer  │ │           │ │Modbus I/O │ │
-│ │Pipeline   │ │    │ │Pipeline   │ │           │ │Async      │ │
-│ └───────────┘ │    │ └───────────┘ │           │ └───────────┘ │
-└───────────────┘    └───────────────┘           └───────────────┘
+┌──────────────────────────────────────────────────────────────────────────┐
+│                        Main Thread (Qt Event Loop)                        │
+│                                                                          │
+│   ┌─────────────────────────────────────────────────────────────────┐   │
+│   │  Event-Driven Components                                         │   │
+│   │  • State Model (central data hub)                               │   │
+│   │  • All Controllers (gimbal, weapon, camera, joystick)           │   │
+│   │  • Safety Interlock (authorization authority)                   │   │
+│   │  • Hardware Devices (Modbus-based)                              │   │
+│   │  • QML Engine and UI                                            │   │
+│   └─────────────────────────────────────────────────────────────────┘   │
+│                                                                          │
+│   ┌─────────────────────────────────────────────────────────────────┐   │
+│   │  Timer-Driven Components                                         │   │
+│   │  • Motion Control Loop (20 Hz periodic timer)                   │   │
+│   │  • Watchdog Timers (single-shot)                                │   │
+│   └─────────────────────────────────────────────────────────────────┘   │
+└──────────────────────────────────────────────────────────────────────────┘
+                           │
+          ┌────────────────┼────────────────┐
+          │                │                │
+          v                v                v
+   ┌─────────────┐  ┌─────────────┐  ┌─────────────┐
+   │ Day Video   │  │ Night Video │  │ Servo I/O   │
+   │ Thread      │  │ Thread      │  │ Thread      │
+   │             │  │             │  │             │
+   │ • Capture   │  │ • Capture   │  │ • Async     │
+   │ • Decode    │  │ • Decode    │  │   Modbus    │
+   │ • Process   │  │ • Process   │  │             │
+   └─────────────┘  └─────────────┘  └─────────────┘
 ```
 
-### 3.2 Main Thread Responsibilities
+### 5.2 Main Thread Responsibilities
 
-**Why Single-Threaded for Modbus:**
-Qt's QModbus requires all operations on the same QModbusClient to occur in the creating thread. Threading violations cause crashes or undefined behavior.
+The main thread executes all control logic for the following reasons:
 
-**Main Thread Components:**
-- `QGuiApplication` event loop (`app.exec()`)
-- `SystemStateModel` (central data hub)
-- All controllers (GimbalController, WeaponController, etc.)
-- `SafetyInterlock` (safety authority)
-- Hardware devices (Modbus-based)
-- QML engine and UI
+1. **Modbus Constraint:** Qt's Modbus implementation requires all operations on a client to occur in the creating thread.
 
-### 3.3 Worker Threads
+2. **State Consistency:** Single-threaded execution eliminates race conditions in state model updates.
 
-#### Video Processing Threads
+3. **Safety Authority:** The safety interlock executes atomically with control decisions.
 
-```cpp
-// HardwareManager.cpp
-m_dayVideoProcessor = new CameraVideoStreamDevice(...);
-m_dayVideoProcessor->start();  // Starts internal GStreamer thread
-```
+### 5.3 Timer-Driven vs Event-Driven Logic
 
-**Thread-Safe Communication:**
-```cpp
-connect(m_hardwareManager->dayVideoProcessor(), &CameraVideoStreamDevice::frameDataReady,
-        this, [this](const FrameData& data) {
-            // Lambda runs in main thread (QueuedConnection implicit)
-            m_videoProvider->updateImage(data.baseImage);
-        }, Qt::QueuedConnection);  // Explicit for clarity
-```
+| Component Type | Execution Model | Trigger |
+|----------------|-----------------|---------|
+| Motion control | Timer-driven | 50 ms periodic timer |
+| State change handlers | Event-driven | Signal emission |
+| Watchdogs | Timer-driven | Single-shot timers |
+| Safety checks | Event-driven | State change + periodic |
+| Video processing | Thread + signal | Frame ready signal |
 
-#### Servo Driver Threads
+### 5.4 Signal Connection Semantics
 
-```cpp
-m_servoAzThread = new QThread(this);
-m_servoAzDevice = new ServoDriverDevice(servoAzConf.name, nullptr);
-// Note: Device created on main thread, moved later if needed
-```
+| Connection Scenario | Semantics | Rationale |
+|--------------------|-----------|-----------|
+| Same thread, timing-critical | Direct (synchronous) | No queue delay |
+| Cross-thread | Queued (asynchronous) | Thread safety |
+| State model to controllers | Direct | Latency-sensitive |
+| Video to state model | Queued | Cross-thread |
 
-### 3.4 Signal Connection Types
+### 5.5 Intentional Single-Threading Decisions
 
-| Scenario | Connection Type | Rationale |
-|----------|-----------------|-----------|
-| Same thread, timing-critical | `Qt::DirectConnection` | No event queue delay |
-| Cross-thread | `Qt::QueuedConnection` | Thread-safe, copied arguments |
-| SystemStateModel → Controllers | `Qt::DirectConnection` | Latency-sensitive control loops |
-| Video → SystemStateModel | `Qt::QueuedConnection` | Cross-thread safety |
+The following components are intentionally single-threaded:
 
-#### Latency Fix Example (WeaponController)
+1. **Safety Interlock:** All safety decisions execute atomically in the main thread to prevent race conditions between check and action.
 
-```cpp
-// ORIGINAL (caused latency buildup):
-connect(m_stateModel, &SystemStateModel::dataChanged,
-        this, &WeaponController::onSystemStateChanged,
-        Qt::QueuedConnection);  // ❌ Event queue saturation
+2. **State Model Updates:** All state mutations occur in the main thread to ensure consistency between readers.
 
-// FIX (immediate processing):
-connect(m_stateModel, &SystemStateModel::dataChanged,
-        this, &WeaponController::onSystemStateChanged,
-        Qt::DirectConnection);  // ✅ No queue delay
-```
+3. **Modbus Devices:** Qt Modbus requires thread affinity; all device I/O occurs in the main thread.
 
-### 3.5 Thread Shutdown Sequence
-
-```cpp
-// HardwareManager::~HardwareManager()
-if (m_dayVideoProcessor && m_dayVideoProcessor->isRunning()) {
-    m_dayVideoProcessor->stop();
-    if (!m_dayVideoProcessor->wait(2000)) {
-        qWarning() << "Day video processor did not stop gracefully";
-        m_dayVideoProcessor->terminate();
-        if (!m_dayVideoProcessor->wait(1000)) {
-            qCritical() << "RESOURCE LEAK!";
-        }
-    }
-}
-```
-
-**Timeout Strategy:**
-1. Request graceful stop
-2. Wait 2000 ms for clean exit
-3. Force terminate if timeout
-4. Wait 1000 ms for termination
-5. Log critical error if still running
+4. **Control Loops:** Control algorithms execute in the main thread to ensure deterministic ordering of read-compute-write cycles.
 
 ---
 
-## 4. Safety Enforcement Flow
+## 6. Safety Enforcement Traceability
 
-### 4.1 SafetyInterlock Architecture
+### 6.1 Fire Authorization Flow
 
-SafetyInterlock is the **central safety authority** created first by ControllerRegistry:
+```
+┌──────────────────────────────────────────────────────────────────────────┐
+│                     FIRE AUTHORIZATION SEQUENCE                           │
+└──────────────────────────────────────────────────────────────────────────┘
 
-```cpp
-// ControllerRegistry::createHardwareControllers()
-m_safetyInterlock = new SafetyInterlock(m_systemStateModel, this);
-// Created BEFORE any other controller
+  Operator Fire Request
+         │
+         v
+  ┌──────────────────┐    NO     ┌─────────────────────────────────────────┐
+  │ E-Stop Inactive? │ ────────> │ DENY: Emergency stop active             │
+  └──────────────────┘           └─────────────────────────────────────────┘
+         │ YES
+         v
+  ┌──────────────────┐    NO     ┌─────────────────────────────────────────┐
+  │ Station Enabled? │ ────────> │ DENY: Station not enabled               │
+  └──────────────────┘           └─────────────────────────────────────────┘
+         │ YES
+         v
+  ┌──────────────────┐    NO     ┌─────────────────────────────────────────┐
+  │ Dead Man Held?   │ ────────> │ DENY: Dead man switch not held          │
+  └──────────────────┘           └─────────────────────────────────────────┘
+         │ YES
+         v
+  ┌──────────────────┐    NO     ┌─────────────────────────────────────────┐
+  │ Gun Armed?       │ ────────> │ DENY: Gun not armed                     │
+  └──────────────────┘           └─────────────────────────────────────────┘
+         │ YES
+         v
+  ┌──────────────────┐    NO     ┌─────────────────────────────────────────┐
+  │ Engagement Mode? │ ────────> │ DENY: Not in engagement mode            │
+  └──────────────────┘           └─────────────────────────────────────────┘
+         │ YES
+         v
+  ┌──────────────────┐    NO     ┌─────────────────────────────────────────┐
+  │ System Authzd?   │ ────────> │ DENY: System not authorized             │
+  └──────────────────┘           └─────────────────────────────────────────┘
+         │ YES
+         v
+  ┌──────────────────┐    YES    ┌─────────────────────────────────────────┐
+  │ In No-Fire Zone? │ ────────> │ DENY: Position in no-fire zone          │
+  └──────────────────┘           └─────────────────────────────────────────┘
+         │ NO
+         v
+  ┌──────────────────┐    YES    ┌─────────────────────────────────────────┐
+  │ Charging Active? │ ────────> │ DENY: Charging cycle in progress        │
+  └──────────────────┘           └─────────────────────────────────────────┘
+         │ NO
+         v
+  ┌──────────────────────────────────────────────────────────────────────┐
+  │                    FIRE AUTHORIZED - Execute command                  │
+  └──────────────────────────────────────────────────────────────────────┘
 ```
 
-### 4.2 Authorization Priority Order
+### 6.2 Motion Authorization Flow
 
-Safety checks execute in strict priority order. Higher priority failures short-circuit lower checks.
-
-| Priority | Check | Denial Reason |
-|----------|-------|---------------|
-| 1 | Emergency Stop | `EmergencyStopActive` |
-| 2 | Station Enabled | `StationNotEnabled` |
-| 3 | Dead Man Switch | `DeadManSwitchNotHeld` |
-| 4 | Gun Armed | `GunNotArmed` |
-| 5 | Operational Mode | `NotInEngagementMode` |
-| 6 | System Authorization | `SystemNotAuthorized` |
-| 7 | No-Fire Zone | `InNoFireZone` |
-| 8 | Charging State | `ChargingInProgress` / `ChargingFault` |
-
-### 4.3 Template Method Pattern (Motion Modes)
-
-```cpp
-// GimbalMotionModeBase (base class)
-void GimbalMotionModeBase::updateWithSafety(GimbalController* controller, double dt)
-{
-    // Step 1: Check safety via SafetyInterlock
-    if (!checkSafetyConditions(controller)) {
-        stopServos(controller);  // IMMEDIATE HALT
-        return;
-    }
-
-    // Step 2: Safety passed - delegate to derived class
-    updateImpl(controller, dt);
-}
-
-// Derived classes ONLY override updateImpl()
-void ManualMotionMode::updateImpl(GimbalController* controller, double dt)
-{
-    // Pure motion logic - safety already guaranteed
-}
+```
+  Motion Command Request
+         │
+         v
+  ┌──────────────────┐    YES    ┌─────────────────────────────────────────┐
+  │ E-Stop Active?   │ ────────> │ HALT: Stop all motion immediately       │
+  └──────────────────┘           └─────────────────────────────────────────┘
+         │ NO
+         v
+  ┌──────────────────┐    NO     ┌─────────────────────────────────────────┐
+  │ Station Enabled? │ ────────> │ HALT: Motion not permitted              │
+  └──────────────────┘           └─────────────────────────────────────────┘
+         │ YES
+         v
+  ┌──────────────────┐    NO     ┌─────────────────────────────────────────┐
+  │ Dead Man Held?   │ ────────> │ HALT: Dead man required for mode        │
+  │ (if required)    │           └─────────────────────────────────────────┘
+  └──────────────────┘
+         │ YES/N/A
+         v
+  ┌──────────────────┐    YES    ┌─────────────────────────────────────────┐
+  │ In No-Traverse?  │ ────────> │ CLAMP: Limit velocity at boundary       │
+  └──────────────────┘           └─────────────────────────────────────────┘
+         │ NO
+         v
+  ┌──────────────────────────────────────────────────────────────────────┐
+  │                 MOTION AUTHORIZED - Execute velocity command          │
+  └──────────────────────────────────────────────────────────────────────┘
 ```
 
-**Guarantee:** All motion modes pass through `updateWithSafety()` before any motion commands execute.
+### 6.3 Emergency Stop Propagation
 
-### 4.4 Fail-Safe Defaults
-
-```cpp
-bool SafetyInterlock::canFire(SafetyDenialReason* reason) const
-{
-    if (!m_systemState) {
-        // STATE UNAVAILABLE → DENY
-        if (reason) *reason = SafetyDenialReason::SystemNotAuthorized;
-        return false;
-    }
-    // ... continue checks
-}
+```
+  E-Stop Button Pressed
+         │
+         v
+  ┌───────────────────────────────────────────────────────────────────┐
+  │ PHASE 1: IMMEDIATE INHIBIT (< 50 ms)                              │
+  │                                                                   │
+  │   • Set E-Stop flag in state model                               │
+  │   • Signal emitted to all observers                              │
+  └───────────────────────────────────────────────────────────────────┘
+         │
+         v
+  ┌───────────────────────────────────────────────────────────────────┐
+  │ PHASE 2: HALT COMMANDS (< 100 ms)                                 │
+  │                                                                   │
+  │   • Gimbal Controller: Send STOP to servos                       │
+  │   • Weapon Controller: Disable fire solenoid                     │
+  │   • Charging FSM: Abort any in-progress cycle                    │
+  │   • Homing FSM: Abort if in progress                             │
+  └───────────────────────────────────────────────────────────────────┘
+         │
+         v
+  ┌───────────────────────────────────────────────────────────────────┐
+  │ PHASE 3: SUSTAINED INHIBIT                                        │
+  │                                                                   │
+  │   • All authorization requests return DENY                       │
+  │   • All motion commands blocked                                  │
+  │   • Fire commands blocked                                        │
+  │   • Charging requests blocked                                    │
+  └───────────────────────────────────────────────────────────────────┘
+         │
+         v
+  E-Stop Released → Recovery sequence (1 second delay)
 ```
 
-**Philosophy:** When state is unknown, default to safest condition (DENY).
+### 6.4 Authorization Priority Order
 
-### 4.5 Audit Trail
+Checks execute in strict priority order. Higher-priority failures short-circuit lower checks.
 
-All safety decisions are logged with timestamps:
+| Priority | Check | Denial Enumeration |
+|----------|-------|-------------------|
+| 1 | Emergency Stop | EmergencyStopActive |
+| 2 | Station Enabled | StationNotEnabled |
+| 3 | Dead Man Switch | DeadManSwitchNotHeld |
+| 4 | Gun Armed | GunNotArmed |
+| 5 | Operational Mode | NotInEngagementMode |
+| 6 | System Authorization | SystemNotAuthorized |
+| 7 | No-Fire Zone | InNoFireZone |
+| 8 | Charging State | ChargingInProgress / ChargingFault |
 
-```cpp
-qInfo() << "[SafetyInterlock] FIRE DENIED:"
-        << denialReasonToString(reason)
-        << "at" << QDateTime::currentDateTime().toString(Qt::ISODate);
-```
+### 6.5 Fail-Safe Default Behavior
 
-### 4.6 No-Fire Zone Enforcement
+When system state is unavailable or indeterminate:
 
-```cpp
-// SystemStateModel
-bool isPointInNoFireZone(float az, float el) const;
+| Query | Default Response | Rationale |
+|-------|------------------|-----------|
+| Can fire? | DENY | Safest assumption |
+| Can move? | DENY | Safest assumption |
+| Can charge? | DENY | Safest assumption |
+| Can home? | DENY | Safest assumption |
 
-// Called by:
-// 1. SafetyInterlock::canFire()
-// 2. GimbalController::onSystemStateChanged()
-// 3. ZoneEnforcementService (traversal prevention)
-```
+### 6.6 Audit Trail Requirements
 
-### 4.7 No-Traverse Zone Enforcement
-
-```cpp
-// GimbalMotionModeBase::sendStabilizedServoCommands()
-ssm->computeAllowedDeltas(
-    currentAz, currentEl,
-    intendedAzDelta, intendedElDelta,
-    allowedAzDelta, allowedElDelta,
-    dt
-);
-// Deltas are clamped to zone boundaries
-```
+All safety decisions are logged with:
+- Timestamp (ISO 8601 format)
+- Decision (PERMIT / DENY)
+- Denial reason (if denied)
+- Requesting operation
 
 ---
 
-## 5. Error Handling and Recovery
+## 7. Fault Handling and Recovery
 
-### 5.1 Device Disconnection Handling
+### 7.1 Fault Classification
 
-Each device tracks connection status:
+#### 7.1.1 Recoverable Faults
 
-```cpp
-struct Plc42Data {
-    bool isConnected;
-    QDateTime lastCommunicationTime;
-    // ...
-};
+Faults that can be cleared through automatic retry or simple operator action:
+
+| Fault | Detection | Automatic Recovery | Operator Action |
+|-------|-----------|-------------------|-----------------|
+| Communication timeout | No response within period | Retry (3 attempts) | Reconnect if retries fail |
+| Position overshoot | Position exceeds tolerance | Re-command position | None required |
+| Watchdog timeout | Timer expiry | Retry operation | Acknowledge if retry fails |
+
+#### 7.1.2 Non-Recoverable Faults
+
+Faults requiring system intervention or maintenance:
+
+| Fault | Detection | System Response | Required Action |
+|-------|-----------|-----------------|-----------------|
+| Device disconnected | Transport failure | Inhibit device operations | Repair connection |
+| Servo alarm | Alarm code from drive | Halt axis motion | Clear alarm; diagnose |
+| Jam detected | Torque + stall | Auto-backoff; enter Fault | Physical inspection |
+
+#### 7.1.3 Operator-Assisted Recovery
+
+Faults requiring explicit operator acknowledgment or intervention:
+
+| Fault | State Indication | Recovery Sequence |
+|-------|------------------|-------------------|
+| Charging fault | Fault state; OSD indicator | Press charge button to initiate safe retract |
+| Homing failure | Failed state; OSD indicator | Press home button to retry |
+| E-Stop recovery | Recovery indicator | Wait for recovery period; resume operations |
+| Servo alarm | Alarm indicator | Clear alarms via menu; diagnose cause |
+
+### 7.2 Timeout Watchdog Behavior
+
+| Watchdog | Timeout | Expiry Action | Recovery |
+|----------|---------|---------------|----------|
+| Homing | 30 s | Transition to Failed | Operator retry |
+| Charging | 5 s | Transition to Fault | Operator reset |
+| E-Stop recovery | 1 s | Enable operation | Automatic |
+| Thread shutdown | 2 s | Force terminate | System restart |
+
+### 7.3 Jam Detection and Recovery Sequence
+
+```
+  Normal Operation
+         │
+         v
+  ┌──────────────────┐    NO
+  │ High Torque?     │ ────────> Continue normal operation
+  └──────────────────┘
+         │ YES
+         v
+  ┌──────────────────┐    NO
+  │ Stalled?         │ ────────> Continue (high load but moving)
+  └──────────────────┘
+         │ YES
+         v
+  ┌──────────────────┐    NO
+  │ Confirmed?       │ ────────> Increment counter; continue monitoring
+  │ (3 samples)      │
+  └──────────────────┘
+         │ YES
+         v
+  ┌───────────────────────────────────────────────────────────────────┐
+  │ JAM CONFIRMED                                                      │
+  │                                                                   │
+  │   1. Immediate stop command                                       │
+  │   2. Transition to JamDetected state                             │
+  │   3. Wait 200 ms (motor stabilization)                           │
+  │   4. Command backoff to home position                            │
+  │   5. Wait for position reached                                   │
+  │   6. Transition to Fault state                                   │
+  │   7. Await operator acknowledgment                               │
+  └───────────────────────────────────────────────────────────────────┘
 ```
 
-Controllers check connection before commands:
+### 7.4 Startup Recovery
 
-```cpp
-if (m_plc42 && m_plc42->data()->isConnected) {
-    m_plc42->setHomePosition();
-} else {
-    qCritical() << "Cannot start homing - PLC42 not connected";
-    failHoming("PLC42 not connected");
-}
-```
-
-### 5.2 Timeout Watchdogs
-
-#### Homing Timeout
-
-```cpp
-m_timeoutTimer->start(m_homingTimeoutMs);  // Default: 30000 ms
-
-void HomingController::onHomingTimeout()
-{
-    qCritical() << "HOME sequence TIMEOUT";
-    qCritical() << "Possible causes:";
-    qCritical() << "  - Wiring issue (I0_7 not connected)";
-    qCritical() << "  - Oriental Motor fault";
-    qCritical() << "  - Mechanical obstruction";
-
-    failHoming("Timeout - HOME-END not received");
-}
-```
-
-#### Charging Timeout
-
-```cpp
-m_timeoutTimer->start(COCKING_TIMEOUT_MS);  // 5000 ms
-
-void ChargingStateMachine::onChargingTimeout()
-{
-    qWarning() << "CHARGING TIMEOUT - actuator did not reach position";
-    transitionTo(ChargingState::Fault);
-    emit cycleFaulted();
-    // NOTE: Does NOT auto-retract - operator must clear jam first
-}
-```
-
-### 5.3 Jam Detection and Recovery
-
-```cpp
-void ChargingStateMachine::checkForJam(const ServoActuatorData& data)
-{
-    double positionDelta = std::abs(data.position_mm - m_previousFeedbackPosition);
-
-    bool highTorque = (data.torque_percent > JAM_TORQUE_THRESHOLD_PERCENT);
-    bool stalled = (positionDelta < POSITION_STALL_TOLERANCE_MM);
-
-    if (highTorque && stalled) {
-        m_jamDetectionCounter++;
-        if (m_jamDetectionCounter >= JAM_CONFIRM_SAMPLES) {
-            executeJamRecovery();
-        }
-    } else {
-        m_jamDetectionCounter = 0;  // Reset on normal operation
-    }
-}
-
-void ChargingStateMachine::executeJamRecovery()
-{
-    // 1. IMMEDIATE STOP
-    emit requestActuatorStop();
-
-    // 2. TRANSITION TO JAM STATE
-    transitionTo(ChargingState::JamDetected);
-
-    // 3. DELAYED BACKOFF (allow motor to stabilize)
-    QTimer::singleShot(BACKOFF_STABILIZE_MS, this, [this]() {
-        emit requestActuatorMove(COCKING_RETRACT_POS);
-    });
-}
-```
-
-### 5.4 Emergency Stop Recovery
-
-```cpp
-// WeaponController::onSystemStateChanged()
-if (!newData.emergencyStopActive && m_wasInEmergencyStop) {
-    // E-STOP CLEARED - SAFE RECOVERY
-
-    if (m_chargingStateMachine->currentState() == ChargingState::Fault) {
-        // Auto-initiate safe retraction
-        m_chargingStateMachine->resetFault();
-    }
-
-    qInfo() << "Operator must re-arm and re-charge weapon";
-}
-```
-
-### 5.5 Alarm Management (Servo Drivers)
-
-```cpp
-// Two-step reset sequence
-void GimbalController::clearAlarms()
-{
-    m_plc42->setResetAlarm(0);
-
-    QTimer::singleShot(1000, this, [this]() {
-        m_plc42->setResetAlarm(1);
-    });
-}
-```
-
-**Rationale:** Oriental Motor drivers require specific reset timing.
-
-### 5.6 Startup Auto-Recovery
-
-```cpp
-// WeaponController constructor
-QTimer::singleShot(500, this, [this]() {
-    if (m_stateModel) {
-        m_chargingStateMachine->performStartupRetraction(
-            m_stateModel->data().actuatorPosition
-        );
-    }
-});
-```
-
-Per CROWS M153 specification: Actuator must be retracted on startup to prevent interference with firing.
+On system startup:
+1. Check actuator position
+2. If extended beyond threshold: Initiate automatic retraction
+3. Wait for retraction complete (with reduced timeout)
+4. Transition to Idle state
 
 ---
 
-## 6. Data Flow
+## 8. Data Integrity and State Consistency
 
-### 6.1 Hardware to State Model
+### 8.1 Single-Writer Principle
 
-```
-┌─────────────┐    ┌───────────────┐    ┌────────────┐    ┌─────────────┐
-│  Transport  │───>│ Protocol      │───>│   Device   │───>│ Data Model  │
-│ (Serial/    │    │ Parser        │    │            │    │             │
-│  Modbus)    │    │               │    │            │    │             │
-└─────────────┘    └───────────────┘    └────────────┘    └─────────────┘
-      │                                                          │
-      │                                                          │
-      │                                                          v
-      │                                                   ┌─────────────────┐
-      │                                                   │ SystemStateModel│
-      └─────────────────────────────────────────────────->│                 │
-                    Transport provides                    │ Single Source   │
-                    isConnected status                    │ of Truth        │
-                                                          └─────────────────┘
-```
+Each state partition has exactly one designated writer. Multiple readers are permitted.
 
-#### Connection Chain Example (IMU)
+| State Partition | Designated Writer | Readers |
+|-----------------|-------------------|---------|
+| Gimbal position | Servo driver (via hardware) | All controllers, OSD |
+| IMU attitude | IMU device (via hardware) | Motion modes, OSD |
+| Panel switches | PLC21 device (via hardware) | All controllers, safety |
+| Weapon state | Weapon controller | Safety interlock, OSD |
+| Homing state | Homing controller | Gimbal controller, OSD |
+| Charging state | Charging FSM | Weapon controller, OSD |
+| Tracking state | Camera controller | Motion modes, OSD |
+| Safety decisions | Safety interlock | All controllers |
 
-```cpp
-// HardwareManager::connectDevicesToModels()
-connect(m_gyroDevice, &ImuDevice::imuDataChanged,
-        m_gyroModel, &GyroDataModel::updateData);
+### 8.2 State Update Propagation Guarantees
 
-// HardwareManager::connectModelsToSystemState()
-connect(m_gyroModel, &GyroDataModel::dataChanged,
-        m_systemStateModel, &SystemStateModel::onGyroDataChanged);
-```
+1. **Atomicity:** State updates are atomic; observers never see partial updates.
 
-### 6.2 State Model to Controllers (Observer Pattern)
+2. **Ordering:** Observers receive state changes in the order they occurred.
 
-```cpp
-// GimbalController constructor
-connect(m_stateModel, &SystemStateModel::dataChanged,
-        this, &GimbalController::onSystemStateChanged);
+3. **Completeness:** All registered observers receive all state change notifications.
 
-// WeaponController constructor
-connect(m_stateModel, &SystemStateModel::dataChanged,
-        this, &WeaponController::onSystemStateChanged,
-        Qt::DirectConnection);  // Latency-sensitive
-```
+4. **Timeliness:** State changes propagate within one control cycle (50 ms) under normal conditions.
 
-### 6.3 State Model to ViewModels
+### 8.3 Invalidation Rules (Stale Data Handling)
 
-```cpp
-// OsdController::initialize()
-connect(m_stateModel, &SystemStateModel::dataChanged,
-        this, &OsdController::onStateChanged);
+| Data Type | Staleness Threshold | Invalid Action |
+|-----------|---------------------|----------------|
+| IMU attitude | 500 ms | Disable stabilization |
+| Gimbal position | 500 ms | Halt motion |
+| Range measurement | Manual invalidation | Use default range |
+| Tracking target | 200 ms | Coast or stop tracking |
 
-// OsdController updates OsdViewModel
-m_viewModel->setAzimuth(data.gimbalAz);
-m_viewModel->setElevation(data.gimbalEl);
-```
+### 8.4 Safety vs Non-Safety State Separation
 
-### 6.4 Controllers to Actuators
+| Category | Examples | Update Authority | Access Control |
+|----------|----------|------------------|----------------|
+| Safety-Critical | E-stop, arming, zones | Hardware/Safety interlock | Read-only for other components |
+| Operational | Motion mode, tracking | Controllers | Validated updates only |
+| Display-Only | OSD overlays, indicators | View models | No impact on control |
 
-```cpp
-// Motion Mode → Servo Driver
-void GimbalMotionModeBase::writeVelocityCommandOptimized(
-    ServoDriverDevice* driverInterface,
-    GimbalAxis axis,
-    double finalVelocity,
-    double scalingFactor,
-    qint32& lastSpeedHz)
-{
-    // Build Modbus packet
-    QVector<quint16> packet = (axis == GimbalAxis::Azimuth)
-        ? s_azVelocityPacketTemplate
-        : s_elVelocityPacketTemplate;
+### 8.5 State Consistency Invariants
 
-    // Single Modbus write (optimized)
-    driverInterface->writeData(AzdReg::OpSpeed, packet);
-}
-```
+The following invariants are maintained at all times:
 
-### 6.5 Memory Optimization (Video Frames)
+1. **E-Stop Dominance:** If E-Stop is active, no motion or fire commands execute.
 
-**Problem:** FrameData struct contains 3.1 MB QImage × 60fps × 2 cameras = 372 MB/sec potential copies.
+2. **Authorization Consistency:** A PERMIT decision remains valid only if all conditions remain true.
 
-**Solution:** Strip unused data at connection boundaries:
+3. **Zone Consistency:** Zone boundaries are immutable during motion execution.
 
-```cpp
-// ControllerRegistry::connectVideoToOsd()
-connect(m_hardwareManager->dayVideoProcessor(), &CameraVideoStreamDevice::frameDataReady,
-        m_osdController, [this](const FrameData& data) {
-            FrameData osdData = data;
-            osdData.baseImage = QImage();  // Clear 3.1 MB image
-            m_osdController->onFrameDataReady(osdData);
-        });
-```
-
-### 6.6 State Change Detection
-
-```cpp
-void SystemStateModel::updateData(const SystemStateData& newState)
-{
-    if (m_currentStateData != newState) {
-        bool gimbalChanged =
-            !qFuzzyCompare(m_currentStateData.gimbalAz, newState.gimbalAz) ||
-            !qFuzzyCompare(m_currentStateData.gimbalEl, newState.gimbalEl);
-
-        bool ballisticOffsetsChanged = ...;
-
-        m_currentStateData = newState;
-        processStateTransitions(oldData, m_currentStateData);
-
-        if (ballisticOffsetsChanged) {
-            recalculateDerivedAimpointData();
-        }
-
-        emit dataChanged(m_currentStateData);
-
-        if (gimbalChanged) {
-            emit gimbalPositionChanged(m_currentStateData.gimbalAz,
-                                       m_currentStateData.gimbalEl);
-        }
-    }
-}
-```
-
-### 6.7 Data Flow Summary Table
-
-| Source | Destination | Connection | Rate |
-|--------|-------------|------------|------|
-| Servo Driver | ServoDriverDataModel | Direct | 110 Hz |
-| DataModel | SystemStateModel | Signal | On change |
-| SystemStateModel | Controllers | DirectConnection | On change |
-| SystemStateModel | ViewModels | QueuedConnection | On change |
-| Video Thread | VideoImageProvider | QueuedConnection | 60 fps |
-| Controller | Hardware Device | Direct call | 20 Hz |
+4. **Mode Exclusivity:** Only one motion mode is active at any time.
 
 ---
 
-## Appendix A: Timer Summary
+## Appendix A: Timer Inventory
 
-| Component | Timer | Interval | Type | Purpose |
-|-----------|-------|----------|------|---------|
-| GimbalController | m_updateTimer | 50 ms | Periodic | Motion control loop |
-| HomingController | m_timeoutTimer | 30000 ms | SingleShot | Homing watchdog |
-| ChargingStateMachine | m_timeoutTimer | 5000 ms | SingleShot | Actuator watchdog |
-| ChargingStateMachine | m_lockoutTimer | 4000 ms | SingleShot | CROWS M153 lockout |
-| EmergencyStopMonitor | Recovery | 1000 ms | SingleShot | Recovery delay |
-| GimbalController | Alarm reset | 1000 ms | SingleShot | Two-step reset |
-| WeaponController | Startup retract | 500 ms | SingleShot | Initial retraction |
-| ChargingStateMachine | Backoff delay | 200 ms | SingleShot | Motor stabilization |
-
----
-
-## Appendix B: Configuration Files
-
-| File | Purpose | Location |
-|------|---------|----------|
-| `devices.json` | Hardware port/baudrate configuration | `config/` or `:/config/` |
-| `motion_tuning.json` | PID gains, filter constants, limits | `config/` or `:/config/` |
-| `zones.json` | Area zones, scan zones, TRPs | `config/` (writable) |
-| `m2_ball.json` | M2HB ballistic lookup table | `:/ballistic/tables/` |
+| Timer | Interval | Type | Owner | Purpose |
+|-------|----------|------|-------|---------|
+| Motion control | 50 ms | Periodic | Gimbal Controller | Servo command generation |
+| Homing timeout | 30 s | Single-shot | Homing Controller | Sequence watchdog |
+| Charging timeout | 5 s | Single-shot | Charging FSM | Movement watchdog |
+| Lockout | 4 s | Single-shot | Charging FSM | Post-charge delay |
+| Recovery delay | 1 s | Single-shot | E-Stop Monitor | Safe recovery period |
+| Alarm reset | 1 s | Single-shot | Gimbal Controller | Two-step reset sequence |
+| Startup retract | 500 ms | Single-shot | Weapon Controller | Delayed initialization |
+| Backoff delay | 200 ms | Single-shot | Charging FSM | Motor stabilization |
 
 ---
 
-## Appendix C: Error Codes and Recovery
+## Appendix B: State Machine Summary
 
-| Error | Detection | Recovery Action |
-|-------|-----------|-----------------|
-| Homing timeout | 30s timer | Transition to Failed; operator retry |
-| Charging timeout | 5s timer | Transition to Fault; operator reset |
-| Jam detected | Torque + stall | Auto-backoff; operator check |
-| Device disconnected | isConnected flag | Command rejection; reconnect |
-| E-Stop active | Physical button | Immediate halt; recovery delay |
-| Thread hang | wait() timeout | Force terminate; log critical |
+| State Machine | States | Primary Purpose |
+|---------------|--------|-----------------|
+| Homing | 6 | Gimbal position reference |
+| Charging | 8 | Weapon cocking cycle |
+| LAC Tracking | 3 | Lead angle transitions |
+| E-Stop | 4 | Emergency stop lifecycle |
 
 ---
 
@@ -889,7 +763,8 @@ void SystemStateModel::updateData(const SystemStateData& newState)
 
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
-| 1.0 | January 2026 | AI Assistant | Initial TDS creation |
+| 1.0 | January 2026 | Engineering Team | Initial TDS creation |
+| 1.1 | January 2026 | Engineering Team | Architectural refinement per review feedback |
 
 ---
 
