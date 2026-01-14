@@ -202,18 +202,22 @@ void RadarTargetListController::onRadarModeExited()
 
 void RadarTargetListController::onSystemStateChanged(const SystemStateData& newData)
 {
-    // Detect motion mode changes to/from RadarSlew
+    // Detect motion mode TRANSITIONS to/from RadarSlew
+    // Only trigger on actual mode change, not on every state update while in the mode
     MotionMode currentMode = newData.motionMode;
 
-    if (currentMode == MotionMode::RadarSlew && !m_isVisible) {
-        // Entered radar slew mode - show target list
-        qDebug() << "RadarTargetListController: RadarSlew mode detected - showing target list";
+    if (currentMode == MotionMode::RadarSlew && m_previousMotionMode != MotionMode::RadarSlew) {
+        // TRANSITION: Just entered RadarSlew mode - show target list
+        qDebug() << "RadarTargetListController: Transitioned TO RadarSlew mode - showing target list";
         onRadarModeEntered();
-    } else if (currentMode != MotionMode::RadarSlew && m_isVisible) {
-        // Exited radar slew mode - hide target list
-        qDebug() << "RadarTargetListController: Exited RadarSlew mode - hiding target list";
+    } else if (currentMode != MotionMode::RadarSlew && m_previousMotionMode == MotionMode::RadarSlew) {
+        // TRANSITION: Just exited RadarSlew mode - hide target list
+        qDebug() << "RadarTargetListController: Transitioned FROM RadarSlew mode - hiding target list";
         onRadarModeExited();
     }
+
+    // Update previous mode for next comparison
+    m_previousMotionMode = currentMode;
 
     // Update radar plots if visible and changed
     if (m_isVisible && newData.radarPlots != m_radarPlots) {

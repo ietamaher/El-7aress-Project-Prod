@@ -75,6 +75,10 @@ private:
 
     // Track if list is visible
     bool m_isVisible = false;
+
+    // Track previous motion mode for transition detection
+    // (only show list on TRANSITION to RadarSlew, not while staying in it)
+    MotionMode m_previousMotionMode = MotionMode::Idle;
 };
 
 #endif // RADARTARGETLISTCONTROLLER_H
