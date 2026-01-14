@@ -165,8 +165,7 @@ void ApplicationController::initialize()
             this, &ApplicationController::handleToggleDetection);
     connect(m_mainMenuController, &MainMenuController::shutdownSystemRequested,
             this, &ApplicationController::handleShutdown);
-    connect(m_mainMenuController, &MainMenuController::radarTargetListRequested,
-            this, &ApplicationController::handleRadarTargetList);
+    // NOTE: radarTargetListRequested removed - radar list is triggered by RadarSlew motion mode
     connect(m_mainMenuController, &MainMenuController::helpAboutRequested,
             this, &ApplicationController::handleHelpAbout);
     connect(m_mainMenuController, &MainMenuController::menuFinished,
@@ -271,12 +270,18 @@ void ApplicationController::initialize()
 
     // ========================================================================
     // CONNECT RADAR TARGET LIST CONTROLLER
+    // Radar list auto-shows when RadarSlew motion mode is activated
     // ========================================================================
     if (m_radarTargetListController) {
         connect(m_radarTargetListController, &RadarTargetListController::listClosed,
                 this, &ApplicationController::handleRadarTargetListFinished);
         connect(m_radarTargetListController, &RadarTargetListController::returnToMainMenu,
                 this, &ApplicationController::handleReturnToMainMenu);
+        // Auto-state management when radar list shows/hides due to motion mode changes
+        connect(m_radarTargetListController, &RadarTargetListController::radarListShown,
+                this, &ApplicationController::onRadarListShown);
+        connect(m_radarTargetListController, &RadarTargetListController::radarListHidden,
+                this, &ApplicationController::onRadarListHidden);
         qDebug() << "ApplicationController: RadarTargetListController signals connected";
     }
 
@@ -688,14 +693,28 @@ void ApplicationController::handleShutdown()
     setMenuState(MenuState::ShutdownConfirmation);
 }
 
-void ApplicationController::handleRadarTargetList()
+// ============================================================================
+// RADAR TARGET LIST STATE HANDLERS
+// These are triggered by motion mode changes, not menu selections
+// ============================================================================
+
+void ApplicationController::onRadarListShown()
 {
-    qDebug() << "ApplicationController: Radar Target List requested";
-    hideAllMenus();
-    if (m_radarTargetListController) {
-        m_radarTargetListController->show();
-    }
+    qDebug() << "ApplicationController: Radar target list shown (RadarSlew mode active)";
+    // Hide any menus that might be open, but don't hide the radar list
+    m_mainMenuController->hide();
+    m_reticleMenuController->hide();
+    m_colorMenuController->hide();
     setMenuState(MenuState::RadarTargets);
+}
+
+void ApplicationController::onRadarListHidden()
+{
+    qDebug() << "ApplicationController: Radar target list hidden (RadarSlew mode exited)";
+    // Only change state if we were in RadarTargets state
+    if (m_currentMenuState == MenuState::RadarTargets) {
+        setMenuState(MenuState::None);
+    }
 }
 
 void ApplicationController::handleHelpAbout()

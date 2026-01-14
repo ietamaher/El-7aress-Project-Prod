@@ -93,8 +93,11 @@ private slots:
     // void handleSystemStatus();  // DISABLED
     void handleToggleDetection();
     void handleShutdown();
-    void handleRadarTargetList();
     void handleHelpAbout();
+
+    // Radar target list state handlers (triggered by motion mode, not menu)
+    void onRadarListShown();
+    void onRadarListHidden();
 
     // Completion handlers
     void handleMainMenuFinished();

@@ -50,6 +50,8 @@ signals:
     void targetValidated(quint32 targetId);  // Target selected and validated
     void listClosed();                        // User cancelled or exited
     void returnToMainMenu();
+    void radarListShown();                    // Radar list became visible (for state management)
+    void radarListHidden();                   // Radar list became hidden (for state management)
 
 private slots:
     // Monitor radar plots changes

@@ -57,6 +57,9 @@ void RadarTargetListController::show()
     if (m_viewModel) {
         m_viewModel->setVisible(true);
     }
+
+    // Notify ApplicationController to route button presses to us
+    emit radarListShown();
 }
 
 void RadarTargetListController::hide()
@@ -68,6 +71,9 @@ void RadarTargetListController::hide()
     if (m_viewModel) {
         m_viewModel->setVisible(false);
     }
+
+    // Notify ApplicationController to stop routing button presses to us
+    emit radarListHidden();
 }
 
 // ============================================================================
@@ -196,7 +202,20 @@ void RadarTargetListController::onRadarModeExited()
 
 void RadarTargetListController::onSystemStateChanged(const SystemStateData& newData)
 {
-    // Only update if visible and radar plots changed
+    // Detect motion mode changes to/from RadarSlew
+    MotionMode currentMode = newData.motionMode;
+
+    if (currentMode == MotionMode::RadarSlew && !m_isVisible) {
+        // Entered radar slew mode - show target list
+        qDebug() << "RadarTargetListController: RadarSlew mode detected - showing target list";
+        onRadarModeEntered();
+    } else if (currentMode != MotionMode::RadarSlew && m_isVisible) {
+        // Exited radar slew mode - hide target list
+        qDebug() << "RadarTargetListController: Exited RadarSlew mode - hiding target list";
+        onRadarModeExited();
+    }
+
+    // Update radar plots if visible and changed
     if (m_isVisible && newData.radarPlots != m_radarPlots) {
         updateListFromRadarPlots();
     }
