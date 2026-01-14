@@ -28,6 +28,7 @@ class PresetHomePositionController;
 class AboutController;
 class ShutdownConfirmationController;
 class ApplicationController;
+class RadarTargetListController;
 
 // Forward declarations - Managers & Models
 class HardwareManager;
@@ -124,6 +125,7 @@ public:
     ShutdownConfirmationController* shutdownConfirmationController() const { return m_shutdownConfirmationController; }
     ApplicationController* applicationController() const { return m_appController; }
     LedController* ledController() const { return m_ledController; }
+    RadarTargetListController* radarTargetListController() const { return m_radarTargetListController; }
 
 signals:
     void hardwareControllersCreated();
@@ -162,6 +164,7 @@ private:
     ShutdownConfirmationController* m_shutdownConfirmationController = nullptr;
     ApplicationController* m_appController = nullptr;
     LedController* m_ledController = nullptr;
+    RadarTargetListController* m_radarTargetListController = nullptr;
 
     // ========================================================================
     // DEPENDENCIES (not owned)

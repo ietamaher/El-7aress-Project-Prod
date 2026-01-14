@@ -16,6 +16,7 @@
 // #include "models/systemstatusviewmodel.h"  // DISABLED
 #include "models/aboutviewmodel.h"
 #include "models/shutdownconfirmationviewmodel.h"
+#include "models/radartargetlistviewmodel.h"
 
 #include <QQmlContext>
 #include <QDebug>
@@ -64,6 +65,9 @@ bool ViewModelRegistry::createViewModels()
         m_aboutViewModel = new AboutViewModel(this);
         m_shutdownConfirmationViewModel = new ShutdownConfirmationViewModel(this);
 
+        // Radar Target List ViewModel
+        m_radarTargetListViewModel = new RadarTargetListViewModel(this);
+
         qInfo() << "  ✓ All ViewModels created";
         emit viewModelsCreated();
         return true;
@@ -111,6 +115,9 @@ bool ViewModelRegistry::registerWithQml(QQmlContext* context)
     // context->setContextProperty("systemStatusViewModel", m_systemStatusViewModel);  // DISABLED
     context->setContextProperty("aboutViewModel", m_aboutViewModel);
     context->setContextProperty("shutdownConfirmationViewModel", m_shutdownConfirmationViewModel);
+
+    // Radar Target List
+    context->setContextProperty("radarTargetListViewModel", m_radarTargetListViewModel);
 
     qInfo() << "  ✓ All ViewModels registered with QML context";
     emit viewModelsRegistered();

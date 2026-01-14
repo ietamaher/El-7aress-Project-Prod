@@ -19,6 +19,7 @@ class PresetHomePositionViewModel;
 // class SystemStatusViewModel;  // DISABLED
 class AboutViewModel;
 class ShutdownConfirmationViewModel;
+class RadarTargetListViewModel;
 
 class QQmlContext;
 
@@ -88,6 +89,9 @@ public:
     AboutViewModel* aboutViewModel() const { return m_aboutViewModel; }
     ShutdownConfirmationViewModel* shutdownConfirmationViewModel() const { return m_shutdownConfirmationViewModel; }
 
+    // Radar Target List ViewModel
+    RadarTargetListViewModel* radarTargetListViewModel() const { return m_radarTargetListViewModel; }
+
 signals:
     void viewModelsCreated();
     void viewModelsRegistered();
@@ -125,6 +129,9 @@ private:
     // SystemStatusViewModel* m_systemStatusViewModel = nullptr;  // DISABLED
     AboutViewModel* m_aboutViewModel = nullptr;
     ShutdownConfirmationViewModel* m_shutdownConfirmationViewModel = nullptr;
+
+    // Radar Target List
+    RadarTargetListViewModel* m_radarTargetListViewModel = nullptr;
 };
 
 #endif // VIEWMODELREGISTRY_H

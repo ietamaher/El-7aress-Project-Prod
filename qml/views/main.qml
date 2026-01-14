@@ -214,7 +214,7 @@ Window {
     }*/
 
     // Physical Button Handlers - ONLY 3 BUTTONS
-    Row {
+    /*Row {
         anchors.bottom: parent.bottom
         anchors.horizontalCenter: parent.horizontalCenter
         anchors.bottomMargin: 100
@@ -251,6 +251,6 @@ Window {
                 appController.onDownButtonPressed()
             }
         }
-    }
+    }*/
 
 }

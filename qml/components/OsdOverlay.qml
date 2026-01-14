@@ -1562,7 +1562,7 @@ Repeater {
     }
 */
 
-    // ========================================================================
+ /*   // ========================================================================
     // SERVO DRIVER DEBUG BOX (Left side, below status block)
     // Shows torque, motor temp, driver temp, and RPM for both Az and El
     // Toggle visibility with viewModel.toggleServoDebugVisible()
@@ -1784,6 +1784,17 @@ Repeater {
                 color: "#666666"
             }
         }
+    }
+*/
+    // ========================================================================
+    // RADAR TARGET LIST (Below Status Block - for radar slew mode)
+    // ========================================================================
+    RadarTargetList {
+        id: radarTargetList
+        x: 10
+        y: statusBlock.y + statusBlock.height + 10
+        viewModel: radarTargetListViewModel  // Context property from C++
+        z: 350  // Above other debug overlays
     }
 
     // ========================================================================

@@ -42,6 +42,9 @@ private:
     // Motion parameters
     static constexpr double MAX_SLEW_SPEED_DEGS = 25.0; // Max speed for slewing to cue
     static constexpr float SYSTEM_HEIGHT_METERS = 15.0f; // Example height of the system for El calculation
-};
 
+
+    double m_lastErrAz = 0.0;  // For derivative calculation
+    double m_lastErrEl = 0.0;
+};
 #endif // RADARSLEWMOTIONMODE_H

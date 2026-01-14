@@ -33,13 +33,13 @@ TrackingMotionMode::TrackingMotionMode(QObject* parent)
     //     Using filtered derivative-on-error for noise immunity
 
     // Azimuth
-    m_azPid.Kp = 1;     // Slightly higher P for faster response
+    m_azPid.Kp = 1.5;     // Slightly higher P for faster response
     m_azPid.Kd = 0.35;    // Reduced D (filter adds lag, raw dErr was too noisy)
     m_azPid.Ki = 0.0;     // OFF for tracking
     m_azPid.maxIntegral = 3.0;
 
     // Elevation
-    m_elPid.Kp = 1.2;
+    m_elPid.Kp = 1.8;
     m_elPid.Kd = 0.4;
     m_elPid.Ki = 0.0;
     m_elPid.maxIntegral = 3.0;
