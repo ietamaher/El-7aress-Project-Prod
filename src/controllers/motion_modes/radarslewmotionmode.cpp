@@ -8,7 +8,9 @@
 RadarSlewMotionMode::RadarSlewMotionMode(QObject* parent)
     : GimbalMotionModeBase(parent), // Call base constructor
     m_currentTargetId(0),
-    m_isSlewInProgress(false)
+    m_isSlewInProgress(false),
+    m_lastErrAz(0.0),
+    m_lastErrEl(0.0)
 {
     // ✅ Load PID gains from runtime config (field-tunable without rebuild)
     const auto& cfg = MotionTuningConfig::instance();
@@ -30,6 +32,8 @@ void RadarSlewMotionMode::enterMode(GimbalController* controller)
     m_currentTargetId = 0;
     m_previousDesiredAzVel = 0.0;
     m_previousDesiredElVel = 0.0;
+    m_lastErrAz = 0.0;
+    m_lastErrEl = 0.0;
 
     // The GimbalController::setMotionMode already called exitMode on the previous mode,
     // which should have already stopped the servos. Calling it again here is
@@ -54,35 +58,44 @@ void RadarSlewMotionMode::updateImpl(GimbalController* controller, double dt)
 
     // --- 1. Pre-condition Checks ---
     if (!controller || !controller->systemStateModel()) { return; }
+    if (dt <= 0) dt = 1e-3;
 
     SystemStateData data = controller->systemStateModel()->data();
 
     // --- 2. Check for a New Slew Command from the Model ---
-    if (data.selectedRadarTrackId != 0 && data.selectedRadarTrackId != m_currentTargetId) {
+    bool isNewTarget = (data.selectedRadarTrackId != 0 && data.selectedRadarTrackId != m_currentTargetId);
+    
+    if (isNewTarget) {
         qInfo() << "[RadarSlewMotionMode] New slew command received for Target ID:" << data.selectedRadarTrackId;
         m_currentTargetId = data.selectedRadarTrackId;
+        m_azPid.reset();
+        m_elPid.reset();
+        // Reset velocity smoothing for new target
+        m_previousDesiredAzVel = 0.0;
+        m_previousDesiredElVel = 0.0;
+    }
 
-        // Find the full plot data for the commanded target ID
+    // --- 2b. CONTINUOUS TARGET TRACKING: Update target position every cycle ---
+    if (m_currentTargetId != 0) {
         auto it = std::find_if(data.radarPlots.begin(), data.radarPlots.end(),
                                [&](const SimpleRadarPlot& p){ return p.id == m_currentTargetId; });
 
         if (it != data.radarPlots.end()) {
+            // Update target position from latest radar data
             m_targetAz = it->azimuth;
             m_targetEl = atan2(-SYSTEM_HEIGHT_METERS, it->range) * (180.0 / M_PI);
-
             m_isSlewInProgress = true;
-            m_azPid.reset();
-            m_elPid.reset();
 
-            // Reset velocity smoothing for new target
-            m_previousDesiredAzVel = 0.0;
-            m_previousDesiredElVel = 0.0;
-
-            qDebug() << "[RadarSlewMotionMode] Target set to Az:" << m_targetAz << "| Calculated El:" << m_targetEl;
+            if (isNewTarget) {
+                qDebug() << "[RadarSlewMotionMode] Target set to Az:" << m_targetAz << "| Calculated El:" << m_targetEl;
+            }
         } else {
-            qWarning() << "[RadarSlewMotionMode] Could not find commanded target ID" << m_currentTargetId << "in model data. Slew aborted.";
+            // Target lost from radar - stop tracking
+            qWarning() << "[RadarSlewMotionMode] Target ID" << m_currentTargetId << "lost from radar. Stopping.";
             m_isSlewInProgress = false;
             m_currentTargetId = 0;
+            stopServos(controller);
+            return;
         }
     }
 
@@ -107,80 +120,90 @@ void RadarSlewMotionMode::updateImpl(GimbalController* controller, double dt)
         stateModel->updateData(updatedState);
     }
 
-    // Calculate error to the target
-    double errAz = m_targetAz - data.gimbalAz; // Azimuth still uses encoder
-    double errEl = m_targetEl - data.imuPitchDeg; // Elevation now uses IMU Pitch
+    // --- 4. Calculate Errors (FIXED: elevation sign like TRP) ---
+    double errAz = normalizeAngle180(m_targetAz - data.gimbalAz);
+    double errEl = -(m_targetEl - data.gimbalEl);  // FIXED: Negation + use encoder like TRP
 
-    // Normalize Azimuth error to take the shortest path
-    errAz = normalizeAngle180(errAz);
+    // Note: No "arrival stop" - for continuous tracking we just naturally slow down
+    // when close to target. If target moves, we follow it.
 
-    // Check for arrival at the destination
-    // Corrected to use both Az and El errors for 2D distance.
-    if (std::abs(errAz) < ARRIVAL_THRESHOLD_DEG() && std::abs(errEl) < ARRIVAL_THRESHOLD_DEG()) {
-        qInfo() << "[RadarSlewMotionMode] Arrived at target ID:" << m_currentTargetId;
-        stopServos(controller);
-        m_isSlewInProgress = false;
-        return;
-    }
+    // --- 5. MOTION PROFILING (with realistic deceleration) ---
+    
+    // Motion profile constants
+    static constexpr double ACCEL_DEG_S2 = 50.0;            // For rate limiting only
+    static constexpr double DECEL_EFFECTIVE_DEG_S2 = 15.0;  // REALISTIC decel for stopping calc (servo can't do 50!)
+    static constexpr double CRUISE_SPEED_DEG_S = 12.0;      // Max cruise speed
+    static constexpr double SMOOTHING_TAU_S = 0.05;         // Exponential filter time constant
+    static constexpr double FINE_THRESHOLD_DEG = 1.0;       // Switch to PID below this for fine control
 
-    // --- 4. MOTION PROFILING SIMILAR TO TRP SCAN ---
-    double distanceToTarget = std::sqrt(errAz * errAz + errEl * errEl);
-    double desiredAzVelocity = 0.0;
-    double desiredElVelocity = 0.0;
-
-    // Define constants for motion profiling
-    static const double DECELERATION_DISTANCE_DEG = 5.0;  // Start decelerating when within 5 degrees
-    static const double CRUISE_SPEED_DEGS = 12.0;         // Cruise speed for slewing
-    static const double MAX_VELOCITY_CHANGE = 3.0;        // Maximum velocity change per update cycle
-
-    if (distanceToTarget < DECELERATION_DISTANCE_DEG) {
-        // DECELERATION ZONE: Use PID to slow down smoothly
-        qDebug() << "[RadarSlewMotionMode] Decelerating. Distance:" << distanceToTarget;
-        desiredAzVelocity = pidCompute(m_azPid, errAz, UPDATE_INTERVAL_S());
-        desiredElVelocity = pidCompute(m_elPid, errEl, UPDATE_INTERVAL_S());
+    //------------------------------------------------------------
+    // AZIMUTH: Trapezoidal profile with REALISTIC deceleration
+    //------------------------------------------------------------
+    double distAz = std::abs(errAz);
+    double dirAz = (errAz > 0) ? 1.0 : -1.0;
+    double desiredAzVel;
+    
+    if (distAz < FINE_THRESHOLD_DEG) {
+        // FINE ZONE: Use PID with Kd for damping (prevents oscillation!)
+        double pTerm = m_azPid.Kp * errAz;
+        double dTerm = -m_azPid.Kd * (errAz - m_lastErrAz) / dt;  // Derivative on error
+        m_lastErrAz = errAz;
+        desiredAzVel = pTerm + dTerm;
+        desiredAzVel = std::clamp(desiredAzVel, -3.0, 3.0);  // Limit fine adjustment speed
     } else {
-        // CRUISING ZONE: Move at constant speed toward target
-        double dirAz = errAz / distanceToTarget;
-        double dirEl = errEl / distanceToTarget;
-        desiredAzVelocity = dirAz * CRUISE_SPEED_DEGS;
-        desiredElVelocity = dirEl * CRUISE_SPEED_DEGS;
-
-        // Reset PID during cruise to prevent integral windup
-        m_azPid.reset();
-        m_elPid.reset();
+        // CRUISE/DECEL: Kinematic with CONSERVATIVE deceleration
+        // v = sqrt(2 * a * d) but using realistic 'a'
+        double v_stop_az = std::sqrt(2.0 * DECEL_EFFECTIVE_DEG_S2 * distAz);
+        desiredAzVel = dirAz * std::min(CRUISE_SPEED_DEG_S, v_stop_az);
+        m_lastErrAz = errAz;  // Keep tracking for derivative
     }
 
-    // --- 5. VELOCITY SMOOTHING AND RATE LIMITING (from TrackingMotionMode) ---
+    // Time-based rate limiting
+    double maxDeltaAz = ACCEL_DEG_S2 * dt;
+    desiredAzVel = std::clamp(desiredAzVel, m_previousDesiredAzVel - maxDeltaAz, m_previousDesiredAzVel + maxDeltaAz);
 
-    // Apply velocity constraints
-    desiredAzVelocity = qBound(-MAX_SLEW_SPEED_DEGS, desiredAzVelocity, MAX_SLEW_SPEED_DEGS);
-    desiredElVelocity = qBound(-MAX_SLEW_SPEED_DEGS, desiredElVelocity, MAX_SLEW_SPEED_DEGS);
+    // Exponential smoothing filter
+    double alpha = dt / (SMOOTHING_TAU_S + dt);
+    double smoothedAzVel = alpha * desiredAzVel + (1.0 - alpha) * m_previousDesiredAzVel;
+    m_previousDesiredAzVel = smoothedAzVel;
 
-    // Apply rate limiting to prevent sudden velocity changes
-    double velocityChangeAz = desiredAzVelocity - m_previousDesiredAzVel;
-    if (std::abs(velocityChangeAz) > MAX_VELOCITY_CHANGE) {
-        desiredAzVelocity = m_previousDesiredAzVel + (velocityChangeAz > 0 ? MAX_VELOCITY_CHANGE : -MAX_VELOCITY_CHANGE);
+    //------------------------------------------------------------
+    // ELEVATION: Same profile with damping
+    //------------------------------------------------------------
+    double distEl = std::abs(errEl);
+    double dirEl = (errEl > 0) ? 1.0 : -1.0;
+    double desiredElVel;
+    
+    if (distEl < FINE_THRESHOLD_DEG) {
+        // FINE ZONE: PID with Kd damping
+        double pTerm = m_elPid.Kp * errEl;
+        double dTerm = -m_elPid.Kd * (errEl - m_lastErrEl) / dt;
+        m_lastErrEl = errEl;
+        desiredElVel = pTerm + dTerm;
+        desiredElVel = std::clamp(desiredElVel, -3.0, 3.0);
+    } else {
+        // CRUISE/DECEL
+        double v_stop_el = std::sqrt(2.0 * DECEL_EFFECTIVE_DEG_S2 * distEl);
+        desiredElVel = dirEl * std::min(CRUISE_SPEED_DEG_S, v_stop_el);
+        m_lastErrEl = errEl;
     }
 
-    double velocityChangeEl = desiredElVelocity - m_previousDesiredElVel;
-    if (std::abs(velocityChangeEl) > MAX_VELOCITY_CHANGE) {
-        desiredElVelocity = m_previousDesiredElVel + (velocityChangeEl > 0 ? MAX_VELOCITY_CHANGE : -MAX_VELOCITY_CHANGE);
-    }
+    // Time-based rate limiting
+    double maxDeltaEl = ACCEL_DEG_S2 * dt;
+    desiredElVel = std::clamp(desiredElVel, m_previousDesiredElVel - maxDeltaEl, m_previousDesiredElVel + maxDeltaEl);
 
-    // Store current velocities for next cycle
-    m_previousDesiredAzVel = desiredAzVelocity;
-    m_previousDesiredElVel = desiredElVelocity;
+    // Exponential smoothing filter
+    double smoothedElVel = alpha * desiredElVel + (1.0 - alpha) * m_previousDesiredElVel;
+    m_previousDesiredElVel = smoothedElVel;
 
-    // Debug output
+    // Debug output (throttled)
     static int debugCounter = 0;
-    if (++debugCounter % 25 == 0) { // Print every 25 updates (~0.5 seconds at 50Hz)
-        qDebug() << "[RadarSlewMotionMode] Error(Az,El):" << errAz << "," << errEl
-                 << "| Vel(Az,El):" << desiredAzVelocity << "," << desiredElVelocity
-                 << "| Distance:" << distanceToTarget;
+    if (++debugCounter % 25 == 0) {
+        qDebug() << "[RadarSlewMotionMode] Err(Az,El):" << errAz << "," << errEl
+                 << "| Vel(Az,El):" << smoothedAzVel << "," << smoothedElVel
+                 << "| Dist(Az,El):" << distAz << "," << distEl;
     }
 
     // Let the base class handle stabilization and sending the final command
-    sendStabilizedServoCommands(controller, desiredAzVelocity, desiredElVelocity, true, dt);
+    sendStabilizedServoCommands(controller, smoothedAzVel, smoothedElVel, true, dt);
 }
-
-

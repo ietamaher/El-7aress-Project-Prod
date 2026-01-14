@@ -1562,7 +1562,7 @@ Repeater {
     }
 */
 
-    // ========================================================================
+ /*   // ========================================================================
     // SERVO DRIVER DEBUG BOX (Left side, below status block)
     // Shows torque, motor temp, driver temp, and RPM for both Az and El
     // Toggle visibility with viewModel.toggleServoDebugVisible()
@@ -1785,7 +1785,7 @@ Repeater {
             }
         }
     }
-
+*/
     // ========================================================================
     // RADAR TARGET LIST (Below Status Block - for radar slew mode)
     // ========================================================================

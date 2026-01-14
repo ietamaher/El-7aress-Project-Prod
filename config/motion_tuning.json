@@ -90,16 +90,16 @@
 
     "radarSlew": {
       "azimuth": {
-        "kp": 2.0,
+        "kp": 1.5,
         "ki": 0.1,
         "kd": 0.2,
-        "maxIntegral": 25.0
+        "maxIntegral": 20.0
       },
       "elevation": {
-        "kp": 2.0,
+        "kp": 1.8,
         "ki": 0.1,
         "kd": 0.2,
-        "maxIntegral": 25.0
+        "maxIntegral": 20.0
       }
     }
   },
